@@ -1,0 +1,14 @@
+root = true
+
+[*]
+charset = utf-8           # кодировка файлов
+end_of_line = lf          # тип конца строки (LF для Linux/Mac, CRLF для Windows)
+insert_final_newline = true  # всегда добавлять пустую строку в конце файла
+trim_trailing_whitespace = true # удалять пробелы в конце строк
+
+[*.{js,ts,jsx,tsx,css,scss,html,json}]
+indent_style = space      # использовать пробелы для отступов
+indent_size = 2           # размер отступа 2 пробела
+
+[*.md]
+trim_trailing_whitespace = false # для markdown оставлять пробелы
