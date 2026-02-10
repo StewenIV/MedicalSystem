@@ -3,7 +3,8 @@ import WelcomeScreen from "pages/WelcomeScreen"
 export const pathsPublic: { [k: string]: string } = {
   auth: '/auth',
   registration: '/registration',
-  WelcomeScreen: '/welcome'
+  welcome: '/welcome',
+  resetPassword: '/reset-password'
 }
 
 export const pathsPrivate: { [k: string]: string } = {

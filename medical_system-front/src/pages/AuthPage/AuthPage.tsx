@@ -18,8 +18,8 @@ import {
 import { ReactComponent as GoogleIcon } from 'pages/img/google.svg'
 import Input from 'components/Input'
 import { ArrowLeft, ArrowRight, LogIn, User, Lock } from 'lucide-react'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppDispatch } from 'store'
 import { setIsLogged, setUserRole } from 'features/App/reducer'
 import { UserRole } from 'features/App/types'
@@ -30,7 +30,17 @@ import { toast } from 'react-toastify'
 const AuthPage: React.FC = () => {
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const [selectedRole, setSelectedRole] = useState<'staff' | 'patient'>('staff')
+  const [searchParams] = useSearchParams()
+  const roleFromUrl = searchParams.get('role') as 'staff' | 'patient' | null
+  const [selectedRole, setSelectedRole] = useState<'staff' | 'patient'>(
+    roleFromUrl || 'staff'
+  )
+
+  useEffect(() => {
+    if (roleFromUrl && (roleFromUrl === 'staff' || roleFromUrl === 'patient')) {
+      setSelectedRole(roleFromUrl)
+    }
+  }, [roleFromUrl])
   const [login, setLogin] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -77,7 +87,7 @@ const AuthPage: React.FC = () => {
 
       <PageWrapper>
         <Card>
-          <BackButton onClick={() => navigate(-1)}>
+          <BackButton type="button" onClick={() => navigate(paths.welcome)}>
             <ArrowLeft size={16} />
             Назад
           </BackButton>
@@ -136,14 +146,14 @@ const AuthPage: React.FC = () => {
                 Запомнить меня
               </label>
 
-              <a href="#">Забыли пароль?</a>
+              <a href={paths.resetPassword}>Забыли пароль?</a>
             </CheckboxRow>
 
             <SubmitButton type="submit">Войти</SubmitButton>
 
             <Divider>или</Divider>
 
-            <OAuthButton onClick={() => alert('Скоро будет')}>
+            <OAuthButton type="button" onClick={() => alert('Скоро будет')}>
               <GoogleIcon
                 width={24}
                 height={24}
@@ -156,7 +166,10 @@ const AuthPage: React.FC = () => {
             {selectedRole === 'patient' && (
               <RegisterBlock>
                 <p>Нет учетной записи?</p>
-                <button onClick={() => navigate(paths.registration)}>
+                <button
+                  type="button"
+                  onClick={() => navigate(paths.registration)}
+                >
                   Зарегистрироваться как пациент
                   <ArrowRight size={16} />
                 </button>

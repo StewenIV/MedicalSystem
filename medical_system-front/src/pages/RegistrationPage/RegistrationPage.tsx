@@ -29,6 +29,7 @@ import {
 } from './styled'
 
 import { PatternFormat } from 'react-number-format'
+import { paths } from 'routes/helpers'
 
 const RegistrationPage: React.FC = () => {
   const navigate = useNavigate()
@@ -47,7 +48,6 @@ const RegistrationPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-
     const newErrors: Record<string, string> = {}
 
     if (formData.password !== formData.confirmPassword)
@@ -68,7 +68,7 @@ const RegistrationPage: React.FC = () => {
     }
 
     toast.success('Регистрация прошла успешно!')
-    navigate(-1)
+    navigate(paths.auth)
   }
   return (
     <>
@@ -82,7 +82,7 @@ const RegistrationPage: React.FC = () => {
 
       <RegistrationPageContainer>
         <Card>
-          <BackButton onClick={() => navigate(-1)}>
+          <BackButton type="button" onClick={() => navigate(paths.auth)}>
             <ArrowLeft size={16} /> Назад
           </BackButton>
 

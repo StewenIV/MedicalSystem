@@ -11,6 +11,7 @@ import { GlobalStyles } from 'App.styled'
 const App = () => {
   const isLogged = useSelector(selectIsLogged)
 
+  
   return (
     <>
     <ToastContainer />
@@ -18,7 +19,7 @@ const App = () => {
       <Suspense fallback={<div>Loading...</div>}>
         {isLogged ? <PrivateRoutes /> : <PublicRoutes />}
       </Suspense>
-      <ToastContainer />
+      
     </>
   )
 }
