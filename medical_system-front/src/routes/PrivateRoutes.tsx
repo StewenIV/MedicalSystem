@@ -11,7 +11,7 @@ const PrivateRoutes: React.FC = () => {
 
   return (
     <Routes>
-      <Route path={paths.home} element={<HomePage />} />
+      {/* <Route path={paths.home} element={<HomePage />} /> */}
       <Route
         path="*"
         element={

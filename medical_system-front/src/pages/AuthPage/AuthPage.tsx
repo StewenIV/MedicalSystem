@@ -2,7 +2,6 @@ import { Helmet } from 'react-helmet'
 import {
   PageWrapper,
   Card,
-  BackButton,
   Logo,
   Tabs,
   Tab,
@@ -15,6 +14,7 @@ import {
   RegisterBlock
 } from './styled'
 
+import { BackButton } from 'components/Button'
 import { ReactComponent as GoogleIcon } from 'pages/img/google.svg'
 import Input from 'components/Input'
 import { ArrowLeft, ArrowRight, LogIn, User, Lock } from 'lucide-react'
@@ -87,9 +87,8 @@ const AuthPage: React.FC = () => {
 
       <PageWrapper>
         <Card>
-          <BackButton type="button" onClick={() => navigate(paths.welcome)}>
-            <ArrowLeft size={16} />
-            Назад
+          <BackButton onClick={() => navigate(paths.welcome)}>
+            Назад{' '}
           </BackButton>
 
           <Logo>

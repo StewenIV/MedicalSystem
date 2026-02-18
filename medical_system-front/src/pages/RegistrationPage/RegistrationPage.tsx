@@ -24,12 +24,12 @@ import {
   Divider,
   OAuthButton,
   Terms,
-  BackButton,
   SubmitButton
 } from './styled'
 
 import { PatternFormat } from 'react-number-format'
 import { paths } from 'routes/helpers'
+import { BackButton } from 'components/Button'
 
 const RegistrationPage: React.FC = () => {
   const navigate = useNavigate()
@@ -82,9 +82,7 @@ const RegistrationPage: React.FC = () => {
 
       <RegistrationPageContainer>
         <Card>
-          <BackButton type="button" onClick={() => navigate(paths.auth)}>
-            <ArrowLeft size={16} /> Назад
-          </BackButton>
+          <BackButton onClick={() => navigate(paths.auth)}>Назад</BackButton>
 
           <Header>
             <div>

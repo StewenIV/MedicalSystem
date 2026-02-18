@@ -6,6 +6,7 @@ const AuthPage = lazy(() => import('pages/AuthPage'))
 const RegistrationPage = lazy(() => import('pages/RegistrationPage'))
 const WelcomeScreen = lazy(() => import('pages/WelcomeScreen'))
 const ResetPasswordPage = lazy(() => import('pages/ResetPasswordPage'))
+const HomePage = lazy(() => import('pages/HomePage'))
 
 const PublicRoutes: React.FC = () => {
   const location = useLocation()
@@ -14,10 +15,11 @@ const PublicRoutes: React.FC = () => {
 
   return (
     <Routes>
+      <Route path={paths.welcome} element={<WelcomeScreen />} />
       <Route path={paths.auth} element={<AuthPage />} />
       <Route path={paths.registration} element={<RegistrationPage />} />
-      <Route path={paths.welcome} element={<WelcomeScreen />} />
       <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
+      <Route path={paths.home} element={<HomePage />} />
       <Route
         path="*"
         element={

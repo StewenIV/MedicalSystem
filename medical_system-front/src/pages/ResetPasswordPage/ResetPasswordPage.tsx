@@ -1,5 +1,5 @@
 import { Helmet } from 'react-helmet'
-import { useState } from 'react'
+import { useState, useRef, KeyboardEvent, ClipboardEvent } from 'react'
 import {
   Mail,
   Lock,
@@ -8,7 +8,8 @@ import {
   Loader2,
   Heart,
   LogIn,
-  ShieldAlert 
+  LockIcon,
+  ArrowLeft
 } from 'lucide-react'
 
 import {
@@ -29,7 +30,12 @@ import {
   PasswordRequirements,
   RequirementItem,
   InfoBox,
-  SecurityNotice
+  SecurityNotice,
+  BackButtonCopy,
+  SecurityNoteText,
+  SecurityNoteWrapper,
+  OtpContainer,
+  OtpInput as StyledOtpInput
 } from './styled'
 
 import Input from 'components/Input'
@@ -49,11 +55,11 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
   )
 
   const navigate = useNavigate()
-  // Form data
-  const [email, setEmail] = useState('')
+ 
+  const [email, setEmail] = useState('asasd@kla.re')
   const [code, setCode] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [password, setPassword] = useState('sadsdasAs4')
+  const [confirmPassword, setConfirmPassword] = useState('sadsdasAs4')
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -65,6 +71,9 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     password: false,
     confirmPassword: false
   })
+
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([])
+  const [otpValues, setOtpValues] = useState<string[]>(['', '', '', '', '', ''])
 
   const emailSchema = z.object({
     email: z.string().email('Введите корректный email адрес')
@@ -119,7 +128,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
       path: ['confirmPassword']
     })
 
-  // Password validation
   const validatePassword = () => {
     const result = passwordSchema.safeParse({ password, confirmPassword })
 
@@ -137,7 +145,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     return true
   }
 
-  // Handle sending email with verification code
   const handleSendEmail = async () => {
     setError('')
     setTouched({ ...touched, email: true })
@@ -149,7 +156,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     setIsLoading(true)
 
     try {
-      // Simulate API call
       await new Promise((resolve, reject) => {
         setTimeout(() => {
           Math.random() > 0.1
@@ -202,7 +208,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     }
   }
 
-  // Handle resetting password
   const handleResetPassword = async () => {
     setError('')
     setTouched({ ...touched, password: true, confirmPassword: true })
@@ -231,12 +236,97 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
   }
 
   const handleBack = () => {
-    setError('')
-    if (step === 'code') {
-      setStep('email')
-      setCode('')
-    } else if (step === 'password') {
+    setOtpValues(['', '', '', '', '', ''])
+    if (step === 'password') {
       setStep('code')
+      setPassword('')
+      setConfirmPassword('')
+    } else if (step === 'email') {
+      navigate(paths.auth)
+    } else if (step === 'code'){
+      setStep('email')
+    }
+  }
+
+  const handlePressEnter = (e: KeyboardEvent<HTMLElement>) => {
+    if (e.key === 'Enter') {
+      if (step === 'email') {
+        handleSendEmail()
+      } else if (step === 'code') {
+        handleVerifyCode()
+      } else if (step === 'password') {
+        handleResetPassword()
+      }
+    }
+  }
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return 
+
+    const newOtpValues = [...otpValues]
+    newOtpValues[index] = value.slice(-1) 
+    
+    setOtpValues(newOtpValues)
+    setCode(newOtpValues.join(''))
+    setError('')
+
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus()
+    }
+  }
+
+  const handleOtpKeyDown = (
+    index: number,
+    e: KeyboardEvent<HTMLInputElement>
+  ) => {
+
+   if (e.key === 'Backspace') {
+     e.preventDefault()
+
+     if (otpValues[index]) {
+       const newOtpValues = [...otpValues]
+       newOtpValues[index] = ''
+       setOtpValues(newOtpValues)
+       setCode(newOtpValues.join(''))
+     } else if (index > 0) {
+       // если пусто — переходим назад и очищаем
+       const newOtpValues = [...otpValues]
+       newOtpValues[index - 1] = ''
+       setOtpValues(newOtpValues)
+       setCode(newOtpValues.join(''))
+
+       otpRefs.current[index - 1]?.focus()
+     }
+   }
+
+   if (e.key === 'ArrowLeft' && index > 0) {
+     e.preventDefault()
+     otpRefs.current[index - 1]?.focus()
+   }
+
+   if (e.key === 'ArrowRight' && index < 5) {
+     e.preventDefault()
+     otpRefs.current[index + 1]?.focus()
+   }
+  }
+
+  const handleOtpPaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    const pastedData = e.clipboardData
+      .getData('text')
+      .replace(/\D/g, '')
+      .slice(0, 6)
+
+    if (pastedData) {
+      const newOtpValues = pastedData
+        .split('')
+        .concat(Array(6).fill(''))
+        .slice(0, 6)
+      setOtpValues(newOtpValues)
+      setCode(newOtpValues.join(''))
+
+      const lastFilledIndex = Math.min(pastedData.length - 1, 5)
+      otpRefs.current[lastFilledIndex]?.focus()
       setPassword('')
       setConfirmPassword('')
     } else if (step === 'email') {
@@ -277,13 +367,22 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
         </LogoBlock>
 
         <Card>
-          {step !== 'success' && (
-            <BackButton onClick={handleBack} disabled={isLoading} />
+          {step !== 'success' && step !== 'email' && (
+            <>
+              <BackButton onClick={handleBack} disabled={isLoading}>
+                Назад{' '}
+              </BackButton>
+            </>
           )}
 
           {/*Ввод Email*/}
           {step === 'email' && (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleSendEmail()
+              }}
+            >
               <TitleForm>Восстановление пароля</TitleForm>
               <SubTitleForm>
                 Введите email адрес, указанный при регистрации. Мы отправим вам
@@ -334,6 +433,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
               </InputGroup>
 
               <Button
+                type="submit"
                 onClick={handleSendEmail}
                 disabled={isLoading || !isEmailValid}
               >
@@ -349,12 +449,21 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                   </>
                 )}
               </Button>
-            </>
+              <BackButtonCopy onClick={handleBack} disabled={isLoading}>
+                <ArrowLeft size={18} />
+                Вернуться ко входу
+              </BackButtonCopy>
+            </form>
           )}
 
           {/* Ввод кода подтверждения */}
           {step === 'code' && (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleVerifyCode()
+              }}
+            >
               <TitleForm>Введите код подтверждения</TitleForm>
               <SubTitleForm>
                 Мы отправили 6-значный код на вашу почту{' '}
@@ -389,25 +498,32 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                 <label>
                   Код подтверждения<span> *</span>
                 </label>
-                <Input
-                  icon={<Lock size={18} />}
-                  type="text"
-                  placeholder="Введите 6-значный код"
-                  value={code}
-                  onChange={(e) => {
-                    const value = e.target.value.replace(/\D/g, '').slice(0, 6)
-                    setCode(value)
-                    setError('')
-                  }}
-                  onBlur={() => setTouched({ ...touched, code: true })}
-                  disabled={isLoading}
-                  maxLength={6}
-                />
+                <OtpContainer>
+                  {otpValues.map((value, index) => (
+                    <StyledOtpInput
+                      key={index}
+                      ref={(el) => {
+                        otpRefs.current[index] = el
+                      }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={2}
+                      value={value}
+                      onChange={(e) => handleOtpChange(index, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(index, e)}
+                      onPaste={handleOtpPaste}
+                      disabled={isLoading}
+                      autoFocus={index === 0}
+                      placeholder="0"
+                    />
+                  ))}
+                </OtpContainer>
               </InputGroup>
 
               <Button
                 onClick={handleVerifyCode}
                 disabled={isLoading || code.length !== 6}
+                type="submit"
               >
                 {isLoading ? (
                   <>
@@ -429,6 +545,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                     onClick={() => {
                       setStep('email')
                       setCode('')
+                      setOtpValues(['', '', '', '', '', ''])
                       setError('')
                     }}
                     disabled={isLoading}
@@ -437,12 +554,17 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                   </button>
                 </p>
               </SecurityNotice>
-            </>
+            </form>
           )}
 
           {/* Новый пароль */}
           {step === 'password' && (
-            <>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                handleResetPassword()
+              }}
+            >
               <TitleForm>Создайте новый пароль</TitleForm>
               <SubTitleForm>
                 Пароль должен быть надёжным и отличаться от предыдущего.
@@ -572,7 +694,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                   который вы не используете на других сайтах.
                 </p>
               </SecurityNotice>
-            </>
+            </form>
           )}
 
           {/*Успешно*/}
@@ -608,20 +730,17 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                   </ul>
                 </div>
               </InfoBox>
-
-              <SecurityNotice>
-                <p>
-                  Если вы не меняли пароль,{' '}
-                  <button
-                    onClick={() => alert('Связь со службой безопасности')}
-                  >
-                    сообщите в службу безопасности
-                  </button>
-                </p>
-              </SecurityNotice>
             </SuccessMessage>
           )}
         </Card>
+
+        <SecurityNoteWrapper>
+          <SecurityNoteText>
+            <span>🔒</span> Мы никогда не попросим вас сообщить ваш пароль по
+            email или телефону. Если вы получили подозрительное письмо, не
+            переходите по ссылкам и сообщите в службу поддержки.
+          </SecurityNoteText>
+        </SecurityNoteWrapper>
       </Container>
     </>
   )

@@ -64,6 +64,7 @@ export const PrimaryButton = styled.button`
   border: none;
   display: flex;
   align-items: center;
+  font-weight: 600;
   gap: 10px;
   font-size: 18px;
   cursor: pointer;
@@ -79,24 +80,25 @@ export const PrimaryButton = styled.button`
 
 
 export const SecondaryButton = styled.button`
-    padding: 16px 32px;
-    background: white;
-    color: ${colors.mainColor};
-    border: 2px solid ${colors.mainColor};
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    cursor: pointer;
-    transition:
-      transform 0.2s,
-      background 0.2s;
+  padding: 16px 32px;
+  background: white;
+  color: ${colors.mainColor};
+  border: 2px solid ${colors.mainColor};
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    background 0.2s;
 
-    &:hover {
-      background: #eff6ff;
-      transform: scale(1.05);
-    }
+  &:hover {
+    background: #eff6ff;
+    transform: scale(1.05);
+  }
 `
 
 export const SectionTitle = styled.h3`

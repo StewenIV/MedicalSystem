@@ -79,25 +79,6 @@ export const RegistrationInput = styled(Input)`
   background-color: #f9fafb;
 `
 
-export const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  color: #555;
-  border: none;
-  cursor: pointer;
-  margin-bottom: 20px;
-
-  svg {
-    margin-bottom: 2px;
-  }
-
-  &:hover {
-    color: #444444;
-  }
-`
-
 export const SubmitButton = styled.button`
   padding: 12px;
   background: ${colors.button};

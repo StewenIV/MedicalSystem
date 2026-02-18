@@ -33,7 +33,7 @@ export const Card = styled.div`
   width: 100%;
   max-width: 480px;
   background: white;
-  padding: 32px;
+  padding: 32px 32px 20px 32px;
   border-radius: 20px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -111,6 +111,7 @@ export const Button = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
+  margin-bottom: 12px;
 
   &:hover:not(:disabled) {
     background: ${colors.buttonHover};
@@ -139,6 +140,52 @@ export const Button = styled.button`
     to {
       transform: rotate(360deg);
     }
+  }
+`
+
+export const BackButtonCopy = styled(Button)`
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: ${colors.colorTextForm};
+  margin-top: 8px;
+  gap: 6px;
+
+  &:hover:not(:disabled) {
+    background: #f0f1f4;
+    color: ${colors.colorTextForm};
+  }
+`
+
+export const SecurityNoteWrapper = styled.div`
+  margin-top: 12px;
+  max-width: 510px;
+  width: 100%;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+
+  display: flex;
+  justify-content: center;
+
+  svg {
+    color: ${colors.mainColor};
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+`
+
+export const SecurityNoteText = styled.p`
+  font-size: 12px;
+  color: #4b5563;
+  text-align: center;
+  line-height: 1.6;
+
+  max-width: 400px;
+  margin: 0;
+
+  span {
+    margin-right: 4px;
   }
 `
 
@@ -262,60 +309,63 @@ export const RequirementItem = styled.div<RequirementItemProps>`
 `
 
 export const InfoBox = styled.div`
+  margin: 20px;
   padding: 16px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   display: flex;
-  align-items: start;
+  align-items: flex-start; /* Иконка всегда вверху слева */
   gap: 12px;
-  margin-bottom: 20px;
+
 
   svg {
-    color: ${colors.mainColor};
+    color: #3b82f6;
     flex-shrink: 0;
-    margin-top: 2px;
+    margin-top: 3px; 
   }
 
   div {
-    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; 
     font-size: 14px;
     line-height: 1.5;
 
     strong {
       display: block;
-      margin-bottom: 8px;
+      margin-bottom: 4px;
       color: #1e40af;
     }
 
     p {
-      margin: 4px 0;
+      margin: 0;
       color: #1e3a8a;
 
       strong {
         display: inline;
-        color: ${colors.mainColor};
+        color: #2563eb;
         font-family: 'Courier New', monospace;
         font-size: 15px;
       }
     }
 
-    small {
-      display: block;
-      margin-top: 8px;
-      color: ${colors.secondColorText};
-      font-size: 12px;
-    }
-
     ul {
       margin: 8px 0 0;
-      padding: 0;
-      list-style: none;
+      padding: 0 0 0 18px; 
+      list-style-type: disc; 
       color: #1e3a8a;
-      text-align: left;
+      display: flex;
+      align-items: flex-start;
+      flex-direction: column;
 
       li {
         margin: 4px 0;
+        padding-left: 4px;
+        
+        &::marker {
+          color: #3b82f6; 
+        }
       }
     }
   }
@@ -358,5 +408,64 @@ export const SecurityNotice = styled.div`
       opacity: 0.5;
       cursor: not-allowed;
     }
+  }
+`
+
+export const OtpContainer = styled.div`
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin: 16px 0;
+
+  @media (max-width: 640px) {
+    gap: 8px;
+  }
+`
+
+export const OtpInput = styled.input`
+  width: 52px;
+  height: 65px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+  color: ${colors.mainColorText};
+  background: white;
+  border: 2px solid #d1d5db;
+  border-radius: 20px;
+  outline: none;
+  transition: all 0.2s ease;
+
+  &:focus {
+    border-color: ${colors.mainColor};
+    box-shadow: 0 0 0 3px rgba(21, 93, 252, 0.1);
+    transform: scale(1.05);
+  }
+
+  &:disabled {
+    background: #f3f4f6;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &::placeholder {
+    color: #d1d5db;
+  }
+
+  /* Скрыть стрелки для number input */
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  &[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  @media (max-width: 640px) {
+    width: 42px;
+    height: 48px;
+    font-size: 20px;
   }
 `

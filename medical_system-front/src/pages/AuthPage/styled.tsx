@@ -18,25 +18,6 @@ export const Card = styled.div`
   max-width: 400px;
 `
 
-export const BackButton = styled.button`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  color: #555;
-  border: none;
-  cursor: pointer;
-  margin-bottom: 20px;
-
-  svg {
-    margin-bottom: 2px;
-  }
-
-  &:hover {
-    color: #444444;
-  }
-`
-
 export const Logo = styled.div`
   text-align: center;
   margin-bottom: 32px;

@@ -11,10 +11,11 @@ export interface BackButtonProps {
 const BackButton: React.FC<BackButtonProps> = ({
   onClick,
   disabled = false,
-  children = 'Назад'
+  children = 'Назад',
+  ...props
 }) => {
   return (
-    <StyledBackButton onClick={onClick} disabled={disabled}>
+    <StyledBackButton onClick={onClick} disabled={disabled} {...props }>
       <ArrowLeft size={16} />
       {children}
     </StyledBackButton>

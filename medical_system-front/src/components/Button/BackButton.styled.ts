@@ -2,7 +2,6 @@ import styled from 'styled-components'
 import colors from 'consts/colors'
 
 export const StyledBackButton = styled.button`
-  position: absolute;
   top: 16px;
   left: 16px;
   background: none;
@@ -16,7 +15,7 @@ export const StyledBackButton = styled.button`
   transition: color 0.2s;
 
   &:hover:not(:disabled) {
-    color: ${colors.mainColor};
+    color: #444444;
   }
 
   &:disabled {
