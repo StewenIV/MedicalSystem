@@ -19,6 +19,7 @@ const PublicRoutes: React.FC = () => {
       <Route path={paths.auth} element={<AuthPage />} />
       <Route path={paths.registration} element={<RegistrationPage />} />
       <Route path={paths.resetPassword} element={<ResetPasswordPage />} />
+      {/* Временно добавлен для работы над дизайном */}
       <Route path={paths.home} element={<HomePage />} />
       <Route
         path="*"
