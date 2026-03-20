@@ -3,7 +3,7 @@ const colors: { [k: string]: string } = {
   buttonHover: '#0d47c1',
   mainColor: '#155dfc',
   colorError: '#ef4444',
-  mainColorText: '',
+  mainColorText: '#141a27',
   secondColorText: '#666',
   colorTextForm: '#374151'
 }

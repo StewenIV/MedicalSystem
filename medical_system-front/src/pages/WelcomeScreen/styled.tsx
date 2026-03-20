@@ -1,5 +1,6 @@
 import colors from 'consts/colors'
 import { styled } from 'styled-components'
+import { AppButton } from 'components/Button'
 
 export const WelcomeScreenContainer = styled.div`
   min-height: 100vh;
@@ -56,18 +57,12 @@ export const Buttons = styled.div`
   flex-wrap: wrap;
 `
 
-export const PrimaryButton = styled.button`
+export const PrimaryButton = styled(AppButton)`
   padding: 16px 32px;
-  background: ${colors.button};
-  color: white;
   border-radius: 12px;
-  border: none;
-  display: flex;
-  align-items: center;
   font-weight: 600;
   gap: 10px;
   font-size: 18px;
-  cursor: pointer;
   transition:
     transform 0.2s,
     background 0.2s;
@@ -77,7 +72,6 @@ export const PrimaryButton = styled.button`
     transform: scale(1.05);
   }
 `
-
 
 export const SecondaryButton = styled.button`
   padding: 16px 32px;
@@ -102,25 +96,25 @@ export const SecondaryButton = styled.button`
 `
 
 export const SectionTitle = styled.h3`
-    text-align: center;
-    font-size: 32px;
-    margin-bottom: 40px;
-    color: ${colors.mainColorText};
+  text-align: center;
+  font-size: 32px;
+  margin-bottom: 40px;
+  color: ${colors.mainColorText};
 `
 
 export const BenefitGrid = styled.div`
-    max-width: 1200px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
 `
 
 export const Card = styled.div`
-    background: white;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 `
 
 export const CardIcon = styled.div<{ color?: string }>`
@@ -137,27 +131,26 @@ export const CardIcon = styled.div<{ color?: string }>`
 `
 
 export const CardTitle = styled.h4`
-    font-size: 20px;
-    margin-bottom: 12px;
-    color: ${colors.mainColorText};
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: ${colors.mainColorText};
 `
 
 export const List = styled.ul`
-    list-style: none;
-    padding: 0;
-    margin: 0;
-
+  list-style: none;
+  padding: 0;
+  margin: 0;
 `
 
 export const ListItem = styled.li`
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    margin-bottom: 8px;
-    color: ${colors.secondColorText};
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: ${colors.secondColorText};
 
-    svg {
-        color: #16a34a;
-        margin-top: 2px;
-    }
+  svg {
+    color: #16a34a;
+    margin-top: 2px;
+  }
 `

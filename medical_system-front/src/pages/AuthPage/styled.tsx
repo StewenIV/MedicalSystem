@@ -1,6 +1,7 @@
 import styled from 'styled-components'
 
 import colors from 'consts/colors'
+import { AppButton } from 'components/Button'
 
 export const PageWrapper = styled.div`
   min-height: 100vh;
@@ -109,17 +110,8 @@ export const CheckboxRow = styled.div`
   }
 `
 
-export const SubmitButton = styled.button`
+export const SubmitButton = styled(AppButton)`
   padding: 12px;
-  background: ${colors.button};
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-
-  &:hover {
-    background: ${colors.buttonHover};
-  }
 `
 export const Divider = styled.div`
   display: flex;
@@ -174,6 +166,9 @@ export const RegisterBlock = styled.div`
   }
 
   button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
     background: none;
     border: none;
     color: ${colors.button};

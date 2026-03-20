@@ -1,6 +1,7 @@
 import styled from 'styled-components'
 import colors from 'consts/colors'
 import Input from 'components/Input'
+import { AppButton } from 'components/Button'
 
 export const RegistrationPageContainer = styled.div`
   min-height: 100vh;
@@ -79,23 +80,14 @@ export const RegistrationInput = styled(Input)`
   background-color: #f9fafb;
 `
 
-export const SubmitButton = styled.button`
+export const SubmitButton = styled(AppButton)`
   padding: 12px;
-  background: ${colors.button};
-  color: #fff;
-  border: none;
   margin-top: 8px;
-  border-radius: 8px;
-  cursor: pointer;
   font-size: 16px;
   font-weight: 500;
   transition:
     background-color 0.2s,
     color 0.2s;
-
-  &:hover {
-    background: ${colors.buttonHover};
-  }
 
   &:focus {
     outline: none;

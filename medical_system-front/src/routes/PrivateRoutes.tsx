@@ -13,6 +13,7 @@ import { useAppDispatch } from 'store'
 import { useSelector } from 'react-redux'
 
 const HomePage = lazy(() => import('pages/HomePage/index'))
+const TemperaturePage = lazy(() => import('pages/TemperatureSheet/index'))
 
 const PrivateRoutes: React.FC = () => {
   const location = useLocation()
@@ -40,13 +41,9 @@ const PrivateRoutes: React.FC = () => {
   const convertUserRole = (
     role: string | null
   ):
-    | 'admin'
-    | 'chief-doctor'
     | 'doctor'
-    | 'head-nurse'
     | 'nurse'
     | 'patient'
-    | 'laboratory'
     | null => {
     if (!role) return null
     return role.replace(/_/g, '-') as any
@@ -64,6 +61,7 @@ const PrivateRoutes: React.FC = () => {
           />
         }
       />
+      <Route path={paths.temperatureSheet} element={<TemperaturePage  onNavigate = {(screen) => {}} onLogout = {() => {}} userRole = {'nurse'} />} />
       <Route
         path="*"
         element={

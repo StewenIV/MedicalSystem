@@ -5,7 +5,8 @@ export const pathsPublic: { [k: string]: string } = {
   registration: '/registration',
   welcome: '/welcome',
   resetPassword: '/reset-password',
-  home: '/home'
+  home: '/home',
+  temperatureSheet: '/temperature-sheet'
 }
 
 export const pathsPrivate: { [k: string]: string } = {}

@@ -28,7 +28,7 @@ export interface Appointment {
   patientName: string
   time: string
   reason: string
-  status: 'waiting' | 'in-progress' | 'completed' | 'free'
+  status: 'Ожидается' | 'На приеме' | 'Завершено' | 'Свободно'
   type: 'primary' | 'followup' | 'preventive'
 }
 
@@ -252,7 +252,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: 'Петров Иван Сергеевич',
     time: '09:00',
     reason: 'Контрольный осмотр',
-    status: 'completed',
+    status: 'Ожидается',
     type: 'followup'
   },
   {
@@ -261,7 +261,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: 'Иванова Мария Александровна',
     time: '09:30',
     reason: 'Консультация по результатам анализов',
-    status: 'in-progress',
+    status: 'На приеме',
     type: 'followup'
   },
   {
@@ -270,7 +270,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: '',
     time: '10:00',
     reason: '',
-    status: 'free',
+    status: 'Свободно',
     type: 'primary'
   },
   {
@@ -279,7 +279,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: 'Смирнов Алексей Дмитриевич',
     time: '10:30',
     reason: 'Первичный прием',
-    status: 'waiting',
+    status: 'Ожидается',
     type: 'primary'
   },
   {
@@ -288,7 +288,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: '',
     time: '11:00',
     reason: '',
-    status: 'free',
+    status: 'Свободно',
     type: 'primary'
   },
   {
@@ -297,7 +297,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: '',
     time: '11:30',
     reason: '',
-    status: 'free',
+    status: 'Свободно',
     type: 'primary'
   },
   {
@@ -306,7 +306,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: '',
     time: '12:00',
     reason: '',
-    status: 'free',
+    status: 'Свободно',
     type: 'primary'
   },
   {
@@ -315,7 +315,7 @@ export const mockTodayAppointments: Appointment[] = [
     patientName: '',
     time: '12:30',
     reason: '',
-    status: 'free',
+    status: 'Свободно',
     type: 'primary'
   }
 ]

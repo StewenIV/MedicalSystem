@@ -1,5 +1,6 @@
 import { styled } from 'styled-components'
 import colors from 'consts/colors'
+import { AppButton } from 'components/Button'
 
 export const Container = styled.div`
   min-height: 100vh;
@@ -96,20 +97,13 @@ export const InputGroup = styled.div`
   }
 `
 
-export const Button = styled.button`
+export const Button = styled(AppButton)`
   width: 100%;
   padding: 14px;
   border-radius: 12px;
-  background: ${colors.button};
-  color: white;
-  border: none;
   font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
   transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 8px;
   margin-bottom: 12px;
 
@@ -318,17 +312,16 @@ export const InfoBox = styled.div`
   align-items: flex-start; /* Иконка всегда вверху слева */
   gap: 12px;
 
-
   svg {
     color: #3b82f6;
     flex-shrink: 0;
-    margin-top: 3px; 
+    margin-top: 3px;
   }
 
   div {
     display: flex;
     flex-direction: column;
-    align-items: flex-start; 
+    align-items: flex-start;
     font-size: 14px;
     line-height: 1.5;
 
@@ -352,8 +345,8 @@ export const InfoBox = styled.div`
 
     ul {
       margin: 8px 0 0;
-      padding: 0 0 0 18px; 
-      list-style-type: disc; 
+      padding: 0 0 0 18px;
+      list-style-type: disc;
       color: #1e3a8a;
       display: flex;
       align-items: flex-start;
@@ -362,9 +355,9 @@ export const InfoBox = styled.div`
       li {
         margin: 4px 0;
         padding-left: 4px;
-        
+
         &::marker {
-          color: #3b82f6; 
+          color: #3b82f6;
         }
       }
     }
