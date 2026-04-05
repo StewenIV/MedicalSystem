@@ -35,7 +35,8 @@ export interface Appointment {
 export interface VitalSign {
   id: string
   date: string
-  bloodPressure: string
+  bloodPressureSystolic: number
+  bloodPressureDiastolic: number
   temperature: number
   pulse: number
   spo2: number
@@ -125,7 +126,8 @@ export const mockPatients: Patient[] = [
       {
         id: 'VS001',
         date: '2026-01-19',
-        bloodPressure: '135/85',
+        bloodPressureSystolic: 135,
+        bloodPressureDiastolic: 85,
         temperature: 36.6,
         pulse: 78,
         spo2: 98
@@ -133,7 +135,8 @@ export const mockPatients: Patient[] = [
       {
         id: 'VS002',
         date: '2026-01-12',
-        bloodPressure: '130/82',
+        bloodPressureSystolic: 130,
+        bloodPressureDiastolic: 82,
         temperature: 36.7,
         pulse: 75,
         spo2: 99
@@ -182,7 +185,8 @@ export const mockPatients: Patient[] = [
       {
         id: 'VS003',
         date: '2026-01-18',
-        bloodPressure: '120/75',
+        bloodPressureSystolic: 120,
+        bloodPressureDiastolic: 75,
         temperature: 36.5,
         pulse: 72,
         spo2: 97
@@ -223,7 +227,8 @@ export const mockPatients: Patient[] = [
       {
         id: 'VS004',
         date: '2026-01-19',
-        bloodPressure: '140/90',
+        bloodPressureSystolic: 140,
+        bloodPressureDiastolic: 90,
         temperature: 36.8,
         pulse: 82,
         spo2: 96
@@ -319,6 +324,99 @@ export const mockTodayAppointments: Appointment[] = [
     type: 'primary'
   }
 ]
+
+
+export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
+  'P001': [{
+    id: 'VS001',
+    date: '2026-01-19',
+    bloodPressureSystolic: 155,
+    bloodPressureDiastolic: 85,
+    temperature: 36.6,
+    pulse: 78,
+    spo2: 98
+  }, 
+{
+    id: 'VS002',
+    date: '2026-01-20',
+    bloodPressureSystolic: 150,
+    bloodPressureDiastolic: 75,
+    temperature: 40.7,
+    pulse: 72,
+    spo2: 97
+  },
+  {
+    id: 'VS003',
+    date: '2026-01-21',
+    bloodPressureSystolic: 130,
+    bloodPressureDiastolic: 82,
+    temperature: 38.7,
+    pulse: 75,
+    spo2: 99
+  }
+],
+  'P002': [
+    {
+      id: 'VS004',
+      date: '2026-01-18',
+      bloodPressureSystolic: 120,
+      bloodPressureDiastolic: 75,
+      temperature: 36.5,
+      pulse: 72,
+      spo2: 97
+    },
+    {
+      id: 'VS005',
+      date: '2026-01-19',
+      bloodPressureSystolic: 118,
+      bloodPressureDiastolic: 74,
+      temperature: 36.6,
+      pulse: 70,
+      spo2: 98
+    }
+  ],
+  'P003': [
+    {
+      id: 'VS006',
+      date: '2026-01-19',
+      bloodPressureSystolic: 140,
+      bloodPressureDiastolic: 90,
+      temperature: 36.8,
+      pulse: 82,
+      spo2: 96
+    },
+    {
+      id: 'VS007',
+      date: '2026-01-20',
+      bloodPressureSystolic: 138,
+      bloodPressureDiastolic: 88,
+      temperature: 36.7,
+      pulse: 80,
+      spo2: 97
+    }
+  ],
+  'P004': [
+    {
+      id: 'VS008',
+      date: '2026-01-20',
+      bloodPressureSystolic: 125,
+      bloodPressureDiastolic: 80,
+      temperature: 36.7,
+      pulse: 76,
+      spo2: 99
+    },
+    {
+      id: 'VS009',
+      date: '2026-01-21',
+      bloodPressureSystolic: 122,
+      bloodPressureDiastolic: 78,
+      temperature: 36.6,
+      pulse: 74,
+      spo2: 98
+    }
+  ]
+}
+
 
 // Mock hospital beds
 export const mockHospitalBeds: HospitalBed[] = [

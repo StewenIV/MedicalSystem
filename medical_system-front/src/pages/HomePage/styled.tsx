@@ -51,7 +51,7 @@ export const SidebarNav = styled.nav`
 
 export const Main = styled.main`
   flex: 1;
-  padding: 24px;
+  padding: 2px 24px;
 `
 
 export const LogoBox = styled.div`

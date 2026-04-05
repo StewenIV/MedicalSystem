@@ -4,7 +4,7 @@ import { AppButton } from 'components/Button'
 
 
 export const Content = styled.div`
-  padding: 24px;
+  padding: 1px;
 `
 
 export const TwoColumnGrid = styled.div`
