@@ -28,21 +28,61 @@ export const Card = styled.div`
 `
 
 export const CardHeader = styled.div`
-  padding: 16px;
-  border-bottom: 1px solid #e5e7eb;
+  padding: 18px 20px 16px;
+  border-bottom: 1px solid #eef2f7;
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+  border-radius: 12px 12px 0 0;
+  position: relative;
+
+  /* Акцентная полоска слева */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 14px;
+    bottom: 14px;
+    width: 3px;
+    background: linear-gradient(180deg, #155dfc 0%, #6b9eff 100%);
+    border-radius: 0 2px 2px 0;
+  }
 `
 
 export const CardTitle = styled.h3`
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  padding-left: 4px;
+  font-size: 22px;
+  font-weight: 700;
   color: ${colors.mainColorText};
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+
+  /* Лёгкий градиент на тексте */
+  background: linear-gradient(135deg, #141a27 0%, #2d4a8a 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 `
 
-export const CardSubtitle = styled.p`\
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: ${colors.colorTextForm};
+export const CardSubtitle = styled.p`
+  margin: 5px 0 0;
+  padding-left: 4px;
+  font-size: 14px;
+  color: #8898aa;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+  line-height: 1.5;
+
+  /* Маленький разделитель перед подзаголовком */
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 1px;
+    background: #c7d8ff;
+    vertical-align: middle;
+    margin-right: 6px;
+    margin-bottom: 2px;
+  }
 `
 
 export const CardBody = styled.div<{ $noPadding?: boolean }>`

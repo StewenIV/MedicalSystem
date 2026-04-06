@@ -326,6 +326,39 @@ export const mockTodayAppointments: Appointment[] = [
 ]
 
 
+export const mockReferenceVitalSings: Record<string, VitalSign[]> ={
+  'Good': [
+    {
+      id: 'RV001',
+      date: '2026-01-01',
+      bloodPressureSystolic: 120,
+      bloodPressureDiastolic: 80,
+      temperature: 36.7,
+      pulse: 70,
+      spo2: 98
+    },
+    {
+      id: 'RV002',
+      date: '2026-02-01',
+      bloodPressureSystolic: 125,
+      bloodPressureDiastolic: 75,
+      temperature: 36.8,
+      pulse: 75,
+      spo2: 99
+    },
+    {
+      id: 'RV003',
+      date: '2026-03-01',
+      bloodPressureSystolic: 115,
+      bloodPressureDiastolic: 85,
+      temperature: 36.9,
+      pulse: 72,
+      spo2: 100
+    }
+  ]
+}
+
+
 export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
   'P001': [{
     id: 'VS001',
@@ -348,11 +381,30 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
   {
     id: 'VS003',
     date: '2026-01-21',
-    bloodPressureSystolic: 130,
-    bloodPressureDiastolic: 82,
+    bloodPressureSystolic: 156,
+    bloodPressureDiastolic: 22,
     temperature: 38.7,
-    pulse: 75,
+    pulse: 20,
     spo2: 99
+  }, 
+  {
+    id: 'VS004',
+    date: '2026-01-22',
+    bloodPressureSystolic: 158,
+    bloodPressureDiastolic: 78,
+    temperature: 39.2,
+    pulse: 80,
+    spo2: 50
+  },
+  {
+    id: 'VS005',
+    date: '2026-01-23',
+    bloodPressureSystolic: 159,
+    bloodPressureDiastolic: 79,
+    temperature: 37.3,
+    pulse: 150,
+    spo2: 90
+
   }
 ],
   'P002': [
