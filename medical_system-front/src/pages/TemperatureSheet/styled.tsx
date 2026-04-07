@@ -1,10 +1,183 @@
-import styled from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
 import colors from 'consts/colors'
 import { AppButton } from 'components/Button'
 
+const FONT_STACK = `
+  'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont,
+  'Segoe UI', system-ui, sans-serif
+`
+
+const GRADIENT_TITLE   = 'linear-gradient(135deg, #0f172a 0%, #1e40af 55%, #3b82f6 100%)'
+const GRADIENT_ACCENT  = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
+const GRADIENT_SHIMMER = 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)'
+
+
+const shimmer = keyframes`
+  0%   { background-position: -200% center }
+  100% { background-position:  200% center }
+`
+
+const subtleFadeUp = keyframes`
+  from { opacity: 0; transform: translateY(6px) }
+  to   { opacity: 1; transform: translateY(0)   }
+`
+
+const gradientText = (gradient: string) => css`
+  background: ${gradient};
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+`
 
 export const Content = styled.div`
   padding: 1px;
+  font-family: ${FONT_STACK};
+`
+
+export const Container = styled.div`
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: ${subtleFadeUp} 0.35s ease both;
+`
+
+export const StyledCard = styled.div`
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(191, 219, 254, 0.7);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.06),
+    0 20px 40px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease, transform 0.2s ease;
+
+  &:hover {
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.06),
+      0 8px 24px rgba(37, 99, 235, 0.08),
+      0 24px 48px rgba(15, 23, 42, 0.07);
+    transform: translateY(-1px);
+  }
+`
+
+export const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px;
+`
+
+export const HeaderLeft = styled.div`
+  display: flex;
+  align-items: start;
+  gap: 12px;
+`
+
+export const Title = styled.h2`
+  font-family: ${FONT_STACK};
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+
+  ${gradientText(`
+    linear-gradient(
+      135deg,
+      #0f172a  0%,
+      #1d4ed8 45%,
+      #6d28d9 75%,
+      #2563eb 100%
+    )
+  `)}
+
+  filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
+
+  transition: filter 0.25s ease, letter-spacing 0.25s ease;
+
+  &:hover {
+    filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
+    letter-spacing: -0.035em;
+  }
+`
+
+export const CardContent = styled.div`
+  padding: 24px;
+`
+
+export const InfoGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+`
+
+export const InfoItem = styled.div`
+  display: flex;
+  align-items: start;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`
+
+export const InfoText = styled.div``
+
+
+export const InfoLabel = styled.div`
+  font-family: ${FONT_STACK};
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+  transition: color 0.2s ease;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 1px;
+    background: linear-gradient(90deg, #bfdbfe, transparent);
+    vertical-align: middle;
+    margin-right: 6px;
+    margin-bottom: 1px;
+    opacity: 0.8;
+    transition: width 0.2s ease;
+  }
+
+  ${InfoItem}:hover & {
+    color: #64748b;
+    &::before { width: 14px; }
+  }
+`
+
+
+export const InfoValue = styled.div`
+  font-family: ${FONT_STACK};
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  transition: color 0.2s ease, letter-spacing 0.2s ease;
+
+
+  font-variant-numeric: tabular-nums;
+
+  ${InfoItem}:hover & {
+    color: #1e40af;
+    letter-spacing: -0.02em;
+  }
 `
 
 export const TwoColumnGrid = styled.div`
@@ -20,68 +193,120 @@ export const TwoColumnGrid = styled.div`
 export const Card = styled.div`
   background: #ffffff;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.05);
   overflow: hidden;
   margin-top: 16px;
   max-width: 800px;
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow:
+      0 2px 4px rgba(15, 23, 42, 0.06),
+      0 8px 20px rgba(37, 99, 235, 0.07);
+  }
 `
 
+
 export const CardHeader = styled.div`
-  padding: 18px 20px 16px;
-  border-bottom: 1px solid #eef2f7;
-  background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(238, 242, 247, 0.9);
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
   border-radius: 12px 12px 0 0;
   position: relative;
+  overflow: hidden;
 
-  /* Акцентная полоска слева */
   &::before {
     content: '';
     position: absolute;
     left: 0;
-    top: 14px;
-    bottom: 14px;
+    top: 12px;
+    bottom: 12px;
     width: 3px;
-    background: linear-gradient(180deg, #155dfc 0%, #6b9eff 100%);
-    border-radius: 0 2px 2px 0;
+    background: ${GRADIENT_ACCENT};
+    border-radius: 0 3px 3px 0;
+    box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
+    transition: box-shadow 0.25s ease, width 0.2s ease;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: ${GRADIENT_SHIMMER};
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    width: 4px;
+    box-shadow: 2px 0 14px rgba(37, 99, 235, 0.35);
+  }
+
+  &:hover::after {
+    opacity: 1;
+    animation: ${shimmer} 1.4s ease infinite;
   }
 `
 
-export const CardTitle = styled.h3`
-  margin: 0;
-  padding-left: 4px;
-  font-size: 22px;
-  font-weight: 700;
-  color: ${colors.mainColorText};
-  letter-spacing: -0.03em;
-  line-height: 1.25;
 
-  /* Лёгкий градиент на тексте */
-  background: linear-gradient(135deg, #141a27 0%, #2d4a8a 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+export const CardTitle = styled.h3`
+  font-family: ${FONT_STACK};
+  margin: 0;
+  padding-left: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+
+  ${gradientText(GRADIENT_TITLE)}
+
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.08));
+
+  transition: filter 0.25s ease, letter-spacing 0.25s ease;
+
+  ${CardHeader}:hover & {
+    filter: drop-shadow(0 2px 6px rgba(37, 99, 235, 0.2));
+    letter-spacing: -0.03em;
+  }
 `
 
 export const CardSubtitle = styled.p`
-  margin: 5px 0 0;
-  padding-left: 4px;
-  font-size: 14px;
-  color: #8898aa;
-  letter-spacing: 0.02em;
+  font-family: ${FONT_STACK};
+  margin: 6px 0 0;
+  padding-left: 10px;
+  font-size: 13px;
   font-weight: 400;
-  line-height: 1.5;
+  color: #94a3b8;
+  letter-spacing: 0.015em;
+  line-height: 1.55;
+  transition: color 0.2s ease;
 
-  /* Маленький разделитель перед подзаголовком */
   &::before {
     content: '';
     display: inline-block;
-    width: 16px;
-    height: 1px;
-    background: #c7d8ff;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #93c5fd, #818cf8);
     vertical-align: middle;
-    margin-right: 6px;
+    margin-right: 8px;
     margin-bottom: 2px;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  ${CardHeader}:hover & {
+    color: #64748b;
+
+    &::before {
+      opacity: 1;
+      transform: scale(1.3);
+    }
   }
 `
 
@@ -93,21 +318,38 @@ export const CardBody = styled.div<{ $noPadding?: boolean }>`
 `
 
 export const FieldLabel = styled.label`
+  font-family: ${FONT_STACK};
   display: block;
-  font-size: 14px;
-  font-weight: 500;
-  color: ${colors.colorTextForm};
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin-bottom: 6px;
+  transition: color 0.2s ease;
 `
 
 export const FieldLabelIcon = styled.label`
+  font-family: ${FONT_STACK};
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  color: ${colors.colorTextForm};
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   margin-bottom: 6px;
+  transition: color 0.2s ease;
+
+  svg {
+    transition: transform 0.2s ease;
+  }
+
+  &:hover {
+    color: #475569;
+    svg { transform: scale(1.1); }
+  }
 `
 
 export const BpGrid = styled.div`
@@ -115,6 +357,7 @@ export const BpGrid = styled.div`
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 `
+
 
 export const OpenSheetBtn = styled(AppButton)`
   width: 100%;

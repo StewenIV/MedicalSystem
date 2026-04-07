@@ -9,7 +9,12 @@ import {
   AlertTriangle,
   TrendingUp,
   TrendingDown,
-  Minus
+  Minus,
+  Thermometer as ThermometerIcon,
+  FileText,
+  User,
+  Home,
+  Calendar
 } from 'lucide-react';
 
 import {
@@ -45,7 +50,18 @@ import {
   FieldLabelIcon,
   BpGrid,
   OpenSheetBtn,
-  SaveBtn
+  SaveBtn,
+  Container,
+  StyledCard,
+  HeaderRow,
+  HeaderLeft,
+  Title,
+  CardContent,
+  InfoGrid,
+  InfoItem,
+  InfoText,
+  InfoLabel,
+  InfoValue
 } from './styled';
 
 import Input from 'components/Input/index';
@@ -355,6 +371,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
     useState<Record<string, VitalSign[]>>(mockPathientVitalSigns);
   const [referenceVitals, setReferenceVitals] =
     useState<Record<string, VitalSign[]>>(mockReferenceVitalSings);
+  const [hospitalBeds, setHospitalBeds] = useState(mockHospitalBeds);
   const [selectedPatientId, setSelectedPatientId] = useState<string>('');
   const [showTemperatureSheet, setShowTemperatureSheet] = useState(true);
   const [vitalSigns, setVitalSigns] = useState({
@@ -435,6 +452,28 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
     }
   }
 
+  const getMounthsFromVitals = (vitals: Record<string, VitalSign[]>): string[] => {
+    if (!selectedPatientId || !vitals[selectedPatientId]) {
+    return [];
+  }
+    const monthsSet = new Set<string>();
+
+    const monthFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long' });
+
+    vitals[selectedPatientId].forEach((vital) => {
+      if (vital.date) {
+        const date = new Date(vital.date);
+        if (!isNaN(date.getTime())) {
+          const monthName = monthFormatter.format(date);
+          const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+          monthsSet.add(capitalizedMonth);
+        }
+      }
+    });
+
+    return Array.from(monthsSet);
+  };
+
   const getTrend = (field: keyof Omit<VitalSign, 'id' | 'date'>): TrendDir => {
     if (!latestVitals || !previousVitals) return 'stable';
     const diff = (latestVitals[field] as number) - (previousVitals[field] as number);
@@ -505,12 +544,72 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
 
   return (
     <Content>
+      <Container>
+        <StyledCard>
+          <CardHeader>
+            <HeaderRow>
+              <HeaderLeft>
+                <Thermometer size={32} />
+                <Title>Температурный лист</Title>
+              </HeaderLeft>
+            </HeaderRow>
+          </CardHeader>
+
+          <CardContent>
+            <InfoGrid>
+              <InfoItem>
+                <FileText size={20} color="#2563eb" />
+                <InfoText>
+                  <InfoLabel>Номер карты</InfoLabel>
+                  <InfoValue>
+                    {hospitalBeds.find((bed) => bed.patientId === selectedPatientId)?.id}
+                  </InfoValue>
+                </InfoText>
+              </InfoItem>
+
+              <InfoItem>
+                <User size={20} color="#2563eb" />
+                <InfoText>
+                  <InfoLabel>Пациент</InfoLabel>
+                  <InfoValue>
+                    {hospitalBeds.find((bed) => bed.patientId === selectedPatientId)?.patientName}
+                  </InfoValue>
+                </InfoText>
+              </InfoItem>
+
+              <InfoItem>
+                <Home size={20} color="#2563eb" />
+                <InfoText>
+                  <InfoLabel>Палата</InfoLabel>
+                  <InfoValue>
+                    {hospitalBeds.find((bed) => bed.patientId === selectedPatientId)?.roomNumber}
+                  </InfoValue>
+                </InfoText>
+              </InfoItem>
+
+              <InfoItem>
+                <Calendar size={20} color="#2563eb" />
+                <InfoText>
+                  <InfoLabel>Месяц</InfoLabel>
+                  <InfoValue>
+                    {(() => {
+                      const months = getMounthsFromVitals(patientsVitals);
+                      return months && months.length > 0 ? months.join(', ') : '';
+                    })()}
+                  </InfoValue>
+                </InfoText>
+              </InfoItem>
+            </InfoGrid>
+          </CardContent>
+        </StyledCard>
+      </Container>
+
       <TwoColumnGrid>
         <div>
           <Card>
             <CardHeader>
-              <CardTitle>Температурный лист</CardTitle>
-              <CardSubtitle>Внесение жизненно важных показателей</CardSubtitle>
+              <CardTitle>Регистрация показателей</CardTitle>
+              <CardSubtitle>Внесение данных осмотра в температурный лист</CardSubtitle>
             </CardHeader>
 
             <CardBody>
@@ -706,8 +805,8 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
         <div>
           <Card>
             <CardHeader>
-              <CardTitle>Температурный лист</CardTitle>
-              <CardSubtitle>График изменения температуры и других показателей</CardSubtitle>
+              <CardTitle>Динамика состояния</CardTitle>
+              <CardSubtitle>График изменения температуры и жизненно важных функций</CardSubtitle>
             </CardHeader>
 
             <CardBody $noPadding>
@@ -959,6 +1058,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                     fill="#ff0026"
                     barSize={14}
                     radius={[4, 4, 4, 4]}
+                    legendType="none"
                   />
 
                   <Bar

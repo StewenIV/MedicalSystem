@@ -1,105 +1,104 @@
-
 export interface Patient {
-  id: string
-  firstName: string
-  lastName: string
-  middleName: string
-  dateOfBirth: string
-  age: number
-  phone: string
-  email: string
-  address: string
+  id: string;
+  firstName: string;
+  lastName: string;
+  middleName: string;
+  dateOfBirth: string;
+  age: number;
+  phone: string;
+  email: string;
+  address: string;
   emergencyContact: {
-    name: string
-    phone: string
-    relation: string
-  }
-  allergies: string[]
-  diagnoses: string[]
-  activeAppointments: Appointment[]
-  vitalSigns: VitalSign[]
-  prescriptions: Prescription[]
-  documents: Document[]
+    name: string;
+    phone: string;
+    relation: string;
+  };
+  allergies: string[];
+  diagnoses: string[];
+  activeAppointments: Appointment[];
+  vitalSigns: VitalSign[];
+  prescriptions: Prescription[];
+  documents: Document[];
 }
 
 export interface Appointment {
-  id: string
-  patientId: string
-  patientName: string
-  time: string
-  reason: string
-  status: 'Ожидается' | 'На приеме' | 'Завершено' | 'Свободно'
-  type: 'primary' | 'followup' | 'preventive'
+  id: string;
+  patientId: string;
+  patientName: string;
+  time: string;
+  reason: string;
+  status: 'Ожидается' | 'На приеме' | 'Завершено' | 'Свободно';
+  type: 'primary' | 'followup' | 'preventive';
 }
 
 export interface VitalSign {
-  id: string
-  date: string
-  bloodPressureSystolic: number
-  bloodPressureDiastolic: number
-  temperature: number
-  pulse: number
-  spo2: number
+  id: string;
+  date: string;
+  bloodPressureSystolic: number;
+  bloodPressureDiastolic: number;
+  temperature: number;
+  pulse: number;
+  spo2: number;
 }
 
 export interface Prescription {
-  id: string
-  medication: string
-  dosage: string
-  frequency: string
-  startDate: string
-  endDate: string
-  status: 'active' | 'completed'
+  id: string;
+  medication: string;
+  dosage: string;
+  frequency: string;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'completed';
 }
 
 export interface Document {
-  id: string
-  title: string
-  type: string
-  date: string
-  url: string
+  id: string;
+  title: string;
+  type: string;
+  date: string;
+  url: string;
 }
 
 export interface HospitalBed {
-  id: string
-  roomNumber: string
-  bedNumber: number
-  patientId?: string
-  patientName?: string
-  patientAge?: number
-  diagnosis?: string
-  status: 'stable' | 'attention' | 'urgent' | 'free'
+  id: string;
+  roomNumber: string;
+  bedNumber: number;
+  patientId?: string;
+  patientName?: string;
+  patientAge?: number;
+  diagnosis?: string;
+  status: 'stable' | 'attention' | 'urgent' | 'free';
 }
 
 export interface Treatment {
-  id: string
-  name: string
-  time: string
-  status: 'pending' | 'completed'
+  id: string;
+  name: string;
+  time: string;
+  status: 'pending' | 'completed';
 }
 
 export interface Facility {
-  id: string
-  name: string
-  type: string
-  city: string
-  departments: Department[]
+  id: string;
+  name: string;
+  type: string;
+  city: string;
+  departments: Department[];
 }
 
 export interface Department {
-  id: string
-  name: string
-  facilityId: string
+  id: string;
+  name: string;
+  facilityId: string;
 }
 
 export interface Staff {
-  id: string
-  firstName: string
-  lastName: string
-  position: string
-  department: string
-  login: string
-  status: 'active' | 'inactive'
+  id: string;
+  firstName: string;
+  lastName: string;
+  position: string;
+  department: string;
+  login: string;
+  status: 'active' | 'inactive';
 }
 
 // Mock patients
@@ -247,7 +246,7 @@ export const mockPatients: Patient[] = [
     ],
     documents: []
   }
-]
+];
 
 // Mock appointments for today
 export const mockTodayAppointments: Appointment[] = [
@@ -323,11 +322,10 @@ export const mockTodayAppointments: Appointment[] = [
     status: 'Свободно',
     type: 'primary'
   }
-]
+];
 
-
-export const mockReferenceVitalSings: Record<string, VitalSign[]> ={
-  'Good': [
+export const mockReferenceVitalSings: Record<string, VitalSign[]> = {
+  Good: [
     {
       id: 'RV001',
       date: '2026-01-01',
@@ -356,58 +354,57 @@ export const mockReferenceVitalSings: Record<string, VitalSign[]> ={
       spo2: 100
     }
   ]
-}
-
+};
 
 export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
-  'P001': [{
-    id: 'VS001',
-    date: '2026-01-19',
-    bloodPressureSystolic: 155,
-    bloodPressureDiastolic: 85,
-    temperature: 36.6,
-    pulse: 78,
-    spo2: 98
-  }, 
-{
-    id: 'VS002',
-    date: '2026-01-20',
-    bloodPressureSystolic: 150,
-    bloodPressureDiastolic: 75,
-    temperature: 40.7,
-    pulse: 72,
-    spo2: 97
-  },
-  {
-    id: 'VS003',
-    date: '2026-01-21',
-    bloodPressureSystolic: 156,
-    bloodPressureDiastolic: 22,
-    temperature: 38.7,
-    pulse: 20,
-    spo2: 99
-  }, 
-  {
-    id: 'VS004',
-    date: '2026-01-22',
-    bloodPressureSystolic: 158,
-    bloodPressureDiastolic: 78,
-    temperature: 39.2,
-    pulse: 80,
-    spo2: 50
-  },
-  {
-    id: 'VS005',
-    date: '2026-01-23',
-    bloodPressureSystolic: 159,
-    bloodPressureDiastolic: 79,
-    temperature: 37.3,
-    pulse: 150,
-    spo2: 90
-
-  }
-],
-  'P002': [
+  P001: [
+    {
+      id: 'VS001',
+      date: '2026-01-19',
+      bloodPressureSystolic: 155,
+      bloodPressureDiastolic: 85,
+      temperature: 36.6,
+      pulse: 78,
+      spo2: 98
+    },
+    {
+      id: 'VS002',
+      date: '2026-01-20',
+      bloodPressureSystolic: 150,
+      bloodPressureDiastolic: 75,
+      temperature: 40.7,
+      pulse: 72,
+      spo2: 97
+    },
+    {
+      id: 'VS003',
+      date: '2026-01-21',
+      bloodPressureSystolic: 156,
+      bloodPressureDiastolic: 22,
+      temperature: 38.7,
+      pulse: 20,
+      spo2: 99
+    },
+    {
+      id: 'VS004',
+      date: '2026-01-22',
+      bloodPressureSystolic: 158,
+      bloodPressureDiastolic: 78,
+      temperature: 39.2,
+      pulse: 80,
+      spo2: 50
+    },
+    {
+      id: 'VS005',
+      date: '2026-01-23',
+      bloodPressureSystolic: 159,
+      bloodPressureDiastolic: 79,
+      temperature: 37.3,
+      pulse: 150,
+      spo2: 90
+    }
+  ],
+  P002: [
     {
       id: 'VS004',
       date: '2026-01-18',
@@ -427,7 +424,7 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       spo2: 98
     }
   ],
-  'P003': [
+  P003: [
     {
       id: 'VS006',
       date: '2026-01-19',
@@ -439,7 +436,7 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
     },
     {
       id: 'VS007',
-      date: '2026-01-20',
+      date: '2026-02-20',
       bloodPressureSystolic: 138,
       bloodPressureDiastolic: 88,
       temperature: 36.7,
@@ -447,7 +444,7 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       spo2: 97
     }
   ],
-  'P004': [
+  P004: [
     {
       id: 'VS008',
       date: '2026-01-20',
@@ -467,8 +464,7 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       spo2: 98
     }
   ]
-}
-
+};
 
 // Mock hospital beds
 export const mockHospitalBeds: HospitalBed[] = [
@@ -520,7 +516,7 @@ export const mockHospitalBeds: HospitalBed[] = [
     bedNumber: 2,
     status: 'free'
   }
-]
+];
 
 // Mock treatments
 export const mockTreatments: Treatment[] = [
@@ -529,7 +525,7 @@ export const mockTreatments: Treatment[] = [
   { id: 'T003', name: 'Прием метформина', time: '09:00', status: 'pending' },
   { id: 'T004', name: 'Измерение глюкозы', time: '12:00', status: 'pending' },
   { id: 'T005', name: 'Инъекция инсулина', time: '13:00', status: 'pending' }
-]
+];
 
 // Mock facilities
 export const mockFacilities: Facility[] = [
@@ -554,7 +550,7 @@ export const mockFacilities: Facility[] = [
       { id: 'D005', name: 'Неврологическое отделение', facilityId: 'F002' }
     ]
   }
-]
+];
 
 // Mock staff
 export const mockStaff: Staff[] = [
@@ -594,12 +590,12 @@ export const mockStaff: Staff[] = [
     login: 's.morozov',
     status: 'inactive'
   }
-]
+];
 
 export function getPatientById(id: string): Patient | undefined {
-  return mockPatients.find((p) => p.id === id)
+  return mockPatients.find((p) => p.id === id);
 }
 
 export function getPatientFullName(patient: Patient): string {
-  return `${patient.lastName} ${patient.firstName} ${patient.middleName}`
+  return `${patient.lastName} ${patient.firstName} ${patient.middleName}`;
 }
