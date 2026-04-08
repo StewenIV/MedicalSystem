@@ -303,7 +303,7 @@ export const RequirementItem = styled.div<RequirementItemProps>`
 `
 
 export const InfoBox = styled.div`
-  margin: 20px;
+  margin: 12px 0px;
   padding: 16px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
@@ -351,6 +351,7 @@ export const InfoBox = styled.div`
       display: flex;
       align-items: flex-start;
       flex-direction: column;
+      text-align: left;
 
       li {
         margin: 4px 0;
@@ -425,7 +426,7 @@ export const OtpInput = styled.input`
   color: ${colors.mainColorText};
   background: white;
   border: 2px solid #d1d5db;
-  border-radius: 20px;
+  border-radius: 12px;
   outline: none;
   transition: all 0.2s ease;
 

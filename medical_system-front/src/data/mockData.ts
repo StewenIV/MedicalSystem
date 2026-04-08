@@ -39,6 +39,7 @@ export interface VitalSign {
   temperature: number;
   pulse: number;
   spo2: number;
+  respiratoryRate: number;
 }
 
 export interface Prescription {
@@ -129,7 +130,8 @@ export const mockPatients: Patient[] = [
         bloodPressureDiastolic: 85,
         temperature: 36.6,
         pulse: 78,
-        spo2: 98
+        spo2: 98, 
+        respiratoryRate: 16
       },
       {
         id: 'VS002',
@@ -138,7 +140,8 @@ export const mockPatients: Patient[] = [
         bloodPressureDiastolic: 82,
         temperature: 36.7,
         pulse: 75,
-        spo2: 99
+        spo2: 99,
+        respiratoryRate: 18
       }
     ],
     prescriptions: [
@@ -188,7 +191,8 @@ export const mockPatients: Patient[] = [
         bloodPressureDiastolic: 75,
         temperature: 36.5,
         pulse: 72,
-        spo2: 97
+        spo2: 97, 
+        respiratoryRate: 14
       }
     ],
     prescriptions: [
@@ -230,7 +234,8 @@ export const mockPatients: Patient[] = [
         bloodPressureDiastolic: 90,
         temperature: 36.8,
         pulse: 82,
-        spo2: 96
+        spo2: 96,
+        respiratoryRate: 20
       }
     ],
     prescriptions: [
@@ -333,7 +338,8 @@ export const mockReferenceVitalSings: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 80,
       temperature: 36.7,
       pulse: 70,
-      spo2: 98
+      spo2: 98,
+      respiratoryRate: 16
     },
     {
       id: 'RV002',
@@ -342,7 +348,8 @@ export const mockReferenceVitalSings: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 75,
       temperature: 36.8,
       pulse: 75,
-      spo2: 99
+      spo2: 99,
+      respiratoryRate: 18
     },
     {
       id: 'RV003',
@@ -351,7 +358,8 @@ export const mockReferenceVitalSings: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 85,
       temperature: 36.9,
       pulse: 72,
-      spo2: 100
+      spo2: 100,
+      respiratoryRate: 14
     }
   ]
 };
@@ -361,20 +369,22 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
     {
       id: 'VS001',
       date: '2026-01-19',
-      bloodPressureSystolic: 155,
-      bloodPressureDiastolic: 85,
+      bloodPressureSystolic: 129,
+      bloodPressureDiastolic: 65,
       temperature: 36.6,
       pulse: 78,
-      spo2: 98
+      spo2: 98,
+      respiratoryRate: 16
     },
     {
       id: 'VS002',
       date: '2026-01-20',
       bloodPressureSystolic: 150,
-      bloodPressureDiastolic: 75,
+      bloodPressureDiastolic: 59,
       temperature: 40.7,
       pulse: 72,
-      spo2: 97
+      spo2: 97,
+      respiratoryRate: 18
     },
     {
       id: 'VS003',
@@ -383,7 +393,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 22,
       temperature: 38.7,
       pulse: 20,
-      spo2: 99
+      spo2: 99,
+      respiratoryRate: 12
     },
     {
       id: 'VS004',
@@ -392,7 +403,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 78,
       temperature: 39.2,
       pulse: 80,
-      spo2: 50
+      spo2: 50,
+      respiratoryRate: 30
     },
     {
       id: 'VS005',
@@ -401,7 +413,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 79,
       temperature: 37.3,
       pulse: 150,
-      spo2: 90
+      spo2: 90,
+      respiratoryRate: 25
     }
   ],
   P002: [
@@ -412,7 +425,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 75,
       temperature: 36.5,
       pulse: 72,
-      spo2: 97
+      spo2: 97,
+      respiratoryRate: 14
     },
     {
       id: 'VS005',
@@ -421,7 +435,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 74,
       temperature: 36.6,
       pulse: 70,
-      spo2: 98
+      spo2: 98,
+      respiratoryRate: 15
     }
   ],
   P003: [
@@ -432,7 +447,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 90,
       temperature: 36.8,
       pulse: 82,
-      spo2: 96
+      spo2: 96,
+      respiratoryRate: 20
     },
     {
       id: 'VS007',
@@ -441,7 +457,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 88,
       temperature: 36.7,
       pulse: 80,
-      spo2: 97
+      spo2: 97,
+      respiratoryRate: 18
     }
   ],
   P004: [
@@ -452,7 +469,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 80,
       temperature: 36.7,
       pulse: 76,
-      spo2: 99
+      spo2: 99,
+      respiratoryRate: 16
     },
     {
       id: 'VS009',
@@ -461,7 +479,8 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       bloodPressureDiastolic: 78,
       temperature: 36.6,
       pulse: 74,
-      spo2: 98
+      spo2: 98,
+      respiratoryRate: 15
     }
   ]
 };

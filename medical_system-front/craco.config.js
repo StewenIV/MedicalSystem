@@ -14,7 +14,7 @@ module.exports = {
   },
   style: {
     postcss: {
-      plugins: [require('@tailwindcss/postcss'), require('autoprefixer')]
+      plugins: [require('tailwindcss'), require('autoprefixer')]
     }
   },
   webpack: {

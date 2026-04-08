@@ -115,7 +115,9 @@ export const InfoGrid = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(4, 1fr);
+    
   }
+    
 `
 
 export const InfoItem = styled.div`
@@ -145,7 +147,7 @@ export const InfoLabel = styled.div`
   &::before {
     content: '';
     display: inline-block;
-    width: 5px;
+    width: 2px;
     height: 1px;
     background: linear-gradient(90deg, #bfdbfe, transparent);
     vertical-align: middle;
@@ -157,13 +159,19 @@ export const InfoLabel = styled.div`
 
   ${InfoItem}:hover & {
     color: #64748b;
-    &::before { width: 14px; }
+    &::before { width: 5px; }
+  }
+
+  @media (max-width: 768px) {
+    &::before {
+      display: none;
+    }
   }
 `
 
 
-export const InfoValue = styled.div`
-  font-family: ${FONT_STACK};
+export const InfoValue = styled.div`  
+font-family: ${FONT_STACK};
   font-size: 17px;
   font-weight: 700;
   color: #0f172a;
@@ -178,6 +186,24 @@ export const InfoValue = styled.div`
     color: #1e40af;
     letter-spacing: -0.02em;
   }
+
+ &::before {
+    content: '';
+    display: inline-block;
+    width: 2px;
+    height: 1px;
+    background: transparent;
+    vertical-align: middle;
+    margin-right: 6px;
+    margin-bottom: 1px;
+    }
+
+    @media (max-width: 768px) {
+      &::before {
+        display: none;
+      }
+    }
+
 `
 
 export const TwoColumnGrid = styled.div`

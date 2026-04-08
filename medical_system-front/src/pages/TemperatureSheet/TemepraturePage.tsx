@@ -80,7 +80,8 @@ const NORMAL_RANGES: Record<string, { min: number; max: number; label: string; u
   bloodPressureSystolic: { min: 100, max: 130, label: 'АД систолическое', unit: 'мм рт. ст.' },
   bloodPressureDiastolic: { min: 60, max: 90, label: 'АД диастолическое', unit: 'мм рт. ст.' },
   pulse: { min: 65, max: 95, label: 'Пульс', unit: 'уд/мин' },
-  spo2: { min: 95, max: 100, label: 'Сатурация', unit: '%' }
+  spo2: { min: 95, max: 100, label: 'Сатурация', unit: '%' },
+  respiratoryRate: { min: 12, max: 20, label: 'Частота дыхания', unit: 'дых/мин' }
 };
 
 const VITAL_RULES: Record<
@@ -224,19 +225,69 @@ const CustomTempDot = (props: any) => {
   const { cx, cy, payload } = props;
   const abnormal =
     payload.temperature > NORMAL_RANGES.temperature.max ||
-    payload.temperature < NORMAL_RANGES.temperature.min;
+    payload.temperature < NORMAL_RANGES.temperature.min ||
+    payload.spo2 > NORMAL_RANGES.spo2.max ||
+    payload.spo2 < NORMAL_RANGES.spo2.min ||
+    payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
+    payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min;
 
-  return (
-    <g>
-      {abnormal && (
-        <>
-          <circle cx={cx} cy={cy} r={13} fill="#ef4444" fillOpacity={0.12} />
-          <circle cx={cx} cy={cy} r={9} fill="#ef4444" fillOpacity={0.2} />
-        </>
-      )}
-      <circle cx={cx} cy={cy} r={abnormal ? 6 : 4} fill={abnormal ? '#ef4444' : '#f97316'} />
-    </g>
-  );
+  if (props.dataKey === 'temperature') {
+    return (
+      <g>
+        {abnormal && (
+          <>
+            <circle cx={cx} cy={cy} r={13} fill="#ef4444" fillOpacity={0.12} />
+            <circle cx={cx} cy={cy} r={9} fill="#ef4444" fillOpacity={0.2} />
+          </>
+        )}
+        <circle cx={cx} cy={cy} r={abnormal ? 6 : 4} fill={abnormal ? '#ef4444' : '#f97316'} />
+      </g>
+    );
+  }
+
+  if (props.dataKey === 'spo2') {
+    return (
+      <g>
+        {abnormal && (
+          <>
+            <circle cx={cx} cy={cy} r={14} fill="#3b82f6" fillOpacity={0.15} />
+            <circle cx={cx} cy={cy} r={9} fill="#3b82f6" fillOpacity={0.25} />
+          </>
+        )}
+
+        <circle
+          cx={cx}
+          cy={cy}
+          r={abnormal ? 6 : 4}
+          fill={abnormal ? '#1d4ed8' : '#60a5fa'}
+          stroke={abnormal ? '#fff' : 'none'}
+          strokeWidth={2}
+        />
+      </g>
+    );
+  }
+  if (props.dataKey === 'respiratoryRate') {
+    return (
+      <g>
+        {abnormal && (
+          <>
+            <circle cx={cx} cy={cy} r={14} fill="#10b981" fillOpacity={0.15} />
+            <circle cx={cx} cy={cy} r={9} fill="#10b981" fillOpacity={0.25} />
+          </>
+        )}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={abnormal ? 6 : 4}
+          fill={abnormal ? '#059669' : '#34d399'}
+          stroke={abnormal ? '#fff' : 'none'}
+          strokeWidth={2}
+        />
+      </g>
+    );
+  }
+
+  return null;
 };
 
 const CustomTempActiveDot = (props: any) => {
@@ -363,7 +414,8 @@ const TREND_META: {
   { field: 'pulse', label: 'Пульс', goodDir: 'any' },
   { field: 'bloodPressureSystolic', label: 'АД с.', goodDir: 'any' },
   { field: 'bloodPressureDiastolic', label: 'АД д.', goodDir: 'any' },
-  { field: 'spo2', label: 'SpO₂', goodDir: 'up' }
+  { field: 'respiratoryRate', label: 'ЧД', goodDir: 'any' },
+  { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
 ];
 
 const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, userRole }) => {
@@ -384,6 +436,12 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
   });
   const [fieldErrors, setFieldErrors] =
     useState<Record<VitalSignField, string>>(createFieldErrors());
+
+  const spoRespiratoryRate = (patientsVitals[selectedPatientId] || []).map((item) => ({
+    name: item.date,
+    spo2: item.spo2,
+    respiratoryRate: item.respiratoryRate
+  }));
 
   const chartData = (patientsVitals[selectedPatientId] || []).map((item) => {
     const pulseSegments = getPulseSegments(item.pulse);
@@ -425,7 +483,9 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
       bpBase: bpSegments.bpBase,
       bpLow: bpSegments.bpLow,
       bpNormal: bpSegments.bpNormal,
-      bpHigh: bpSegments.bpHigh
+      bpHigh: bpSegments.bpHigh,
+      spo2: item.spo2,
+      respiratoryRate: item.respiratoryRate
     };
   });
 
@@ -440,7 +500,8 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
       { key: 'bloodPressureSystolic', value: latestVitals.bloodPressureSystolic },
       { key: 'bloodPressureDiastolic', value: latestVitals.bloodPressureDiastolic },
       { key: 'pulse', value: latestVitals.pulse },
-      { key: 'spo2', value: latestVitals.spo2 }
+      { key: 'spo2', value: latestVitals.spo2 },
+      { key: 'respiratoryRate', value: latestVitals.respiratoryRate }
     ] as const;
 
     for (const { key, value } of checks) {
@@ -454,8 +515,8 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
 
   const getMounthsFromVitals = (vitals: Record<string, VitalSign[]>): string[] => {
     if (!selectedPatientId || !vitals[selectedPatientId]) {
-    return [];
-  }
+      return [];
+    }
     const monthsSet = new Set<string>();
 
     const monthFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long' });
@@ -613,7 +674,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
             </CardHeader>
 
             <CardBody>
-              {/* Выбор пациента */}
               <div>
                 <FieldLabel htmlFor="patient-select">Пациент</FieldLabel>
                 <Select
@@ -824,6 +884,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                     Динамика:
                   </span>
                   {TREND_META.map(({ field, label, goodDir }) => {
+                    if (field === 'spo2' || field === 'respiratoryRate') return null;
                     const dir = getTrend(field);
                     const currentValue = latestVitals?.[field] as number | undefined;
                     const range = NORMAL_RANGES[field];
@@ -898,7 +959,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                       value: 'Температура, °C',
                       angle: 90,
                       position: 'insideRight',
-                      offset: 0
+                      offset: -10
                     }}
                   />
 
@@ -909,15 +970,91 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                         temperature: number;
                         bloodPressureSystolic: number;
                         bloodPressureDiastolic: number;
+                        pulseRange?: number;
+                        bpNormal?: number;
                       };
-                      if (name === 'Пульс') return [`${row.pulse} уд/мин`, 'Пульс'];
-                      if (name === 'АД (нижн.-верхн.)')
-                        return [
-                          `${row.bloodPressureDiastolic}-${row.bloodPressureSystolic} мм рт. ст.`,
-                          'АД'
-                        ];
-                      if (name === 'Температура')
-                        return [`${row.temperature.toFixed(1)} °C`, 'Температура'];
+                      const dataKey = entry.dataKey as string;
+
+                      const formatAlert = (text: string, alertText?: string) =>
+                        alertText ? (
+                          <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                            {text} ({alertText})
+                          </span>
+                        ) : (
+                          text
+                        );
+
+                      const tempHigh = row.temperature > NORMAL_RANGES.temperature.max;
+                      const tempLow = row.temperature < NORMAL_RANGES.temperature.min;
+                      const tempAlert = tempHigh
+                        ? '⚠ ↑ выше нормы'
+                        : tempLow
+                          ? '⚠ ↓ ниже нормы'
+                          : '';
+                      const tempValue = `${row.temperature.toFixed(1)} °C`;
+
+                      const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max;
+                      const pulseLow = row.pulse < NORMAL_RANGES.pulse.min;
+                      const pulseAlert = pulseHigh
+                        ? '↑ выше нормы'
+                        : pulseLow
+                          ? '↓ ниже нормы'
+                          : '';
+                      const pulseValue = `${row.pulse} уд/мин`;
+
+                      const bpsHigh =
+                        row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max;
+                      const bpsLow =
+                        row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min;
+                      const bpdHigh =
+                        row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max;
+                      const bpdLow =
+                        row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min;
+
+                      const bpAlerts: string[] = [];
+                      if (bpsHigh) bpAlerts.push('↑ сист.');
+                      if (bpsLow) bpAlerts.push('↓ сист.');
+                      if (bpdHigh) bpAlerts.push('↑ диаст.');
+                      if (bpdLow) bpAlerts.push('↓ диаст.');
+                      const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : '';
+                      const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`;
+
+                      const pulseRangeValue = row.pulseRange ?? 0;
+                      const bpNormalValue = row.bpNormal ?? 0;
+
+                      if (dataKey === 'temperature') {
+                        return [formatAlert(tempValue, tempAlert), 'Температура'];
+                      }
+
+                      if (dataKey === 'pulseBase' || dataKey === 'bpBase') {
+                        return null;
+                      }
+
+                      if (dataKey === 'pulseRange' || dataKey === 'pulseUpper') {
+                        const segmentValue = typeof value === 'number' ? value : Number(value);
+                        if (!Number.isFinite(segmentValue) || segmentValue <= 0) {
+                          return null;
+                        }
+                        const shouldShowPulse =
+                          dataKey === 'pulseRange' ||
+                          (dataKey === 'pulseUpper' && pulseRangeValue === 0);
+                        if (!shouldShowPulse) {
+                          return null;
+                        }
+                        return [formatAlert(pulseValue, pulseAlert), 'Пульс'];
+                      }
+
+                      if (dataKey === 'bpNormal') {
+                        return [formatAlert(bpValue, bpAlertText), 'АД'];
+                      }
+
+                      if (dataKey === 'bpLow' || dataKey === 'bpHigh') {
+                        if (bpNormalValue !== 0) {
+                          return null;
+                        }
+                        return [formatAlert(bpValue, bpAlertText), 'АД'];
+                      }
+
                       return [value, name];
                     }}
                   />
@@ -1054,7 +1191,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                     yAxisId="vitals"
                     dataKey="pulseUpper"
                     stackId="pulse"
-                    name="Пульс"
+                    name="Пульс (плохой)"
                     fill="#ff0026"
                     barSize={14}
                     radius={[4, 4, 4, 4]}
@@ -1073,7 +1210,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                     yAxisId="vitals"
                     dataKey="bpLow"
                     stackId="bp"
-                    name="АД (нижн.-верхн.)"
+                    name="АД (выше нормы)"
                     fill="#000c8b"
                     legendType="none"
                     barSize={14}
@@ -1094,7 +1231,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                     yAxisId="vitals"
                     dataKey="bpHigh"
                     stackId="bp"
-                    name="АД (нижн.-верхн.)"
+                    name="АД (ниже нормы)"
                     fill="#000c8b"
                     legendType="none"
                     barSize={14}
@@ -1114,6 +1251,260 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                 </ComposedChart>
               </ResponsiveContainer>
             </CardBody>
+          </Card>
+
+          <Card>
+            {patientVitalsList.length >= 2 && (
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '8px',
+                  flexWrap: 'wrap',
+                  padding: '12px 16px',
+                  borderBottom: '1px solid #f1f5f9'
+                }}
+              >
+                <span style={{ fontSize: '11px', color: '#94a3b8', alignSelf: 'center' }}>
+                  Динамика:
+                </span>
+
+                {TREND_META.filter(
+                  (meta) => meta.field === 'spo2' || meta.field === 'respiratoryRate'
+                ).map((meta) => {
+                  const dir = getTrend(meta.field);
+                  const currentValue = latestVitals?.[meta.field] as number | undefined;
+                  const range = NORMAL_RANGES[meta.field];
+                  const goodDir = meta.goodDir;
+
+                  const isOutOfRange =
+                    currentValue !== undefined &&
+                    (currentValue < range.min || currentValue > range.max);
+
+                  const isGood =
+                    !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable');
+
+                  const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626';
+                  const bgColor = isGood ? '#16a34a14' : '#dc262614';
+                  const borderColor = isGood ? '#16a34a33' : '#dc262633';
+
+                  const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus;
+                  return (
+                    <div
+                      key={meta.field}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '4px 10px',
+                        borderRadius: '20px',
+                        backgroundColor: bgColor,
+                        border: `1px solid ${borderColor}`,
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: color
+                      }}
+                    >
+                      <Icon size={13} />
+                      <span>{meta.label}</span>
+                    </div>
+                  );
+                })}
+                <span
+                  style={{
+                    fontSize: '11px',
+                    color: '#94a3b8',
+                    alignSelf: 'center',
+                    marginLeft: 'auto'
+                  }}
+                >
+                  ← vs предыдущий замер
+                </span>
+              </div>
+            )}
+            <ResponsiveContainer width="100%" height={420}>
+              <ComposedChart
+                data={spoRespiratoryRate.length > 0 ? spoRespiratoryRate : referenceData}
+                margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+              >
+                <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+
+                <Tooltip
+                  formatter={(value, name, entry) => {
+                    const row = entry.payload as {
+                      spo2: number;
+                      respiratoryRate: number;
+                    };
+                    const dataKey = entry.dataKey as string;
+
+                    const formatAlert = (text: string, alertText?: string) =>
+                      alertText ? (
+                        <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                          {text} ({alertText})
+                        </span>
+                      ) : (
+                        text
+                      );
+
+                    const spo2High = row.spo2 > NORMAL_RANGES.spo2.max;
+                    const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min;
+                    const spo2Alert = spo2High ? '⚠ ↑ выше нормы' : spo2Low ? '⚠ ↓ ниже нормы' : '';
+                    const spo2Value = `${row.spo2.toFixed(1)} %`;
+
+                    const respiratoryRateHigh =
+                      row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max;
+                    const respiratoryRateLow =
+                      row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min;
+                    const respiratoryRateAlert = respiratoryRateHigh
+                      ? '⚠ ↑ выше нормы'
+                      : respiratoryRateLow
+                        ? '⚠ ↓ ниже нормы'
+                        : '';
+                    const respiratoryRateValue = `${row.respiratoryRate} дых/мин`;
+
+                    if (dataKey === 'spo2') {
+                      return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)'];
+                    }
+                    if (dataKey === 'respiratoryRate') {
+                      return [
+                        formatAlert(respiratoryRateValue, respiratoryRateAlert),
+                        'Частота дыхания'
+                      ];
+                    }
+                    return [value, name];
+                  }}
+                />
+                <Legend verticalAlign="bottom" align="center" />
+
+                <YAxis
+                  yAxisId="spo2"
+                  domain={[VITAL_RULES.spo2.min, VITAL_RULES.spo2.max]}
+                  width={52}
+                  tickCount={8}
+                  label={{
+                    value: 'SpO₂ (%)',
+                    angle: -90,
+                    position: 'insideLeft',
+                    offset: 10,
+                    dy: 50
+                  }}
+                />
+
+                <YAxis
+                  yAxisId="resp"
+                  orientation="right"
+                  domain={[VITAL_RULES.respiratoryRate.min, VITAL_RULES.respiratoryRate.max]}
+                  width={52}
+                  tickCount={8}
+                  label={{
+                    value: 'Частота дыхания, дых/мин',
+                    angle: 90,
+                    position: 'insideRight',
+                    offset: 0,
+                    dy: 90
+                  }}
+                />
+
+                <ReferenceArea
+                  yAxisId="spo2"
+                  y1={NORMAL_RANGES.spo2.min}
+                  y2={NORMAL_RANGES.spo2.max}
+                  fill="#dcfce7"
+                  fillOpacity={0.3}
+                  strokeOpacity={0}
+                />
+
+                <ReferenceLine
+                  yAxisId="spo2"
+                  y={NORMAL_RANGES.spo2.max}
+                  stroke="#2563eb"
+                  strokeDasharray="5 4"
+                  strokeOpacity={0.55}
+                  strokeWidth={1.4}
+                  label={{
+                    value: `SpO₂ ${NORMAL_RANGES.spo2.max}%`,
+                    position: 'center',
+                    fontSize: 10,
+                    fill: '#2563eb',
+                    dy: -6
+                  }}
+                />
+                <ReferenceLine
+                  yAxisId="spo2"
+                  y={NORMAL_RANGES.spo2.min}
+                  stroke="#2563eb"
+                  strokeDasharray="5 4"
+                  strokeOpacity={0.45}
+                  strokeWidth={1.4}
+                  label={{
+                    value: `SpO₂ ${NORMAL_RANGES.spo2.min}%`,
+                    position: 'left',
+                    fontSize: 10,
+                    fill: '#2563eb',
+                    dy: 12
+                  }}
+                />
+
+                <ReferenceArea
+                  yAxisId="resp"
+                  y1={NORMAL_RANGES.respiratoryRate.min}
+                  y2={NORMAL_RANGES.respiratoryRate.max}
+                  fill="#dcfce7"
+                  fillOpacity={0.22}
+                  strokeOpacity={0}
+                />
+                <ReferenceLine
+                  yAxisId="resp"
+                  y={NORMAL_RANGES.respiratoryRate.max}
+                  stroke="#10b981"
+                  strokeDasharray="5 4"
+                  strokeOpacity={0.55}
+                  strokeWidth={1.4}
+                  label={{
+                    value: `ЧД ${NORMAL_RANGES.respiratoryRate.max}`,
+                    position: 'right',
+                    fontSize: 10,
+                    fill: '#10b981',
+                    dy: 5
+                  }}
+                />
+                <ReferenceLine
+                  yAxisId="resp"
+                  y={NORMAL_RANGES.respiratoryRate.min}
+                  stroke="#10b981"
+                  strokeDasharray="5 4"
+                  strokeOpacity={0.45}
+                  strokeWidth={1.4}
+                  label={{
+                    value: `ЧД ${NORMAL_RANGES.respiratoryRate.min}`,
+                    position: 'right',
+                    fontSize: 10,
+                    fill: '#10b981',
+                    dy: 12
+                  }}
+                />
+
+                <Line
+                  yAxisId="spo2"
+                  type="monotone"
+                  dataKey="spo2"
+                  name="SpO₂ (%)"
+                  stroke="#2563eb"
+                  strokeWidth={3}
+                  dot={<CustomTempDot />}
+                />
+
+                <Line
+                  yAxisId="resp"
+                  type="monotone"
+                  dataKey="respiratoryRate"
+                  name="Частота дыхания"
+                  stroke="#10b981"
+                  strokeWidth={3}
+                  dot={<CustomTempDot />}
+                />
+              </ComposedChart>
+            </ResponsiveContainer>
           </Card>
         </div>
       </TwoColumnGrid>
