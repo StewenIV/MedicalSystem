@@ -95,7 +95,7 @@ const AuthPage: React.FC = () => {
             <div>
               <LogIn size={32} />
             </div>
-            <h1>ЕМИС MedFlow</h1>
+            <h1>Пульмонология</h1>
             <p>Вход в систему</p>
           </Logo>
           <Tabs>

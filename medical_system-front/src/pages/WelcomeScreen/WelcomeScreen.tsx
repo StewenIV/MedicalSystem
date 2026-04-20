@@ -43,7 +43,7 @@ const WelcomeScreen: React.FC = () => {
   return (
     <>
       <Helmet>
-        <title>ЕМИС MedFlow - Главная</title>
+        <title>Пульмонология - Главная</title>
         <meta
           name="description"
           content="Единая медицинская информационная система"
@@ -55,8 +55,8 @@ const WelcomeScreen: React.FC = () => {
           <Logo>
             <Heart size={48} />
           </Logo>
-          <Title>ЕМИС MedFlow</Title>
-          <Subtitle>Единая медицинская информационная система</Subtitle>
+          <Title>Пульмонология</Title>
+          <Subtitle>Единая медицинская информационная система пульмонологии</Subtitle>
           <Description>
             <span>Цифровизация здравоохранения для </span>
             <span>эффективной работы медицинского персонала </span>

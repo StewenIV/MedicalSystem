@@ -1,4 +1,4 @@
-const path = require('path');
+const path = require('path')
 
 module.exports = {
   babel: {
@@ -14,7 +14,7 @@ module.exports = {
   },
   style: {
     postcss: {
-      plugins: [require('tailwindcss'), require('autoprefixer')]
+      mode: 'file'
     }
   },
   webpack: {
@@ -22,4 +22,4 @@ module.exports = {
       '@': path.resolve(__dirname, 'src')
     }
   }
-};
+}

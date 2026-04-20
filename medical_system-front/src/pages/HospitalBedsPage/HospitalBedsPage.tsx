@@ -6,9 +6,6 @@ import {
   CheckCircle,
   Clock,
   Plus,
-  LogOut,
-  Stethoscope,
-  ChevronLeft,
 } from 'lucide-react'
 
 import { mockHospitalBeds, mockTreatments } from 'data/mockData'

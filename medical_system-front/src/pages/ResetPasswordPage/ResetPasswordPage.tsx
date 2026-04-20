@@ -362,7 +362,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
           <LogoIcon>
             <Heart size={28} />
           </LogoIcon>
-          <MainTitle>ЕМИС MedFlow</MainTitle>
+          <MainTitle>Пульмонология</MainTitle>
           <SubTitle>Единая медицинская информационная система</SubTitle>
         </LogoBlock>
 

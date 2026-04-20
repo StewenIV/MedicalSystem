@@ -11,6 +11,8 @@ export const HomePageContainer = styled.div`
   min-height: 100vh;
   background: #f3f4f6;
   font-family: ${FONT};
+  display: flex;
+  flex-direction: column;
 `
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -21,10 +23,16 @@ export const Header = styled.header`
   position: sticky;
   top: 0;
   z-index: 10;
+  width: 100%;
 `
 
 export const HeaderInner = styled.div`
-  padding: 16px 24px;
+  padding: 8px 24px;
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: auto minmax(240px, 1fr) auto;
+  align-items: center;
+  gap: 16px;
 `
 
 export const FlexBetween = styled.div`
@@ -36,7 +44,13 @@ export const FlexBetween = styled.div`
 export const Flex = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+`
+
+export const FlexRight = styled(Flex)`
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: nowrap;
 `
 
 // ─── Logo block ───────────────────────────────────────────────────────────────
@@ -54,15 +68,6 @@ export const LogoBox = styled.div`
   flex-shrink: 0;
 `
 
-/**
- * Обёртка текстового блока рядом с логотипом.
- * Используй её в JSX вместо голого <div>:
- *
- *   <LogoTextBlock>
- *     <LogoTitle>ЕМИС MedFlow</LogoTitle>
- *     <LogoSubtitle>Панель врача</LogoSubtitle>
- *   </LogoTextBlock>
- */
 export const LogoTextBlock = styled.div`
   display: flex;
   flex-direction: column;
@@ -71,7 +76,7 @@ export const LogoTextBlock = styled.div`
 
 export const LogoTitle = styled.span`
   font-family: ${FONT};
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.15;
@@ -88,7 +93,7 @@ export const LogoTitle = styled.span`
 
 export const LogoSubtitle = styled.span`
   font-family: ${FONT};
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: #94a3b8;
@@ -107,21 +112,26 @@ export const DateLabel = styled.div`
   color: #64748b;
   letter-spacing: 0.01em;
 
-  svg { opacity: 0.6; }
+  svg {
+    opacity: 0.6;
+  }
 `
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 export const ContentLayout = styled.div`
   display: flex;
-  align-items: flex-start;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
 `
 
 export const Sidebar = styled.aside`
   width: 256px;
   background: white;
   border-right: 1px solid #e5e7eb;
-  min-height: calc(100vh - 73px);
+  flex-shrink: 0;
+  min-height: 0;
 `
 
 export const SidebarNav = styled.nav`
@@ -157,7 +167,9 @@ export const NavButton = styled.button<{ $active?: boolean }>`
   font-weight: ${({ $active }) => ($active ? '600' : '450')};
   letter-spacing: ${({ $active }) => ($active ? '-0.01em' : '0')};
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   /* Иконка чуть приглушена в неактивном состоянии */
   svg {
@@ -182,7 +194,9 @@ export const NavButton = styled.button<{ $active?: boolean }>`
   &:hover {
     background: #f8faff;
     color: ${colors.mainColor};
-    svg { opacity: 0.85; }
+    svg {
+      opacity: 0.85;
+    }
   }
 `
 
@@ -190,7 +204,10 @@ export const NavButton = styled.button<{ $active?: boolean }>`
 
 export const Main = styled.main`
   flex: 1;
-  padding: 2px 24px;
+  min-width: 0;
+  padding: 24px;
+  overflow: auto;
+  width: 100%;
 `
 
 // ─── Section heading inside Main ─────────────────────────────────────────────
@@ -291,14 +308,10 @@ export const StatusBadge = styled.span<{
   font-weight: 600;
   letter-spacing: 0.01em;
 
-  ${({ status }) =>
-    status === 'Ожидается' && `background:#dbeafe; color:#1e40af;`}
-  ${({ status }) =>
-    status === 'На приеме' && `background:#dcfce7; color:#166534;`}
-  ${({ status }) =>
-    status === 'Завершено' && `background:#f1f5f9; color:#475569;`}
-  ${({ status }) =>
-    status === 'Свободно'  && `background:#f9fafb; color:#9ca3af;`}
+  ${({ status }) => status === 'Ожидается' && `background:#dbeafe; color:#1e40af;`}
+  ${({ status }) => status === 'На приеме' && `background:#dcfce7; color:#166534;`}
+  ${({ status }) => status === 'Завершено' && `background:#f1f5f9; color:#475569;`}
+  ${({ status }) => status === 'Свободно' && `background:#f9fafb; color:#9ca3af;`}
 `
 
 // ─── Icon button ──────────────────────────────────────────────────────────────
@@ -311,7 +324,9 @@ export const IconButton = styled.button`
   background: transparent;
   cursor: pointer;
   color: #374151;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 
   &:hover {
     background: #f1f5f9;
@@ -320,8 +335,67 @@ export const IconButton = styled.button`
 `
 
 export const SearchWrapper = styled.div`
-  position: relative;
   width: 100%;
+  max-width: 640px;
+  justify-self: center;
+`
+
+// ─── Separator ────────────────────────────────────────────────────────────────
+
+export const Separator = styled.div`
+  width: 1px;
+  height: 30px;
+  background: #e5e7eb;
+`
+
+// ─── Account Info ─────────────────────────────────────────────────────────────
+
+export const AccountInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 6px;
+  min-width: 0;
+`
+
+export const AccountText = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  line-height: 1.2;
+`
+
+export const AccountName = styled.span`
+  font-family: ${FONT};
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  letter-spacing: -0.01em;
+`
+
+export const AccountRole = styled.span`
+  font-family: ${FONT};
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  letter-spacing: 0;
+`
+
+export const AccountAvatar = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-family: ${FONT};
+  font-size: 14px;
+  font-weight: 700;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
 `
 
 // ─── Notifications ────────────────────────────────────────────────────────────
@@ -355,8 +429,12 @@ export const NotificationItem = styled.div<{ read?: boolean }>`
   background: ${({ read }) => (read ? '#fafafa' : 'white')};
   transition: background 0.15s;
 
-  &:last-child { border-bottom: none; }
-  &:hover { background: #f8faff; }
+  &:last-child {
+    border-bottom: none;
+  }
+  &:hover {
+    background: #f8faff;
+  }
 `
 
 export const NotificationContent = styled.div`
@@ -378,9 +456,12 @@ export const NotificationIconWrapper = styled.div<{
 
   ${({ severity }) => {
     switch (severity) {
-      case 'critical': return `background:#fee2e2; color:#dc2626;`
-      case 'warning':  return `background:#fef3c7; color:#d97706;`
-      default:         return `background:#dbeafe; color:#2563eb;`
+      case 'critical':
+        return `background:#fee2e2; color:#dc2626;`
+      case 'warning':
+        return `background:#fef3c7; color:#d97706;`
+      default:
+        return `background:#dbeafe; color:#2563eb;`
     }
   }}
 `
@@ -436,7 +517,10 @@ export const NotificationDetails = styled.div`
   border-left: 3px solid #cbd5e1;
   line-height: 1.5;
 
-  strong { color: #334155; font-weight: 600; }
+  strong {
+    color: #334155;
+    font-weight: 600;
+  }
 `
 
 export const NotificationPatient = styled.div`
@@ -448,7 +532,9 @@ export const NotificationPatient = styled.div`
   flex-direction: column;
   gap: 2px;
 
-  strong { font-weight: 600; }
+  strong {
+    font-weight: 600;
+  }
 
   span {
     font-size: 11px;
@@ -468,10 +554,8 @@ export const SeverityBadge = styled.span<{ severity: 'critical' | 'warning' }>`
   text-transform: uppercase;
   margin-bottom: 4px;
 
-  ${({ severity }) =>
-    severity === 'critical' && `background:#fee2e2; color:#991b1b;`}
-  ${({ severity }) =>
-    severity === 'warning'  && `background:#fef3c7; color:#92400e;`}
+  ${({ severity }) => severity === 'critical' && `background:#fee2e2; color:#991b1b;`}
+  ${({ severity }) => severity === 'warning' && `background:#fef3c7; color:#92400e;`}
 `
 
 export const NotificationBadge = styled.span`
@@ -497,7 +581,10 @@ export const EmptyNotifications = styled.div`
   padding: 48px 24px;
   color: #94a3b8;
 
-  svg { margin: 0 auto 12px; opacity: 0.4; }
+  svg {
+    margin: 0 auto 12px;
+    opacity: 0.4;
+  }
 
   p {
     font-family: ${FONT};

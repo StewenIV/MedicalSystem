@@ -7,10 +7,10 @@ const FONT_STACK = `
   'Segoe UI', system-ui, sans-serif
 `
 
-const GRADIENT_TITLE   = 'linear-gradient(135deg, #0f172a 0%, #1e40af 55%, #3b82f6 100%)'
-const GRADIENT_ACCENT  = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
-const GRADIENT_SHIMMER = 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)'
-
+const GRADIENT_TITLE = 'linear-gradient(135deg, #0f172a 0%, #1e40af 55%, #3b82f6 100%)'
+const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
+const GRADIENT_SHIMMER =
+  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)'
 
 const shimmer = keyframes`
   0%   { background-position: -200% center }
@@ -35,7 +35,7 @@ export const Content = styled.div`
 `
 
 export const Container = styled.div`
-  max-width: 1280px;
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -52,7 +52,9 @@ export const StyledCard = styled.div`
     0 4px 12px rgba(15, 23, 42, 0.06),
     0 20px 40px rgba(15, 23, 42, 0.05);
   overflow: hidden;
-  transition: box-shadow 0.25s ease, transform 0.2s ease;
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
 
   &:hover {
     box-shadow:
@@ -96,7 +98,9 @@ export const Title = styled.h2`
 
   filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
 
-  transition: filter 0.25s ease, letter-spacing 0.25s ease;
+  transition:
+    filter 0.25s ease,
+    letter-spacing 0.25s ease;
 
   &:hover {
     filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
@@ -115,9 +119,7 @@ export const InfoGrid = styled.div`
 
   @media (max-width: 768px) {
     grid-template-columns: repeat(4, 1fr);
-    
   }
-    
 `
 
 export const InfoItem = styled.div`
@@ -132,7 +134,6 @@ export const InfoItem = styled.div`
 `
 
 export const InfoText = styled.div``
-
 
 export const InfoLabel = styled.div`
   font-family: ${FONT_STACK};
@@ -159,7 +160,9 @@ export const InfoLabel = styled.div`
 
   ${InfoItem}:hover & {
     color: #64748b;
-    &::before { width: 5px; }
+    &::before {
+      width: 5px;
+    }
   }
 
   @media (max-width: 768px) {
@@ -169,16 +172,16 @@ export const InfoLabel = styled.div`
   }
 `
 
-
-export const InfoValue = styled.div`  
-font-family: ${FONT_STACK};
+export const InfoValue = styled.div`
+  font-family: ${FONT_STACK};
   font-size: 17px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.025em;
   line-height: 1.3;
-  transition: color 0.2s ease, letter-spacing 0.2s ease;
-
+  transition:
+    color 0.2s ease,
+    letter-spacing 0.2s ease;
 
   font-variant-numeric: tabular-nums;
 
@@ -187,7 +190,7 @@ font-family: ${FONT_STACK};
     letter-spacing: -0.02em;
   }
 
- &::before {
+  &::before {
     content: '';
     display: inline-block;
     width: 2px;
@@ -196,23 +199,48 @@ font-family: ${FONT_STACK};
     vertical-align: middle;
     margin-right: 6px;
     margin-bottom: 1px;
-    }
+  }
 
-    @media (max-width: 768px) {
-      &::before {
-        display: none;
-      }
+  @media (max-width: 768px) {
+    &::before {
+      display: none;
     }
-
+  }
 `
 
 export const TwoColumnGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+  align-items: stretch;
+
+  > div {
+    min-width: 0;
+  }
+
+  > div:first-child {
+    display: flex;
+  }
+
+  > div:first-child > div {
+    flex: 1;
+  }
+
+  > div:last-child {
+    display: flex;
+    flex-direction: column;
+  }
 
   @media (max-width: 1024px) {
     grid-template-columns: 1fr;
+
+    > div:first-child {
+      display: block;
+    }
+
+    > div:first-child > div {
+      flex: unset;
+    }
   }
 `
 
@@ -226,6 +254,9 @@ export const Card = styled.div`
   overflow: hidden;
   margin-top: 16px;
   max-width: 800px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
   transition: box-shadow 0.2s ease;
 
   &:hover {
@@ -234,7 +265,6 @@ export const Card = styled.div`
       0 8px 20px rgba(37, 99, 235, 0.07);
   }
 `
-
 
 export const CardHeader = styled.div`
   padding: 18px 24px 16px;
@@ -254,7 +284,9 @@ export const CardHeader = styled.div`
     background: ${GRADIENT_ACCENT};
     border-radius: 0 3px 3px 0;
     box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
-    transition: box-shadow 0.25s ease, width 0.2s ease;
+    transition:
+      box-shadow 0.25s ease,
+      width 0.2s ease;
   }
 
   &::after {
@@ -279,7 +311,6 @@ export const CardHeader = styled.div`
   }
 `
 
-
 export const CardTitle = styled.h3`
   font-family: ${FONT_STACK};
   margin: 0;
@@ -293,7 +324,9 @@ export const CardTitle = styled.h3`
 
   filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.08));
 
-  transition: filter 0.25s ease, letter-spacing 0.25s ease;
+  transition:
+    filter 0.25s ease,
+    letter-spacing 0.25s ease;
 
   ${CardHeader}:hover & {
     filter: drop-shadow(0 2px 6px rgba(37, 99, 235, 0.2));
@@ -323,7 +356,9 @@ export const CardSubtitle = styled.p`
     margin-right: 8px;
     margin-bottom: 2px;
     opacity: 0.7;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
   }
 
   ${CardHeader}:hover & {
@@ -340,7 +375,8 @@ export const CardBody = styled.div<{ $noPadding?: boolean }>`
   padding: ${(p) => (p.$noPadding ? '16px' : '24px')};
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 25px;
+  flex: 1;
 `
 
 export const FieldLabel = styled.label`
@@ -365,7 +401,7 @@ export const FieldLabelIcon = styled.label`
   color: #64748b;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
   transition: color 0.2s ease;
 
   svg {
@@ -374,7 +410,9 @@ export const FieldLabelIcon = styled.label`
 
   &:hover {
     color: #475569;
-    svg { transform: scale(1.1); }
+    svg {
+      transform: scale(1.1);
+    }
   }
 `
 
@@ -384,11 +422,11 @@ export const BpGrid = styled.div`
   gap: 12px;
 `
 
-
 export const OpenSheetBtn = styled(AppButton)`
   width: 100%;
 `
 
 export const SaveBtn = styled(AppButton)`
+  margin-top: 16px;
   width: 100%;
 `
