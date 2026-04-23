@@ -32,6 +32,11 @@ const gradientText = (gradient: string) => css`
 export const Content = styled.div`
   padding: 1px;
   font-family: ${FONT_STACK};
+  background: linear-gradient(135deg, #f0f4ff, #f8faff);
+  border-radius: 16px;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.05);
 `
 
 export const Container = styled.div`

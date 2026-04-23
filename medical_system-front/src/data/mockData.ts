@@ -135,6 +135,27 @@ export interface Staff {
   status: 'active' | 'inactive'
 }
 
+export interface HospitalBed {
+  id: string
+  roomNumber: string
+  bedNumber: number
+  patientId?: string
+  patientName?: string
+  patientLastName?: string
+  patientMiddleName?: string
+  patientAge?: number
+  diagnosis?: string
+  status: 'free' | 'stable' | 'attention' | 'urgent'
+}
+
+export interface PatientDetail {
+  doctorNote: string
+  prescriptions: { id: number; name: string; dose: string; time: string; done: boolean }[]
+  meds: { name: string; qty: string }[]
+  log: { who: string; action: string; time: string; amount: string }[]
+}
+
+
 // Mock patients
 export const mockPatients: Patient[] = [
   {
@@ -518,179 +539,89 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
   ]
 }
 
-// Справочник палат
 export const roomsConfig: Record<string, { gender: 'male' | 'female' | 'free' }> = {
   '101': { gender: 'male' },
   '102': { gender: 'female' },
   '103': { gender: 'male' },
   '201': { gender: 'male' },
-  '202': { gender: 'female' }
+  '202': { gender: 'female' },
 }
 
-// Mock hospital beds
 export const mockHospitalBeds: HospitalBed[] = [
-  {
-    id: 'B001',
-    roomNumber: '101',
-    bedNumber: 1,
-    patientId: 'P001',
-    patientName: 'Иван',
-    patientLastName: 'Петров',
-    patientMiddleName: 'Сергеевич',
-    patientAge: 40,
-    diagnosis: 'Гипертонический криз',
-    status: 'stable',
-    doctorName: 'Д-р Петров П.',
-    doctorRole: 'doctor',
-    admissionDate: '12.05.2024',
-    prescriptions: [
-      { id: 'rx1', name: 'В/в антибиотик', time: '08:00', done: true },
-      { id: 'rx2', name: 'Ингаляция', time: '10:00', done: false }
-    ],
-    medications: [
-      { id: 'm1', name: 'Цефтриаксон', quantity: 8, unit: 'фл.' },
-      { id: 'm2', name: 'Сальбутамол', quantity: 2, unit: 'фл.', low: true }
-    ],
-    actionLog: [
-      {
-        id: 'l1',
-        performer: 'Медсестра Петрова О.',
-        action: 'Ввела антибиотик',
-        medication: 'Цефтриаксон 1г',
-        quantity: '1 фл.',
-        time: '08:14'
-      }
-    ]
-  },
-  {
-    id: 'B002',
-    roomNumber: '101',
-    bedNumber: 2,
-    patientId: 'P002',
-    patientName: 'Мария',
-    patientLastName: 'Иванова',
-    patientMiddleName: 'Петровна',
-    patientAge: 33,
-    diagnosis: 'Обострение бронхиальной астмы',
-    status: 'attention',
-    doctorName: 'Д-р Сидоров М.',
-    doctorRole: 'doctor',
-    attentionNote:
-      'Требуется частый контроль сатурации. Готовить к возможной ингаляции каждые 2 часа',
-    admissionDate: '15.05.2024',
-    prescriptions: [
-      { id: 'rx3', name: 'Ингаляция', time: '08:00', done: true },
-      { id: 'rx4', name: 'Измерение АД', time: '12:00', done: false }
-    ],
-    medications: [{ id: 'm3', name: 'Сальбутамол', quantity: 3, unit: 'фл.' }]
-  },
-  {
-    id: 'B003',
-    roomNumber: '102',
-    bedNumber: 1,
-    status: 'free'
-  },
-  {
-    id: 'B004',
-    roomNumber: '102',
-    bedNumber: 2,
-    patientId: 'P003',
-    patientName: 'Алексей',
-    patientLastName: 'Смирнов',
-    patientMiddleName: 'Дмитриевич',
-    patientAge: 47,
-    diagnosis: 'Декомпенсация сахарного диабета',
-    status: 'urgent',
-    doctorName: 'Д-р Кузнецов В.',
-    doctorRole: 'chief-doctor',
-    attentionNote:
-      'СРОЧНО: уровень глюкозы критически высокий. Требуется немедленный врачебный осмотр',
-    admissionDate: '10.05.2024',
-    prescriptions: [
-      { id: 'rx5', name: 'Инъекция инсулина', time: '06:00', done: true },
-      { id: 'rx6', name: 'Капельница NaCl', time: '08:00', done: false }
-    ],
-    medications: [
-      { id: 'm4', name: 'Инсулин', quantity: 5, unit: 'ед.' },
-      { id: 'm5', name: 'NaCl 400мл', quantity: 12, unit: 'шт.' }
-    ]
-  },
-  {
-    id: 'B005',
-    roomNumber: '103',
-    bedNumber: 1,
-    status: 'free'
-  },
-  {
-    id: 'B006',
-    roomNumber: '103',
-    bedNumber: 2,
-    status: 'free'
-  },
-  {
-    id: 'B201',
-    roomNumber: '201',
-    bedNumber: 1,
-    patientId: 'P201',
-    patientName: 'Сергей',
-    patientLastName: 'Николаев',
-    patientMiddleName: 'Алексеевич',
-    patientAge: 52,
-    diagnosis: 'Пневмония',
-    status: 'stable',
-    doctorName: 'Д-р Орлов Ю.',
-    doctorRole: 'doctor',
-    admissionDate: '08.05.2024',
-    prescriptions: [
-      { id: 'rx7', name: 'В/в антибиотик', time: '08:00', done: true },
-      { id: 'rx8', name: 'Физиолечение', time: '15:00', done: false }
-    ],
-    medications: [{ id: 'm6', name: 'Цефтриаксон', quantity: 10, unit: 'фл.' }]
-  },
-  {
-    id: 'B202',
-    roomNumber: '201',
-    bedNumber: 2,
-    status: 'free'
-  },
-  {
-    id: 'B203',
-    roomNumber: '202',
-    bedNumber: 1,
-    patientId: 'P202',
-    patientName: 'Виктория',
-    patientLastName: 'Кузнецова',
-    patientMiddleName: 'Игоревна',
-    patientAge: 61,
-    diagnosis: 'Восстановление после ИВЛ',
-    status: 'attention',
-    doctorName: 'Д-р Ершова С.',
-    doctorRole: 'chief-doctor',
-    attentionNote:
-      'После интубации - тщательный мониторинг дыхания. Подготовка к снятию с кислорода',
-    admissionDate: '01.05.2024',
-    prescriptions: [
-      { id: 'rx9', name: 'Мониторинг O2', time: '04:00', done: true },
-      { id: 'rx10', name: 'Мониторинг O2', time: '08:00', done: true }
-    ]
-  },
-  {
-    id: 'B204',
-    roomNumber: '202',
-    bedNumber: 2,
-    patientId: 'P203',
-    patientName: 'Дмитрий',
-    patientLastName: 'Козлов',
-    patientMiddleName: 'Сергеевич',
-    patientAge: 29,
-    diagnosis: 'Острый бронхит',
-    status: 'stable',
-    doctorName: 'Д-р Морозов А.',
-    doctorRole: 'doctor',
-    admissionDate: '18.05.2024',
-    prescriptions: [{ id: 'rx11', name: 'Ингаляция', time: '09:00', done: true }]
-  }
+  { id: 'B001', roomNumber: '101', bedNumber: 1, patientId: 'P001', patientName: 'Иван', patientLastName: 'Петров', patientMiddleName: 'Сергеевич', patientAge: 40, diagnosis: 'Гипертонический криз', status: 'stable' },
+  { id: 'B002', roomNumber: '101', bedNumber: 2, patientId: 'P002', patientName: 'Мария', patientLastName: 'Иванова', patientMiddleName: 'Петровна', patientAge: 33, diagnosis: 'Обострение бронхиальной астмы', status: 'attention' },
+  { id: 'B003', roomNumber: '102', bedNumber: 1, status: 'free' },
+  { id: 'B004', roomNumber: '102', bedNumber: 2, patientId: 'P003', patientName: 'Алексей', patientLastName: 'Смирнов', patientMiddleName: 'Дмитриевич', patientAge: 47, diagnosis: 'Декомпенсация сахарного диабета', status: 'urgent' },
+  { id: 'B005', roomNumber: '103', bedNumber: 1, status: 'free' },
+  { id: 'B006', roomNumber: '103', bedNumber: 2, status: 'free' },
+  { id: 'B201', roomNumber: '201', bedNumber: 1, patientId: 'P201', patientName: 'Сергей', patientLastName: 'Николаев', patientMiddleName: 'Алексеевич', patientAge: 52, diagnosis: 'Пневмония', status: 'stable' },
+  { id: 'B202', roomNumber: '201', bedNumber: 2, status: 'free' },
+  { id: 'B203', roomNumber: '202', bedNumber: 1, patientId: 'P202', patientName: 'Виктория', patientLastName: 'Кузнецова', patientMiddleName: 'Игоревна', patientAge: 61, diagnosis: 'Восстановление после ИВЛ', status: 'attention' },
+  { id: 'B204', roomNumber: '202', bedNumber: 2, patientId: 'P203', patientName: 'Дмитрий', patientLastName: 'Козлов', patientMiddleName: '', patientAge: 29, diagnosis: 'Острый бронхит', status: 'stable' },
 ]
+
+export const patientDetails: Record<string, PatientDetail> = {
+  P001: {
+    doctorNote: 'Контроль АД каждые 2 часа. При подъёме выше 180/110 — вызов дежурного врача.',
+    prescriptions: [
+      { id: 1, name: 'Эналаприл', dose: '10мг', time: '08:00', done: true },
+      { id: 2, name: 'Амлодипин', dose: '5мг', time: '12:00', done: false },
+      { id: 3, name: 'Каптоприл (экстренно)', dose: '25мг', time: '18:00', done: false },
+    ],
+    meds: [{ name: 'Эналаприл', qty: '14 табл.' }, { name: 'Амлодипин', qty: '28 табл.' }, { name: 'Каптоприл', qty: '10 табл.' }],
+    log: [{ who: 'Медсестра Орлова К.', action: 'Выдан Эналаприл 10мг', time: '08:05', amount: '1 табл.' }],
+  },
+  P002: {
+    doctorNote: 'Контроль сатурации каждый час. При SpO₂ < 92% — O₂ через маску, вызов врача.',
+    prescriptions: [
+      { id: 1, name: 'Сальбутамол (ингаляция)', dose: '2.5мг', time: '08:00', done: true },
+      { id: 2, name: 'Преднизолон в/в', dose: '60мг', time: '10:00', done: true },
+      { id: 3, name: 'Сальбутамол (ингаляция)', dose: '2.5мг', time: '14:00', done: false },
+    ],
+    meds: [{ name: 'Сальбутамол', qty: '3 амп.' }, { name: 'Преднизолон', qty: '5 амп.' }, { name: 'Беродуал', qty: '1 фл.' }],
+    log: [{ who: 'Медсестра Орлова К.', action: 'Ингаляция Сальбутамол 2.5мг', time: '08:10', amount: '1 амп.' }],
+  },
+  P003: {
+    doctorNote: 'Инсулинотерапия строго по графику! Контроль гликемии перед каждым введением.',
+    prescriptions: [
+      { id: 1, name: 'Инсулин Актрапид', dose: '8 ед', time: '07:30', done: true },
+      { id: 2, name: 'NaCl 0.9% капельница', dose: '500мл', time: '09:00', done: false },
+      { id: 3, name: 'Инсулин Актрапид', dose: '10 ед', time: '13:30', done: false },
+    ],
+    meds: [{ name: 'Инсулин Актрапид', qty: '2 фл.' }, { name: 'NaCl 0.9%', qty: '4 фл.' }, { name: 'KCl 4%', qty: '3 амп.' }],
+    log: [{ who: 'Медсестра Петрова И.', action: 'Инсулин Актрапид 8 ед п/к', time: '07:35', amount: '8 ед.' }],
+  },
+  P201: {
+    doctorNote: 'Антибиотикотерапия — строго по времени. Контроль температуры 2 раза в день.',
+    prescriptions: [
+      { id: 1, name: 'Цефтриаксон в/в', dose: '2г', time: '08:00', done: true },
+      { id: 2, name: 'Амброксол', dose: '30мг', time: '10:00', done: false },
+      { id: 3, name: 'Цефтриаксон в/в', dose: '2г', time: '20:00', done: false },
+    ],
+    meds: [{ name: 'Цефтриаксон', qty: '5 фл.' }, { name: 'Амброксол', qty: '10 табл.' }, { name: 'NaCl 0.9%', qty: '6 фл.' }],
+    log: [{ who: 'Медсестра Сидорова В.', action: 'В/в Цефтриаксон 2г (капельница)', time: '08:15', amount: '1 фл.' }],
+  },
+  P202: {
+    doctorNote: 'Пациент после ИВЛ. Бережная санация ротоглотки. Ранняя активизация под контролем.',
+    prescriptions: [
+      { id: 1, name: 'Гепарин (профилактика)', dose: '5000 ед', time: '09:00', done: false },
+      { id: 2, name: 'Омепразол в/в', dose: '40мг', time: '09:00', done: false },
+      { id: 3, name: 'Дыхательная гимнастика', dose: '15 мин', time: '11:00', done: false },
+    ],
+    meds: [{ name: 'Гепарин', qty: '4 амп.' }, { name: 'Омепразол', qty: '5 фл.' }, { name: 'NaCl 0.9%', qty: '3 фл.' }],
+    log: [{ who: 'Медсестра Михайлова Т.', action: 'Санация ротоглотки', time: '07:50', amount: '—' }],
+  },
+  P203: {
+    doctorNote: 'Стандартное наблюдение. Обильное питьё. При ухудшении — повторный осмотр.',
+    prescriptions: [
+      { id: 1, name: 'Амоксициллин', dose: '500мг', time: '08:00', done: true },
+      { id: 2, name: 'Бромгексин', dose: '8мг', time: '08:00', done: true },
+      { id: 3, name: 'Амоксициллин', dose: '500мг', time: '14:00', done: false },
+    ],
+    meds: [{ name: 'Амоксициллин', qty: '14 капс.' }, { name: 'Бромгексин', qty: '20 табл.' }],
+    log: [{ who: 'Медсестра Орлова К.', action: 'Выдан Амоксициллин + Бромгексин', time: '08:20', amount: '2 табл.' }],
+  },
+}
 
 // Mock treatments
 export const mockTreatments: Treatment[] = [
