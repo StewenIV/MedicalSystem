@@ -1,105 +1,138 @@
 export interface Patient {
-  id: string;
-  firstName: string;
-  lastName: string;
-  middleName: string;
-  dateOfBirth: string;
-  age: number;
-  phone: string;
-  email: string;
-  address: string;
+  id: string
+  firstName: string
+  lastName: string
+  middleName: string
+  dateOfBirth: string
+  age: number
+  phone: string
+  email: string
+  address: string
   emergencyContact: {
-    name: string;
-    phone: string;
-    relation: string;
-  };
-  allergies: string[];
-  diagnoses: string[];
-  activeAppointments: Appointment[];
-  vitalSigns: VitalSign[];
-  prescriptions: Prescription[];
-  documents: Document[];
+    name: string
+    phone: string
+    relation: string
+  }
+  allergies: string[]
+  diagnoses: string[]
+  activeAppointments: Appointment[]
+  vitalSigns: VitalSign[]
+  prescriptions: Prescription[]
+  documents: Document[]
 }
 
 export interface Appointment {
-  id: string;
-  patientId: string;
-  patientName: string;
-  time: string;
-  reason: string;
-  status: 'Ожидается' | 'На приеме' | 'Завершено' | 'Свободно';
-  type: 'primary' | 'followup' | 'preventive';
+  id: string
+  patientId: string
+  patientName: string
+  time: string
+  reason: string
+  status: 'Ожидается' | 'На приеме' | 'Завершено' | 'Свободно'
+  type: 'primary' | 'followup' | 'preventive'
 }
 
 export interface VitalSign {
-  id: string;
-  date: string;
-  bloodPressureSystolic: number;
-  bloodPressureDiastolic: number;
-  temperature: number;
-  pulse: number;
-  spo2: number;
-  respiratoryRate: number;
+  id: string
+  date: string
+  bloodPressureSystolic: number
+  bloodPressureDiastolic: number
+  temperature: number
+  pulse: number
+  spo2: number
+  respiratoryRate: number
 }
 
 export interface Prescription {
-  id: string;
-  medication: string;
-  dosage: string;
-  frequency: string;
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'completed';
+  id: string
+  medication: string
+  dosage: string
+  frequency: string
+  startDate: string
+  endDate: string
+  status: 'active' | 'completed'
 }
 
 export interface Document {
-  id: string;
-  title: string;
-  type: string;
-  date: string;
-  url: string;
+  id: string
+  title: string
+  type: string
+  date: string
+  url: string
 }
 
 export interface HospitalBed {
-  id: string;
-  roomNumber: string;
-  bedNumber: number;
-  patientId?: string;
-  patientName?: string;
-  patientAge?: number;
-  diagnosis?: string;
-  status: 'stable' | 'attention' | 'urgent' | 'free';
+  id: string
+  roomNumber: string
+  bedNumber: number
+  patientId?: string
+  patientName?: string
+  patientLastName?: string
+  patientMiddleName?: string
+  patientAge?: number
+  diagnosis?: string
+  status: 'stable' | 'attention' | 'urgent' | 'free'
+  doctorName?: string
+  doctorRole?: string
+  attentionNote?: string
+  admissionDate?: string
+  prescriptions?: BedPrescription[]
+  medications?: BedMedication[]
+  actionLog?: BedAction[]
+}
+
+export interface BedPrescription {
+  id: string
+  name: string
+  time: string
+  done: boolean
+}
+
+export interface BedMedication {
+  id: string
+  name: string
+  quantity: number
+  unit: string
+  low?: boolean
+}
+
+export interface BedAction {
+  id: string
+  performer: string
+  action: string
+  medication: string
+  quantity: string
+  time: string
 }
 
 export interface Treatment {
-  id: string;
-  name: string;
-  time: string;
-  status: 'pending' | 'completed';
+  id: string
+  name: string
+  time: string
+  status: 'pending' | 'completed'
 }
 
 export interface Facility {
-  id: string;
-  name: string;
-  type: string;
-  city: string;
-  departments: Department[];
+  id: string
+  name: string
+  type: string
+  city: string
+  departments: Department[]
 }
 
 export interface Department {
-  id: string;
-  name: string;
-  facilityId: string;
+  id: string
+  name: string
+  facilityId: string
 }
 
 export interface Staff {
-  id: string;
-  firstName: string;
-  lastName: string;
-  position: string;
-  department: string;
-  login: string;
-  status: 'active' | 'inactive';
+  id: string
+  firstName: string
+  lastName: string
+  position: string
+  department: string
+  login: string
+  status: 'active' | 'inactive'
 }
 
 // Mock patients
@@ -130,7 +163,7 @@ export const mockPatients: Patient[] = [
         bloodPressureDiastolic: 85,
         temperature: 36.6,
         pulse: 78,
-        spo2: 98, 
+        spo2: 98,
         respiratoryRate: 16
       },
       {
@@ -191,7 +224,7 @@ export const mockPatients: Patient[] = [
         bloodPressureDiastolic: 75,
         temperature: 36.5,
         pulse: 72,
-        spo2: 97, 
+        spo2: 97,
         respiratoryRate: 14
       }
     ],
@@ -251,7 +284,7 @@ export const mockPatients: Patient[] = [
     ],
     documents: []
   }
-];
+]
 
 // Mock appointments for today
 export const mockTodayAppointments: Appointment[] = [
@@ -327,7 +360,7 @@ export const mockTodayAppointments: Appointment[] = [
     status: 'Свободно',
     type: 'primary'
   }
-];
+]
 
 export const mockReferenceVitalSings: Record<string, VitalSign[]> = {
   Good: [
@@ -362,7 +395,7 @@ export const mockReferenceVitalSings: Record<string, VitalSign[]> = {
       respiratoryRate: 14
     }
   ]
-};
+}
 
 export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
   P001: [
@@ -483,7 +516,16 @@ export const mockPathientVitalSigns: Record<string, VitalSign[]> = {
       respiratoryRate: 15
     }
   ]
-};
+}
+
+// Справочник палат
+export const roomsConfig: Record<string, { gender: 'male' | 'female' | 'free' }> = {
+  '101': { gender: 'male' },
+  '102': { gender: 'female' },
+  '103': { gender: 'male' },
+  '201': { gender: 'male' },
+  '202': { gender: 'female' }
+}
 
 // Mock hospital beds
 export const mockHospitalBeds: HospitalBed[] = [
@@ -492,20 +534,55 @@ export const mockHospitalBeds: HospitalBed[] = [
     roomNumber: '101',
     bedNumber: 1,
     patientId: 'P001',
-    patientName: 'И. Петров',
+    patientName: 'Иван',
+    patientLastName: 'Петров',
+    patientMiddleName: 'Сергеевич',
     patientAge: 40,
     diagnosis: 'Гипертонический криз',
-    status: 'stable'
+    status: 'stable',
+    doctorName: 'Д-р Петров П.',
+    doctorRole: 'doctor',
+    admissionDate: '12.05.2024',
+    prescriptions: [
+      { id: 'rx1', name: 'В/в антибиотик', time: '08:00', done: true },
+      { id: 'rx2', name: 'Ингаляция', time: '10:00', done: false }
+    ],
+    medications: [
+      { id: 'm1', name: 'Цефтриаксон', quantity: 8, unit: 'фл.' },
+      { id: 'm2', name: 'Сальбутамол', quantity: 2, unit: 'фл.', low: true }
+    ],
+    actionLog: [
+      {
+        id: 'l1',
+        performer: 'Медсестра Петрова О.',
+        action: 'Ввела антибиотик',
+        medication: 'Цефтриаксон 1г',
+        quantity: '1 фл.',
+        time: '08:14'
+      }
+    ]
   },
   {
     id: 'B002',
     roomNumber: '101',
     bedNumber: 2,
     patientId: 'P002',
-    patientName: 'М. Иванова',
+    patientName: 'Мария',
+    patientLastName: 'Иванова',
+    patientMiddleName: 'Петровна',
     patientAge: 33,
     diagnosis: 'Обострение бронхиальной астмы',
-    status: 'attention'
+    status: 'attention',
+    doctorName: 'Д-р Сидоров М.',
+    doctorRole: 'doctor',
+    attentionNote:
+      'Требуется частый контроль сатурации. Готовить к возможной ингаляции каждые 2 часа',
+    admissionDate: '15.05.2024',
+    prescriptions: [
+      { id: 'rx3', name: 'Ингаляция', time: '08:00', done: true },
+      { id: 'rx4', name: 'Измерение АД', time: '12:00', done: false }
+    ],
+    medications: [{ id: 'm3', name: 'Сальбутамол', quantity: 3, unit: 'фл.' }]
   },
   {
     id: 'B003',
@@ -518,10 +595,25 @@ export const mockHospitalBeds: HospitalBed[] = [
     roomNumber: '102',
     bedNumber: 2,
     patientId: 'P003',
-    patientName: 'А. Смирнов',
+    patientName: 'Алексей',
+    patientLastName: 'Смирнов',
+    patientMiddleName: 'Дмитриевич',
     patientAge: 47,
     diagnosis: 'Декомпенсация сахарного диабета',
-    status: 'urgent'
+    status: 'urgent',
+    doctorName: 'Д-р Кузнецов В.',
+    doctorRole: 'chief-doctor',
+    attentionNote:
+      'СРОЧНО: уровень глюкозы критически высокий. Требуется немедленный врачебный осмотр',
+    admissionDate: '10.05.2024',
+    prescriptions: [
+      { id: 'rx5', name: 'Инъекция инсулина', time: '06:00', done: true },
+      { id: 'rx6', name: 'Капельница NaCl', time: '08:00', done: false }
+    ],
+    medications: [
+      { id: 'm4', name: 'Инсулин', quantity: 5, unit: 'ед.' },
+      { id: 'm5', name: 'NaCl 400мл', quantity: 12, unit: 'шт.' }
+    ]
   },
   {
     id: 'B005',
@@ -534,8 +626,71 @@ export const mockHospitalBeds: HospitalBed[] = [
     roomNumber: '103',
     bedNumber: 2,
     status: 'free'
+  },
+  {
+    id: 'B201',
+    roomNumber: '201',
+    bedNumber: 1,
+    patientId: 'P201',
+    patientName: 'Сергей',
+    patientLastName: 'Николаев',
+    patientMiddleName: 'Алексеевич',
+    patientAge: 52,
+    diagnosis: 'Пневмония',
+    status: 'stable',
+    doctorName: 'Д-р Орлов Ю.',
+    doctorRole: 'doctor',
+    admissionDate: '08.05.2024',
+    prescriptions: [
+      { id: 'rx7', name: 'В/в антибиотик', time: '08:00', done: true },
+      { id: 'rx8', name: 'Физиолечение', time: '15:00', done: false }
+    ],
+    medications: [{ id: 'm6', name: 'Цефтриаксон', quantity: 10, unit: 'фл.' }]
+  },
+  {
+    id: 'B202',
+    roomNumber: '201',
+    bedNumber: 2,
+    status: 'free'
+  },
+  {
+    id: 'B203',
+    roomNumber: '202',
+    bedNumber: 1,
+    patientId: 'P202',
+    patientName: 'Виктория',
+    patientLastName: 'Кузнецова',
+    patientMiddleName: 'Игоревна',
+    patientAge: 61,
+    diagnosis: 'Восстановление после ИВЛ',
+    status: 'attention',
+    doctorName: 'Д-р Ершова С.',
+    doctorRole: 'chief-doctor',
+    attentionNote:
+      'После интубации - тщательный мониторинг дыхания. Подготовка к снятию с кислорода',
+    admissionDate: '01.05.2024',
+    prescriptions: [
+      { id: 'rx9', name: 'Мониторинг O2', time: '04:00', done: true },
+      { id: 'rx10', name: 'Мониторинг O2', time: '08:00', done: true }
+    ]
+  },
+  {
+    id: 'B204',
+    roomNumber: '202',
+    bedNumber: 2,
+    patientId: 'P203',
+    patientName: 'Дмитрий',
+    patientLastName: 'Козлов',
+    patientMiddleName: 'Сергеевич',
+    patientAge: 29,
+    diagnosis: 'Острый бронхит',
+    status: 'stable',
+    doctorName: 'Д-р Морозов А.',
+    doctorRole: 'doctor',
+    admissionDate: '18.05.2024',
+    prescriptions: [{ id: 'rx11', name: 'Ингаляция', time: '09:00', done: true }]
   }
-];
+]
 
 // Mock treatments
 export const mockTreatments: Treatment[] = [
@@ -544,7 +699,7 @@ export const mockTreatments: Treatment[] = [
   { id: 'T003', name: 'Прием метформина', time: '09:00', status: 'pending' },
   { id: 'T004', name: 'Измерение глюкозы', time: '12:00', status: 'pending' },
   { id: 'T005', name: 'Инъекция инсулина', time: '13:00', status: 'pending' }
-];
+]
 
 // Mock facilities
 export const mockFacilities: Facility[] = [
@@ -569,7 +724,7 @@ export const mockFacilities: Facility[] = [
       { id: 'D005', name: 'Неврологическое отделение', facilityId: 'F002' }
     ]
   }
-];
+]
 
 // Mock staff
 export const mockStaff: Staff[] = [
@@ -609,12 +764,12 @@ export const mockStaff: Staff[] = [
     login: 's.morozov',
     status: 'inactive'
   }
-];
+]
 
 export function getPatientById(id: string): Patient | undefined {
-  return mockPatients.find((p) => p.id === id);
+  return mockPatients.find((p) => p.id === id)
 }
 
 export function getPatientFullName(patient: Patient): string {
-  return `${patient.lastName} ${patient.firstName} ${patient.middleName}`;
+  return `${patient.lastName} ${patient.firstName} ${patient.middleName}`
 }
