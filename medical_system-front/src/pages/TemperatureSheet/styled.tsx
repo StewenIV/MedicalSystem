@@ -71,16 +71,38 @@ export const StyledCard = styled.div`
 `
 
 export const HeaderRow = styled.div`
-  display: flex;
+   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px;
+  gap: 12px;
+  padding: 0;
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
 `
 
 export const HeaderLeft = styled.div`
-  display: flex;
-  align-items: start;
+   display: flex;
+  align-items: center;
   gap: 12px;
+  min-width: 0;
+
+  @media (max-width: 768px) {
+    gap: 10px;
+  }
+
+  @media (max-width: 480px) {
+    gap: 8px;
+
+    svg {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+  }
 `
 
 export const Title = styled.h2`
@@ -90,6 +112,7 @@ export const Title = styled.h2`
   margin: 0;
   letter-spacing: -0.04em;
   line-height: 1.15;
+  min-width: 0;
 
   ${gradientText(`
     linear-gradient(
@@ -111,34 +134,74 @@ export const Title = styled.h2`
     filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
     letter-spacing: -0.035em;
   }
+
+  @media (max-width: 1024px) {
+    font-size: 24px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 19px;
+  }
 `
 
 export const CardContent = styled.div`
-  padding: 24px;
+   padding: 24px;
+
+  @media (max-width: 768px) {
+    padding: 18px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px;
+  }
 `
 
 export const InfoGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 24px;
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: clamp(12px, 2vw, 24px);
 
-  @media (max-width: 768px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
+@media (max-width: 1024px) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 500px) {
+  grid-template-columns: 1fr;
+}
 `
 
 export const InfoItem = styled.div`
-  display: flex;
-  align-items: start;
+display: flex;
+  align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  border: 1px solid rgba(191, 219, 254, 0.35);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 
   @media (max-width: 768px) {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
   }
 `
 
-export const InfoText = styled.div``
+export const InfoText = styled.div`
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+`
 
 export const InfoLabel = styled.div`
   font-family: ${FONT_STACK};
@@ -178,7 +241,7 @@ export const InfoLabel = styled.div`
 `
 
 export const InfoValue = styled.div`
-  font-family: ${FONT_STACK};
+ font-family: ${FONT_STACK};
   font-size: 17px;
   font-weight: 700;
   color: #0f172a;
@@ -187,8 +250,8 @@ export const InfoValue = styled.div`
   transition:
     color 0.2s ease,
     letter-spacing 0.2s ease;
-
   font-variant-numeric: tabular-nums;
+  word-break: break-word;
 
   ${InfoItem}:hover & {
     color: #1e40af;
@@ -207,9 +270,15 @@ export const InfoValue = styled.div`
   }
 
   @media (max-width: 768px) {
+    font-size: 16px;
+
     &::before {
       display: none;
     }
+  }
+
+  @media (max-width: 480px) {
+    font-size: 15px;
   }
 `
 
@@ -272,7 +341,7 @@ export const Card = styled.div`
 `
 
 export const CardHeader = styled.div`
-  padding: 18px 24px 16px;
+    padding: 18px 24px 16px;
   border-bottom: 1px solid rgba(238, 242, 247, 0.9);
   background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
   border-radius: 12px 12px 0 0;
@@ -313,6 +382,14 @@ export const CardHeader = styled.div`
   &:hover::after {
     opacity: 1;
     animation: ${shimmer} 1.4s ease infinite;
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px 18px 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px 14px 12px;
   }
 `
 
@@ -373,6 +450,12 @@ export const CardSubtitle = styled.p`
       opacity: 1;
       transform: scale(1.3);
     }
+  }
+
+   @media (max-width: 768px) {
+    padding-left: 0;
+    font-size: 12px;
+    line-height: 1.45;
   }
 `
 

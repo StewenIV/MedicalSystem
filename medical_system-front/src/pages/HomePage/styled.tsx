@@ -30,9 +30,22 @@ export const HeaderInner = styled.div`
   padding: 8px 24px;
   min-height: 64px;
   display: grid;
-  grid-template-columns: auto minmax(240px, 1fr) auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   gap: 16px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  @media (max-width: 640px) {
+    position: relative;
+    grid-template-columns: auto auto;
+  }
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+  }
 `
 
 export const FlexBetween = styled.div`
@@ -45,12 +58,29 @@ export const Flex = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 `
 
 export const FlexRight = styled(Flex)`
-  justify-content: flex-end;
+justify-content: flex-end;
   gap: 12px;
   flex-wrap: nowrap;
+  min-width: 0;
+
+  @media (max-width: 900px) {
+    gap: 10px;
+  }
+
+  @media (max-width: 640px) {
+    justify-self: end;
+    gap: 8px;
+  }
+
+  @media (max-width: 480px) {
+    justify-self: start;
+    width: 100%;
+    justify-content: space-between;
+  }
 `
 
 // ─── Logo block ───────────────────────────────────────────────────────────────
@@ -103,7 +133,7 @@ export const LogoSubtitle = styled.span`
 // ─── Header date / clock ──────────────────────────────────────────────────────
 
 export const DateLabel = styled.div`
-  display: flex;
+   display: flex;
   align-items: center;
   gap: 6px;
   font-family: ${FONT};
@@ -111,9 +141,19 @@ export const DateLabel = styled.div`
   font-weight: 500;
   color: #64748b;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 
   svg {
     opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 900px) {
+    font-size: 12px;
+  }
+
+  @media (max-width: 640px) {
+    display: none;
   }
 `
 
@@ -317,7 +357,7 @@ export const StatusBadge = styled.span<{
 // ─── Icon button ──────────────────────────────────────────────────────────────
 
 export const IconButton = styled.button`
-  position: relative;
+    position: relative;
   padding: 8px;
   border-radius: 8px;
   border: none;
@@ -327,35 +367,83 @@ export const IconButton = styled.button`
   transition:
     background 0.15s,
     color 0.15s;
+  flex-shrink: 0;
 
   &:hover {
     background: #f1f5f9;
     color: ${colors.mainColor};
   }
+
+  @media (max-width: 640px) {
+    padding: 7px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 6px;
+  }
 `
 
-export const SearchWrapper = styled.div`
+export const SearchWrapper = styled.div<{ $open?: boolean }>`
   width: 100%;
-  max-width: 640px;
+  max-width: 480px;
   justify-self: center;
+  min-width: 0;
+  transition: all 0.25s ease;
+
+  @media (max-width: 640px) {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    top: 70px;
+
+    opacity: ${({ $open }) => ($open ? 1 : 0)};
+    transform: ${({ $open }) =>
+      $open ? 'translateY(0)' : 'translateY(-10px)'};
+    pointer-events: ${({ $open }) =>
+      $open ? 'auto' : 'none'};
+
+    background: white;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 20;
+  }
 `
 
-// ─── Separator ────────────────────────────────────────────────────────────────
+export const SearchIconButton = styled(IconButton)`
+  display: none;
+
+  @media (max-width: 640px) {
+    display: flex;
+  }
+`
 
 export const Separator = styled.div`
-  width: 1px;
+   width: 1px;
   height: 30px;
   background: #e5e7eb;
+  flex-shrink: 0;
+
+  @media (max-width: 640px) {
+    display: none;
+  }
 `
 
-// ─── Account Info ─────────────────────────────────────────────────────────────
-
 export const AccountInfo = styled.div`
-  display: flex;
+display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 6px;
   min-width: 0;
+
+  @media (max-width: 900px) {
+    gap: 8px;
+    padding: 0 4px;
+  }
+
+  @media (max-width: 640px) {
+    padding: 0;
+  }
 `
 
 export const AccountText = styled.div`
@@ -364,14 +452,27 @@ export const AccountText = styled.div`
   gap: 2px;
   min-width: 0;
   line-height: 1.2;
+
+  @media (max-width: 900px) {
+    gap: 1px;
+  }
+
+  @media (max-width: 640px) {
+    display: none;
+  }
 `
 
 export const AccountName = styled.span`
-  font-family: ${FONT};
+   font-family: ${FONT};
   font-size: 14px;
   font-weight: 600;
   color: #1f2937;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+
+  @media (max-width: 900px) {
+    font-size: 13px;
+  }
 `
 
 export const AccountRole = styled.span`
@@ -380,10 +481,15 @@ export const AccountRole = styled.span`
   font-weight: 500;
   color: #6b7280;
   letter-spacing: 0;
+  white-space: nowrap;
+
+  @media (max-width: 900px) {
+    font-size: 11px;
+  }
 `
 
 export const AccountAvatar = styled.div`
-  width: 40px;
+    width: 40px;
   height: 40px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
@@ -396,9 +502,19 @@ export const AccountAvatar = styled.div`
   font-weight: 700;
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
-`
 
-// ─── Notifications ────────────────────────────────────────────────────────────
+  @media (max-width: 900px) {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+`
 
 export const Backdrop = styled.div`
   position: fixed;

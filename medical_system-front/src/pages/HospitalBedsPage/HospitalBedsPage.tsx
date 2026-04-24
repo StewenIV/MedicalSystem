@@ -183,22 +183,40 @@ function AnimatedAccentCard({ targetPct }: { targetPct: number }) {
   )
 }
 
+function pluralize(count: number, forms: [string, string, string]) {
+  const rule = new Intl.PluralRules('ru-RU').select(count)
+
+  switch (rule) {
+    case 'one':
+      return forms[0]
+    case 'few':
+      return forms[1]
+    default:
+      return forms[2]
+  }
+}
+
 function AnimatedFloorStat({
   target,
   color,
-  large
+  large,
+  trigger
 }: {
   target: number
   color?: string
   large?: boolean
+  trigger: number
 }) {
   const { value, replay } = useCounter(target, 900)
+
+  useEffect(() => {
+    replay()
+  },[trigger])
 
   return (
     <FloorStatValue
       $color={color}
       $large={large}
-      onMouseEnter={replay}
       style={{ cursor: 'default' }}
     >
       {value}
@@ -223,6 +241,7 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
     )
   }
 
+
   const details = bed.patientId ? patientDetails[bed.patientId] : null
 
   const handleRxToggle = (rxId: string | number) => {
@@ -237,6 +256,7 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
       return newSet
     })
   }
+  
   const initials = bed.patientName ? `${bed.patientName[0]}${bed.patientLastName?.[0] ?? ''}` : '—'
 
   return (
@@ -354,8 +374,6 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
     </DetailPanel>
   )
 }
-
-// ─── Patient modal ────────────────────────────────────────────────────────────
 
 function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () => void }) {
   const [completedPrescriptions, setCompletedPrescriptions] = useState<Set<string>>(new Set())
@@ -497,8 +515,6 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
 interface HospitalWorkplaceProps {
   onNavigate?: (screen: string) => void
   onLogout?: () => void
@@ -514,12 +530,16 @@ interface HospitalWorkplaceProps {
 }
 
 export function HospitalWorkplace({ onNavigate, onLogout, userRole }: HospitalWorkplaceProps) {
+const [triggers, setTriggers] = useState({
+  total: 0,
+  free: 0,
+  male: 0,
+  female: 0
+})
   const [activeFloor, setActiveFloor] = useState<number | null>(null)
   const [selectedBedId, setSelectedBedId] = useState<string | null>(null)
   const [selectedWard, setSelectedWard] = useState<string | null>(null)
   const [modalBedId, setModalBedId] = useState<string | null>(null)
-
-  // ── Derived data ──────────────────────────────────────────────────────────
 
   const totalBeds = mockHospitalBeds.length
   const occupiedBeds = mockHospitalBeds.filter((b) => b.status !== 'free').length
@@ -571,14 +591,10 @@ export function HospitalWorkplace({ onNavigate, onLogout, userRole }: HospitalWo
     if (room.beds.some((b) => b.status === 'attention')) return 'attention'
     return 'normal'
   }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-
   return (
     <>
       <GlobalStyle />
       <PageWrapper>
-        {/* ── Top stats card ── */}
         <Container>
           <StyledCard>
             <CardHeader>
@@ -629,7 +645,6 @@ export function HospitalWorkplace({ onNavigate, onLogout, userRole }: HospitalWo
           </StyledCard>
         </Container>
 
-        {/* ── Floor & ward management card ── */}
         <SectionCard>
           <SectionCardHeader>
             <SectionHeaderInner>
@@ -662,31 +677,32 @@ export function HospitalWorkplace({ onNavigate, onLogout, userRole }: HospitalWo
           </SectionCardHeader>
 
           <FloorContent>
-            {/* Floor stats bar */}
-            <FloorStatsBar>
-              <FloorStat>
+            <FloorStatsBar            >
+              <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, total: prev.total + 1 }))}>
                 <FloorStatLabel>На этаже</FloorStatLabel>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon.Users />
-                  <AnimatedFloorStat target={totalOnFloor} large />
-                  <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 500 }}>коек</span>
+                  <Icon.Users/>
+                  <AnimatedFloorStat target={totalOnFloor} large trigger={triggers.total}/>
+                  <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 500 }}>
+                    {pluralize(totalOnFloor, ['палата', 'палаты', 'палат'])}
+                  </span>
                 </div>
               </FloorStat>
 
-              <FloorStat>
+              <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, free: prev.free + 1 }))}>
                 <FloorStatLabel>Свободно</FloorStatLabel>
-                <AnimatedFloorStat target={freeOnFloor} color="#16a34a" />
+                <AnimatedFloorStat target={freeOnFloor} color="#16a34a" trigger={triggers.free} />
                 <FloorStatSub>из {totalOnFloor} на этаже</FloorStatSub>
               </FloorStat>
 
-              <FloorStat>
+              <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, male: prev.male + 1 }))}>
                 <FloorStatLabel>Муж. свободно</FloorStatLabel>
-                <AnimatedFloorStat target={freeMale} />
+                <AnimatedFloorStat target={freeMale} trigger={triggers.male} />
               </FloorStat>
 
-              <FloorStat>
+              <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, female: prev.female + 1 }))}>
                 <FloorStatLabel>Жен. свободно</FloorStatLabel>
-                <AnimatedFloorStat target={femaleFree} />
+                <AnimatedFloorStat target={femaleFree} trigger={triggers.female} />
               </FloorStat>
 
               <ManageBtn>
@@ -695,7 +711,6 @@ export function HospitalWorkplace({ onNavigate, onLogout, userRole }: HospitalWo
               </ManageBtn>
             </FloorStatsBar>
 
-            {/* Problem alerts */}
             {(urgentBeds.length > 0 || attentionBeds.length > 0) && (
               <AlertsSection>
                 <AlertsLabel>
@@ -719,7 +734,6 @@ export function HospitalWorkplace({ onNavigate, onLogout, userRole }: HospitalWo
               </AlertsSection>
             )}
 
-            {/* Two-col: ward grid + detail panel */}
             <TwoCol>
               <WardGrid>
                 {rooms.map((room) => {

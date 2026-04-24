@@ -53,7 +53,7 @@ export const Icon = {
     </svg>
   ),
   Users: () => (
-    <svg width="18" height="18" fill="none" stroke="#9ca3af" strokeWidth="2" viewBox="0 0 24 24">
+    <svg width="30" height="30" fill="none" stroke="#171717" strokeWidth="2" viewBox="0 0 24 24" style={{backgroundColor: '#e7e7e7', borderRadius: '8px', padding: 7}}>
       <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
       <circle cx="9" cy="7" r="4"/>
       <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>

@@ -23,6 +23,7 @@ import {
   Main,
   IconButton,
   SearchWrapper,
+  SearchIconButton,
   DateLabel,
   Card,
   CardHeader,
@@ -96,6 +97,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   onLogout = () => {},
   userRole = 'nurse'
 }) => {
+  const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('dashboard')
@@ -193,13 +195,17 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   <SidebarTrigger className="rounded-lg" />
                 </Flex>
 
-                <SearchWrapper>
+                <SearchWrapper $open={searchOpen}>
                   <Input
                     type="search"
                     placeholder="Поиск пациента..."
                     icon={<Search size={16} />}
                   />
                 </SearchWrapper>
+
+                <SearchIconButton onClick={() => setSearchOpen((prev) => !prev)}>
+                  <Search size={18} />
+                </SearchIconButton>
 
                 <FlexRight>
                   <DateLabel>

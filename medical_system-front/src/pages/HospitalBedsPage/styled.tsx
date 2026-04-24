@@ -1,7 +1,5 @@
 import styled, { css, keyframes, createGlobalStyle } from 'styled-components'
 
-export const FONT = `'Geist', 'SF Pro Text', -apple-system, BlinkMacSystemFont, sans-serif`
-export const FONT_STACK = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
 export const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
 export const GRADIENT_SHIMMER =
   'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)'
@@ -58,7 +56,7 @@ export const modalSlide = keyframes`
 
 export const GlobalStyle = createGlobalStyle`
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: ${FONT}; background: #f7f8fa; }
+  body { margin: 0; background: #f7f8fa; }
 `
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
@@ -67,7 +65,6 @@ export const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  font-family: ${FONT};
   border-radius: 12px;
   gap: 24px;
   animation: ${fadeUp} 0.3s ease both;
@@ -97,7 +94,9 @@ export const StyledCard = styled.div`
     0 4px 12px rgba(15, 23, 42, 0.06),
     0 20px 40px rgba(15, 23, 42, 0.05);
   overflow: hidden;
-  transition: box-shadow 0.25s ease, transform 0.2s ease;
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.2s ease;
 
   &:hover {
     box-shadow:
@@ -106,6 +105,7 @@ export const StyledCard = styled.div`
       0 24px 48px rgba(15, 23, 42, 0.07);
     transform: translateY(-1px);
   }
+    
 `
 
 export const SectionCard = styled(StyledCard)`
@@ -130,7 +130,9 @@ export const CardHeader = styled.div`
     background: ${GRADIENT_ACCENT};
     border-radius: 0 3px 3px 0;
     box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
-    transition: box-shadow 0.25s ease, width 0.2s ease;
+    transition:
+      box-shadow 0.25s ease,
+      width 0.2s ease;
   }
 
   &::after {
@@ -171,17 +173,17 @@ export const HeaderLeft = styled.div`
 `
 
 export const Title = styled.h2`
-  font-family: ${FONT_STACK};
+
   font-size: 28px;
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.04em;
   line-height: 1.15;
-  ${gradientText(
-    'linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #6d28d9 75%, #2563eb 100%)'
-  )}
+  ${gradientText('linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #6d28d9 75%, #2563eb 100%)')}
   filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
-  transition: filter 0.25s ease, letter-spacing 0.25s ease;
+  transition:
+    filter 0.25s ease,
+    letter-spacing 0.25s ease;
 
   &:hover {
     filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
@@ -190,7 +192,6 @@ export const Title = styled.h2`
 `
 
 export const CardSubtitle = styled.p`
-  font-family: ${FONT_STACK};
   margin: 6px 0 0;
   font-size: 13px;
   font-weight: 400;
@@ -218,9 +219,17 @@ export const CardContent = styled.div`
 // ─── Stats grid ───────────────────────────────────────────────────────────────
 
 export const InfoGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+display: grid;
+grid-template-columns: repeat(4, 1fr);
+gap: clamp(12px, 2vw, 24px);
+
+@media (max-width: 1024px) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 500px) {
+  grid-template-columns: 1fr;
+}  
 `
 
 export const InfoItem = styled.div`
@@ -228,8 +237,8 @@ export const InfoItem = styled.div`
 `
 
 export const StatCard = styled.div<{ $accent?: boolean }>`
-  background: ${p => (p.$accent ? '#111827' : '#ffffff')};
-  border: 1px solid ${p => (p.$accent ? 'transparent' : '#ebebeb')};
+  background: ${(p) => (p.$accent ? '#111827' : '#ffffff')};
+  border: 1px solid ${(p) => (p.$accent ? 'transparent' : '#ebebeb')};
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -254,32 +263,26 @@ export const StatCard = styled.div<{ $accent?: boolean }>`
 export const StatLabel = styled.div<{ $light?: boolean }>`
   font-size: 11px;
   font-weight: 500;
-  color: ${p => (p.$light ? 'rgba(255,255,255,0.6)' : '#94a3b8')};
+  color: ${(p) => (p.$light ? 'rgba(255,255,255,0.6)' : '#94a3b8')};
   letter-spacing: 0.08em;
   text-transform: uppercase;
 `
 
 export const StatValue = styled.div<{ $light?: boolean; $color?: string; $delta?: string }>`
-  margin: ${p => (p.$delta ? '2px 0' : 'auto 0')};
+  margin: ${(p) => (p.$delta ? '2px 0' : 'auto 0')};
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.04em;
   line-height: 1;
-  color: ${p => (p.$light ? '#fff' : p.$color || '#111827')};
+  color: ${(p) => (p.$light ? '#fff' : p.$color || '#111827')};
   font-variant-numeric: tabular-nums;
 `
 
 export const StatDelta = styled.div<{ $positive?: boolean; $light?: boolean }>`
   font-size: 12px;
   font-weight: 500;
-  color: ${p =>
-    p.$light
-      ? p.$positive
-        ? '#86efac'
-        : '#fca5a5'
-      : p.$positive
-        ? '#16a34a'
-        : '#dc2626'};
+  color: ${(p) =>
+    p.$light ? (p.$positive ? '#86efac' : '#fca5a5') : p.$positive ? '#16a34a' : '#dc2626'};
 `
 
 export const ProgressBarWrap = styled.div`
@@ -306,7 +309,7 @@ export const ProgressFill = styled.div<{ $pct: number }>`
   background: #fff;
   border-radius: 3px;
   transform-origin: left;
-  transform: scaleX(${p => p.$pct / 100});
+  transform: scaleX(${(p) => p.$pct / 100});
   transition: transform 0.05s linear;
 `
 
@@ -320,7 +323,6 @@ export const SectionHeaderInner = styled.div`
 `
 
 export const SectionTitle = styled.h3`
-  font-family: ${FONT_STACK};
   font-size: 20px;
   font-weight: 800;
   margin: 0;
@@ -336,18 +338,17 @@ export const FloorTabs = styled.div`
 export const FloorTab = styled.button<{ $active?: boolean }>`
   padding: 5px 16px;
   border-radius: 20px;
-  font-family: ${FONT};
   font-size: 12.5px;
   font-weight: 600;
-  border: 1.5px solid ${p => (p.$active ? '#1e40af' : '#e5e7eb')};
-  background: ${p => (p.$active ? '#1e40af' : '#fff')};
-  color: ${p => (p.$active ? '#fff' : '#6b7280')};
+  border: 1.5px solid ${(p) => (p.$active ? '#1e40af' : '#e5e7eb')};
+  background: ${(p) => (p.$active ? '#1e40af' : '#fff')};
+  color: ${(p) => (p.$active ? '#fff' : '#6b7280')};
   cursor: pointer;
   transition: all 0.14s;
 
   &:hover {
     border-color: #1e40af;
-    color: ${p => (p.$active ? '#fff' : '#1e40af')};
+    color: ${(p) => (p.$active ? '#fff' : '#1e40af')};
   }
 `
 
@@ -366,14 +367,15 @@ export const FloorStatsBar = styled.div`
   border-radius: 12px;
   padding: 14px 20px;
   display: flex;
-  align-items: center;
+  align-items: start;
 `
 
 export const FloorStat = styled.div`
   display: flex;
   flex-direction: column;
+  align-self: stretch;
   gap: 2px;
-  padding: 0 24px;
+  padding: 0px 24px;
   border-right: 1px solid #e0e7ff;
 
   &:first-child {
@@ -395,10 +397,10 @@ export const FloorStatLabel = styled.div`
 `
 
 export const FloorStatValue = styled.div<{ $color?: string; $large?: boolean }>`
-  font-size: ${p => (p.$large ? '26px' : '20px')};
+  font-size: ${(p) => (p.$large ? '26px' : '20px')};
   font-weight: 800;
   letter-spacing: -0.035em;
-  color: ${p => p.$color || '#111827'};
+  color: ${(p) => p.$color || '#111827'};
   font-variant-numeric: tabular-nums;
 `
 
@@ -414,7 +416,6 @@ export const ManageBtn = styled.button`
   gap: 7px;
   padding: 8px 16px;
   border-radius: 8px;
-  font-family: ${FONT};
   font-size: 13px;
   font-weight: 500;
   border: 1px solid #e5e7eb;
@@ -460,18 +461,17 @@ export const AlertPill = styled.button<{ $gray?: boolean }>`
   gap: 8px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-family: ${FONT};
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.14s;
-  border: 1px solid ${p => (p.$gray ? '#e5e7eb' : '#fecaca')};
-  background: ${p => (p.$gray ? '#f9fafb' : '#fff5f5')};
-  color: ${p => (p.$gray ? '#6b7280' : '#dc2626')};
+  border: 1px solid ${(p) => (p.$gray ? '#e5e7eb' : '#fecaca')};
+  background: ${(p) => (p.$gray ? '#f9fafb' : '#fff5f5')};
+  color: ${(p) => (p.$gray ? '#6b7280' : '#dc2626')};
 
   &:hover {
-    border-color: ${p => (p.$gray ? '#9ca3af' : '#f87171')};
-    background: ${p => (p.$gray ? '#f3f4f6' : '#fee2e2')};
+    border-color: ${(p) => (p.$gray ? '#9ca3af' : '#f87171')};
+    background: ${(p) => (p.$gray ? '#f3f4f6' : '#fee2e2')};
   }
 `
 
@@ -484,12 +484,10 @@ export const AlertNum = styled.span<{ $gray?: boolean }>`
   justify-content: center;
   font-size: 12px;
   font-weight: 700;
-  background: ${p => (p.$gray ? '#e5e7eb' : '#fee2e2')};
-  color: ${p => (p.$gray ? '#374151' : '#dc2626')};
+  background: ${(p) => (p.$gray ? '#e5e7eb' : '#fee2e2')};
+  color: ${(p) => (p.$gray ? '#374151' : '#dc2626')};
   flex-shrink: 0;
 `
-
-// ─── Two-column layout & Ward grid ───────────────────────────────────────────
 
 export const TwoCol = styled.div`
   display: grid;
@@ -499,9 +497,14 @@ export const TwoCol = styled.div`
 `
 
 export const WardGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+ display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
+
+  @media (max-width: 480px) {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 `
 
 export const WardCard = styled.div<{
@@ -510,25 +513,34 @@ export const WardCard = styled.div<{
   $selected?: boolean
 }>`
   background: #fff;
-  border: 1.5px solid
-    ${p => (p.$urgent ? '#fca5a5' : p.$attention ? '#fde68a' : '#ebebeb')};
+  border: 1.5px solid ${(p) => (p.$urgent ? '#fca5a5' : p.$attention ? '#fde68a' : '#ebebeb')};
   border-radius: 12px;
   padding: 14px;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s;
   position: relative;
 
-  ${p => p.$urgent && css`animation: ${pulse} 2s infinite;`}
-  ${p => p.$attention && css`animation: ${attentionPulse} 2.5s infinite;`}
+  ${(p) =>
+    p.$urgent &&
+    css`
+      animation: ${pulse} 2s infinite;
+    `}
+  ${(p) =>
+    p.$attention &&
+    css`
+      animation: ${attentionPulse} 2.5s infinite;
+    `}
 
   &:hover {
-    border-color: ${p =>
-      p.$urgent ? '#f87171' : p.$attention ? '#fbbf24' : '#d1d5db'};
+    border-color: ${(p) => (p.$urgent ? '#f87171' : p.$attention ? '#fbbf24' : '#d1d5db')};
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
     transform: translateY(-1px);
   }
 
-  ${p =>
+  ${(p) =>
     p.$selected &&
     css`
       border-color: #6366f1 !important;
@@ -562,10 +574,8 @@ export const StatusBadge = styled.div<{ $urgent?: boolean; $attention?: boolean 
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
-  background: ${p =>
-    p.$urgent ? '#fee2e2' : p.$attention ? '#fef3c7' : '#f0fdf4'};
-  color: ${p =>
-    p.$urgent ? '#dc2626' : p.$attention ? '#d97706' : '#16a34a'};
+  background: ${(p) => (p.$urgent ? '#fee2e2' : p.$attention ? '#fef3c7' : '#f0fdf4')};
+  color: ${(p) => (p.$urgent ? '#dc2626' : p.$attention ? '#d97706' : '#16a34a')};
   display: flex;
   align-items: center;
   gap: 4px;
@@ -591,10 +601,12 @@ export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgen
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
-  transition: transform 0.12s, box-shadow 0.12s;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
   position: relative;
 
-  color: ${p =>
+  color: ${(p) =>
     p.$s === 'free'
       ? '#9ca3af'
       : p.$s === 'urgent'
@@ -603,7 +615,7 @@ export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgen
           ? '#d97706'
           : '#16a34a'};
 
-  border-color: ${p =>
+  border-color: ${(p) =>
     p.$s === 'free'
       ? '#e5e7eb'
       : p.$s === 'urgent'
@@ -612,7 +624,7 @@ export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgen
           ? '#fde68a'
           : '#bbf7d0'};
 
-  background: ${p =>
+  background: ${(p) =>
     p.$s === 'free'
       ? '#f9fafb'
       : p.$s === 'urgent'
@@ -621,8 +633,16 @@ export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgen
           ? '#fffbeb'
           : '#f0fdf4'};
 
-  ${p => p.$s === 'urgent' && css`animation: ${pulse} 2s infinite;`}
-  ${p => p.$s === 'attention' && css`animation: ${attentionPulse} 2.5s infinite;`}
+  ${(p) =>
+    p.$s === 'urgent' &&
+    css`
+      animation: ${pulse} 2s infinite;
+    `}
+  ${(p) =>
+    p.$s === 'attention' &&
+    css`
+      animation: ${attentionPulse} 2.5s infinite;
+    `}
 
   &:hover {
     transform: scale(1.1);
@@ -746,7 +766,6 @@ export const RowsDoctorBlock = styled.div`
   justify-content: start;
 `
 
-
 export const DoctorNoteLabel = styled.div`
   font-size: 10px;
   font-weight: 700;
@@ -780,7 +799,7 @@ export const RxItem = styled.div<{ $done?: boolean }>`
   align-items: center;
   justify-content: space-between;
   padding: 7px 16px;
-  background: ${p => (p.$done ? '#f9fafb' : '#fff')};
+  background: ${(p) => (p.$done ? '#f9fafb' : '#fff')};
   transition: background 0.12s;
   cursor: pointer;
 
@@ -799,8 +818,8 @@ export const RxDot = styled.div<{ $done?: boolean }>`
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 1.5px solid ${p => (p.$done ? '#d1d5db' : '#6366f1')};
-  background: ${p => (p.$done ? '#f3f4f6' : 'transparent')};
+  border: 1.5px solid ${(p) => (p.$done ? '#d1d5db' : '#6366f1')};
+  background: ${(p) => (p.$done ? '#f3f4f6' : 'transparent')};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -810,8 +829,8 @@ export const RxDot = styled.div<{ $done?: boolean }>`
 export const RxName = styled.div<{ $done?: boolean }>`
   font-size: 12px;
   font-weight: 500;
-  color: ${p => (p.$done ? '#9ca3af' : '#374151')};
-  text-decoration: ${p => (p.$done ? 'line-through' : 'none')};
+  color: ${(p) => (p.$done ? '#9ca3af' : '#374151')};
+  text-decoration: ${(p) => (p.$done ? 'line-through' : 'none')};
 `
 
 export const RxDose = styled.div`
@@ -899,8 +918,8 @@ export const Overlay = styled.div`
 
 export const Modal = styled.div`
   background: #fff;
-  border-radius: 20px;
   width: 100%;
+  border-radius: 20px;
   max-width: 640px;
   max-height: 85vh;
   overflow-y: auto;
@@ -908,6 +927,33 @@ export const Modal = styled.div`
     0 24px 80px rgba(15, 23, 42, 0.2),
     0 8px 32px rgba(37, 99, 235, 0.1);
   animation: ${modalSlide} 0.3s ease both;
+
+  /* 1. Увеличиваем общую ширину области скролла, чтобы было место для маневра */
+  &::-webkit-scrollbar {
+    width: 15px; 
+  }
+
+  /* 2. Дорожка остается прозрачной */
+  &::-webkit-scrollbar-track {
+    background: transparent;
+    margin: 12px 0;
+  }
+
+  /* 3. Магия смещения ползунка */
+  &::-webkit-scrollbar-thumb {
+    background-color: #cbd5e1;
+    /* Это свойство заставляет фон не заходить под border */
+    background-clip: padding-box; 
+    
+    /* Делаем прозрачную рамку справа — она и создаст визуальный отступ от края */
+    border: 4px solid transparent; 
+    /* Можно добавить небольшой отступ и слева, чтобы отделить от контента */
+    border-radius: 10px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #94a3b8;
+  }
 `
 
 export const ModalHeader = styled.div`
@@ -971,16 +1017,16 @@ export const ModalRxItem = styled.div<{ $done?: boolean }>`
   gap: 10px;
   padding: 8px 12px;
   border-radius: 8px;
-  background: ${p => (p.$done ? '#f9fafb' : '#fafbff')};
-  border: 1px solid ${p => (p.$done ? '#f3f4f6' : '#e0e7ff')};
+  background: ${(p) => (p.$done ? '#f9fafb' : '#fafbff')};
+  border: 1px solid ${(p) => (p.$done ? '#f3f4f6' : '#e0e7ff')};
 `
 
 export const ModalRxName = styled.div<{ $done?: boolean }>`
   font-size: 13px;
   font-weight: 500;
-  color: ${p => (p.$done ? '#9ca3af' : '#374151')};
+  color: ${(p) => (p.$done ? '#9ca3af' : '#374151')};
   flex: 1;
-  text-decoration: ${p => (p.$done ? 'line-through' : 'none')};
+  text-decoration: ${(p) => (p.$done ? 'line-through' : 'none')};
 `
 
 export const ModalRxDose = styled.div`
