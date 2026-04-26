@@ -10,7 +10,8 @@ import {
   BarChart3,
   Settings,
   ChevronDown,
-  Stethoscope
+  Stethoscope,
+  Building2
 } from 'lucide-react'
 
 import {
@@ -40,6 +41,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       { key: 'patients', label: 'Пациенты', icon: Users },
       { key: 'temperature-sheet', label: 'Температурный лист', icon: Thermometer },
       { key: 'HospitalWorkplace', label: 'Стационар', icon: Calendar },
+      { key: 'beds-admin', label: 'Администрирование стационара', icon: Building2 },
       { key: 'documents', label: 'Документы', icon: FileText },
       { key: 'reports', label: 'Отчёты', icon: BarChart3 },
       { key: 'settings', label: 'Управление', icon: Settings }
@@ -85,8 +87,8 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
                     tooltip={label}
                   >
                     <Icon size={24} style={{ minWidth: '24px', minHeight: '24px' }} />
-                    
-                    <span className='h-6 w-[1px] bg-slate-200'></span>
+
+                    <span className="h-6 w-[1px] bg-slate-200"></span>
                     <span>{label}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

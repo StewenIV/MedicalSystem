@@ -152,7 +152,7 @@ export const BackButtonCopy = styled(Button)`
 
 export const SecurityNoteWrapper = styled.div`
   margin-top: 12px;
-  max-width: 510px;
+  max-width: 480px;
   width: 100%;
   background-color: #f9fafb;
   border: 1px solid #e5e7eb;

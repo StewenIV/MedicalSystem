@@ -68,6 +68,7 @@ import Input from 'components/Input'
 import { mockTodayAppointments } from 'data/mockData'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { HospitalWorkplace } from 'pages/HospitalBedsPage'
+import BedsAdminPage from 'pages/BedsAdminPage'
 
 type NotificationType = 'lab-result' | 'appointment-reminder'
 type SeverityType = 'critical' | 'warning'
@@ -287,6 +288,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   userRole={userRole}
                 />
               )}
+
+              {activeSection === 'beds-admin' && <BedsAdminPage />}
 
               {activeSection === 'patients' && (
                 <SectionTitle style={{ marginTop: 24 }}>Пациенты</SectionTitle>

@@ -389,7 +389,7 @@ export const FloorStat = styled.div`
 `
 
 export const FloorStatLabel = styled.div`
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -397,7 +397,7 @@ export const FloorStatLabel = styled.div`
 `
 
 export const FloorStatValue = styled.div<{ $color?: string; $large?: boolean }>`
-  font-size: ${(p) => (p.$large ? '26px' : '20px')};
+  font-size: ${(p) => (p.$large ? '33px' : '25px')};
   font-weight: 800;
   letter-spacing: -0.035em;
   color: ${(p) => p.$color || '#111827'};
@@ -405,7 +405,7 @@ export const FloorStatValue = styled.div<{ $color?: string; $large?: boolean }>`
 `
 
 export const FloorStatSub = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: #9ca3af;
 `
 
@@ -442,7 +442,7 @@ export const AlertsLabel = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -461,7 +461,7 @@ export const AlertPill = styled.button<{ $gray?: boolean }>`
   gap: 8px;
   padding: 8px 14px;
   border-radius: 8px;
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.14s;
@@ -476,13 +476,13 @@ export const AlertPill = styled.button<{ $gray?: boolean }>`
 `
 
 export const AlertNum = styled.span<{ $gray?: boolean }>`
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   background: ${(p) => (p.$gray ? '#e5e7eb' : '#fee2e2')};
   color: ${(p) => (p.$gray ? '#374151' : '#dc2626')};
@@ -491,7 +491,7 @@ export const AlertNum = styled.span<{ $gray?: boolean }>`
 
 export const TwoCol = styled.div`
   display: grid;
-  grid-template-columns: 1fr 300px;
+  grid-template-columns: 1fr 400px;
   gap: 16px;
   align-items: start;
 `
@@ -556,14 +556,14 @@ export const WardCardTop = styled.div`
 `
 
 export const WardName = styled.div`
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   color: #111827;
   letter-spacing: -0.02em;
 `
 
 export const WardMeta = styled.div`
-  font-size: 11px;
+  font-size: 13px;
   color: #9ca3af;
   margin-top: 2px;
 `
@@ -571,7 +571,7 @@ export const WardMeta = styled.div`
 export const StatusBadge = styled.div<{ $urgent?: boolean; $attention?: boolean }>`
   padding: 2px 7px;
   border-radius: 5px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   background: ${(p) => (p.$urgent ? '#fee2e2' : p.$attention ? '#fef3c7' : '#f0fdf4')};
@@ -588,8 +588,8 @@ export const BedsRow = styled.div`
 `
 
 export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgent' | string }>`
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -597,7 +597,7 @@ export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgen
   justify-content: center;
   gap: 2px;
   border: 1.5px solid;
-  font-size: 8.5px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -672,13 +672,13 @@ export const DetailHeader = styled.div`
 `
 
 export const DetailTitle = styled.div`
-  font-size: 13px;
+  font-size: 16.25px;
   font-weight: 700;
   color: #374151;
 `
 
 export const DetailId = styled.div`
-  font-size: 11px;
+  font-size: 13.75px;
   color: #9ca3af;
   font-variant-numeric: tabular-nums;
 `
@@ -703,21 +703,21 @@ export const PatientAvatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 800;
   color: #4338ca;
   flex-shrink: 0;
 `
 
 export const PatientName = styled.div`
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #111827;
   letter-spacing: -0.02em;
 `
 
 export const PatientMeta = styled.div`
-  font-size: 11px;
+  font-size: 13.75px;
   color: #9ca3af;
   margin-top: 2px;
 `
@@ -725,6 +725,7 @@ export const PatientMeta = styled.div`
 export const UrgentBanner = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: linear-gradient(135deg, #fef2f2, #fff5f5);
   border: 1.5px solid #fca5a5;
@@ -740,6 +741,7 @@ export const UrgentBanner = styled.div`
 export const AttentionBanner = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   background: linear-gradient(135deg, #fffbeb, #fef9e7);
   border: 1.5px solid #fde68a;
@@ -767,7 +769,7 @@ export const RowsDoctorBlock = styled.div`
 `
 
 export const DoctorNoteLabel = styled.div`
-  font-size: 10px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -776,13 +778,13 @@ export const DoctorNoteLabel = styled.div`
 `
 
 export const DoctorNoteText = styled.div`
-  font-size: 12px;
+  font-size: 12.5px;
   color: #374151;
   line-height: 1.5;
 `
 
 export const SectionDivider = styled.div`
-  font-size: 10.5px;
+  font-size: 12.5px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -827,19 +829,19 @@ export const RxDot = styled.div<{ $done?: boolean }>`
 `
 
 export const RxName = styled.div<{ $done?: boolean }>`
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   color: ${(p) => (p.$done ? '#9ca3af' : '#374151')};
   text-decoration: ${(p) => (p.$done ? 'line-through' : 'none')};
 `
 
 export const RxDose = styled.div`
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: #9ca3af;
 `
 
 export const RxTime = styled.div`
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #9ca3af;
   font-variant-numeric: tabular-nums;
@@ -862,13 +864,13 @@ export const MedCard = styled.div`
 `
 
 export const MedName = styled.div`
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
   color: #374151;
 `
 
 export const MedQty = styled.div`
-  font-size: 11px;
+  font-size: 12px;
   color: #9ca3af;
   margin-top: 2px;
 `
@@ -882,19 +884,19 @@ export const LogEntry = styled.div`
 `
 
 export const LogWho = styled.div`
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
 `
 
 export const LogAction = styled.div`
-  font-size: 11px;
+  font-size: 11.5px;
   color: #6b7280;
   margin-top: 2px;
 `
 
 export const LogMeta = styled.div`
-  font-size: 10.5px;
+  font-size: 11.5px;
   color: #9ca3af;
   margin-top: 4px;
   display: flex;
