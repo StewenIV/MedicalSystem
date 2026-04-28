@@ -31,7 +31,6 @@ const Input: React.FC<InputProps> = ({
   const isNumberField = type === 'number'
   const inputType = isPasswordField && showPassword ? 'text' : type
 
-  // Показываем кнопку только если это поле пароля И в нём есть значение
   const shouldShowToggle = Boolean(
     isPasswordField && value && String(value).length > 0
   )

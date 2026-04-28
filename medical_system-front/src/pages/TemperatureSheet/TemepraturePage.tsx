@@ -92,7 +92,7 @@ const VITAL_RULES: Record<
     label: 'Температура',
     min: 34,
     max: 42,
-    integerOnly: true
+    integerOnly: false
   },
   bloodPressureSystolic: {
     label: 'Систолическое давление',

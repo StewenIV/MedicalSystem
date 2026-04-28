@@ -70,7 +70,7 @@ export interface HospitalBed {
   patientMiddleName?: string
   patientAge?: number
   diagnosis?: string
-  status: 'stable' | 'attention' | 'urgent' | 'free'
+  status: 'stable' | 'attention' | 'urgent' | 'free' 
   doctorName?: string
   doctorRole?: string
   attentionNote?: string
@@ -300,6 +300,436 @@ export const mockPatients: Patient[] = [
         frequency: '2 раза в день',
         startDate: '2025-11-01',
         endDate: '2026-05-01',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P004',
+    firstName: 'Екатерина',
+    lastName: 'Орлова',
+    middleName: 'Владимировна',
+    dateOfBirth: '1988-04-11',
+    age: 37,
+    phone: '+7 (495) 456-71-22',
+    email: 'e.orlova@example.com',
+    address: 'г. Москва, ул. Лесная, д. 7, кв. 14',
+    emergencyContact: {
+      name: 'Орлов Владимир Павлович',
+      phone: '+7 (495) 456-71-23',
+      relation: 'Муж'
+    },
+    allergies: ['Ибупрофен'],
+    diagnoses: ['Вегетососудистая дистония'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS010',
+        date: '2026-01-18',
+        bloodPressureSystolic: 118,
+        bloodPressureDiastolic: 76,
+        temperature: 36.4,
+        pulse: 71,
+        spo2: 99,
+        respiratoryRate: 15
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR004',
+        medication: 'Магне B6',
+        dosage: '2 таб',
+        frequency: '2 раза в день',
+        startDate: '2026-01-10',
+        endDate: '2026-02-10',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P005',
+    firstName: 'Николай',
+    lastName: 'Федоров',
+    middleName: 'Андреевич',
+    dateOfBirth: '1969-09-03',
+    age: 56,
+    phone: '+7 (495) 501-14-67',
+    email: 'n.fedorov@example.com',
+    address: 'г. Москва, Профсоюзная ул., д. 18, кв. 42',
+    emergencyContact: {
+      name: 'Федорова Ирина Николаевна',
+      phone: '+7 (495) 501-14-68',
+      relation: 'Супруга'
+    },
+    allergies: [],
+    diagnoses: ['Ишемическая болезнь сердца'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS011',
+        date: '2026-01-17',
+        bloodPressureSystolic: 142,
+        bloodPressureDiastolic: 88,
+        temperature: 36.7,
+        pulse: 79,
+        spo2: 97,
+        respiratoryRate: 17
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR005',
+        medication: 'Бисопролол',
+        dosage: '5 мг',
+        frequency: '1 раз в день',
+        startDate: '2026-01-05',
+        endDate: '2026-03-05',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P006',
+    firstName: 'Светлана',
+    lastName: 'Громова',
+    middleName: 'Ильинична',
+    dateOfBirth: '1995-02-27',
+    age: 30,
+    phone: '+7 (495) 613-90-10',
+    email: 's.gromova@example.com',
+    address: 'г. Москва, ул. Садовая, д. 55, кв. 6',
+    emergencyContact: {
+      name: 'Громова Инна Ивановна',
+      phone: '+7 (495) 613-90-11',
+      relation: 'Мать'
+    },
+    allergies: ['Пыльца'],
+    diagnoses: ['Тонзиллит'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS012',
+        date: '2026-01-16',
+        bloodPressureSystolic: 116,
+        bloodPressureDiastolic: 72,
+        temperature: 37.1,
+        pulse: 76,
+        spo2: 98,
+        respiratoryRate: 16
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR006',
+        medication: 'Мирамистин',
+        dosage: '3 орошения',
+        frequency: '3 раза в день',
+        startDate: '2026-01-12',
+        endDate: '2026-01-22',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P007',
+    firstName: 'Павел',
+    lastName: 'Лебедев',
+    middleName: 'Олегович',
+    dateOfBirth: '1981-12-08',
+    age: 44,
+    phone: '+7 (495) 720-88-01',
+    email: 'p.lebedev@example.com',
+    address: 'г. Москва, Университетский пр., д. 9, кв. 31',
+    emergencyContact: {
+      name: 'Лебедева Марина Олеговна',
+      phone: '+7 (495) 720-88-02',
+      relation: 'Сестра'
+    },
+    allergies: ['Латекс'],
+    diagnoses: ['Поясничный остеохондроз'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS013',
+        date: '2026-01-20',
+        bloodPressureSystolic: 124,
+        bloodPressureDiastolic: 80,
+        temperature: 36.6,
+        pulse: 73,
+        spo2: 98,
+        respiratoryRate: 15
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR007',
+        medication: 'Мидокалм',
+        dosage: '150 мг',
+        frequency: '2 раза в день',
+        startDate: '2026-01-15',
+        endDate: '2026-02-15',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P008',
+    firstName: 'Людмила',
+    lastName: 'Волкова',
+    middleName: 'Семеновна',
+    dateOfBirth: '1974-06-19',
+    age: 51,
+    phone: '+7 (495) 410-55-31',
+    email: 'l.volkova@example.com',
+    address: 'г. Москва, Нагорная ул., д. 12, кв. 9',
+    emergencyContact: {
+      name: 'Волков Илья Константинович',
+      phone: '+7 (495) 410-55-32',
+      relation: 'Сын'
+    },
+    allergies: [],
+    diagnoses: ['Хронический пиелонефрит'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS014',
+        date: '2026-01-18',
+        bloodPressureSystolic: 130,
+        bloodPressureDiastolic: 84,
+        temperature: 36.9,
+        pulse: 77,
+        spo2: 97,
+        respiratoryRate: 17
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR008',
+        medication: 'Канефрон',
+        dosage: '2 драже',
+        frequency: '3 раза в день',
+        startDate: '2026-01-08',
+        endDate: '2026-02-08',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P009',
+    firstName: 'Артем',
+    lastName: 'Белов',
+    middleName: 'Максимович',
+    dateOfBirth: '2000-10-14',
+    age: 25,
+    phone: '+7 (495) 311-24-70',
+    email: 'a.belov@example.com',
+    address: 'г. Москва, Мичуринский пр., д. 4, кв. 52',
+    emergencyContact: {
+      name: 'Белова Татьяна Сергеевна',
+      phone: '+7 (495) 311-24-71',
+      relation: 'Мать'
+    },
+    allergies: ['Цитрусы'],
+    diagnoses: ['Гастродуоденит'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS015',
+        date: '2026-01-19',
+        bloodPressureSystolic: 114,
+        bloodPressureDiastolic: 70,
+        temperature: 36.5,
+        pulse: 68,
+        spo2: 99,
+        respiratoryRate: 14
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR009',
+        medication: 'Омез',
+        dosage: '20 мг',
+        frequency: '1 раз в день',
+        startDate: '2026-01-14',
+        endDate: '2026-02-14',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P010',
+    firstName: 'Наталья',
+    lastName: 'Зайцева',
+    middleName: 'Анатольевна',
+    dateOfBirth: '1983-08-05',
+    age: 42,
+    phone: '+7 (495) 212-67-98',
+    email: 'n.zaitseva@example.com',
+    address: 'г. Москва, пер. Хлебный, д. 2, кв. 11',
+    emergencyContact: {
+      name: 'Зайцев Анатолий Олегович',
+      phone: '+7 (495) 212-67-99',
+      relation: 'Брат'
+    },
+    allergies: ['Мед'],
+    diagnoses: ['Железодефицитная анемия'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS016',
+        date: '2026-01-15',
+        bloodPressureSystolic: 110,
+        bloodPressureDiastolic: 68,
+        temperature: 36.4,
+        pulse: 74,
+        spo2: 99,
+        respiratoryRate: 15
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR010',
+        medication: 'Сорбифер',
+        dosage: '1 таб',
+        frequency: '2 раза в день',
+        startDate: '2026-01-11',
+        endDate: '2026-03-11',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P011',
+    firstName: 'Георгий',
+    lastName: 'Тимофеев',
+    middleName: 'Сергеевич',
+    dateOfBirth: '1958-01-24',
+    age: 68,
+    phone: '+7 (495) 344-18-43',
+    email: 'g.timofeev@example.com',
+    address: 'г. Москва, Ломоносовский пр., д. 33, кв. 88',
+    emergencyContact: {
+      name: 'Тимофеева Алла Георгиевна',
+      phone: '+7 (495) 344-18-44',
+      relation: 'Дочь'
+    },
+    allergies: ['Новокаин'],
+    diagnoses: ['ХОБЛ'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS017',
+        date: '2026-01-17',
+        bloodPressureSystolic: 136,
+        bloodPressureDiastolic: 82,
+        temperature: 36.8,
+        pulse: 80,
+        spo2: 95,
+        respiratoryRate: 19
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR011',
+        medication: 'Беродуал',
+        dosage: '20 капель',
+        frequency: '2 раза в день',
+        startDate: '2026-01-09',
+        endDate: '2026-02-09',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P012',
+    firstName: 'Анастасия',
+    lastName: 'Макарова',
+    middleName: 'Денисовна',
+    dateOfBirth: '1998-05-30',
+    age: 27,
+    phone: '+7 (495) 277-41-53',
+    email: 'a.makarova@example.com',
+    address: 'г. Москва, Смоленский бульвар, д. 21, кв. 15',
+    emergencyContact: {
+      name: 'Макаров Денис Сергеевич',
+      phone: '+7 (495) 277-41-54',
+      relation: 'Брат'
+    },
+    allergies: [],
+    diagnoses: ['Мигрень'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS018',
+        date: '2026-01-20',
+        bloodPressureSystolic: 112,
+        bloodPressureDiastolic: 74,
+        temperature: 36.6,
+        pulse: 70,
+        spo2: 99,
+        respiratoryRate: 14
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR012',
+        medication: 'Суматриптан',
+        dosage: '50 мг',
+        frequency: 'при приступе',
+        startDate: '2026-01-16',
+        endDate: '2026-04-16',
+        status: 'active'
+      }
+    ],
+    documents: []
+  },
+  {
+    id: 'P013',
+    firstName: 'Роман',
+    lastName: 'Егоров',
+    middleName: 'Валерьевич',
+    dateOfBirth: '1990-03-09',
+    age: 35,
+    phone: '+7 (495) 688-15-77',
+    email: 'r.egorov@example.com',
+    address: 'г. Москва, ул. Тверская, д. 41, кв. 19',
+    emergencyContact: {
+      name: 'Егорова Елена Романовна',
+      phone: '+7 (495) 688-15-78',
+      relation: 'Супруга'
+    },
+    allergies: ['Анальгин'],
+    diagnoses: ['Синусит'],
+    activeAppointments: [],
+    vitalSigns: [
+      {
+        id: 'VS019',
+        date: '2026-01-19',
+        bloodPressureSystolic: 119,
+        bloodPressureDiastolic: 77,
+        temperature: 37,
+        pulse: 75,
+        spo2: 98,
+        respiratoryRate: 16
+      }
+    ],
+    prescriptions: [
+      {
+        id: 'PR013',
+        medication: 'Синупрет',
+        dosage: '2 таб',
+        frequency: '3 раза в день',
+        startDate: '2026-01-13',
+        endDate: '2026-01-23',
         status: 'active'
       }
     ],
@@ -548,16 +978,29 @@ export const roomsConfig: Record<string, { gender: 'male' | 'female' | 'free' }>
 }
 
 export const mockHospitalBeds: HospitalBed[] = [
-  { id: 'B001', roomNumber: '101', bedNumber: 1, patientId: 'P001', patientName: 'Иван', patientLastName: 'Петров', patientMiddleName: 'Сергеевич', patientAge: 40, diagnosis: 'Гипертонический криз', status: 'stable' },
-  { id: 'B002', roomNumber: '101', bedNumber: 2, patientId: 'P002', patientName: 'Мария', patientLastName: 'Иванова', patientMiddleName: 'Петровна', patientAge: 33, diagnosis: 'Обострение бронхиальной астмы', status: 'attention' },
-  { id: 'B003', roomNumber: '102', bedNumber: 1, status: 'free' },
-  { id: 'B004', roomNumber: '102', bedNumber: 2, patientId: 'P003', patientName: 'Алексей', patientLastName: 'Смирнов', patientMiddleName: 'Дмитриевич', patientAge: 47, diagnosis: 'Декомпенсация сахарного диабета', status: 'urgent' },
-  { id: 'B005', roomNumber: '103', bedNumber: 1, status: 'free' },
-  { id: 'B006', roomNumber: '103', bedNumber: 2, status: 'free' },
-  { id: 'B201', roomNumber: '201', bedNumber: 1, patientId: 'P201', patientName: 'Сергей', patientLastName: 'Николаев', patientMiddleName: 'Алексеевич', patientAge: 52, diagnosis: 'Пневмония', status: 'stable' },
-  { id: 'B202', roomNumber: '201', bedNumber: 2, status: 'free' },
-  { id: 'B203', roomNumber: '202', bedNumber: 1, patientId: 'P202', patientName: 'Виктория', patientLastName: 'Кузнецова', patientMiddleName: 'Игоревна', patientAge: 61, diagnosis: 'Восстановление после ИВЛ', status: 'attention' },
-  { id: 'B204', roomNumber: '202', bedNumber: 2, patientId: 'P203', patientName: 'Дмитрий', patientLastName: 'Козлов', patientMiddleName: '', patientAge: 29, diagnosis: 'Острый бронхит', status: 'stable' },
+  // Мужская палата 101
+  { id: 'B101_1', roomNumber: '101', bedNumber: 1, patientId: 'P001', patientName: 'Иван', patientLastName: 'Петров', patientMiddleName: 'Сергеевич', patientAge: 40, diagnosis: 'Гипертонический криз', status: 'stable' },
+  { id: 'B101_2', roomNumber: '101', bedNumber: 2, patientId: 'P003', patientName: 'Алексей', patientLastName: 'Смирнов', patientMiddleName: 'Дмитриевич', patientAge: 47, diagnosis: 'Сахарный диабет 2 типа', status: 'urgent' },
+  { id: 'B101_3', roomNumber: '101', bedNumber: 3, patientId: 'P005', patientName: 'Николай', patientLastName: 'Федоров', patientMiddleName: 'Андреевич', patientAge: 56, diagnosis: 'Ишемическая болезнь сердца', status: 'attention' },
+
+  // Женская палата 102
+  { id: 'B102_1', roomNumber: '102', bedNumber: 1, patientId: 'P002', patientName: 'Мария', patientLastName: 'Иванова', patientMiddleName: 'Александровна', patientAge: 33, diagnosis: 'Бронхиальная астма', status: 'attention' },
+  { id: 'B102_2', roomNumber: '102', bedNumber: 2, patientId: 'P004', patientName: 'Екатерина', patientLastName: 'Орлова', patientMiddleName: 'Владимировна', patientAge: 37, diagnosis: 'Вегетососудистая дистония', status: 'stable' },
+  { id: 'B102_3', roomNumber: '102', bedNumber: 3, patientId: 'P006', patientName: 'Светлана', patientLastName: 'Громова', patientMiddleName: 'Ильинична', patientAge: 30, diagnosis: 'Тонзиллит', status: 'stable' },
+
+  // Мужская палата 103
+  { id: 'B103_1', roomNumber: '103', bedNumber: 1, patientId: 'P007', patientName: 'Павел', patientLastName: 'Лебедев', patientMiddleName: 'Олегович', patientAge: 44, diagnosis: 'Поясничный остеохондроз', status: 'stable' },
+  { id: 'B103_2', roomNumber: '103', bedNumber: 2, patientId: 'P009', patientName: 'Артем', patientLastName: 'Белов', patientMiddleName: 'Максимович', patientAge: 25, diagnosis: 'Гастродуоденит', status: 'stable' },
+  { id: 'B103_3', roomNumber: '103', bedNumber: 3, patientId: 'P011', patientName: 'Георгий', patientLastName: 'Тимофеев', patientMiddleName: 'Сергеевич', patientAge: 68, diagnosis: 'ХОБЛ', status: 'attention' },
+
+  // Мужская палата 201
+  { id: 'B201_1', roomNumber: '201', bedNumber: 1, patientId: 'P013', patientName: 'Роман', patientLastName: 'Егоров', patientMiddleName: 'Валерьевич', patientAge: 35, diagnosis: 'Синусит', status: 'stable' },
+  { id: 'B201_2', roomNumber: '201', bedNumber: 2, status: 'free' },
+
+  // Женская палата 202
+  { id: 'B202_1', roomNumber: '202', bedNumber: 1, patientId: 'P008', patientName: 'Людмила', patientLastName: 'Волкова', patientMiddleName: 'Семеновна', patientAge: 51, diagnosis: 'Хронический пиелонефрит', status: 'stable' },
+  { id: 'B202_2', roomNumber: '202', bedNumber: 2, patientId: 'P010', patientName: 'Наталья', patientLastName: 'Зайцева', patientMiddleName: 'Анатольевна', patientAge: 42, diagnosis: 'Железодефицитная анемия', status: 'stable' },
+  { id: 'B202_3', roomNumber: '202', bedNumber: 3, patientId: 'P012', patientName: 'Анастасия', patientLastName: 'Макарова', patientMiddleName: 'Денисовна', patientAge: 27, diagnosis: 'Мигрень', status: 'stable' },
 ]
 
 export const patientDetails: Record<string, PatientDetail> = {
@@ -591,35 +1034,65 @@ export const patientDetails: Record<string, PatientDetail> = {
     meds: [{ name: 'Инсулин Актрапид', qty: '2 фл.' }, { name: 'NaCl 0.9%', qty: '4 фл.' }, { name: 'KCl 4%', qty: '3 амп.' }],
     log: [{ who: 'Медсестра Петрова И.', action: 'Инсулин Актрапид 8 ед п/к', time: '07:35', amount: '8 ед.' }],
   },
-  P201: {
-    doctorNote: 'Антибиотикотерапия — строго по времени. Контроль температуры 2 раза в день.',
-    prescriptions: [
-      { id: 1, name: 'Цефтриаксон в/в', dose: '2г', time: '08:00', done: true },
-      { id: 2, name: 'Амброксол', dose: '30мг', time: '10:00', done: false },
-      { id: 3, name: 'Цефтриаксон в/в', dose: '2г', time: '20:00', done: false },
-    ],
-    meds: [{ name: 'Цефтриаксон', qty: '5 фл.' }, { name: 'Амброксол', qty: '10 табл.' }, { name: 'NaCl 0.9%', qty: '6 фл.' }],
-    log: [{ who: 'Медсестра Сидорова В.', action: 'В/в Цефтриаксон 2г (капельница)', time: '08:15', amount: '1 фл.' }],
+  P004: {
+    doctorNote: 'Регулярное наблюдение за АД.',
+    prescriptions: [{ id: 1, name: 'Магне B6', dose: '2 таб', time: '09:00', done: true }],
+    meds: [{ name: 'Магне B6', qty: '20 табл.' }],
+    log: [{ who: 'Медсестра Иванова', action: 'Выдан Магне B6', time: '09:10', amount: '2 табл.' }],
   },
-  P202: {
-    doctorNote: 'Пациент после ИВЛ. Бережная санация ротоглотки. Ранняя активизация под контролем.',
-    prescriptions: [
-      { id: 1, name: 'Гепарин (профилактика)', dose: '5000 ед', time: '09:00', done: false },
-      { id: 2, name: 'Омепразол в/в', dose: '40мг', time: '09:00', done: false },
-      { id: 3, name: 'Дыхательная гимнастика', dose: '15 мин', time: '11:00', done: false },
-    ],
-    meds: [{ name: 'Гепарин', qty: '4 амп.' }, { name: 'Омепразол', qty: '5 фл.' }, { name: 'NaCl 0.9%', qty: '3 фл.' }],
-    log: [{ who: 'Медсестра Михайлова Т.', action: 'Санация ротоглотки', time: '07:50', amount: '—' }],
+  P005: {
+    doctorNote: 'Контроль пульса 3 раза в день.',
+    prescriptions: [{ id: 1, name: 'Бисопролол', dose: '5 мг', time: '08:00', done: true }],
+    meds: [{ name: 'Бисопролол', qty: '10 табл.' }],
+    log: [{ who: 'Медсестра Петрова', action: 'Выдан Бисопролол', time: '08:05', amount: '1 табл.' }],
   },
-  P203: {
-    doctorNote: 'Стандартное наблюдение. Обильное питьё. При ухудшении — повторный осмотр.',
-    prescriptions: [
-      { id: 1, name: 'Амоксициллин', dose: '500мг', time: '08:00', done: true },
-      { id: 2, name: 'Бромгексин', dose: '8мг', time: '08:00', done: true },
-      { id: 3, name: 'Амоксициллин', dose: '500мг', time: '14:00', done: false },
-    ],
-    meds: [{ name: 'Амоксициллин', qty: '14 капс.' }, { name: 'Бромгексин', qty: '20 табл.' }],
-    log: [{ who: 'Медсестра Орлова К.', action: 'Выдан Амоксициллин + Бромгексин', time: '08:20', amount: '2 табл.' }],
+  P006: {
+    doctorNote: 'Полоскание горла каждые 4 часа.',
+    prescriptions: [{ id: 1, name: 'Мирамистин', dose: '3 орошения', time: '10:00', done: false }],
+    meds: [{ name: 'Мирамистин', qty: '1 фл.' }],
+    log: [{ who: 'Медсестра Сидорова', action: 'Орошение горла', time: '10:15', amount: '—' }],
+  },
+  P007: {
+    doctorNote: 'Ограничение физических нагрузок. ЛФК.',
+    prescriptions: [{ id: 1, name: 'Мидокалм', dose: '150 мг', time: '12:00', done: false }],
+    meds: [{ name: 'Мидокалм', qty: '15 табл.' }],
+    log: [{ who: 'Медсестра Волкова', action: 'Выдан Мидокалм', time: '12:05', amount: '1 табл.' }],
+  },
+  P008: {
+    doctorNote: 'Обильное питье. УЗИ почек завтра.',
+    prescriptions: [{ id: 1, name: 'Канефрон', dose: '2 драже', time: '08:00', done: true }],
+    meds: [{ name: 'Канефрон', qty: '40 драже' }],
+    log: [{ who: 'Медсестра Иванова', action: 'Выдан Канефрон', time: '08:15', amount: '2 драже' }],
+  },
+  P009: {
+    doctorNote: 'Диета стол №1. Контроль боли.',
+    prescriptions: [{ id: 1, name: 'Омез', dose: '20 мг', time: '07:30', done: true }],
+    meds: [{ name: 'Омез', qty: '14 капс.' }],
+    log: [{ who: 'Медсестра Петрова', action: 'Выдан Омез', time: '07:35', amount: '1 капс.' }],
+  },
+  P010: {
+    doctorNote: 'Контроль гемоглобина крови.',
+    prescriptions: [{ id: 1, name: 'Сорбифер', dose: '1 таб', time: '09:00', done: false }],
+    meds: [{ name: 'Сорбифер', qty: '30 табл.' }],
+    log: [{ who: 'Медсестра Сидорова', action: 'Выдан Сорбифер', time: '09:10', amount: '1 табл.' }],
+  },
+  P011: {
+    doctorNote: 'Сатурация каждые 4 часа. Ингаляции.',
+    prescriptions: [{ id: 1, name: 'Беродуал', dose: '20 капель', time: '08:00', done: true }],
+    meds: [{ name: 'Беродуал', qty: '1 фл.' }],
+    log: [{ who: 'Медсестра Волкова', action: 'Ингаляция Беродуал', time: '08:20', amount: '20 капель' }],
+  },
+  P012: {
+    doctorNote: 'Постельный режим при приступе.',
+    prescriptions: [{ id: 1, name: 'Суматриптан', dose: '50 мг', time: 'по потребности', done: false }],
+    meds: [{ name: 'Суматриптан', qty: '2 табл.' }],
+    log: [{ who: 'Врач', action: 'Осмотр', time: '10:00', amount: '—' }],
+  },
+  P013: {
+    doctorNote: 'Промывание носа. Рентген пазух.',
+    prescriptions: [{ id: 1, name: 'Синупрет', dose: '2 таб', time: '08:00', done: true }],
+    meds: [{ name: 'Синупрет', qty: '20 табл.' }],
+    log: [{ who: 'Медсестра Иванова', action: 'Выдан Синупрет', time: '08:10', amount: '2 табл.' }],
   },
 }
 

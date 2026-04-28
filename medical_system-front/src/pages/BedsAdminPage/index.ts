@@ -1,1 +1,1 @@
-export { default } from './BedsAdminPage';
+export { WardAdmin } from './BedsAdminPage';
