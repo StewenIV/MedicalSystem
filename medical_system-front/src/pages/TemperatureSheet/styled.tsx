@@ -327,7 +327,6 @@ export const Card = styled.div`
     0 4px 12px rgba(15, 23, 42, 0.05);
   overflow: hidden;
   margin-top: 16px;
-  max-width: 800px;
   width: 100%;
   display: flex;
   flex-direction: column;

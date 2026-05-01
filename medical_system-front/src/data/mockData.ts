@@ -1,6 +1,7 @@
 export interface Patient {
   id: string
   firstName: string
+  gender: 'Мужской' | 'Женский'
   lastName: string
   middleName: string
   dateOfBirth: string
@@ -162,6 +163,7 @@ export const mockPatients: Patient[] = [
     id: 'P001',
     firstName: 'Иван',
     lastName: 'Петров',
+    gender: 'Мужской',
     middleName: 'Сергеевич',
     dateOfBirth: '1985-03-15',
     age: 40,
@@ -224,6 +226,7 @@ export const mockPatients: Patient[] = [
     firstName: 'Мария',
     lastName: 'Иванова',
     middleName: 'Александровна',
+    gender: 'Женский',
     dateOfBirth: '1992-07-22',
     age: 33,
     phone: '+7 (495) 234-56-78',
@@ -267,6 +270,7 @@ export const mockPatients: Patient[] = [
     firstName: 'Алексей',
     lastName: 'Смирнов',
     middleName: 'Дмитриевич',
+    gender: 'Мужской',
     dateOfBirth: '1978-11-30',
     age: 47,
     phone: '+7 (495) 345-67-89',
@@ -309,6 +313,7 @@ export const mockPatients: Patient[] = [
     id: 'P004',
     firstName: 'Екатерина',
     lastName: 'Орлова',
+    gender: 'Женский',
     middleName: 'Владимировна',
     dateOfBirth: '1988-04-11',
     age: 37,
@@ -353,6 +358,7 @@ export const mockPatients: Patient[] = [
     firstName: 'Николай',
     lastName: 'Федоров',
     middleName: 'Андреевич',
+    gender: 'Мужской',
     dateOfBirth: '1969-09-03',
     age: 56,
     phone: '+7 (495) 501-14-67',
@@ -401,6 +407,7 @@ export const mockPatients: Patient[] = [
     phone: '+7 (495) 613-90-10',
     email: 's.gromova@example.com',
     address: 'г. Москва, ул. Садовая, д. 55, кв. 6',
+    gender: 'Женский',
     emergencyContact: {
       name: 'Громова Инна Ивановна',
       phone: '+7 (495) 613-90-11',
@@ -441,6 +448,7 @@ export const mockPatients: Patient[] = [
     middleName: 'Олегович',
     dateOfBirth: '1981-12-08',
     age: 44,
+    gender: 'Мужской',
     phone: '+7 (495) 720-88-01',
     email: 'p.lebedev@example.com',
     address: 'г. Москва, Университетский пр., д. 9, кв. 31',
@@ -484,6 +492,7 @@ export const mockPatients: Patient[] = [
     middleName: 'Семеновна',
     dateOfBirth: '1974-06-19',
     age: 51,
+    gender: 'Женский',
     phone: '+7 (495) 410-55-31',
     email: 'l.volkova@example.com',
     address: 'г. Москва, Нагорная ул., д. 12, кв. 9',
@@ -530,6 +539,7 @@ export const mockPatients: Patient[] = [
     phone: '+7 (495) 311-24-70',
     email: 'a.belov@example.com',
     address: 'г. Москва, Мичуринский пр., д. 4, кв. 52',
+    gender: 'Мужской',
     emergencyContact: {
       name: 'Белова Татьяна Сергеевна',
       phone: '+7 (495) 311-24-71',
@@ -568,6 +578,7 @@ export const mockPatients: Patient[] = [
     firstName: 'Наталья',
     lastName: 'Зайцева',
     middleName: 'Анатольевна',
+    gender: 'Женский',
     dateOfBirth: '1983-08-05',
     age: 42,
     phone: '+7 (495) 212-67-98',
@@ -613,6 +624,7 @@ export const mockPatients: Patient[] = [
     middleName: 'Сергеевич',
     dateOfBirth: '1958-01-24',
     age: 68,
+    gender: 'Мужской',
     phone: '+7 (495) 344-18-43',
     email: 'g.timofeev@example.com',
     address: 'г. Москва, Ломоносовский пр., д. 33, кв. 88',
@@ -654,6 +666,7 @@ export const mockPatients: Patient[] = [
     firstName: 'Анастасия',
     lastName: 'Макарова',
     middleName: 'Денисовна',
+    gender: 'Женский',
     dateOfBirth: '1998-05-30',
     age: 27,
     phone: '+7 (495) 277-41-53',
@@ -697,6 +710,7 @@ export const mockPatients: Patient[] = [
     firstName: 'Роман',
     lastName: 'Егоров',
     middleName: 'Валерьевич',
+    gender: 'Мужской',
     dateOfBirth: '1990-03-09',
     age: 35,
     phone: '+7 (495) 688-15-77',

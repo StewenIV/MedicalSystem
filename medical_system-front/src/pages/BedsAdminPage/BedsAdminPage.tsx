@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import {
   SlidersHorizontal,
   RotateCcw,
@@ -9,12 +9,24 @@ import {
   Plus,
   Save,
   Users,
-  User
+  User,
+  ArrowRight,
+  UserPlus,
+  X,
+  Building,
+  BedDouble,
+  Clock,
+  FileText,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  Hash,
+  ArrowLeftRight
 } from 'lucide-react'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 
 import colors from 'consts/colors'
-import { mockHospitalBeds, roomsConfig, type HospitalBed } from 'data/mockData'
+import { mockHospitalBeds, roomsConfig, type HospitalBed, mockPatients } from 'data/mockData'
 
 import {
   PageWrapper,
@@ -84,16 +96,83 @@ import {
   BedDeleteBtn,
   EditorFooter,
   SaveBtn,
-  ResetEditorBtn
+  ResetEditorBtn,
+  Overlay,
+  ModalShell,
+  ModalHeader,
+  PatientAvatar,
+  ModalRow,
+  ModalHeaderText,
+  ModalTitle,
+  ModalSubtitle,
+  CloseBtn,
+  ModalContent,
+  Section,
+  PatientCard,
+  PatientIconWrap,
+  PatientInfo,
+  PatientName,
+  PatientMeta,
+  PatientMetaItem,
+  LocationRow,
+  LocationCard,
+  LocationCardLabel,
+  LocationFieldsGrid,
+  LocationField,
+  LocationFieldLabel,
+  LocationFieldValue,
+  ArrowWrap,
+  ArrowCircle,
+  SelectionCard,
+  SelectionTopRow,
+  SelectionTitle,
+  FreeOnlyLabel,
+  SelectsGrid,
+  SelectField,
+  SelectLabel,
+  StyledSelect,
+  BedsSection,
+  BedsLabel,
+  BedsGrid,
+  BedBtn,
+  BedStatusDot,
+  BedBtnLabel,
+  BedSelectedMark,
+  NoBedsBanner,
+  DetailsCard,
+  DetailsSectionTitle,
+  DetailsGrid,
+  DetailsField,
+  DetailsLabel,
+  DetailsOptional,
+  StyledInput,
+  StyledTextarea,
+  ModalFooter,
+  CancelBtn,
+  ConfirmBtn
 } from './styled'
 
 type RoomType = 'Обычная' | 'Реанимация' | 'Изолятор'
 type GenderType = 'Мужская' | 'Женская' | 'Смешанная (Mixed)'
 
+interface Location {
+  floor: number
+  room: string
+  bed: string
+}
+
+interface BedMock {
+  id: string
+  roomNumber: string
+  bedNumber: number
+  isFree: boolean
+}
+
 interface BedEntry {
   id: number
   name: string
   status: string
+  location?: Location
 }
 
 interface Room {
@@ -187,7 +266,12 @@ const buildRoomsFromBeds = (beds: HospitalBed[]): Room[] => {
         .map((bed) => ({
           id: bed.bedNumber,
           name: getBedDisplayName(bed),
-          status: getBedDisplayStatus(bed)
+          status: getBedDisplayStatus(bed),
+          location: {
+            floor: getRoomFloor(bed.roomNumber),
+            room: bed.roomNumber,
+            bed: bed.bedNumber.toString()
+          }
         }))
     }))
 }
@@ -295,6 +379,35 @@ const selectComponents = {
   IndicatorSeparator: () => null
 }
 
+const getAvailableFloorsFromBeds = (): number[] => {
+  const floors = new Set(mockHospitalBeds.map((bed) => getRoomFloor(bed.roomNumber)))
+  return Array.from(floors).sort((a, b) => a - b)
+}
+
+const getAvailableRoomsForFloor = (floor: number): string[] => {
+  const rooms = new Set(
+    mockHospitalBeds
+      .filter((bed) => getRoomFloor(bed.roomNumber) === floor)
+      .map((bed) => bed.roomNumber)
+  )
+  return Array.from(rooms).sort()
+}
+
+const getBedsForRoom = (roomNumber: string, showOnlyFree: boolean = true): BedMock[] => {
+  let beds = mockHospitalBeds.filter((bed) => bed.roomNumber === roomNumber)
+
+  if (showOnlyFree) {
+    beds = beds.filter((bed) => bed.status === 'free')
+  }
+
+  return beds.map((bed) => ({
+    id: bed.id,
+    roomNumber: bed.roomNumber,
+    bedNumber: bed.bedNumber,
+    isFree: bed.status === 'free'
+  }))
+}
+
 export function WardAdmin() {
   const initialRooms = useMemo(() => buildRoomsFromBeds(mockHospitalBeds), [])
   const initialSelectedRoom = initialRooms[0]
@@ -305,6 +418,21 @@ export function WardAdmin() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [selectedId, setSelectedId] = useState(initialSelectedRoom?.id ?? '')
+
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false)
+  const [selectedPatient, setSelectedPatient] = useState<(typeof mockPatients)[0] | null>(null)
+  const [selectedPatientLocation, setSelectedPatientLocation] = useState<Location | null>(null)
+
+  const [showOnlyFree, setShowOnlyFree] = useState(true)
+  const [transferFloor, setTransferFloor] = useState<number | ''>('')
+  const [transferRoom, setTransferRoom] = useState<string>('')
+  const [transferBed, setTransferBed] = useState<string>('')
+  const [transferDate, setTransferDate] = useState<string>('')
+  const [transferReason, setTransferReason] = useState<string>('')
+  const [transferNotes, setTransferNotes] = useState<string>('')
+
+  const [availableTransferRooms, setAvailableTransferRooms] = useState<string[]>([])
+  const [availableTransferBeds, setAvailableTransferBeds] = useState<BedMock[]>([])
 
   const floors = useMemo(() => {
     const nextFloors = Array.from(new Set(rooms.map((room) => room.floor))).sort((a, b) => a - b)
@@ -362,6 +490,33 @@ export function WardAdmin() {
     setEditorBeds([...room.beds])
   }
 
+  useEffect(() => {
+    if (isTransferModalOpen) {
+      const now = new Date()
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+      setTransferDate(now.toISOString().slice(0, 16))
+    }
+  }, [isTransferModalOpen])
+
+  useEffect(() => {
+    if (transferFloor !== '') {
+      setAvailableTransferRooms(getAvailableRoomsForFloor(transferFloor as number))
+      setTransferRoom('')
+      setTransferBed('')
+    } else {
+      setAvailableTransferRooms([])
+    }
+  }, [transferFloor])
+
+  useEffect(() => {
+    if (transferRoom) {
+      setAvailableTransferBeds(getBedsForRoom(transferRoom, showOnlyFree))
+      setTransferBed('')
+    } else {
+      setAvailableTransferBeds([])
+    }
+  }, [transferRoom, showOnlyFree])
+
   const addBed = () => {
     const nextId = editorBeds.length > 0 ? Math.max(...editorBeds.map((bed) => bed.id)) + 1 : 1
     setEditorBeds((prev) => [
@@ -402,7 +557,7 @@ export function WardAdmin() {
   }
 
   const deleteRoom = (id: string) => {
-    if (!confirm('Удалить палату?')) return
+    if (!window.confirm('Удалить палату?')) return
 
     const nextRooms = rooms.filter((room) => room.id !== id)
     setRooms(nextRooms)
@@ -424,6 +579,52 @@ export function WardAdmin() {
     }
   }
 
+  const handleOpenTransferModal = (patient: (typeof mockPatients)[0], location: Location) => {
+    setSelectedPatient(patient)
+    setSelectedPatientLocation(location)
+    setIsTransferModalOpen(true)
+
+    setShowOnlyFree(true)
+    setTransferFloor('')
+    setTransferRoom('')
+    setTransferBed('')
+    setTransferReason('')
+    setTransferNotes('')
+  }
+
+  const handleCloseTransferModal = () => {
+    setIsTransferModalOpen(false)
+    setSelectedPatient(null)
+    setSelectedPatientLocation(null)
+    setTransferFloor('')
+    setTransferRoom('')
+    setTransferBed('')
+    setTransferReason('')
+    setTransferNotes('')
+  }
+
+  const handleAssignPatient = (patient: (typeof mockPatients)[0], bedId: number) => {
+    alert(`Пациент ${patient.firstName} ${patient.lastName} назначен на выбранную койку`)
+  }
+
+  const handleTransferSubmit = () => {
+    const payload = {
+      patientId: selectedPatient?.id,
+      newLocation: {
+        floor: transferFloor,
+        room: transferRoom,
+        bed: transferBed
+      },
+      details: {
+        date: transferDate,
+        reason: transferReason,
+        notes: transferNotes
+      }
+    }
+    alert('Пациент успешно переместен')
+    handleCloseTransferModal()
+  }
+
   const filtered = useMemo(() => {
     return rooms.filter((room) => {
       if (floorFilter !== 'all' && room.floor !== parseInt(floorFilter, 10)) return false
@@ -438,6 +639,10 @@ export function WardAdmin() {
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
   const totalBeds = rooms.reduce((sum, room) => sum + room.beds.length, 0)
 
+  const isConfirmDisabled = !transferFloor || !transferRoom || !transferBed || !transferReason
+  const initials = selectedPatient?.firstName
+    ? `${selectedPatient.firstName[0]}${selectedPatient.lastName?.[0] ?? ''}`
+    : '—'
   return (
     <PageWrapper>
       <StyledCard>
@@ -580,6 +785,15 @@ export function WardAdmin() {
 
                     <Td onClick={(event) => event.stopPropagation()}>
                       <ActionCell>
+                        <ActionIconBtn
+                          title="Назначить пациента"
+                          onClick={() => {
+                            const mockPatient = mockPatients[0]
+                            handleAssignPatient(mockPatient, room.beds[0]?.id ?? 0)
+                          }}
+                        >
+                          <UserPlus size={13} />
+                        </ActionIconBtn>
                         <ActionIconBtn title="Редактировать" onClick={() => loadRoom(room)}>
                           <Pencil size={13} />
                         </ActionIconBtn>
@@ -691,7 +905,7 @@ export function WardAdmin() {
                     checked={editorType === type}
                     onChange={() => setEditorType(type)}
                   />
-                  {type}
+                  <span>{type}</span>
                 </RadioLabel>
               ))}
             </RadioGroup>
@@ -760,6 +974,20 @@ export function WardAdmin() {
                     <BedId>ID: {bed.id}</BedId>
                   </BedInfo>
                   <BedStatus>{bed.status}</BedStatus>
+                  <ActionIconBtn
+                    title="Переместить пациента"
+                    onClick={() => {
+                      const mockPatient = mockPatients[0]
+                      const mockLocation: Location = {
+                        floor: bed.location?.floor ?? editorFloor,
+                        room: bed.location?.room ?? editorNum,
+                        bed: 'Койка ' + bed.location?.bed ?? bed.id.toString()
+                      }
+                      handleOpenTransferModal(mockPatient, mockLocation)
+                    }}
+                  >
+                    <ArrowRight size={13} />
+                  </ActionIconBtn>
                   <BedDeleteBtn onClick={() => removeBed(bed.id)}>
                     <Trash2 size={12} />
                   </BedDeleteBtn>
@@ -779,6 +1007,278 @@ export function WardAdmin() {
           </EditorFooter>
         </EditorPanel>
       </TwoColLayout>
+
+      {selectedPatient && selectedPatientLocation && isTransferModalOpen && (
+        <Overlay onClick={(e) => e.target === e.currentTarget && handleCloseTransferModal()}>
+          <ModalShell>
+            <ModalHeader>
+              <ModalHeaderText>
+                <ModalRow>
+                  <ArrowLeftRight
+                    size={30}
+                    style={{
+                      borderRadius: '7px',
+                      background: 'linear-gradient(135deg, #b3c4fb 0%, #91b3fc 100%)',
+                      padding: '2px'
+                    }}
+                  />
+                  <ModalTitle>Перемещение пациента</ModalTitle>
+                </ModalRow>
+                <ModalSubtitle>
+                  Выберите новое место размещения и укажите детали перевода
+                </ModalSubtitle>
+              </ModalHeaderText>
+
+              <CloseBtn onClick={handleCloseTransferModal} aria-label="Закрыть">
+                <X size={20} />
+              </CloseBtn>
+            </ModalHeader>
+
+            <ModalContent>
+              <ModalHeader>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <PatientAvatar style={{ width: 44, height: 44, fontSize: 14 }}>
+                    {initials}
+                  </PatientAvatar>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 17,
+                        fontWeight: 800,
+                        color: '#111827',
+                        letterSpacing: '-0.03em'
+                      }}
+                    >
+                      {selectedPatient.firstName} {selectedPatient.lastName}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                      {selectedPatient.id} · {selectedPatient.age} лет · пол:{' '}
+                      {selectedPatient.gender}
+                    </div>
+                  </div>
+                </div>
+              </ModalHeader>
+
+              {/* Current → New location */}
+              <Section>
+                <LocationRow>
+                  {/* Current location */}
+                  <LocationCard>
+                    <LocationCardLabel>
+                      <Building size={14} />
+                      Текущее место
+                    </LocationCardLabel>
+                    <LocationFieldsGrid>
+                      <LocationField>
+                        <LocationFieldLabel>Этаж</LocationFieldLabel>
+                        <LocationFieldValue>{selectedPatientLocation.floor}</LocationFieldValue>
+                      </LocationField>
+                      <LocationField>
+                        <LocationFieldLabel>Палата</LocationFieldLabel>
+                        <LocationFieldValue>{selectedPatientLocation.room}</LocationFieldValue>
+                      </LocationField>
+                      <LocationField>
+                        <LocationFieldLabel>Койка</LocationFieldLabel>
+                        <LocationFieldValue>{selectedPatientLocation.bed}</LocationFieldValue>
+                      </LocationField>
+                    </LocationFieldsGrid>
+                  </LocationCard>
+
+                  {/* Arrow */}
+                  <ArrowWrap>
+                    <ArrowCircle>
+                      <ArrowRight size={20} />
+                    </ArrowCircle>
+                  </ArrowWrap>
+
+                  {/* New location */}
+                  <LocationCard $new $filled={!!transferBed}>
+                    <LocationCardLabel $accent>
+                      <BedDouble size={14} />
+                      Новое место
+                    </LocationCardLabel>
+                    <LocationFieldsGrid>
+                      <LocationField $highlighted={!!transferFloor}>
+                        <LocationFieldLabel>Этаж</LocationFieldLabel>
+                        <LocationFieldValue>{transferFloor || '—'}</LocationFieldValue>
+                      </LocationField>
+                      <LocationField $highlighted={!!transferRoom}>
+                        <LocationFieldLabel>Палата</LocationFieldLabel>
+                        <LocationFieldValue>{transferRoom || '—'}</LocationFieldValue>
+                      </LocationField>
+                      <LocationField $selected={!!transferBed}>
+                        <LocationFieldLabel $light={!!transferBed}>Койка</LocationFieldLabel>
+                        <LocationFieldValue $white={!!transferBed}>
+                          {transferBed || '—'}
+                        </LocationFieldValue>
+                      </LocationField>
+                    </LocationFieldsGrid>
+                  </LocationCard>
+                </LocationRow>
+              </Section>
+
+              {/* Location selection */}
+              <Section>
+                <SelectionCard>
+                  <SelectionTopRow>
+                    <SelectionTitle>Выбор нового места</SelectionTitle>
+                    <FreeOnlyLabel>
+                      <input
+                        type="checkbox"
+                        checked={showOnlyFree}
+                        onChange={(e) => setShowOnlyFree(e.target.checked)}
+                      />
+                      Показывать только свободные
+                    </FreeOnlyLabel>
+                  </SelectionTopRow>
+
+                  <SelectsGrid>
+                    {/* Floor */}
+                    <SelectField>
+                      <SelectLabel>Этаж</SelectLabel>
+                      <StyledSelect
+                        value={transferFloor}
+                        onChange={(e) =>
+                          setTransferFloor(e.target.value ? Number(e.target.value) : '')
+                        }
+                      >
+                        <option value="">Выберите этаж...</option>
+                        {getAvailableFloorsFromBeds().map((floor) => (
+                          <option key={floor} value={floor}>
+                            {floor} этаж
+                          </option>
+                        ))}
+                      </StyledSelect>
+                    </SelectField>
+
+                    {/* Room */}
+                    <SelectField>
+                      <SelectLabel>Палата</SelectLabel>
+                      <StyledSelect
+                        value={transferRoom}
+                        onChange={(e) => setTransferRoom(e.target.value)}
+                        disabled={!transferFloor}
+                      >
+                        <option value="">Выберите палату...</option>
+                        {availableTransferRooms.map((room) => (
+                          <option key={room} value={room}>
+                            Палата {room}
+                          </option>
+                        ))}
+                      </StyledSelect>
+                    </SelectField>
+                  </SelectsGrid>
+
+                  {/* Available beds */}
+                  {transferRoom && (
+                    <BedsSection>
+                      <BedsLabel>Доступные койки</BedsLabel>
+
+                      {availableTransferBeds.length === 0 ? (
+                        <NoBedsBanner>
+                          <AlertCircle size={18} style={{ flexShrink: 0 }} />
+                          <p style={{ margin: 0 }}>
+                            В этой палате нет {showOnlyFree ? 'свободных ' : ''}коек.
+                          </p>
+                        </NoBedsBanner>
+                      ) : (
+                        <BedsGrid>
+                          {availableTransferBeds.map((bed) => {
+                            const label = `Койка ${bed.bedNumber}`
+                            const isSelected = transferBed === label
+
+                            return (
+                              <BedBtn
+                                key={bed.id}
+                                type="button"
+                                $free={bed.isFree}
+                                $selected={isSelected}
+                                disabled={!bed.isFree}
+                                onClick={() => setTransferBed(label)}
+                              >
+                                <BedStatusDot $free={bed.isFree} />
+                                <BedDouble size={22} />
+                                <BedBtnLabel>{label}</BedBtnLabel>
+
+                                {isSelected && (
+                                  <BedSelectedMark>
+                                    <CheckCircle2 size={14} />
+                                  </BedSelectedMark>
+                                )}
+                              </BedBtn>
+                            )
+                          })}
+                        </BedsGrid>
+                      )}
+                    </BedsSection>
+                  )}
+                </SelectionCard>
+              </Section>
+
+              {/* Transfer details */}
+              <Section>
+                <DetailsCard>
+                  <DetailsSectionTitle>Детали перевода</DetailsSectionTitle>
+
+                  <DetailsGrid>
+                    <DetailsField>
+                      <DetailsLabel>
+                        <Clock size={14} />
+                        Время перевода
+                      </DetailsLabel>
+                      <StyledInput
+                        type="datetime-local"
+                        value={transferDate}
+                        onChange={(e) => setTransferDate(e.target.value)}
+                      />
+                    </DetailsField>
+
+                    <DetailsField>
+                      <DetailsLabel>
+                        <FileText size={14} />
+                        Причина перевода
+                      </DetailsLabel>
+                      <StyledSelect
+                        value={transferReason}
+                        onChange={(e) => setTransferReason(e.target.value)}
+                      >
+                        <option value="">Выберите причину...</option>
+                        <option value="improvement">Улучшение состояния</option>
+                        <option value="deterioration">Ухудшение состояния (в реанимацию)</option>
+                        <option value="profile_change">Смена профиля лечения</option>
+                        <option value="conflict">Конфликт в палате</option>
+                        <option value="other">Другое</option>
+                      </StyledSelect>
+                    </DetailsField>
+                  </DetailsGrid>
+
+                  <DetailsField>
+                    <DetailsLabel>
+                      Примечания <DetailsOptional>(необязательно)</DetailsOptional>
+                    </DetailsLabel>
+                    <StyledTextarea
+                      value={transferNotes}
+                      onChange={(e) => setTransferNotes(e.target.value)}
+                      rows={3}
+                      placeholder="Укажите дополнительные детали, если необходимо..."
+                    />
+                  </DetailsField>
+                </DetailsCard>
+              </Section>
+            </ModalContent>
+
+            {/* ── Footer ── */}
+            <ModalFooter>
+              <CancelBtn type="button" onClick={handleCloseTransferModal}>
+                Отмена
+              </CancelBtn>
+              <ConfirmBtn type="button" onClick={handleTransferSubmit} disabled={isConfirmDisabled}>
+                Подтвердить перемещение
+              </ConfirmBtn>
+            </ModalFooter>
+          </ModalShell>
+        </Overlay>
+      )}
     </PageWrapper>
   )
 }

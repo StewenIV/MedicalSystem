@@ -513,7 +513,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
     }
   }
 
-  const getMounthsFromVitals = (vitals: Record<string, VitalSign[]>): string[] => {
+  const getMonthsFromVitals = (vitals: Record<string, VitalSign[]>): string[] => {
     if (!selectedPatientId || !vitals[selectedPatientId]) {
       return [];
     }
@@ -654,7 +654,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                   <InfoLabel>Месяц</InfoLabel>
                   <InfoValue>
                     {(() => {
-                      const months = getMounthsFromVitals(patientsVitals);
+                      const months = getMonthsFromVitals(patientsVitals);
                       return months && months.length > 0 ? months.join(', ') : '';
                     })()}
                   </InfoValue>

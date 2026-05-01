@@ -14,6 +14,15 @@ const fadeUp = keyframes`
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 `
+const fadeIn = keyframes`
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+`
+
+const slideIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`
 
 const shimmer = keyframes`
   0% { background-position: -200% center; }
@@ -221,7 +230,7 @@ export const CardSubtitle = styled.p`
 
 export const TwoColLayout = styled.div`
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
   gap: 24px;
   align-items: start;
 
@@ -511,6 +520,11 @@ export const ActionCell = styled.div`
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+
+  @media (max-width: 640px) {
+    gap: 4px;
+  }
 `
 
 export const ActionIconBtn = styled.button<{ $danger?: boolean }>`
@@ -528,24 +542,33 @@ export const ActionIconBtn = styled.button<{ $danger?: boolean }>`
     border-color 0.2s ease,
     background-color 0.2s ease,
     transform 0.2s ease;
+  flex-shrink: 0;
 
   &:hover {
     transform: translateY(-1px);
     border-color: ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.5)' : '#2563eb')};
     background: ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.1)' : '#eff6ff')};
   }
+
+  @media (max-width: 640px) {
+    width: 30px;
+    height: 30px;
+  }
 `
 
 export const PaginationRow = styled.div`
   display: flex;
-  align-items: center;
+  width: 100%;
+  min-width: 100%;
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
   border-top: 1px solid rgba(191, 219, 254, 0.5);
   background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+  box-sizing: border-box;
 
   @media (max-width: 768px) {
+    min-width: 760px;
     flex-direction: column;
     align-items: flex-start;
   }
@@ -599,7 +622,7 @@ export const EditorPanel = styled.div`
   position: sticky;
   top: 24px;
   border-radius: 16px;
-  padding: 22px;
+  padding: 10px 18px;
 
   @media (max-width: 1024px) {
     position: static;
@@ -684,7 +707,7 @@ export const FormSelect = styled.select`
 export const RadioGroup = styled.div`
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
+  gap: 7px;
 
   @media (max-width: 640px) {
     grid-template-columns: 1fr;
@@ -694,23 +717,35 @@ export const RadioGroup = styled.div`
 export const RadioLabel = styled.label`
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+
   min-width: 0;
-  padding: 12px 14px;
+  padding: 10px 12px;
+
   border-radius: 12px;
   border: 1px solid rgba(191, 219, 254, 0.5);
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+
   font-size: 13px;
   font-weight: 600;
   color: #374151;
+
   cursor: pointer;
 
+  overflow: hidden;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   input[type='radio'] {
+    flex-shrink: 0;
     margin: 0;
     accent-color: #2563eb;
   }
 `
-
 export const SliderRow = styled.div`
   display: flex;
   align-items: center;
@@ -1001,5 +1036,733 @@ export const ResetEditorBtn = styled.button`
 
   @media (max-width: 480px) {
     width: 100%;
+  }
+`
+
+export const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  animation: ${slideIn} 0.2s ease both;
+
+  @media (min-width: 640px) {
+    padding: 24px;
+  }
+`
+
+export const ModalShell = styled.div`
+  background: #fff;
+  width: 100%;
+  max-width: 896px;
+  max-height: 95vh;
+  border-radius: 16px;
+  box-shadow:
+    0 25px 60px rgba(0, 0, 0, 0.18),
+    0 8px 24px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: ${fadeIn} 0.2s ease both;
+`
+
+// ─── Header ───────────────────────────────────────────────────────────────────
+
+export const ModalHeader = styled.div`
+  padding: 20px 24px;
+  border-bottom: 1px solid #f3f4f6;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(191, 219, 254, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  z-index: 10;
+  flex-shrink: 0;
+`
+export const PatientAvatar = styled.div`
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: #4338ca;
+  flex-shrink: 0;
+`
+
+export const ModalRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+`
+
+export const ModalHeaderText = styled.div``
+
+export const ModalTitle = styled.h2`
+  font-family: ${FONT_STACK};
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  letter-spacing: -0.02em;
+`
+
+export const ModalSubtitle = styled.p`
+  font-size: 13px;
+  color: #6b7280;
+  margin: 4px 0 0;
+`
+
+export const CloseBtn = styled.button`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #374151;
+    background: #f3f4f6;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+`
+
+// ─── Scrollable content ───────────────────────────────────────────────────────
+
+export const ModalContent = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  background: rgba(249, 250, 251, 0.5);
+`
+
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+
+export const Section = styled.section``
+
+// ─── Patient info card ────────────────────────────────────────────────────────
+
+export const PatientCard = styled.div`
+  background: #fff;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  overflow: hidden;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #3b82f6;
+    border-radius: 12px 0 0 12px;
+  }
+`
+
+export const PatientIconWrap = styled.div`
+  background: #eff6ff;
+  padding: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+  flex-shrink: 0;
+`
+
+export const PatientInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`
+
+export const PatientName = styled.h3`
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`
+
+export const PatientMeta = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  margin-top: 4px;
+`
+
+export const PatientMetaItem = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #6b7280;
+`
+
+// ─── Location comparison row ──────────────────────────────────────────────────
+
+export const LocationRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  align-items: stretch;
+
+  @media (min-width: 768px) {
+    grid-template-columns: 1fr auto 1fr;
+  }
+`
+
+export const LocationCard = styled.div<{ $new?: boolean; $filled?: boolean }>`
+  background: ${(p) => (p.$filled ? '#eff6ff' : '#fff')};
+  border-radius: 12px;
+  border: ${(p) =>
+    p.$filled ? '1px solid #bfdbfe' : p.$new ? '1.5px dashed #d1d5db' : '1px solid #e5e7eb'};
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+`
+
+export const LocationCardLabel = styled.div<{ $accent?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: ${(p) => (p.$accent ? '#2563eb' : '#6b7280')};
+`
+
+export const LocationFieldsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+`
+
+export const LocationField = styled.div<{ $highlighted?: boolean; $selected?: boolean }>`
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid;
+  transition: all 0.15s;
+
+  ${(p) =>
+    p.$selected
+      ? css`
+          background: #3b82f6;
+          border-color: transparent;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.35);
+        `
+      : p.$highlighted
+        ? css`
+            background: #fff;
+            border-color: #bfdbfe;
+          `
+        : css`
+            background: rgba(249, 250, 251, 0.5);
+            border-color: transparent;
+          `}
+
+  &:last-child {
+    grid-column: span 2;
+
+    @media (min-width: 640px) {
+      grid-column: span 1;
+    }
+  }
+`
+
+export const LocationFieldLabel = styled.div<{ $light?: boolean }>`
+  font-size: 11px;
+  color: ${(p) => (p.$light ? '#bfdbfe' : '#6b7280')};
+  margin-bottom: 4px;
+`
+
+export const LocationFieldValue = styled.div<{ $white?: boolean }>`
+  font-size: 14px;
+  font-weight: 600;
+  color: ${(p) => (p.$white ? '#fff' : '#111827')};
+`
+
+export const ArrowWrap = styled.div`
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 32px;
+
+  @media (min-width: 768px) {
+    display: flex;
+  }
+`
+
+export const ArrowCircle = styled.div`
+  width: 40px;
+  height: 40px;
+  background: #eff6ff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+`
+
+// ─── Selection section ────────────────────────────────────────────────────────
+
+export const SelectionCard = styled.div`
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`
+
+export const SelectionTopRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+`
+
+export const SelectionTitle = styled.h3`
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+`
+
+export const FreeOnlyLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4b5563;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.13s;
+
+  &:hover {
+    color: #111827;
+  }
+
+  input[type='checkbox'] {
+    width: 15px;
+    height: 15px;
+    accent-color: #2563eb;
+    border-radius: 4px;
+    border-color: #d1d5db;
+    cursor: pointer;
+  }
+`
+
+export const SelectsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+`
+
+export const SelectField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+export const SelectLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+`
+
+export const StyledSelect = styled.select`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #111827;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    box-shadow 0.14s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+
+  &:disabled {
+    background-color: #f9fafb;
+    color: #9ca3af;
+    cursor: not-allowed;
+  }
+`
+
+// ─── Beds grid ────────────────────────────────────────────────────────────────
+
+export const BedsSection = styled.div`
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+  animation: ${slideIn} 0.2s ease both;
+`
+
+export const BedsLabel = styled.div`
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 12px;
+`
+
+export const BedsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(4, 1fr);
+  }
+`
+
+export const BedBtn = styled.button<{ $free?: boolean; $selected?: boolean }>`
+  position: relative;
+  padding: 16px 12px;
+  border-radius: 12px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+  cursor: ${(p) => (p.$free ? 'pointer' : 'not-allowed')};
+
+  ${(p) =>
+    !p.$free
+      ? css`
+          background: #f9fafb;
+          border-color: #e5e7eb;
+          opacity: 0.6;
+          color: #6b7280;
+        `
+      : p.$selected
+        ? css`
+            background: #eff6ff;
+            border-color: #3b82f6;
+            box-shadow:
+              0 0 0 2px #3b82f6,
+              0 4px 12px rgba(59, 130, 246, 0.15);
+            transform: scale(1.02);
+            color: #1d4ed8;
+          `
+        : css`
+            background: #fff;
+            border-color: #e5e7eb;
+            color: #374151;
+
+            &:hover {
+              border-color: #93c5fd;
+              background: rgba(239, 246, 255, 0.5);
+              box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+            }
+          `}
+`
+
+export const BedStatusDot = styled.div<{ $free?: boolean }>`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${(p) => (p.$free ? '#10b981' : '#ef4444')};
+`
+
+export const BedBtnLabel = styled.span`
+  font-size: 13px;
+  font-weight: 600;
+`
+
+export const BedSelectedMark = styled.div`
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #3b82f6;
+  color: #fff;
+  border-radius: 50%;
+  padding: 2px;
+  display: flex;
+  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.4);
+`
+
+export const NoBedsBanner = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  color: #92400e;
+  font-size: 13px;
+`
+
+// ─── Transfer details section ─────────────────────────────────────────────────
+
+export const DetailsCard = styled.div`
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+`
+
+export const DetailsSectionTitle = styled.h3`
+  font-size: 17px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f3f4f6;
+`
+
+export const DetailsGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+`
+
+export const DetailsField = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+export const DetailsLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+
+  svg {
+    color: #9ca3af;
+  }
+`
+
+export const DetailsOptional = styled.span`
+  font-weight: 400;
+  color: #9ca3af;
+`
+
+export const StyledInput = styled.input`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #111827;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.14s,
+    box-shadow 0.14s;
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+`
+
+export const StyledTextarea = styled.textarea`
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: #111827;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  resize: none;
+  font-family: inherit;
+  transition:
+    border-color 0.14s,
+    box-shadow 0.14s;
+
+  &::placeholder {
+    color: #9ca3af;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+`
+
+// ─── Footer ───────────────────────────────────────────────────────────────────
+
+export const ModalFooter = styled.div`
+  padding: 14px 24px;
+  border-top: 1px solid #f3f4f6;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  flex-shrink: 0;
+
+  @media (min-width: 640px) {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+`
+
+export const CancelBtn = styled.button`
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #374151;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.13s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+
+  @media (min-width: 640px) {
+    width: auto;
+  }
+
+  &:hover {
+    background: #f9fafb;
+    color: #111827;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #d1d5db;
+    outline-offset: 2px;
+  }
+`
+
+export const ConfirmBtn = styled.button`
+  padding: 9px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: #2563eb;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.13s;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.25);
+
+  @media (min-width: 640px) {
+    width: auto;
+  }
+
+  &:hover:not(:disabled) {
+    background: #1d4ed8;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  }
+
+  &:focus-visible {
+    outline: 2px solid #3b82f6;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `

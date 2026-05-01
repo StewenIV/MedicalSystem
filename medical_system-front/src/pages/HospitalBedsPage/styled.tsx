@@ -233,8 +233,9 @@ export const InfoItem = styled.div`
 `
 
 export const StatCard = styled.div<{ $accent?: boolean }>`
-  background: ${(p) => (p.$accent ? '#111827' : '#ffffff')};
-  border: 1px solid ${(p) => (p.$accent ? 'transparent' : '#ebebeb')};
+  background: ${(p) => (p.$accent ? '#111827' : 'linear-gradient(180deg, #ffffff 0%, #f4f9fd 100%)')};;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  border: 1px solid ${(p) => (p.$accent ? 'transparent' : 'rgba(191, 219, 254, 0.4)')};
   border-radius: 12px;
   padding: 14px 16px;
   display: flex;
@@ -247,6 +248,7 @@ export const StatCard = styled.div<{ $accent?: boolean }>`
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 4px 12px rgba(15, 23, 42, 0.05);
   cursor: pointer;
+  
 
   &:hover {
     box-shadow:
@@ -358,50 +360,76 @@ export const FloorContent = styled.div`
 // ─── Floor stats bar ──────────────────────────────────────────────────────────
 
 export const FloorStatsBar = styled.div`
-  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
-  border: 1px solid rgba(191, 219, 254, 0.5);
-  border-radius: 12px;
-  padding: 14px 20px;
-  display: flex;
-  align-items: start;
-`
+  display: grid;
+  grid-template-columns: 1.2fr repeat(3, 1fr) auto;
+  gap: 16px;
+  align-items: stretch;
 
-export const FloorStat = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-self: stretch;
-  gap: 2px;
-  padding: 0px 24px;
-  border-right: 1px solid #e0e7ff;
-
-  &:first-child {
-    padding-left: 0;
+  @media (max-width: 1200px) {
+    grid-template-columns: repeat(4, 1fr);
   }
 
-  &:last-child {
-    border-right: none;
-    padding-right: 0;
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+export const FloorStat = styled.div<
+  { $firstblock?: boolean }>
+  `
+  display: flex;
+  flex-direction: column;
+  justify-content: ${(p) => (p.$firstblock ? 'center' : 'flex-start')};
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+  border: 1px solid rgba(191, 219, 254, 0.4);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #ffffff;
+    border-color: rgba(191, 219, 254, 0.8);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+    transform: translateY(-2px);
+  }
+`
+
+export const FloorStatInnerRow = styled.div`
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #3b82f6;
+
+  svg {
+    align-self: center;
   }
 `
 
 export const FloorStatLabel = styled.div`
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.07em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: #64748b;
 `
 
 export const FloorStatValue = styled.div<{ $color?: string; $large?: boolean }>`
-  font-size: ${(p) => (p.$large ? '33px' : '25px')};
+  font-size: ${(p) => (p.$large ? '32px' : '26px')};
   font-weight: 800;
-  letter-spacing: -0.035em;
-  color: ${(p) => p.$color || '#111827'};
+  letter-spacing: -0.03em;
+  color: ${(p) => p.$color || '#0f172a'};
   font-variant-numeric: tabular-nums;
+  line-height: 1;
 `
 
 export const FloorStatSub = styled.div`
   font-size: 12px;
+  font-weight: 500;
   color: #9ca3af;
 `
 
@@ -409,20 +437,30 @@ export const ManageBtn = styled.button`
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  border: 1px solid #e5e7eb;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border: 1px solid rgba(191, 219, 254, 0.8);
   background: #fff;
-  color: #374151;
+  color: #1e40af;
   cursor: pointer;
-  transition: all 0.14s;
+  transition: all 0.2s ease;
+  height: 100%;
+  min-height: 48px;
 
   &:hover {
-    border-color: #9ca3af;
-    background: #f9fafb;
+    border-color: #2563eb;
+    background: #eff6ff;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+    transform: translateY(-1px);
+  }
+
+  @media (max-width: 1200px) {
+    grid-column: 1 / -1;
+    height: auto;
   }
 `
 
@@ -584,8 +622,7 @@ export const BedsRow = styled.div`
 `
 
 export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgent' | string }>`
-  width: 40px;
-  height: 40px;
+  padding: 4px 10px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;

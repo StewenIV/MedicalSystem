@@ -30,6 +30,7 @@ import {
   FloorContent,
   FloorStatsBar,
   FloorStat,
+  FloorStatInnerRow,
   FloorStatLabel,
   FloorStatValue,
   FloorStatSub,
@@ -677,32 +678,37 @@ const [triggers, setTriggers] = useState({
           </SectionCardHeader>
 
           <FloorContent>
-            <FloorStatsBar            >
-              <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, total: prev.total + 1 }))}>
-                <FloorStatLabel>На этаже</FloorStatLabel>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Icon.Users/>
-                  <AnimatedFloorStat target={totalOnFloor} large trigger={triggers.total}/>
-                  <span style={{ fontSize: 14, color: '#6b7280', fontWeight: 500 }}>
+            <FloorStatsBar>
+              <FloorStat $firstblock = {true} onMouseEnter={() => setTriggers(prev => ({ ...prev, total: prev.total + 1 }))}>
+                <FloorStatInnerRow>
+                  <Icon.Users />
+                  <AnimatedFloorStat target={totalOnFloor} large trigger={triggers.total} />
+                  <FloorStatSub>
                     {pluralize(totalOnFloor, ['палата', 'палаты', 'палат'])}
-                  </span>
-                </div>
+                  </FloorStatSub>
+                </FloorStatInnerRow>
               </FloorStat>
 
               <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, free: prev.free + 1 }))}>
                 <FloorStatLabel>Свободно</FloorStatLabel>
-                <AnimatedFloorStat target={freeOnFloor} color="#16a34a" trigger={triggers.free} />
-                <FloorStatSub>из {totalOnFloor} на этаже</FloorStatSub>
+                <FloorStatInnerRow>
+                  <AnimatedFloorStat target={freeOnFloor} color="#16a34a" trigger={triggers.free} />
+                </FloorStatInnerRow>
+                <FloorStatSub>из {totalOnFloor} {activeFloor ? 'на этаже' : 'в отделении'}</FloorStatSub>
               </FloorStat>
 
               <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, male: prev.male + 1 }))}>
                 <FloorStatLabel>Муж. свободно</FloorStatLabel>
-                <AnimatedFloorStat target={freeMale} trigger={triggers.male} />
+                <FloorStatInnerRow>
+                  <AnimatedFloorStat target={freeMale} trigger={triggers.male} />
+                </FloorStatInnerRow>
               </FloorStat>
 
               <FloorStat onMouseEnter={() => setTriggers(prev => ({ ...prev, female: prev.female + 1 }))}>
                 <FloorStatLabel>Жен. свободно</FloorStatLabel>
-                <AnimatedFloorStat target={femaleFree} trigger={triggers.female} />
+                <FloorStatInnerRow>
+                  <AnimatedFloorStat target={femaleFree} trigger={triggers.female} />
+                </FloorStatInnerRow>
               </FloorStat>
 
               <ManageBtn>
