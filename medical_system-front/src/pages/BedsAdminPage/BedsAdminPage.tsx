@@ -101,6 +101,7 @@ import {
   ModalShell,
   ModalHeader,
   PatientAvatar,
+  ModalInfoPatient,
   ModalRow,
   ModalHeaderText,
   ModalTitle,
@@ -130,7 +131,6 @@ import {
   SelectsGrid,
   SelectField,
   SelectLabel,
-  StyledSelect,
   BedsSection,
   BedsLabel,
   BedsGrid,
@@ -289,87 +289,119 @@ const DropdownIndicator = (props: DropdownIndicatorProps<SelectOption, false>) =
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
+    pointerEvents: state.isDisabled ? 'auto' : base.pointerEvents,
     minHeight: '40px',
     borderRadius: '10px',
-    borderColor: state.isFocused ? colors.button : 'rgba(191, 219, 254, 0.8)',
+    borderColor: state.isDisabled
+      ? '#e5e7eb'
+      : state.isFocused
+        ? colors.button
+        : 'rgba(191, 219, 254, 0.8)',
     boxShadow: state.isFocused ? '0 0 0 3px rgba(37, 99, 235, 0.12)' : 'none',
-    backgroundColor: '#ffffff',
+    backgroundColor: state.isDisabled ? '#f3f4f6' : '#ffffff',
     transition: 'all 0.2s ease',
+    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
     '&:hover': {
-      borderColor: state.isFocused ? colors.button : '#9ca3af'
+      borderColor: state.isDisabled ? '#e5e7eb' : state.isFocused ? colors.button : '#9ca3af'
     }
   }),
-  valueContainer: (base) => ({
+  valueContainer: (base, state) => ({
     ...base,
-    padding: '0 8px 0 12px'
+    padding: '0 8px 0 12px',
+    opacity: state.selectProps.isDisabled ? 0.6 : 1
   }),
   placeholder: (base) => ({
     ...base,
-    color: '#9ca3af',
+    color: '#d1d5db',
     fontSize: '14px'
   }),
-  input: (base) => ({
+  input: (base, state) => ({
     ...base,
-    color: '#111827',
+    color: state.selectProps.isDisabled ? '#cbd5e1' : '#111827',
     fontSize: '14px'
   }),
-  singleValue: (base) => ({
+  singleValue: (base, state) => ({
     ...base,
-    color: '#111827',
+    color: state.selectProps.isDisabled ? '#cbd5e1' : '#111827',
     fontSize: '14px'
   }),
-  indicatorsContainer: (base) => ({
+  indicatorsContainer: (base, state) => ({
     ...base,
-    paddingRight: '5px'
+    paddingRight: '5px',
+    opacity: state.selectProps.isDisabled ? 0.6 : 1
   }),
   indicatorSeparator: () => ({
     display: 'none'
   }),
   dropdownIndicator: (base, state) => ({
     ...base,
-    color: state.isFocused ? colors.mainColor : '#64748b',
+    color: state.selectProps.isDisabled
+      ? '#cbd5e1'
+      : state.isFocused
+        ? colors.mainColor
+        : '#64748b',
     padding: '2px',
     margin: '0 4px',
     borderRadius: '6px',
     border: '1px solid #e2e8f0',
-    backgroundColor: state.selectProps.menuIsOpen ? '#eaf1ff' : '#f8fafc',
+    backgroundColor: state.selectProps.isDisabled
+      ? '#e5e7eb'
+      : state.selectProps.menuIsOpen
+        ? '#eaf1ff'
+        : '#f8fafc',
     transition: 'all 0.15s ease',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    cursor: state.selectProps.isDisabled ? 'not-allowed' : 'pointer',
+    textDecoration: state.selectProps.isDisabled ? 'line-through' : 'none',
     '&:hover': {
-      color: colors.mainColor,
-      backgroundColor: '#eaf1ff',
-      borderColor: '#c7d2fe'
+      color: state.selectProps.isDisabled ? '#cbd5e1' : colors.mainColor,
+      backgroundColor: state.selectProps.isDisabled ? '#e5e7eb' : '#eaf1ff',
+      borderColor: state.selectProps.isDisabled ? '#e2e8f0' : '#c7d2fe'
     },
     svg: {
       width: '14px',
       height: '14px'
     }
   }),
-  menu: (base) => ({
+  menu: (base, state) => ({
     ...base,
     marginTop: '6px',
     borderRadius: '10px',
-    border: '1px solid #e5e7eb',
-    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+    border: state.selectProps.isDisabled ? '1px dashed #cbd5e1' : '1px solid #e5e7eb',
+    boxShadow: state.selectProps.isDisabled ? 'none' : '0 10px 24px rgba(15, 23, 42, 0.12)',
     overflow: 'hidden',
-    zIndex: 10
+    zIndex: 10,
+    opacity: state.selectProps.isDisabled ? 0.5 : 1
   }),
-  menuList: (base) => ({
+  menuList: (base, state) => ({
     ...base,
-    padding: '6px'
+    padding: '6px',
+    pointerEvents: state.selectProps.isDisabled ? 'none' : 'auto'
   }),
   option: (base, state) => ({
     ...base,
     borderRadius: '7px',
     fontSize: '14px',
-    cursor: 'pointer',
-    backgroundColor: state.isSelected ? colors.mainColor : state.isFocused ? '#eff6ff' : '#ffffff',
-    color: state.isSelected ? '#ffffff' : '#1f2937',
+    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+    backgroundColor: state.isDisabled
+      ? '#f3f4f6'
+      : state.isSelected
+        ? colors.mainColor
+        : state.isFocused
+          ? '#eff6ff'
+          : '#ffffff',
+    color: state.isDisabled ? '#cbd5e1' : state.isSelected ? '#ffffff' : '#1f2937',
+    opacity: state.isDisabled ? 0.5 : 1,
+    textDecoration: state.isDisabled ? 'line-through' : 'none',
     transition: 'all 0.15s ease',
     ':active': {
-      backgroundColor: state.isSelected ? colors.mainColor : '#dbeafe'
+      backgroundColor: state.isDisabled
+        ? '#f3f4f6'
+        : state.isSelected
+          ? colors.mainColor
+          : '#dbeafe'
     }
   })
 }
@@ -468,6 +500,34 @@ export function WardAdmin() {
     ],
     []
   )
+
+  const transferFloorOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: 'Выберите этаж...' },
+      ...getAvailableFloorsFromBeds().map((floor) => ({
+        value: floor.toString(),
+        label: `${floor} этаж`
+      }))
+    ],
+    []
+  )
+
+  const transferRoomOptions = useMemo<SelectOption[]>(
+    () => [
+      { value: '', label: 'Выберите палату...' },
+      ...availableTransferRooms.map((room) => ({ value: room, label: `Палата ${room}` }))
+    ],
+    [availableTransferRooms]
+  )
+
+  const transferReasonOptions: SelectOption[] = [
+    { value: '', label: 'Выберите причину...' },
+    { value: 'improvement', label: 'Улучшение состояния' },
+    { value: 'deterioration', label: 'Ухудшение состояния (в реанимацию)' },
+    { value: 'profile_change', label: 'Смена профиля лечения' },
+    { value: 'conflict', label: 'Конфликт в палате' },
+    { value: 'other', label: 'Другое' }
+  ]
 
   const selectedRoom = rooms.find((room) => room.id === selectedId) ?? initialSelectedRoom
 
@@ -643,6 +703,8 @@ export function WardAdmin() {
   const initials = selectedPatient?.firstName
     ? `${selectedPatient.firstName[0]}${selectedPatient.lastName?.[0] ?? ''}`
     : '—'
+
+  const progress = ((editorPriority - 1) / (5 - 1)) * 100
   return (
     <PageWrapper>
       <StyledCard>
@@ -945,6 +1007,7 @@ export function WardAdmin() {
             max={5}
             step={1}
             value={editorPriority}
+            style={{ '--progress': `${progress}%` }}
             onChange={(event) => setEditorPriority(parseInt(event.target.value, 10))}
           />
 
@@ -981,7 +1044,7 @@ export function WardAdmin() {
                       const mockLocation: Location = {
                         floor: bed.location?.floor ?? editorFloor,
                         room: bed.location?.room ?? editorNum,
-                        bed: 'Койка ' + bed.location?.bed ?? bed.id.toString()
+                        bed: 'Койка ' + bed.id.toString()
                       }
                       handleOpenTransferModal(mockPatient, mockLocation)
                     }}
@@ -989,7 +1052,7 @@ export function WardAdmin() {
                     <ArrowRight size={13} />
                   </ActionIconBtn>
                   <BedDeleteBtn onClick={() => removeBed(bed.id)}>
-                    <Trash2 size={12} />
+                    <Trash2 size={13} />
                   </BedDeleteBtn>
                 </BedItem>
               ))
@@ -1018,7 +1081,7 @@ export function WardAdmin() {
                     size={30}
                     style={{
                       borderRadius: '7px',
-                      background: 'linear-gradient(135deg, #b3c4fb 0%, #91b3fc 100%)',
+                      background: 'linear-gradient(135deg, #d3dcfb 0%, #b5ccfc 100%)',
                       padding: '2px'
                     }}
                   />
@@ -1035,7 +1098,7 @@ export function WardAdmin() {
             </ModalHeader>
 
             <ModalContent>
-              <ModalHeader>
+              <ModalInfoPatient>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <PatientAvatar style={{ width: 44, height: 44, fontSize: 14 }}>
                     {initials}
@@ -1057,12 +1120,10 @@ export function WardAdmin() {
                     </div>
                   </div>
                 </div>
-              </ModalHeader>
+              </ModalInfoPatient>
 
-              {/* Current → New location */}
               <Section>
                 <LocationRow>
-                  {/* Current location */}
                   <LocationCard>
                     <LocationCardLabel>
                       <Building size={14} />
@@ -1084,14 +1145,12 @@ export function WardAdmin() {
                     </LocationFieldsGrid>
                   </LocationCard>
 
-                  {/* Arrow */}
                   <ArrowWrap>
                     <ArrowCircle>
                       <ArrowRight size={20} />
                     </ArrowCircle>
                   </ArrowWrap>
 
-                  {/* New location */}
                   <LocationCard $new $filled={!!transferBed}>
                     <LocationCardLabel $accent>
                       <BedDouble size={14} />
@@ -1136,36 +1195,45 @@ export function WardAdmin() {
                     {/* Floor */}
                     <SelectField>
                       <SelectLabel>Этаж</SelectLabel>
-                      <StyledSelect
-                        value={transferFloor}
-                        onChange={(e) =>
-                          setTransferFloor(e.target.value ? Number(e.target.value) : '')
-                        }
-                      >
-                        <option value="">Выберите этаж...</option>
-                        {getAvailableFloorsFromBeds().map((floor) => (
-                          <option key={floor} value={floor}>
-                            {floor} этаж
-                          </option>
-                        ))}
-                      </StyledSelect>
+                      <div style={{ minWidth: 0 }}>
+                        <Select
+                          inputId="transfer-floor-select"
+                          options={transferFloorOptions}
+                          styles={selectStyles}
+                          components={selectComponents}
+                          isSearchable={false}
+                          isClearable={false}
+                          value={
+                            transferFloorOptions.find(
+                              (option) => option.value === transferFloor.toString()
+                            ) ?? null
+                          }
+                          onChange={(option) =>
+                            setTransferFloor(option?.value ? Number(option.value) : '')
+                          }
+                        />
+                      </div>
                     </SelectField>
 
                     {/* Room */}
                     <SelectField>
                       <SelectLabel>Палата</SelectLabel>
-                      <StyledSelect
-                        value={transferRoom}
-                        onChange={(e) => setTransferRoom(e.target.value)}
-                        disabled={!transferFloor}
-                      >
-                        <option value="">Выберите палату...</option>
-                        {availableTransferRooms.map((room) => (
-                          <option key={room} value={room}>
-                            Палата {room}
-                          </option>
-                        ))}
-                      </StyledSelect>
+                      <div style={{ minWidth: 0 }}>
+                        <Select
+                          inputId="transfer-room-select"
+                          options={transferRoomOptions}
+                          styles={selectStyles}
+                          components={selectComponents}
+                          isSearchable={false}
+                          isClearable={false}
+                          isDisabled={!transferFloor}
+                          value={
+                            transferRoomOptions.find((option) => option.value === transferRoom) ??
+                            null
+                          }
+                          onChange={(option) => setTransferRoom(option?.value ?? '')}
+                        />
+                      </div>
                     </SelectField>
                   </SelectsGrid>
 
@@ -1238,17 +1306,22 @@ export function WardAdmin() {
                         <FileText size={14} />
                         Причина перевода
                       </DetailsLabel>
-                      <StyledSelect
-                        value={transferReason}
-                        onChange={(e) => setTransferReason(e.target.value)}
-                      >
-                        <option value="">Выберите причину...</option>
-                        <option value="improvement">Улучшение состояния</option>
-                        <option value="deterioration">Ухудшение состояния (в реанимацию)</option>
-                        <option value="profile_change">Смена профиля лечения</option>
-                        <option value="conflict">Конфликт в палате</option>
-                        <option value="other">Другое</option>
-                      </StyledSelect>
+                      <div style={{ minWidth: 0 }}>
+                        <Select
+                          inputId="transfer-reason-select"
+                          options={transferReasonOptions}
+                          styles={selectStyles}
+                          components={selectComponents}
+                          isSearchable={false}
+                          isClearable={false}
+                          value={
+                            transferReasonOptions.find(
+                              (option) => option.value === transferReason
+                            ) ?? null
+                          }
+                          onChange={(option) => setTransferReason(option?.value ?? '')}
+                        />
+                      </div>
                     </DetailsField>
                   </DetailsGrid>
 
