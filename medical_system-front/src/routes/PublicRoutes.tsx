@@ -9,6 +9,7 @@ const ResetPasswordPage = lazy(() => import('pages/ResetPasswordPage'))
 
 const HomePage = lazy(() => import('pages/HomePage'))
 const TemperaturePage = lazy(() => import('pages/TemperatureSheet/index'))
+const PatientCardPage = lazy(() => import('pages/PatientCard'))
 
 const PublicRoutes: React.FC = () => {
   const location = useLocation()
@@ -24,6 +25,7 @@ const PublicRoutes: React.FC = () => {
       {/* Временно добавлен для работы над дизайном */}
       <Route path={paths.home} element={<HomePage />} />
       <Route path={paths.temperature} element={<TemperaturePage onNavigate = {(screen) => {}} onLogout = {() => {}} userRole = {'nurse'} />} />
+      <Route path={paths.patientCard} element={<PatientCardPage />} />
       <Route
         path="*"
         element={

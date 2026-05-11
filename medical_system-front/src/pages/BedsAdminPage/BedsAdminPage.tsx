@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import {
   SlidersHorizontal,
   RotateCcw,
@@ -19,9 +20,10 @@ import {
   FileText,
   CheckCircle2,
   AlertCircle,
-  Info,
-  Hash,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Search,
+  MapPin,
+  Check
 } from 'lucide-react'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 
@@ -46,6 +48,7 @@ import {
   SearchInput,
   ResetBtn,
   TableWrap,
+  TableContainer,
   Table,
   Thead,
   Th,
@@ -98,23 +101,19 @@ import {
   SaveBtn,
   ResetEditorBtn,
   Overlay,
+  InputModal,
   ModalShell,
   ModalHeader,
   PatientAvatar,
   ModalInfoPatient,
   ModalRow,
   ModalHeaderText,
+  ModalIconWrap,
   ModalTitle,
   ModalSubtitle,
   CloseBtn,
   ModalContent,
   Section,
-  PatientCard,
-  PatientIconWrap,
-  PatientInfo,
-  PatientName,
-  PatientMeta,
-  PatientMetaItem,
   LocationRow,
   LocationCard,
   LocationCardLabel,
@@ -149,7 +148,15 @@ import {
   StyledTextarea,
   ModalFooter,
   CancelBtn,
-  ConfirmBtn
+  ConfirmBtn,
+  SectionHeaderFlex,
+  NewPatientBtn,
+  NotificationBox,
+  CheckboxWrap,
+  CheckboxHint,
+  FooterLeftInfo,
+  FooterRightActions,
+  LocationText
 } from './styled'
 
 type RoomType = 'Обычная' | 'Реанимация' | 'Изолятор'
@@ -171,7 +178,7 @@ interface BedMock {
 interface BedEntry {
   id: number
   name: string
-  status: string
+  status: 'Занято' | 'Свободно'
   location?: Location
 }
 
@@ -191,6 +198,12 @@ interface SelectOption {
 }
 
 const PAGE_SIZE = 5
+
+const doctorOptions: SelectOption[] = [
+  { value: 'doc1', label: '👨‍⚕️ Иванов И.И.' },
+  { value: 'doc2', label: '👩‍⚕️ Петрова А.С.' },
+  { value: 'doc3', label: '👨‍⚕️ Сидоров В.В.' }
+]
 
 const PRIORITY_LABELS: Record<number, string> = {
   1: 'Низкий',
@@ -466,6 +479,18 @@ export function WardAdmin() {
   const [availableTransferRooms, setAvailableTransferRooms] = useState<string[]>([])
   const [availableTransferBeds, setAvailableTransferBeds] = useState<BedMock[]>([])
 
+  const [assignBedData, setAssignBedData] = useState<{
+    floor: number
+    room: string
+    bed: number
+    priority: number
+  } | null>(null)
+  const [assignDate, setAssignDate] = useState<string>('')
+  const [assignDoctor, setAssignDoctor] = useState<string>('')
+  const [assignNotes, setAssignNotes] = useState<string>('')
+  const [assignNotify, setAssignNotify] = useState<boolean>(true)
+  const [patientSearchQuery, setPatientSearchQuery] = useState<string>('')
+
   const floors = useMemo(() => {
     const nextFloors = Array.from(new Set(rooms.map((room) => room.floor))).sort((a, b) => a - b)
     return nextFloors.length > 0 ? nextFloors : [1]
@@ -663,8 +688,38 @@ export function WardAdmin() {
     setTransferNotes('')
   }
 
-  const handleAssignPatient = (patient: (typeof mockPatients)[0], bedId: number) => {
-    alert(`Пациент ${patient.firstName} ${patient.lastName} назначен на выбранную койку`)
+  const handleOpenAssignModal = (bed: BedEntry, room: Room) => {
+    setAssignBedData({
+      floor: room.floor,
+      room: room.number,
+      bed: bed.id,
+      priority: room.priority
+    })
+    const now = new Date()
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
+    setAssignDate(now.toISOString().slice(0, 16))
+    setAssignDoctor('')
+    setAssignNotes('')
+    setAssignNotify(true)
+    setPatientSearchQuery('')
+  }
+
+  const handleCloseAssignModal = () => {
+    setAssignBedData(null)
+  }
+
+  // useEffect(() => {
+  //   if (isTransferModalOpen || assignBedData) {
+  //     const element = document.getElementById('target')
+  //     if (element) {
+  //       window.scrollTo({ top: element.offsetTop, behavior: 'smooth' })
+  //     }
+  //   }
+  // }, [isTransferModalOpen, assignBedData])
+
+  const handleAssignSubmit = () => {
+    alert('Пациент успешно назначен на койку!')
+    handleCloseAssignModal()
   }
 
   const handleTransferSubmit = () => {
@@ -681,7 +736,7 @@ export function WardAdmin() {
         notes: transferNotes
       }
     }
-    alert('Пациент успешно переместен')
+    alert('Пациент успешно перемещен')
     handleCloseTransferModal()
   }
 
@@ -713,7 +768,7 @@ export function WardAdmin() {
             <div>
               <PageTitle>Администрирование палат</PageTitle>
               <CardSubtitle>
-                Управление структурой отделения и коечным фондом на основе общих mock-данных.
+                Управление структурой отделения и коечным фондом пульмонологического отделения
               </CardSubtitle>
             </div>
           </HeaderRow>
@@ -796,94 +851,91 @@ export function WardAdmin() {
           </FilterBar>
 
           <TableWrap>
-            <Table>
-              <Thead>
-                <tr>
-                  <Th>Этаж</Th>
-                  <Th>Номер</Th>
-                  <Th>Тип</Th>
-                  <Th>Пол</Th>
-                  <Th>Койки</Th>
-                  <Th>Приор.</Th>
-                  <Th>Действия</Th>
-                </tr>
-              </Thead>
-
-              <Tbody>
-                {paged.map((room) => (
-                  <Tr
-                    key={room.id}
-                    $selected={room.id === selectedId}
-                    onClick={() => loadRoom(room)}
-                  >
-                    <TdMuted>{room.floor}</TdMuted>
-                    <TdBold>{room.number}</TdBold>
-
-                    <Td>
-                      <TypeBadge $type={room.type}>{room.type}</TypeBadge>
-                    </Td>
-
-                    <Td>
-                      <GenderCell>
-                        {getGenderIcon(room.gender)}
-                        {room.gender === 'Смешанная (Mixed)' ? 'Смешанная' : room.gender}
-                      </GenderCell>
-                    </Td>
-
-                    <Td>
-                      <BedCountCell>
-                        <BedCountNum>{room.beds.length}</BedCountNum>
-                        <BedCountUnit>ед.</BedCountUnit>
-                      </BedCountCell>
-                    </Td>
-
-                    <Td>
-                      <PriorityWrap>
-                        {[1, 2, 3, 4, 5].map((level) => (
-                          <PriorityBar key={level} $filled={level <= room.priority} />
-                        ))}
-                      </PriorityWrap>
-                    </Td>
-
-                    <Td onClick={(event) => event.stopPropagation()}>
-                      <ActionCell>
-                        <ActionIconBtn
-                          title="Назначить пациента"
-                          onClick={() => {
-                            const mockPatient = mockPatients[0]
-                            handleAssignPatient(mockPatient, room.beds[0]?.id ?? 0)
-                          }}
-                        >
-                          <UserPlus size={13} />
-                        </ActionIconBtn>
-                        <ActionIconBtn title="Редактировать" onClick={() => loadRoom(room)}>
-                          <Pencil size={13} />
-                        </ActionIconBtn>
-                        <ActionIconBtn $danger title="Удалить" onClick={() => deleteRoom(room.id)}>
-                          <Trash2 size={13} />
-                        </ActionIconBtn>
-                      </ActionCell>
-                    </Td>
-                  </Tr>
-                ))}
-
-                {paged.length === 0 && (
+            <TableContainer>
+              <Table>
+                <Thead>
                   <tr>
-                    <Td
-                      colSpan={7}
-                      style={{
-                        textAlign: 'center',
-                        padding: '32px 16px',
-                        color: '#94a3b8',
-                        fontSize: 13
-                      }}
-                    >
-                      Палаты не найдены
-                    </Td>
+                    <Th>Этаж</Th>
+                    <Th>Номер</Th>
+                    <Th>Тип</Th>
+                    <Th>Пол</Th>
+                    <Th>Койки</Th>
+                    <Th>Приор.</Th>
+                    <Th>Действия</Th>
                   </tr>
-                )}
-              </Tbody>
-            </Table>
+                </Thead>
+
+                <Tbody>
+                  {paged.map((room) => (
+                    <Tr
+                      key={room.id}
+                      $selected={room.id === selectedId}
+                      onClick={() => loadRoom(room)}
+                    >
+                      <TdMuted>{room.floor}</TdMuted>
+                      <TdBold>{room.number}</TdBold>
+
+                      <Td>
+                        <TypeBadge $type={room.type}>{room.type}</TypeBadge>
+                      </Td>
+
+                      <Td>
+                        <GenderCell>
+                          {getGenderIcon(room.gender)}
+                          {room.gender === 'Смешанная (Mixed)' ? 'Смешанная' : room.gender}
+                        </GenderCell>
+                      </Td>
+
+                      <Td>
+                        <BedCountCell>
+                          <BedCountNum>{room.beds.length}</BedCountNum>
+                          <BedCountUnit>ед.</BedCountUnit>
+                        </BedCountCell>
+                      </Td>
+
+                      <Td>
+                        <PriorityWrap>
+                          {[1, 2, 3, 4, 5].map((level) => (
+                            <PriorityBar key={level} $filled={level <= room.priority} />
+                          ))}
+                        </PriorityWrap>
+                      </Td>
+
+                      <Td onClick={(event) => event.stopPropagation()}>
+                        <ActionCell>
+                          <ActionIconBtn title="Редактировать" onClick={() => loadRoom(room)}>
+                            <Pencil size={13} />
+                          </ActionIconBtn>
+                          <ActionIconBtn
+                            $danger
+                            title="Удалить"
+                            onClick={() => deleteRoom(room.id)}
+                          >
+                            <Trash2 size={13} />
+                          </ActionIconBtn>
+                        </ActionCell>
+                      </Td>
+                    </Tr>
+                  ))}
+
+                  {paged.length === 0 && (
+                    <tr>
+                      <Td
+                        colSpan={7}
+                        style={{
+                          textAlign: 'center',
+                          padding: '32px 16px',
+                          color: '#94a3b8',
+                          fontSize: 13
+                        }}
+                      >
+                        Палаты не найдены
+                      </Td>
+                    </tr>
+                  )}
+                </Tbody>
+              </Table>
+            </TableContainer>
 
             <PaginationRow>
               <PaginationInfo>
@@ -1030,13 +1082,24 @@ export function WardAdmin() {
               </EmptyBedsState>
             ) : (
               editorBeds.map((bed) => (
-                <BedItem key={bed.id}>
+                <BedItem key={bed.id} $extra={bed.status == 'Свободно'}>
                   <BedTag>К{bed.id}</BedTag>
                   <BedInfo>
                     <BedName>{bed.name}</BedName>
                     <BedId>ID: {bed.id}</BedId>
                   </BedInfo>
                   <BedStatus>{bed.status}</BedStatus>
+                  {bed.status === 'Свободно' && (
+                    <ActionIconBtn
+                      $userplus={true}
+                      title="Назначить пациента"
+                      onClick={() => {
+                        handleOpenAssignModal(bed, selectedRoom!)
+                      }}
+                    >
+                      <UserPlus size={13} />
+                    </ActionIconBtn>
+                  )}
                   <ActionIconBtn
                     title="Переместить пациента"
                     onClick={() => {
@@ -1071,20 +1134,15 @@ export function WardAdmin() {
         </EditorPanel>
       </TwoColLayout>
 
-      {selectedPatient && selectedPatientLocation && isTransferModalOpen && (
+      {selectedPatient && selectedPatientLocation && createPortal(
         <Overlay onClick={(e) => e.target === e.currentTarget && handleCloseTransferModal()}>
-          <ModalShell>
+          <ModalShell id="target">
             <ModalHeader>
               <ModalHeaderText>
                 <ModalRow>
-                  <ArrowLeftRight
-                    size={30}
-                    style={{
-                      borderRadius: '7px',
-                      background: 'linear-gradient(135deg, #d3dcfb 0%, #b5ccfc 100%)',
-                      padding: '2px'
-                    }}
-                  />
+                  <ModalIconWrap>
+                    <ArrowLeftRight size={24} />
+                  </ModalIconWrap>
                   <ModalTitle>Перемещение пациента</ModalTitle>
                 </ModalRow>
                 <ModalSubtitle>
@@ -1262,7 +1320,9 @@ export function WardAdmin() {
                                 $free={bed.isFree}
                                 $selected={isSelected}
                                 disabled={!bed.isFree}
-                                onClick={() => setTransferBed(label)}
+                                onClick={() =>
+                                  setTransferBed((prev) => (prev === label ? '' : label))
+                                }
                               >
                                 <BedStatusDot $free={bed.isFree} />
                                 <BedDouble size={22} />
@@ -1283,7 +1343,6 @@ export function WardAdmin() {
                 </SelectionCard>
               </Section>
 
-              {/* Transfer details */}
               <Section>
                 <DetailsCard>
                   <DetailsSectionTitle>Детали перевода</DetailsSectionTitle>
@@ -1350,7 +1409,131 @@ export function WardAdmin() {
               </ConfirmBtn>
             </ModalFooter>
           </ModalShell>
-        </Overlay>
+        </Overlay>,
+        document.body
+      )}
+
+      {assignBedData && createPortal(
+        <Overlay onClick={(e) => e.target === e.currentTarget && handleCloseAssignModal()}>
+          <ModalShell id="target">
+            <ModalHeader>
+              <ModalHeaderText>
+                <ModalRow>
+                  <ModalIconWrap>
+                    <UserPlus size={24} />
+                  </ModalIconWrap>
+                  <ModalTitle>Назначить пациента на койку</ModalTitle>
+                </ModalRow>
+                <ModalSubtitle>
+                  Заполните данные для госпитализации в палату {assignBedData.room}, Койка{' '}
+                  {assignBedData.bed}
+                </ModalSubtitle>
+              </ModalHeaderText>
+              <CloseBtn onClick={handleCloseAssignModal} aria-label="Закрыть">
+                <X size={20} />
+              </CloseBtn>
+            </ModalHeader>
+
+            <ModalContent>
+              <Section>
+                <SectionHeaderFlex>
+                  <DetailsSectionTitle style={{ paddingBottom: 0, borderBottom: 'none' }}>
+                    ДАННЫЕ ПАЦИЕНТА
+                  </DetailsSectionTitle>
+                  <NewPatientBtn type="button">
+                    <Plus size={14} />
+                    Новый пациент
+                  </NewPatientBtn>
+                </SectionHeaderFlex>
+                <InputModal
+                  icon={<Search size={18} color="#94a3b8" />}
+                  placeholder="ФИО, номер истории или телефон..."
+                  value={patientSearchQuery}
+                  onChange={(e) => setPatientSearchQuery(e.target.value)}
+                />
+              </Section>
+
+              <Divider />
+
+              <Section>
+                <DetailsSectionTitle>ДЕТАЛИ ГОСПИТАЛИЗАЦИИ</DetailsSectionTitle>
+                <DetailsGrid>
+                  <DetailsField>
+                    <DetailsLabel>Дата и время поступления</DetailsLabel>
+                    <StyledInput
+                      type="datetime-local"
+                      value={assignDate}
+                      onChange={(e) => setAssignDate(e.target.value)}
+                    />
+                  </DetailsField>
+                  <DetailsField>
+                    <DetailsLabel>Лечащий врач</DetailsLabel>
+                    <div style={{ minWidth: 0 }}>
+                      <Select
+                        inputId="assign-doctor-select"
+                        options={doctorOptions}
+                        styles={selectStyles}
+                        components={selectComponents}
+                        placeholder="Выберите врача..."
+                        isSearchable={true}
+                        value={doctorOptions.find((o) => o.value === assignDoctor) ?? null}
+                        onChange={(option) => setAssignDoctor(option?.value ?? '')}
+                      />
+                    </div>
+                  </DetailsField>
+                </DetailsGrid>
+
+                <DetailsField style={{ marginTop: 20 }}>
+                  <DetailsLabel>Заметки / Особые отметки</DetailsLabel>
+                  <StyledTextarea
+                    rows={3}
+                    placeholder="Укажите особенности (аллергии, режим, диета)..."
+                    value={assignNotes}
+                    onChange={(e) => setAssignNotes(e.target.value)}
+                  />
+                </DetailsField>
+
+                <NotificationBox>
+                  <CheckboxWrap>
+                    <input
+                      type="checkbox"
+                      checked={assignNotify}
+                      onChange={(e) => setAssignNotify(e.target.checked)}
+                    />
+                    Отправить уведомление пациенту
+                  </CheckboxWrap>
+                  <CheckboxHint>
+                    Пациент получит SMS с информацией о номере палаты и лечащем враче.
+                  </CheckboxHint>
+                </NotificationBox>
+              </Section>
+            </ModalContent>
+
+            <ModalFooter style={{ justifyContent: 'space-between' }}>
+              <FooterLeftInfo>
+                <LocationText>
+                  <MapPin size={16} />
+                  {assignBedData.floor} этаж, палата {assignBedData.room}, койка {assignBedData.bed}
+                </LocationText>
+                <PriorityBadge>Приоритет: {PRIORITY_LABELS[assignBedData.priority]}</PriorityBadge>
+              </FooterLeftInfo>
+              <FooterRightActions>
+                <CancelBtn type="button" onClick={handleCloseAssignModal}>
+                  Отмена
+                </CancelBtn>
+                <ConfirmBtn
+                  type="button"
+                  onClick={handleAssignSubmit}
+                  disabled={!patientSearchQuery || !assignDoctor}
+                >
+                  <Check size={16} />
+                  Назначить пациента
+                </ConfirmBtn>
+              </FooterRightActions>
+            </ModalFooter>
+          </ModalShell>
+        </Overlay>,
+        document.body
       )}
     </PageWrapper>
   )

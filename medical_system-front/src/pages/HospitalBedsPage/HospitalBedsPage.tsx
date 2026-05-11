@@ -592,6 +592,7 @@ const [triggers, setTriggers] = useState({
     if (room.beds.some((b) => b.status === 'attention')) return 'attention'
     return 'normal'
   }
+
   return (
     <>
       <GlobalStyle />
@@ -684,7 +685,7 @@ const [triggers, setTriggers] = useState({
                   <Icon.Users />
                   <AnimatedFloorStat target={totalOnFloor} large trigger={triggers.total} />
                   <FloorStatSub>
-                    {pluralize(totalOnFloor, ['палата', 'палаты', 'палат'])}
+                    {pluralize(totalOnFloor, ['койка', 'койки', 'коек'])}
                   </FloorStatSub>
                 </FloorStatInnerRow>
               </FloorStat>

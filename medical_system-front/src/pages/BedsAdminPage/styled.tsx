@@ -1,4 +1,5 @@
 import styled, { css, keyframes } from 'styled-components'
+import Input from 'components/Input'
 
 const FONT_STACK = `
   'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont,
@@ -85,6 +86,7 @@ export const PageWrapper = styled.div`
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 4px 12px rgba(15, 23, 42, 0.05);
   animation: ${fadeUp} 0.3s ease both;
+  position: relative;
 
   @media (max-width: 768px) {
     gap: 18px;
@@ -369,10 +371,12 @@ export const TableWrap = styled.div`
   ${softCard};
   border-radius: 16px;
   overflow: hidden;
+`
 
-  @media (max-width: 768px) {
-    overflow-x: auto;
-  }
+export const TableContainer = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 `
 
 export const Table = styled.table`
@@ -527,8 +531,11 @@ export const ActionCell = styled.div`
   }
 `
 
-export const ActionIconBtn = styled.button<{ $danger?: boolean }>`
-  padding: 6px 7px 6px 6px;
+export const ActionIconBtn = styled.button<{
+  $danger?: boolean
+  $userplus?: boolean
+}>`
+  padding: ${(p) => (p.$userplus ? '6px 6px 6px 8px' : '6px')};
   border-radius: 8px;
   border: 1px solid ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(191, 219, 254, 0.8)')};
   background: ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.06)' : '#ffffff')};
@@ -558,7 +565,6 @@ export const ActionIconBtn = styled.button<{ $danger?: boolean }>`
 export const PaginationRow = styled.div`
   display: flex;
   width: 100%;
-  min-width: 100%;
   justify-content: space-between;
   gap: 12px;
   padding: 14px 16px;
@@ -567,7 +573,6 @@ export const PaginationRow = styled.div`
   box-sizing: border-box;
 
   @media (max-width: 768px) {
-    min-width: 760px;
     flex-direction: column;
     align-items: flex-start;
   }
@@ -648,12 +653,15 @@ export const EditorSubtitle = styled.p`
 `
 
 export const Divider = styled.div`
+  width: 100%;
+  min-height: 1px;
+  flex-shrink: 0;
   height: 1px;
-  margin: 20px 0;
+  margin: 10px 0;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(191, 219, 254, 0.55) 50%,
+    rgba(147, 197, 253, 0.95) 50%,
     transparent 100%
   );
 `
@@ -773,7 +781,6 @@ export const PriorityBadge = styled.span`
   align-items: center;
   justify-content: center;
   min-width: 28px;
-  height: 24px;
   padding: 0 8px;
   border-radius: 8px;
   background: linear-gradient(135deg, #eff6ff, #f8faff);
@@ -916,9 +923,10 @@ export const EmptyBedsState = styled.div`
   color: #94a3b8;
 `
 
-export const BedItem = styled.div`
+export const BedItem = styled.div<{ $extra?: boolean }>`
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  grid-template-columns: ${({ $extra }) =>
+    $extra ? 'auto minmax(0, 1fr) auto auto auto auto' : 'auto minmax(0, 1fr) auto auto auto'};
   gap: 10px;
   align-items: center;
   padding: 12px;
@@ -926,8 +934,11 @@ export const BedItem = styled.div`
   border: 1px solid rgba(191, 219, 254, 0.45);
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
 
-  @media (max-width: 520px) {
-    grid-template-columns: auto minmax(0, 1fr) auto;
+  @media (max-width: 640px) {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 12px 8px;
   }
 `
 
@@ -944,10 +955,16 @@ export const BedTag = styled.div`
   font-weight: 800;
   letter-spacing: 0.03em;
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+  flex-shrink: 0;
 `
 
 export const BedInfo = styled.div`
   min-width: 0;
+
+  @media (max-width: 640px) {
+    flex: 1 1 calc(100% - 44px);
+    min-width: 100px;
+  }
 `
 
 export const BedName = styled.div`
@@ -972,8 +989,9 @@ export const BedStatus = styled.div`
   color: #16a34a;
   white-space: nowrap;
 
-  @media (max-width: 520px) {
-    grid-column: 2 / 3;
+  @media (max-width: 640px) {
+    margin-left: 44px;
+    margin-right: auto;
   }
 `
 
@@ -996,11 +1014,6 @@ export const BedDeleteBtn = styled.button`
     border-color: rgba(239, 68, 68, 0.5);
     background: rgba(239, 68, 68, 0.1);
     transform: translateY(-1px);
-  }
-
-  @media (max-width: 520px) {
-    grid-row: 1 / span 2;
-    grid-column: 3 / 4;
   }
 `
 
@@ -1070,25 +1083,21 @@ export const ResetEditorBtn = styled.button`
 export const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 50;
+  z-index: 1000;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(6px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(6px);
   animation: ${slideIn} 0.2s ease both;
-
-  @media (max-width: 480px) {
-    padding: 12px;
-  }
 `
 
 export const ModalShell = styled.div`
   background: #ffffff;
   width: 100%;
   max-width: 860px;
-  max-height: 90vh;
+  margin: 0 auto;
+  max-height: calc(100vh - 80px);
   border-radius: 20px;
   box-shadow:
     0 25px 50px -12px rgba(15, 23, 42, 0.25),
@@ -1099,7 +1108,7 @@ export const ModalShell = styled.div`
   animation: ${fadeIn} 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
 
   @media (max-width: 480px) {
-    max-height: calc(100vh - 24px);
+    max-height: calc(100vh - 32px);
     border-radius: 16px;
   }
 `
@@ -1107,9 +1116,9 @@ export const ModalShell = styled.div`
 // ─── Header ───────────────────────────────────────────────────────────────────
 
 export const ModalHeader = styled.div`
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
-  background: linear-gradient(135deg, #f0f4fe 0%, #ffffff 100%);
+  padding: 24px 28px;
+  border-bottom: 1px solid rgba(191, 219, 254, 0.4);
+  background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -1117,8 +1126,18 @@ export const ModalHeader = styled.div`
   z-index: 10;
   flex-shrink: 0;
 
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2563eb 0%, #7c3aed 50%, #db2777 100%);
+  }
+
   @media (max-width: 480px) {
-    padding: 16px;
+    padding: 18px 20px;
   }
 `
 
@@ -1196,30 +1215,54 @@ export const CloseBtn = styled.button`
   }
 `
 
+export const ModalIconWrap = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  flex-shrink: 0;
+
+  @media (max-width: 480px) {
+    width: 36px;
+    height: 36px;
+
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+`
+
 export const ModalRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 
   @media (max-width: 480px) {
-    gap: 10px;
+    gap: 12px;
   }
 `
 
 export const ModalHeaderText = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 8px;
 `
 
 export const ModalTitle = styled.h2`
   font-family: ${FONT_STACK};
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
   margin: 0;
   letter-spacing: -0.03em;
   line-height: 1.2;
+  ${gradientText('linear-gradient(135deg, #0f172a 0%, #1e40af 100%)')}
 
   @media (max-width: 480px) {
     font-size: 19px;
@@ -1254,84 +1297,7 @@ export const ModalContent = styled.div`
   }
 `
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
-
 export const Section = styled.section``
-
-// ─── Patient info card ────────────────────────────────────────────────────────
-
-export const PatientCard = styled.div`
-  background: #fff;
-  border: 1px solid #dbeafe;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  position: relative;
-  overflow: hidden;
-
-  @media (min-width: 640px) {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 4px;
-    height: 100%;
-    background: #3b82f6;
-    border-radius: 12px 0 0 12px;
-  }
-`
-
-export const PatientIconWrap = styled.div`
-  background: #eff6ff;
-  padding: 12px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #2563eb;
-  flex-shrink: 0;
-`
-
-export const PatientInfo = styled.div`
-  flex: 1;
-  min-width: 0;
-`
-
-export const PatientName = styled.h3`
-  font-size: 17px;
-  font-weight: 600;
-  color: #111827;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`
-
-export const PatientMeta = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 16px;
-  margin-top: 4px;
-`
-
-export const PatientMetaItem = styled.span`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  color: #6b7280;
-`
-
-// ─── Location comparison row ──────────────────────────────────────────────────
 
 export const LocationRow = styled.div`
   display: grid;
@@ -1680,7 +1646,7 @@ export const BedBtnLabel = styled.span`
 export const BedSelectedMark = styled.div`
   position: absolute;
   top: -8px;
-  right: -8px;
+  left: -8px;
   background: #3b82f6;
   color: #fff;
   border-radius: 50%;
@@ -1766,7 +1732,6 @@ export const DetailsOptional = styled.span`
 `
 
 export const StyledInput = styled.input`
-  width: 100%;
   height: 40px;
   padding: 0 14px;
   border: 1px solid rgba(191, 219, 254, 0.8);
@@ -1782,6 +1747,18 @@ export const StyledInput = styled.input`
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  }
+`
+export const InputModal = styled(Input)`
+  font-size: 15px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  border-radius: 11px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: #ffffff;
+
+  &::placeholder {
+    color: #d1d5db;
+    opacity: 1;
   }
 `
 
@@ -1822,14 +1799,11 @@ export const ModalFooter = styled.div`
   flex-shrink: 0;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
 
-  @media (max-width: 480px) {
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
     padding: 16px;
-    flex-direction: column-reverse;
-    gap: 10px;
-
-    > button {
-      width: 100%;
-    }
+    gap: 16px;
   }
 `
 
@@ -1906,4 +1880,101 @@ export const ConfirmBtn = styled.button`
     background: #94a3b8;
     box-shadow: none;
   }
+`
+
+export const SectionHeaderFlex = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+`
+
+export const NewPatientBtn = styled(AddBedBtn)`
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+
+  @media (max-width: 480px) {
+    width: 100%;
+  }
+`
+
+export const NotificationBox = styled.div`
+  margin-top: 20px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px dashed rgba(191, 219, 254, 0.8);
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`
+
+export const CheckboxWrap = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: #2563eb;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+`
+
+export const CheckboxHint = styled.div`
+  font-size: 12px;
+  color: #64748b;
+  margin-left: 24px;
+  line-height: 1.4;
+`
+
+export const FooterLeftInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: #64748b;
+  flex: 1;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+`
+
+export const FooterRightActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  @media (max-width: 640px) {
+    width: 100%;
+    flex-direction: column-reverse;
+
+    > button {
+      width: 100%;
+    }
+  }
+`
+
+export const LocationText = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
 `

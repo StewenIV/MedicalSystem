@@ -65,27 +65,13 @@ import {
 import { AppSidebar } from '@/components/Sidebar/sidebar'
 
 import Input from 'components/Input'
-import { mockTodayAppointments } from 'data/mockData'
+import { mockTodayAppointments, mockNotifications, type Notification } from 'data/mockData'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { HospitalWorkplace } from 'pages/HospitalBedsPage'
 import { WardAdmin } from 'pages/BedsAdminPage'
+import { default as PatientCard } from 'pages/PatientCard'
 
-type NotificationType = 'lab-result' | 'appointment-reminder'
-type SeverityType = 'critical' | 'warning'
 
-interface Notification {
-  id: string
-  type: NotificationType
-  severity?: SeverityType
-  patientName: string
-  patientId: string
-  dateOfBirth?: string
-  doctor?: string
-  message: string
-  details?: string
-  time: string
-  read: boolean
-}
 
 interface DoctorDashboardProps {
   onNavigate?: (screen: string, patientId?: string) => void
@@ -102,61 +88,22 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('dashboard')
+  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
 
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      type: 'lab-result',
-      severity: 'critical',
-      patientName: 'Петров Иван Сергеевич',
-      patientId: 'P002',
-      dateOfBirth: '15.03.1985',
-      doctor: 'Кузнецова А.В.',
-      message: 'Критические результаты анализа крови',
-      details: 'Лейкоциты: 15.2 (норма 4-9)',
-      time: '10 мин назад',
-      read: false
-    },
-    {
-      id: '2',
-      type: 'appointment-reminder',
-      patientName: 'Иванова Мария Александровна',
-      patientId: 'P001',
-      message: 'Приём начнётся через 1 час',
-      time: '14:00',
-      read: false
-    },
-    {
-      id: '3',
-      type: 'lab-result',
-      severity: 'warning',
-      patientName: 'Смирнов Алексей Дмитриевич',
-      patientId: 'P003',
-      dateOfBirth: '22.07.1978',
-      doctor: 'Кузнецова А.В.',
-      message: 'Результаты биохимического анализа',
-      details: 'Глюкоза: 6.8 ммоль/л (повышена)',
-      time: '2 часа назад',
-      read: false
-    },
-    {
-      id: '4',
-      type: 'appointment-reminder',
-      patientName: 'Петров Иван Сергеевич',
-      patientId: 'P002',
-      message: 'Приём начнётся через 1 час',
-      time: '16:00',
-      read: false
-    }
-  ])
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 
   const markRead = (id: string) =>
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
 
+  const openPatientCard = (patientId?: string) => {
+    setActiveSection('patient-card')
+    setSelectedPatientId(patientId)
+  }
+
   const handleNotifClick = (n: Notification) => {
     markRead(n.id)
     setNotificationsOpen(false)
-    onNavigate('patient-card', n.patientId)
+    openPatientCard(n.patientId)
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -189,7 +136,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
         >
           <AppSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
 
-          <SidebarInset>
+          <SidebarInset className="overflow-x-hidden min-w-0">
             <Header>
               <HeaderInner>
                 <Flex>
@@ -250,7 +197,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                             key={a.id}
                             $clickable={a.status !== 'Свободно'}
                             onClick={() => {
-                              if (a.status !== 'Свободно') onNavigate('patient-card', a.patientId)
+                              if (a.status !== 'Свободно') openPatientCard(a.patientId)
                             }}
                           >
                             <div>
@@ -291,8 +238,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
 
               {activeSection === 'beds-admin' && <WardAdmin />}
 
-              {activeSection === 'patients' && (
-                <SectionTitle style={{ marginTop: 24 }}>Пациенты</SectionTitle>
+              {(activeSection === 'patients' || activeSection === 'patient-card') && (
+                <PatientCard patientId={selectedPatientId} />
               )}
               {activeSection === 'schedule' && (
                 <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>

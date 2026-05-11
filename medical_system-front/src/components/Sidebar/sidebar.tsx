@@ -1,4 +1,3 @@
-'use client'
 
 import { useMemo } from 'react'
 import {
@@ -9,7 +8,7 @@ import {
   FileText,
   BarChart3,
   Settings,
-  ChevronDown,
+  FileUser,
   Stethoscope,
   Building2
 } from 'lucide-react'
@@ -42,7 +41,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       { key: 'temperature-sheet', label: 'Температурный лист', icon: Thermometer },
       { key: 'HospitalWorkplace', label: 'Стационар', icon: Calendar },
       { key: 'beds-admin', label: 'Администрирование стационара', icon: Building2 },
-      { key: 'documents', label: 'Документы', icon: FileText },
+      { key: 'patient-card', label: 'Карточка пациента', icon: FileUser },
       { key: 'reports', label: 'Отчёты', icon: BarChart3 },
       { key: 'settings', label: 'Управление', icon: Settings }
     ],

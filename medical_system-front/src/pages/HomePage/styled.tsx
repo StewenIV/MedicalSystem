@@ -246,8 +246,11 @@ export const Main = styled.main`
   flex: 1;
   min-width: 0;
   padding: 24px;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 `
 
 // ─── Section heading inside Main ─────────────────────────────────────────────
