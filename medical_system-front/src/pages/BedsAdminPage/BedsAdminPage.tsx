@@ -708,14 +708,6 @@ export function WardAdmin() {
     setAssignBedData(null)
   }
 
-  // useEffect(() => {
-  //   if (isTransferModalOpen || assignBedData) {
-  //     const element = document.getElementById('target')
-  //     if (element) {
-  //       window.scrollTo({ top: element.offsetTop, behavior: 'smooth' })
-  //     }
-  //   }
-  // }, [isTransferModalOpen, assignBedData])
 
   const handleAssignSubmit = () => {
     alert('Пациент успешно назначен на койку!')

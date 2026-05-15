@@ -86,6 +86,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
 }) => {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [headerSearchQuery, setHeaderSearchQuery] = useState('')
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('dashboard')
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
@@ -96,8 +97,17 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
 
   const openPatientCard = (patientId?: string) => {
-    setActiveSection('patient-card')
+    setActiveSection('patients')
     setSelectedPatientId(patientId)
+  }
+
+  const handleHeaderSearch = () => {
+    if (headerSearchQuery.trim()) {
+      setSearchQuery(headerSearchQuery.trim())
+      setActiveSection('patients')
+      setSelectedPatientId(undefined)
+      setSearchOpen(false)
+    }
   }
 
   const handleNotifClick = (n: Notification) => {
@@ -148,10 +158,21 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                     type="search"
                     placeholder="Поиск пациента..."
                     icon={<Search size={16} />}
+                    value={headerSearchQuery}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderSearchQuery(e.target.value)}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === 'Enter') handleHeaderSearch()
+                    }}
                   />
                 </SearchWrapper>
 
-                <SearchIconButton onClick={() => setSearchOpen((prev) => !prev)}>
+                <SearchIconButton onClick={() => {
+                  if (searchOpen && headerSearchQuery.trim()) {
+                    handleHeaderSearch()
+                  } else {
+                    setSearchOpen((prev) => !prev)
+                  }
+                }}>
                   <Search size={18} />
                 </SearchIconButton>
 
@@ -239,7 +260,13 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
               {activeSection === 'beds-admin' && <WardAdmin />}
 
               {(activeSection === 'patients' || activeSection === 'patient-card') && (
-                <PatientCard patientId={selectedPatientId} />
+                <PatientCard
+                  patientId={selectedPatientId}
+                  initialSearchQuery={searchQuery}
+                  onSelectPatient={(id) => {
+                    setSelectedPatientId(id || undefined)
+                  }}
+                />
               )}
               {activeSection === 'schedule' && (
                 <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>

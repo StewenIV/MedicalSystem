@@ -7,6 +7,7 @@ import {
   StyledCard,
   SectionCard,
   CardHeader,
+  CardTitle,
   SectionCardHeader,
   HeaderRow,
   HeaderLeft,
@@ -650,6 +651,7 @@ const [triggers, setTriggers] = useState({
         <SectionCard>
           <SectionCardHeader>
             <SectionHeaderInner>
+              <HeaderLeft>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '4px 0' }}>
                 <svg
                   width="22"
@@ -662,9 +664,9 @@ const [triggers, setTriggers] = useState({
                   <rect x="3" y="3" width="18" height="18" rx="2" />
                   <path d="M3 9h18M3 15h18M9 3v18" />
                 </svg>
-                <SectionTitle>Управление палатами</SectionTitle>
+                <CardTitle>Управление палатами</CardTitle>
               </div>
-
+              </HeaderLeft>
               <FloorTabs>
                 <FloorTab $active={activeFloor === null} onClick={() => setActiveFloor(null)}>
                   Все

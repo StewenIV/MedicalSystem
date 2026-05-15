@@ -22,7 +22,7 @@ export interface Patient {
   documents: any[]
 
   medcardNum: string
-  historyNum: string
+  historyNum?: string
   status: string
   statusText: string
   doctor: string
@@ -31,6 +31,8 @@ export interface Patient {
   lastUpdated: string
 
   contacts: {
+    phoneMobile?: string
+    phoneHome?: string
     phone?: string
     email?: string
     address?: string
@@ -69,13 +71,16 @@ export interface Patient {
     spo2?: string
     resp?: string
     bmi?: string
+    weight?: string
+    height?: string
+    bloodSugar?: string
   }
   labs: {
     type?: string
     date?: string
     statusText?: string
-    lab?: string
     doctor?: string
+    reason?: string
   }[]
   currentMeds: {
     name?: string
@@ -83,8 +88,23 @@ export interface Patient {
     form?: string
     regimen?: string
   }[]
-  operations: string[]
-  medicalProblems: string[]
+  operations: {
+    name?: string
+    date?: string
+    diagnosis?: string
+    description?: string
+    complications?: string
+    implants?: string
+    result?: string
+  }[]
+  medicalProblems: {
+    name?: string
+    diagnosisDate?: string
+    diseaseStatus?: string
+    severity?: string
+    description?: string
+    complications?: string
+  }[]
   history: {
     dateTime?: string
     type?: string
@@ -103,6 +123,7 @@ export interface Patient {
     series?: string
   }[]
 }
+
 
 export interface Appointment {
   id: string
@@ -225,9 +246,35 @@ export interface PatientDetail {
   log: { who: string; action: string; time: string; amount: string }[]
 }
 
-// Mock patients
+export interface Shift {
+  day: number
+  type: 'day' | 'night' | 'day-off'
+  hours: number
+}
+
+export interface MedicalStaffMember {
+  id: string
+  name: string
+  position: string
+  department: string
+  schedule: Shift[]
+}
+
+export interface Notification {
+  id: string
+  type: string
+  severity?: string
+  patientName?: string
+  patientId?: string
+  dateOfBirth?: string
+  doctor?: string
+  message: string
+  details?: string
+  time: string
+  read: boolean
+}
+
 export const mockPatients: Patient[] = [
-  // ─── P001 ───────────────────────────────────────────────────────────────────
   {
     id: 'P001',
     firstName: 'Иван',
@@ -289,6 +336,8 @@ export const mockPatients: Patient[] = [
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-05',
     contacts: {
+      phoneMobile: '+7 (495) 123-45-67',
+      phoneHome: '+7 (495) 123-45-00',
       phone: '+7 (495) 123-45-67',
       email: 'i.petrov@example.com',
       address: 'ул. Ленина, д. 10, кв. 5',
@@ -329,23 +378,50 @@ export const mockPatients: Patient[] = [
         type: 'Общий анализ крови',
         date: '2026-05-01',
         statusText: 'Внимание: Лейкоцитоз',
-        lab: 'Основная лаборатория',
-        doctor: 'Смирнов А.А.'
+        doctor: 'Смирнов А.А.',
+        reason: 'Диагностика воспаления'
       },
       {
         type: 'Биохимия',
         date: '2026-05-02',
         statusText: 'Норма',
-        lab: 'Основная лаборатория',
-        doctor: 'Смирнов А.А.'
+        doctor: 'Смирнов А.А.',
+        reason: 'Контроль функции почек'
       }
     ],
     currentMeds: [
       { name: 'Эналаприл', dose: '10 мг', form: 'таблетка', regimen: 'утром' },
       { name: 'Аторвастатин', dose: '5 мг', form: 'капсула', regimen: 'вечером' }
     ],
-    operations: ['Аппендэктомия (2005)'],
-    medicalProblems: ['Артериальная гипертензия', 'Хронический гастрит'],
+    operations: [
+      {
+        name: 'Аппендэктомия',
+        date: '2005-06-15',
+        diagnosis: 'Острый аппендицит',
+        description: 'Лапароскопическая аппендэктомия под общей анестезией',
+        complications: 'Нет',
+        implants: 'Нет',
+        result: 'Выздоровление'
+      }
+    ],
+    medicalProblems: [
+      {
+        name: 'Артериальная гипертензия',
+        diagnosisDate: '2018-03-10',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: 'Артериальная гипертензия II стадии, риск 3',
+        complications: 'Гипертрофия левого желудочка'
+      },
+      {
+        name: 'Хронический гастрит',
+        diagnosisDate: '2015-11-20',
+        diseaseStatus: 'Хроническое',
+        severity: 'Лёгкая',
+        description: 'Хронический поверхностный гастрит',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-05-01 10:00',
@@ -386,7 +462,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P002 ───────────────────────────────────────────────────────────────────
   {
     id: 'P002',
     firstName: 'Мария',
@@ -443,6 +518,8 @@ export const mockPatients: Patient[] = [
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-04-28',
     contacts: {
+      phoneMobile: '+7 (495) 234-56-78',
+      phoneHome: '',
       phone: '+7 (495) 234-56-78',
       email: 'm.ivanova@example.com',
       address: 'ул. Пушкина, д. 25, кв. 12',
@@ -485,15 +562,15 @@ export const mockPatients: Patient[] = [
         type: 'Спирометрия',
         date: '2026-04-20',
         statusText: 'Внимание: ОФВ1 снижен',
-        lab: 'Основная лаборатория',
-        doctor: 'Орлова Е.В.'
+        doctor: 'Орлова Е.В.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Сальбутамол', dose: '100 мкг', form: 'аэрозоль', regimen: 'по необходимости' }
     ],
     operations: [],
-    medicalProblems: ['Бронхиальная астма'],
+    medicalProblems: [{ name: 'Бронхиальная астма', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-20 11:00',
@@ -570,10 +647,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирован',
     doctor: 'Козлова Н.И.',
-    department: 'Эндокринология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-04',
     contacts: {
+      phoneMobile: '+7 (495) 345-67-89',
+      phoneHome: '',
       phone: '+7 (495) 345-67-89',
       email: 'a.smirnov@example.com',
       address: 'пр. Мира, д. 45, кв. 78',
@@ -616,23 +695,23 @@ export const mockPatients: Patient[] = [
         type: 'Гликированный гемоглобин',
         date: '2026-04-30',
         statusText: 'Критично: HbA1c 9.2%',
-        lab: 'Основная лаборатория',
-        doctor: 'Козлова Н.И.'
+        doctor: 'Козлова Н.И.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'Биохимия крови',
         date: '2026-05-01',
         statusText: 'Внимание: Глюкоза 8.4',
-        lab: 'Основная лаборатория',
-        doctor: 'Козлова Н.И.'
+        doctor: 'Козлова Н.И.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Метформин', dose: '850 мг', form: 'таблетки', regimen: '2 раза в день' },
       { name: 'Инсулин Актрапид', dose: '8 ед', form: 'раствор', regimen: 'перед едой' }
     ],
-    operations: ['Холецистэктомия (2015)'],
-    medicalProblems: ['Сахарный диабет 2 типа', 'Ожирение', 'Артериальная гипертензия'],
+    operations: [{ name: 'Холецистэктомия', date: '2015-01-01', diagnosis: '—', description: 'Подробности не указаны', complications: 'Нет', implants: 'Нет', result: 'Выздоровление' }],
+    medicalProblems: [{ name: 'Сахарный диабет 2 типа', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Ожирение', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Артериальная гипертензия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-30 09:00',
@@ -709,10 +788,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирована',
     doctor: 'Лукина А.С.',
-    department: 'Неврология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-04-25',
     contacts: {
+      phoneMobile: '+7 (495) 456-71-22',
+      phoneHome: '',
       phone: '+7 (495) 456-71-22',
       email: 'e.orlova@example.com',
       address: 'ул. Лесная, д. 7, кв. 14',
@@ -755,15 +836,15 @@ export const mockPatients: Patient[] = [
         type: 'Общий анализ крови',
         date: '2026-04-22',
         statusText: 'Норма',
-        lab: 'Основная лаборатория',
-        doctor: 'Лукина А.С.'
+        doctor: 'Лукина А.С.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Магне B6', dose: '2 таб', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: ['Вегетососудистая дистония'],
+    medicalProblems: [{ name: 'Вегетососудистая дистония', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-22 10:30',
@@ -840,10 +921,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирован',
     doctor: 'Карпов В.Г.',
-    department: 'Кардиология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-03',
     contacts: {
+      phoneMobile: '+7 (495) 501-14-67',
+      phoneHome: '',
       phone: '+7 (495) 501-14-67',
       email: 'n.fedorov@example.com',
       address: 'Профсоюзная ул., д. 18, кв. 42',
@@ -886,23 +969,23 @@ export const mockPatients: Patient[] = [
         type: 'Липидный профиль',
         date: '2026-04-29',
         statusText: 'Внимание: ХС ЛПНП 3.9',
-        lab: 'Основная лаборатория',
-        doctor: 'Карпов В.Г.'
+        doctor: 'Карпов В.Г.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'ЭКГ',
         date: '2026-05-01',
         statusText: 'Внимание: Признаки гипертрофии ЛЖ',
-        lab: 'Основная лаборатория',
-        doctor: 'Карпов В.Г.'
+        doctor: 'Карпов В.Г.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Бисопролол', dose: '5 мг', form: 'таблетки', regimen: '1 раз в день' },
       { name: 'Аспирин Кардио', dose: '100 мг', form: 'таблетки', regimen: 'вечером' }
     ],
-    operations: ['АКШ (2018)'],
-    medicalProblems: ['ИБС', 'Артериальная гипертензия', 'Атеросклероз'],
+    operations: [{ name: 'АКШ', date: '2018-01-01', diagnosis: '—', description: 'Подробности не указаны', complications: 'Нет', implants: 'Нет', result: 'Выздоровление' }],
+    medicalProblems: [{ name: 'ИБС', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Артериальная гипертензия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Атеросклероз', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-05-01 08:00',
@@ -979,10 +1062,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирована',
     doctor: 'Белова О.Р.',
-    department: 'Оториноларингология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-01',
     contacts: {
+      phoneMobile: '+7 (495) 613-90-10',
+      phoneHome: '',
       phone: '+7 (495) 613-90-10',
       email: 's.gromova@example.com',
       address: 'ул. Садовая, д. 55, кв. 6',
@@ -1025,8 +1110,8 @@ export const mockPatients: Patient[] = [
         type: 'Мазок из зева',
         date: '2026-01-13',
         statusText: 'Внимание: Staphylococcus aureus',
-        lab: 'Микробиологическая лаборатория',
-        doctor: 'Белова О.Р.'
+        doctor: 'Белова О.Р.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1034,7 +1119,7 @@ export const mockPatients: Patient[] = [
       { name: 'Амоксициллин', dose: '500 мг', form: 'таблетки', regimen: '3 раза в день' }
     ],
     operations: [],
-    medicalProblems: ['Хронический тонзиллит', 'Поллиноз'],
+    medicalProblems: [{ name: 'Хронический тонзиллит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Поллиноз', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-01-12 14:00',
@@ -1111,10 +1196,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирован',
     doctor: 'Ершов М.П.',
-    department: 'Неврология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-04-30',
     contacts: {
+      phoneMobile: '+7 (495) 720-88-01',
+      phoneHome: '',
       phone: '+7 (495) 720-88-01',
       email: 'p.lebedev@example.com',
       address: 'Университетский пр., д. 9, кв. 31',
@@ -1157,8 +1244,8 @@ export const mockPatients: Patient[] = [
         type: 'МРТ поясничного отдела',
         date: '2026-04-18',
         statusText: 'Внимание: Протрузия L4-L5 до 4 мм',
-        lab: 'Кабинет МРТ',
-        doctor: 'Ершов М.П.'
+        doctor: 'Ершов М.П.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1166,7 +1253,7 @@ export const mockPatients: Patient[] = [
       { name: 'Диклофенак', dose: '75 мг', form: 'гель', regimen: '2 раза в день местно' }
     ],
     operations: [],
-    medicalProblems: ['Поясничный остеохондроз', 'Протрузия дисков'],
+    medicalProblems: [{ name: 'Поясничный остеохондроз', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Протрузия дисков', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-17 16:00',
@@ -1234,10 +1321,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирована',
     doctor: 'Носова Т.В.',
-    department: 'Нефрология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-04-27',
     contacts: {
+      phoneMobile: '+7 (495) 410-55-31',
+      phoneHome: '',
       phone: '+7 (495) 410-55-31',
       email: 'l.volkova@example.com',
       address: 'Нагорная ул., д. 12, кв. 9',
@@ -1280,15 +1369,15 @@ export const mockPatients: Patient[] = [
         type: 'Общий анализ мочи',
         date: '2026-04-25',
         statusText: 'Внимание: Лейкоцитурия',
-        lab: 'Основная лаборатория',
-        doctor: 'Носова Т.В.'
+        doctor: 'Носова Т.В.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'УЗИ почек',
         date: '2026-04-26',
         statusText: 'Внимание: Расширение ЧЛС справа',
-        lab: 'Кабинет УЗИ',
-        doctor: 'Носова Т.В.'
+        doctor: 'Носова Т.В.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1296,7 +1385,7 @@ export const mockPatients: Patient[] = [
       { name: 'Ципрофлоксацин', dose: '500 мг', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: ['Хронический пиелонефрит', 'Мочекаменная болезнь в анамнезе'],
+    medicalProblems: [{ name: 'Хронический пиелонефрит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Мочекаменная болезнь в анамнезе', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-24 13:00',
@@ -1373,10 +1462,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирован',
     doctor: 'Зимина С.А.',
-    department: 'Гастроэнтерология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-02',
     contacts: {
+      phoneMobile: '+7 (495) 311-24-70',
+      phoneHome: '',
       phone: '+7 (495) 311-24-70',
       email: 'a.belov@example.com',
       address: 'Мичуринский пр., д. 4, кв. 52',
@@ -1419,15 +1510,15 @@ export const mockPatients: Patient[] = [
         type: 'ФГДС',
         date: '2026-01-15',
         statusText: 'Внимание: Гастродуоденит, эрозии луковицы',
-        lab: 'Эндоскопический кабинет',
-        doctor: 'Зимина С.А.'
+        doctor: 'Зимина С.А.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'Хеликобактер (дыхательный тест)',
         date: '2026-01-15',
         statusText: 'Критично: H. pylori положительный',
-        lab: 'Основная лаборатория',
-        doctor: 'Зимина С.А.'
+        doctor: 'Зимина С.А.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1435,7 +1526,7 @@ export const mockPatients: Patient[] = [
       { name: 'Амоксициллин', dose: '1000 мг', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: ['Хронический гастродуоденит', 'H. pylori инфекция'],
+    medicalProblems: [{ name: 'Хронический гастродуоденит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'H. pylori инфекция', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-01-14 10:00',
@@ -1512,10 +1603,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирована',
     doctor: 'Гаврилова К.Е.',
-    department: 'Терапия',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-04-29',
     contacts: {
+      phoneMobile: '+7 (495) 212-67-98',
+      phoneHome: '',
       phone: '+7 (495) 212-67-98',
       email: 'n.zaitseva@example.com',
       address: 'пер. Хлебный, д. 2, кв. 11',
@@ -1559,22 +1652,22 @@ export const mockPatients: Patient[] = [
         type: 'Общий анализ крови',
         date: '2026-04-28',
         statusText: 'Критично: Гемоглобин 78 г/л',
-        lab: 'Основная лаборатория',
-        doctor: 'Гаврилова К.Е.'
+        doctor: 'Гаврилова К.Е.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'Ферритин сыворотки',
         date: '2026-04-28',
         statusText: 'Критично: 4 нг/мл',
-        lab: 'Основная лаборатория',
-        doctor: 'Гаврилова К.Е.'
+        doctor: 'Гаврилова К.Е.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Сорбифер', dose: '1 таб', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: ['Железодефицитная анемия'],
+    medicalProblems: [{ name: 'Железодефицитная анемия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-27 11:30',
@@ -1646,6 +1739,8 @@ export const mockPatients: Patient[] = [
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-04',
     contacts: {
+      phoneMobile: '+7 (495) 344-18-43',
+      phoneHome: '',
       phone: '+7 (495) 344-18-43',
       email: 'g.timofeev@example.com',
       address: 'Ломоносовский пр., д. 33, кв. 88',
@@ -1688,23 +1783,23 @@ export const mockPatients: Patient[] = [
         type: 'Спирометрия (ОФВ1)',
         date: '2026-04-10',
         statusText: 'Критично: ОФВ1 38% от нормы',
-        lab: 'Кабинет функциональной диагностики',
-        doctor: 'Антонов Р.С.'
+        doctor: 'Антонов Р.С.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'Газы крови',
         date: '2026-05-02',
         statusText: 'Внимание: Гипоксемия PaO2 62',
-        lab: 'Основная лаборатория',
-        doctor: 'Антонов Р.С.'
+        doctor: 'Антонов Р.С.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Беродуал', dose: '20 капель', form: 'раствор', regimen: '2 раза в день' },
       { name: 'Тиотропий', dose: '18 мкг', form: 'капсулы д/инг.', regimen: '1 раз в день' }
     ],
-    operations: ['Резекция правого лёгкого (2010)'],
-    medicalProblems: ['ХОБЛ', 'Эмфизема', 'Лёгочная гипертензия'],
+    operations: [{ name: 'Резекция правого лёгкого', date: '2010-01-01', diagnosis: '—', description: 'Подробности не указаны', complications: 'Нет', implants: 'Нет', result: 'Выздоровление' }],
+    medicalProblems: [{ name: 'ХОБЛ', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Эмфизема', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Лёгочная гипертензия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-05-01 07:30',
@@ -1789,10 +1884,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирована',
     doctor: 'Лебедева И.О.',
-    department: 'Неврология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-04-26',
     contacts: {
+      phoneMobile: '+7 (495) 277-41-53',
+      phoneHome: '',
       phone: '+7 (495) 277-41-53',
       email: 'a.makarova@example.com',
       address: 'Смоленский бульвар, д. 21, кв. 15',
@@ -1835,8 +1932,8 @@ export const mockPatients: Patient[] = [
         type: 'МРТ головного мозга',
         date: '2026-04-19',
         statusText: 'Норма: Патологии не выявлено',
-        lab: 'Кабинет МРТ',
-        doctor: 'Лебедева И.О.'
+        doctor: 'Лебедева И.О.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1844,7 +1941,7 @@ export const mockPatients: Patient[] = [
       { name: 'Топирамат', dose: '25 мг', form: 'таблетки', regimen: '1 раз в день' }
     ],
     operations: [],
-    medicalProblems: ['Мигрень без ауры'],
+    medicalProblems: [{ name: 'Мигрень без ауры', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-04-18 15:00',
@@ -1912,10 +2009,12 @@ export const mockPatients: Patient[] = [
     status: 'hospitalized',
     statusText: 'Госпитализирован',
     doctor: 'Воронова Д.А.',
-    department: 'Оториноларингология',
+    department: 'Пульмонология',
     institution: 'ГУ БЦГБ',
     lastUpdated: '2026-05-01',
     contacts: {
+      phoneMobile: '+7 (495) 688-15-77',
+      phoneHome: '',
       phone: '+7 (495) 688-15-77',
       email: 'r.egorov@example.com',
       address: 'ул. Тверская, д. 41, кв. 19',
@@ -1958,15 +2057,15 @@ export const mockPatients: Patient[] = [
         type: 'Рентген придаточных пазух',
         date: '2026-01-14',
         statusText: 'Критично: Уровень жидкости в обеих гайморовых пазухах',
-        lab: 'Рентгенологический кабинет',
-        doctor: 'Воронова Д.А.'
+        doctor: 'Воронова Д.А.',
+      reason: 'Плановое обследование'
       },
       {
         type: 'Общий анализ крови',
         date: '2026-01-14',
         statusText: 'Внимание: Лейкоцитоз 11.8',
-        lab: 'Основная лаборатория',
-        doctor: 'Воронова Д.А.'
+        doctor: 'Воронова Д.А.',
+      reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1974,7 +2073,7 @@ export const mockPatients: Patient[] = [
       { name: 'Амоксиклав', dose: '875/125 мг', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: ['Хронический синусит (в анамнезе)', 'Аллергический ринит'],
+    medicalProblems: [{ name: 'Хронический синусит (в анамнезе)', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Аллергический ринит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
     history: [
       {
         dateTime: '2026-01-13 09:00',
@@ -2400,10 +2499,10 @@ export const mockFacilities: Facility[] = [
 ]
 
 export const mockStaff: Staff[] = [
-  { id: 'S001', firstName: 'Анна', lastName: 'Кузнецова', position: 'Врач-терапевт', department: 'Терапевтическое отделение', login: 'a.kuznetsova', status: 'active' },
-  { id: 'S002', firstName: 'Дмитрий', lastName: 'Волков', position: 'Врач-хирург', department: 'Хирургическое отделение', login: 'd.volkov', status: 'active' },
-  { id: 'S003', firstName: 'Елена', lastName: 'Соколова', position: 'Медсестра', department: 'Терапевтическое отделение', login: 'e.sokolova', status: 'active' },
-  { id: 'S004', firstName: 'Сергей', lastName: 'Морозов', position: 'Врач-педиатр', department: 'Педиатрическое отделение', login: 's.morozov', status: 'inactive' }
+  { id: 'S001', firstName: 'Анна', lastName: 'Кузнецова', position: 'Врач-терапевт', department: 'Пульмонология', login: 'a.kuznetsova', status: 'active' },
+  { id: 'S002', firstName: 'Дмитрий', lastName: 'Волков', position: 'Врач-хирург', department: 'Пульмонология', login: 'd.volkov', status: 'active' },
+  { id: 'S003', firstName: 'Елена', lastName: 'Соколова', position: 'Медсестра', department: 'Пульмонология', login: 'e.sokolova', status: 'active' },
+  { id: 'S004', firstName: 'Сергей', lastName: 'Морозов', position: 'Врач-педиатр', department: 'Пульмонология', login: 's.morozov', status: 'inactive' }
 ]
 
 export type NotificationType = 'lab-result' | 'appointment-reminder'

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { Helmet } from 'react-helmet'
 import {
@@ -14,10 +14,16 @@ import {
   ChevronUp,
   AlertCircle,
   CheckSquare,
-  X
+  X,
+  Search,
+  SlidersHorizontal,
+  RotateCcw,
+  ChevronLeft,
+  ChevronRight,
+  Users
 } from 'lucide-react'
 
-import { mockPatients } from 'data/mockData'
+import { mockPatients, mockHospitalBeds } from 'data/mockData'
 import {
   PatientCardContainer,
   PatientHeader,
@@ -44,8 +50,323 @@ import {
   ModalFooter,
   FormGroup,
   Label,
-  Input
+  Input,
+  SearchPageWrapper,
+  SearchCard,
+  SearchCardHeader,
+  SearchCardTitle,
+  SearchCardSubtitle,
+  SearchFilterBar,
+  FilterLabel,
+  SearchFilterInput,
+  SearchFilterSelect,
+  SearchResetBtn,
+  SearchTableWrap,
+  SearchTable,
+  SearchThead,
+  SearchTh,
+  SearchTr,
+  SearchTd,
+  SearchTdBold,
+  SearchTdMuted,
+  PatientAvatar,
+  PatientNameCell,
+  StatusPill,
+  SearchPaginationRow,
+  SearchPaginationInfo,
+  SearchPaginationBtns,
+  SearchPageBtn,
+  SearchEmptyState,
+  SearchResultsCount
 } from './styled'
+
+
+
+const PAGE_SIZE = 8
+
+const getPatientRoom = (patientId: string): string => {
+  const bed = mockHospitalBeds.find((b) => b.patientId === patientId)
+  return bed ? `Палата ${bed.roomNumber}` : '—'
+}
+
+const getInitials = (firstName: string, lastName: string) => {
+  return `${(lastName?.[0] || '')}${(firstName?.[0] || '')}`.toUpperCase()
+}
+
+const getUniqueDoctors = (): string[] => {
+  const set = new Set(mockPatients.map((p) => p.doctor).filter(Boolean))
+  return Array.from(set).sort()
+}
+
+const getUniqueDepartments = (): string[] => {
+  const set = new Set(mockPatients.map((p) => p.department).filter(Boolean))
+  return Array.from(set).sort()
+}
+
+const getUniqueRooms = (): string[] => {
+  const set = new Set(
+    mockHospitalBeds
+      .filter((b) => b.patientId)
+      .map((b) => b.roomNumber)
+  )
+  return Array.from(set).sort()
+}
+
+interface PatientSearchPanelProps {
+  onSelectPatient: (id: string) => void
+  initialQuery?: string
+}
+
+const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
+  onSelectPatient,
+  initialQuery = ''
+}) => {
+  const [query, setQuery] = useState(initialQuery)
+  const [doctor, setDoctor] = useState('')
+  const [department, setDepartment] = useState('')
+  const [status, setStatus] = useState('')
+  const [room, setRoom] = useState('')
+  const [page, setPage] = useState(1)
+
+  useEffect(() => {
+    setQuery(initialQuery)
+    setPage(1)
+  }, [initialQuery])
+
+  const doctors = useMemo(getUniqueDoctors, [])
+  const departments = useMemo(getUniqueDepartments, [])
+  const rooms = useMemo(getUniqueRooms, [])
+
+  const filtered = useMemo(() => {
+    const q = query.toLowerCase().trim()
+    return mockPatients.filter((p) => {
+      const fullName = `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase()
+      if (q && !fullName.includes(q) && !p.id.toLowerCase().includes(q) && !p.medcardNum?.toLowerCase().includes(q)) return false
+      if (doctor && p.doctor !== doctor) return false
+      if (department && p.department !== department) return false
+      if (status && p.status !== status) return false
+      if (room) {
+        const bed = mockHospitalBeds.find((b) => b.patientId === p.id && b.roomNumber === room)
+        if (!bed) return false
+      }
+      return true
+    })
+  }, [query, doctor, department, status, room])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages)
+  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+
+  const resetFilters = () => {
+    setQuery('')
+    setDoctor('')
+    setDepartment('')
+    setStatus('')
+    setRoom('')
+    setPage(1)
+  }
+
+  const hasFilters = query || doctor || department || status || room
+
+  const handlePageChange = (p: number) => {
+    setPage(p)
+    // scroll to top of table
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const renderPageBtns = () => {
+    const btns = []
+    for (let i = 1; i <= totalPages; i++) {
+      btns.push(
+        <SearchPageBtn
+          key={i}
+          $active={i === safePage}
+          onClick={() => handlePageChange(i)}
+        >
+          {i}
+        </SearchPageBtn>
+      )
+    }
+    return btns
+  }
+
+  return (
+    <SearchPageWrapper>
+      <SearchCard>
+        <SearchCardHeader>
+          <SearchCardTitle>Поиск пациентов</SearchCardTitle>
+          <SearchCardSubtitle>
+            Найдите пациента по ФИО, лечащему врачу, отделению или палате
+          </SearchCardSubtitle>
+        </SearchCardHeader>
+
+        <SearchFilterBar>
+          <FilterLabel>
+            <SlidersHorizontal size={13} />
+            Фильтры:
+          </FilterLabel>
+
+          <div style={{ position: 'relative', width: '100%' }}>
+            <Search
+              size={15}
+              style={{
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                color: '#94a3b8',
+                pointerEvents: 'none'
+              }}
+            />
+            <SearchFilterInput
+              value={query}
+              onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+              placeholder="ФИО, ID или номер карты..."
+              style={{ paddingLeft: 36 }}
+            />
+          </div>
+
+          <SearchFilterSelect
+            value={doctor}
+            onChange={(e) => { setDoctor(e.target.value); setPage(1) }}
+          >
+            <option value="">Все врачи</option>
+            {doctors.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </SearchFilterSelect>
+
+          <SearchFilterSelect
+            value={department}
+            onChange={(e) => { setDepartment(e.target.value); setPage(1) }}
+          >
+            <option value="">Все отделения</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </SearchFilterSelect>
+
+          <SearchFilterSelect
+            value={status}
+            onChange={(e) => { setStatus(e.target.value); setPage(1) }}
+          >
+            <option value="">Все статусы</option>
+            <option value="hospitalized">Госпитализирован</option>
+            <option value="outpatient">Амбулаторно</option>
+            <option value="discharged">Выписан</option>
+          </SearchFilterSelect>
+
+          <SearchFilterSelect
+            value={room}
+            onChange={(e) => { setRoom(e.target.value); setPage(1) }}
+          >
+            <option value="">Все палаты</option>
+            {rooms.map((r) => (
+              <option key={r} value={r}>Палата {r}</option>
+            ))}
+          </SearchFilterSelect>
+
+          <SearchResetBtn onClick={resetFilters} disabled={!hasFilters as any}>
+            <RotateCcw size={13} />
+            Сбросить
+          </SearchResetBtn>
+        </SearchFilterBar>
+
+        {filtered.length > 0 && (
+          <SearchResultsCount>
+            Найдено: <strong>{filtered.length}</strong> пациент{filtered.length === 1 ? '' : filtered.length < 5 ? 'а' : 'ов'}
+          </SearchResultsCount>
+        )}
+
+        <SearchTableWrap>
+          <SearchTable>
+            <SearchThead>
+              <tr>
+                <SearchTh>Пациент</SearchTh>
+                <SearchTh>Возраст / Пол</SearchTh>
+                <SearchTh>Отделение</SearchTh>
+                <SearchTh>Лечащий врач</SearchTh>
+                <SearchTh>Палата</SearchTh>
+                <SearchTh>Статус</SearchTh>
+                <SearchTh>Номер карты</SearchTh>
+              </tr>
+            </SearchThead>
+            <tbody>
+              {paged.length === 0 ? (
+                <tr>
+                  <td colSpan={7}>
+                    <SearchEmptyState>
+                      <Users size={48} />
+                      <p>Пациенты не найдены</p>
+                      <span>Попробуйте изменить параметры поиска или сбросить фильтры</span>
+                    </SearchEmptyState>
+                  </td>
+                </tr>
+              ) : (
+                paged.map((patient) => (
+                  <SearchTr key={patient.id} onClick={() => onSelectPatient(patient.id)}>
+                    <SearchTdBold>
+                      <PatientNameCell>
+                        <PatientAvatar>
+                          {getInitials(patient.firstName, patient.lastName)}
+                        </PatientAvatar>
+                        <div>
+                          <div>{patient.lastName} {patient.firstName}</div>
+                          <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 400, marginTop: 2 }}>
+                            {patient.middleName}
+                          </div>
+                        </div>
+                      </PatientNameCell>
+                    </SearchTdBold>
+                    <SearchTd>{patient.age} лет, {patient.gender === 'Мужской' ? 'М' : 'Ж'}</SearchTd>
+                    <SearchTd>{patient.department}</SearchTd>
+                    <SearchTd>{patient.doctor}</SearchTd>
+                    <SearchTdMuted>{getPatientRoom(patient.id)}</SearchTdMuted>
+                    <SearchTd>
+                      <StatusPill $status={patient.status}>{patient.statusText}</StatusPill>
+                    </SearchTd>
+                    <SearchTdMuted>{patient.medcardNum}</SearchTdMuted>
+                  </SearchTr>
+                ))
+              )}
+            </tbody>
+          </SearchTable>
+        </SearchTableWrap>
+
+        {totalPages > 1 && (
+          <SearchPaginationRow>
+            <SearchPaginationInfo>
+              Страница {safePage} из {totalPages} · Записей {filtered.length}
+            </SearchPaginationInfo>
+            <SearchPaginationBtns>
+              <SearchPageBtn
+                onClick={() => handlePageChange(safePage - 1)}
+                disabled={safePage === 1}
+              >
+                <ChevronLeft size={14} />
+              </SearchPageBtn>
+              {renderPageBtns()}
+              <SearchPageBtn
+                onClick={() => handlePageChange(safePage + 1)}
+                disabled={safePage === totalPages}
+              >
+                <ChevronRight size={14} />
+              </SearchPageBtn>
+            </SearchPaginationBtns>
+          </SearchPaginationRow>
+        )}
+      </SearchCard>
+    </SearchPageWrapper>
+  )
+}
+
+// ─── PatientCard ───────────────────────────────────────────────────────────────
+
+interface PatientCardPageProps {
+  patientId?: string
+  initialSearchQuery?: string
+  onSelectPatient?: (id: string) => void
+}
 
 interface PatientCardProps {
   patientId?: string
@@ -1239,18 +1560,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
     }
   }
 
-  if (!patientId || !localPatient) {
-    return (
-      <PatientCardContainer style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center', padding: '40px 0' }}>
-          <h2 style={{ fontSize: 20, marginBottom: 8 }}>Пациент не выбран или не найден</h2>
-          <p style={{ color: '#64748b', fontSize: 15 }}>
-            Выберите пациента из списка для просмотра карточки.
-          </p>
-        </div>
-      </PatientCardContainer>
-    )
-  }
+  if (!patientId || !localPatient) return null
 
   return (
     <>
@@ -1337,4 +1647,85 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
   )
 }
 
-export default PatientCard
+// ─── PatientCardPageWrapper ────────────────────────────────────────────────────
+// This is the main page component. It combines the search panel with the card.
+
+const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
+  patientId: externalPatientId,
+  initialSearchQuery = '',
+  onSelectPatient: externalOnSelect
+}) => {
+  const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(externalPatientId)
+
+  useEffect(() => {
+    setSelectedPatientId(externalPatientId)
+  }, [externalPatientId])
+
+  const handleSelectPatient = (id: string) => {
+    setSelectedPatientId(id)
+    externalOnSelect?.(id)
+  }
+
+  const handleBackToSearch = () => {
+    setSelectedPatientId(undefined)
+    externalOnSelect?.('')
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <Helmet>
+        <title>Пациенты</title>
+      </Helmet>
+
+      {/* Always show the search panel */}
+      <PatientSearchPanel
+        onSelectPatient={handleSelectPatient}
+        initialQuery={initialSearchQuery}
+      />
+
+      {/* Show the patient card if a patient is selected */}
+      {selectedPatientId && (
+        <div>
+          {/* Back button */}
+          <button
+            onClick={handleBackToSearch}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              marginBottom: 16,
+              padding: '8px 16px',
+              borderRadius: 10,
+              border: '1px solid rgba(191, 219, 254, 0.8)',
+              background: '#ffffff',
+              color: '#374151',
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: 'Inter, system-ui, sans-serif',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.background = '#eff6ff'
+              ;(e.currentTarget as HTMLButtonElement).style.color = '#1e40af'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#2563eb'
+            }}
+            onMouseLeave={(e) => {
+              ;(e.currentTarget as HTMLButtonElement).style.background = '#ffffff'
+              ;(e.currentTarget as HTMLButtonElement).style.color = '#374151'
+              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(191, 219, 254, 0.8)'
+            }}
+          >
+            <ChevronLeft size={16} />
+            Вернуться к поиску
+          </button>
+
+          <PatientCard patientId={selectedPatientId} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+export { PatientSearchPanel, PatientCard }
+export default PatientCardPageWrapper

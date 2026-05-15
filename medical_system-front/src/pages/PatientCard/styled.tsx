@@ -5,6 +5,13 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `
 
+const gradientText = (gradient: string) => `
+  background: ${gradient};
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+`
+
 const slideIn = keyframes`
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
@@ -600,3 +607,453 @@ export const Badge = styled.span<{ $color?: string; $bg?: string }>`
   align-items: center;
   gap: 4px;
 `
+
+// ─── Patient Search Panel ──────────────────────────────────────────────────────
+
+const FONT_STACK = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
+
+const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
+const GRADIENT_TITLE = 'linear-gradient(135deg, #0f172a 0%, #1e40af 55%, #3b82f6 100%)'
+
+const controlBase = `
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: #ffffff;
+  color: #0f172a;
+  font-family: ${FONT_STACK};
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  &::placeholder { color: #94a3b8; }
+  &:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+`
+
+export const SearchPageWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  font-family: ${FONT_STACK};
+  animation: ${fadeIn} 0.35s ease-out;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+`
+
+export const SearchCard = styled.div`
+  background: #ffffff;
+  border: 1px solid rgba(191, 219, 254, 0.7);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 4px 12px rgba(15, 23, 42, 0.06),
+    0 20px 40px rgba(15, 23, 42, 0.05);
+  border-radius: 20px;
+  overflow: hidden;
+`
+
+export const SearchCardHeader = styled.div`
+  padding: 22px 28px 20px;
+  border-bottom: 1px solid rgba(238, 242, 247, 0.9);
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: ${GRADIENT_ACCENT};
+    box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
+  }
+`
+
+export const SearchCardTitle = styled.h2`
+  font-family: ${FONT_STACK};
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    min-width: 0;
+  
+    ${gradientText(`
+      linear-gradient(
+        135deg,
+        #0f172a  0%,
+        #1d4ed8 10%,
+        #6d28d9 20%,
+        #2563eb 30%
+      )
+    `)}
+  
+    filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
+  
+    transition:
+      filter 0.25s ease,
+      letter-spacing 0.25s ease;
+  
+    &:hover {
+      filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
+      letter-spacing: -0.035em;
+    }
+  
+    @media (max-width: 1024px) {
+      font-size: 24px;
+    }
+  
+    @media (max-width: 768px) {
+      font-size: 22px;
+      line-height: 1.2;
+    }
+  
+    @media (max-width: 480px) {
+      font-size: 19px;
+    }
+`
+
+export const SearchCardSubtitle = styled.p`
+   font-family: ${FONT_STACK};
+      margin: 6px 0 0;
+      padding-left: 10px;
+      font-size: 13px;
+      font-weight: 400;
+      color: #94a3b8;
+      letter-spacing: 0.015em;
+      line-height: 1.55;
+      transition: color 0.2s ease;
+    
+      &::before {
+        content: '';
+        display: inline-block;
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #93c5fd, #818cf8);
+        vertical-align: middle;
+        margin-right: 8px;
+        margin-bottom: 2px;
+        opacity: 0.7;
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
+      }
+    
+      ${SearchCardHeader}:hover & {
+        color: #64748b;
+    
+        &::before {
+          opacity: 1;
+          transform: scale(1.3);
+        }
+      }
+    
+       @media (max-width: 768px) {
+        padding-left: 0;
+        font-size: 12px;
+        line-height: 1.45;
+      }
+`
+
+export const SearchFilterBar = styled.div`
+  display: grid;
+  grid-template-columns: auto 1fr 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 18px 20px;
+  border-bottom: 1px solid rgba(238, 242, 247, 0.9);
+  background: #fafbff;
+
+  @media (max-width: 1280px) {
+    grid-template-columns: auto repeat(2, 1fr) auto;
+  }
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+`
+
+export const FilterLabel = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+  white-space: nowrap;
+  min-height: 40px;
+
+  @media (max-width: 1280px) {
+    grid-column: 1 / -1;
+    min-height: auto;
+  }
+
+  @media (max-width: 600px) {
+    grid-column: 1;
+  }
+`
+
+export const SearchFilterInput = styled.input`
+  ${controlBase}
+`
+
+export const SearchFilterSelect = styled.select`
+  ${controlBase}
+  padding-right: 42px;
+  cursor: pointer;
+  appearance: none;
+  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 14px center;
+`
+
+export const SearchResetBtn = styled.button`
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: #ffffff;
+  color: #374151;
+  font-family: ${FONT_STACK};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    border-color: #2563eb;
+    background: #f0f4ff;
+    color: #1e40af;
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+  }
+`
+
+export const SearchTableWrap = styled.div`
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar { height: 6px; }
+  &::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; &:hover { background: #94a3b8; } }
+`
+
+export const SearchTable = styled.table`
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  min-width: 700px;
+`
+
+export const SearchThead = styled.thead`
+  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+  border-bottom: 1px solid rgba(191, 219, 254, 0.5);
+`
+
+export const SearchTh = styled.th`
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  white-space: nowrap;
+`
+
+export const SearchTr = styled.tr`
+  border-bottom: 1px solid #eef2f7;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+
+  &:hover {
+    background: #f0f7ff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.06);
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
+`
+
+export const SearchTd = styled.td`
+  padding: 14px 16px;
+  vertical-align: middle;
+  color: #374151;
+`
+
+export const SearchTdBold = styled(SearchTd)`
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+`
+
+export const SearchTdMuted = styled(SearchTd)`
+  color: #94a3b8;
+  font-size: 13px;
+`
+
+export const PatientAvatar = styled.div`
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #dbeafe 0%, #ede9fe 100%);
+  color: #3b82f6;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.15);
+`
+
+export const PatientNameCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+`
+
+export const StatusPill = styled.span<{ $status?: string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  ${({ $status }) => {
+    switch ($status) {
+      case 'hospitalized':
+        return 'background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;'
+      case 'outpatient':
+        return 'background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe;'
+      case 'discharged':
+        return 'background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0;'
+      default:
+        return 'background: #fef3c7; color: #92400e; border: 1px solid #fde68a;'
+    }
+  }}
+`
+
+export const SearchPaginationRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-top: 1px solid rgba(191, 219, 254, 0.5);
+  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+`
+
+export const SearchPaginationInfo = styled.div`
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+`
+
+export const SearchPaginationBtns = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+`
+
+export const SearchPageBtn = styled.button<{ $active?: boolean }>`
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid ${(p) => (p.$active ? '#1e40af' : 'rgba(191, 219, 254, 0.8)')};
+  background: ${(p) =>
+    p.$active ? 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)' : '#ffffff'};
+  color: ${(p) => (p.$active ? '#ffffff' : '#374151')};
+  font-family: ${FONT_STACK};
+  font-size: 13px;
+  font-weight: ${(p) => (p.$active ? 700 : 600)};
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    border-color: #1e40af;
+    background: ${(p) => (p.$active ? 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)' : '#eff6ff')};
+    color: ${(p) => (p.$active ? '#ffffff' : '#1e40af')};
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+`
+
+export const SearchEmptyState = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 24px;
+  gap: 12px;
+  color: #94a3b8;
+
+  svg {
+    opacity: 0.35;
+  }
+
+  p {
+    font-size: 15px;
+    font-weight: 500;
+    margin: 0;
+    color: #94a3b8;
+  }
+
+  span {
+    font-size: 13px;
+    color: #cbd5e1;
+  }
+`
+
+export const SearchResultsCount = styled.div`
+  padding: 10px 20px 0;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+
+  strong {
+    color: #1e40af;
+  }
+`
+

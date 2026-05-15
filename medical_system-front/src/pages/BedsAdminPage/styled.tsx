@@ -187,47 +187,90 @@ export const HeaderRow = styled.div`
 `
 
 export const PageTitle = styled.h1`
-  margin: 0;
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  line-height: 1.15;
-  ${gradientText('linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #6d28d9 75%, #2563eb 100%)')}
-  filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
-
-  @media (max-width: 1024px) {
-    font-size: 24px;
-  }
-
-  @media (max-width: 768px) {
-    font-size: 22px;
-  }
-
-  @media (max-width: 480px) {
-    font-size: 19px;
-  }
+  font-family: ${FONT_STACK};
+    font-size: 28px;
+    font-weight: 800;
+    margin: 0;
+    letter-spacing: -0.04em;
+    line-height: 1.15;
+    min-width: 0;
+  
+    ${gradientText(`
+      linear-gradient(
+        135deg,
+        #0f172a  0%,
+        #1d4ed8 45%,
+        #6d28d9 75%,
+        #2563eb 100%
+      )
+    `)}
+  
+    filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
+  
+    transition:
+      filter 0.25s ease,
+      letter-spacing 0.25s ease;
+  
+    &:hover {
+      filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
+      letter-spacing: -0.035em;
+    }
+  
+    @media (max-width: 1024px) {
+      font-size: 24px;
+    }
+  
+    @media (max-width: 768px) {
+      font-size: 22px;
+      line-height: 1.2;
+    }
+  
+    @media (max-width: 480px) {
+      font-size: 19px;
+    }
 `
 
 export const CardSubtitle = styled.p`
-  margin: 6px 0 0;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.55;
-  color: #94a3b8;
-  letter-spacing: 0.015em;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    margin-right: 8px;
-    margin-bottom: 2px;
-    border-radius: 50%;
-    vertical-align: middle;
-    background: linear-gradient(135deg, #93c5fd, #818cf8);
-    opacity: 0.7;
-  }
+ font-family: ${FONT_STACK};
+     margin: 6px 0 0;
+     padding-left: 10px;
+     font-size: 13px;
+     font-weight: 400;
+     color: #94a3b8;
+     letter-spacing: 0.015em;
+     line-height: 1.55;
+     transition: color 0.2s ease;
+   
+     &::before {
+       content: '';
+       display: inline-block;
+       width: 4px;
+       height: 4px;
+       border-radius: 50%;
+       background: linear-gradient(135deg, #93c5fd, #818cf8);
+       vertical-align: middle;
+       margin-right: 8px;
+       margin-bottom: 2px;
+       opacity: 0.7;
+       transition:
+         opacity 0.2s ease,
+         transform 0.2s ease;
+     }
+   
+     ${CardHeader}:hover & {
+       color: #64748b;
+   
+       &::before {
+         opacity: 1;
+         transform: scale(1.3);
+       }
+     }
+   
+      @media (max-width: 768px) {
+       padding-left: 0;
+       font-size: 12px;
+       line-height: 1.45;
+     }
 `
 
 export const TwoColLayout = styled.div`

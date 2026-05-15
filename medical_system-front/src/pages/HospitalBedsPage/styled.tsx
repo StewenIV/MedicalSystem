@@ -1,5 +1,10 @@
 import styled, { css, keyframes, createGlobalStyle } from 'styled-components'
 
+const FONT_STACK = `
+  'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont,
+  'Segoe UI', system-ui, sans-serif
+`
+
 export const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
 export const GRADIENT_SHIMMER =
   'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)'
@@ -110,7 +115,7 @@ export const SectionCard = styled(StyledCard)`
 `
 
 export const CardHeader = styled.div`
-  padding: 18px 24px 16px;
+ padding: 18px 24px 16px;
   border-bottom: 1px solid rgba(238, 242, 247, 0.9);
   background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
   border-radius: 12px 12px 0 0;
@@ -152,6 +157,14 @@ export const CardHeader = styled.div`
     opacity: 1;
     animation: ${shimmer} 1.4s ease infinite;
   }
+
+  @media (max-width: 768px) {
+    padding: 16px 18px 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px 14px 12px;
+  }
 `
 
 export const SectionCardHeader = styled(CardHeader)``
@@ -170,14 +183,26 @@ export const HeaderLeft = styled.div`
 `
 
 export const Title = styled.h2`
-
+ font-family: ${FONT_STACK};
   font-size: 28px;
   font-weight: 800;
   margin: 0;
   letter-spacing: -0.04em;
   line-height: 1.15;
-  ${gradientText('linear-gradient(135deg, #0f172a 0%, #1d4ed8 45%, #6d28d9 75%, #2563eb 100%)')}
+  min-width: 0;
+
+  ${gradientText(`
+    linear-gradient(
+      135deg,
+      #0f172a  0%,
+      #1d4ed8 45%,
+      #6d28d9 75%,
+      #2563eb 100%
+    )
+  `)}
+
   filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
+
   transition:
     filter 0.25s ease,
     letter-spacing 0.25s ease;
@@ -186,27 +211,85 @@ export const Title = styled.h2`
     filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
     letter-spacing: -0.035em;
   }
+
+  @media (max-width: 1024px) {
+    font-size: 24px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 19px;
+  }
+`
+
+export const CardTitle = styled.h3`
+  font-family: ${FONT_STACK};
+  margin: 0;
+  padding-left: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+
+  ${gradientText(GRADIENT_TITLE)}
+
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.08));
+
+  transition:
+    filter 0.25s ease,
+    letter-spacing 0.25s ease;
+
+  ${CardHeader}:hover & {
+    filter: drop-shadow(0 2px 6px rgba(37, 99, 235, 0.2));
+    letter-spacing: -0.03em;
+  }
 `
 
 export const CardSubtitle = styled.p`
-  margin: 6px 0 0;
-  font-size: 13px;
-  font-weight: 400;
-  color: #94a3b8;
-  letter-spacing: 0.015em;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #93c5fd, #818cf8);
-    vertical-align: middle;
-    margin-right: 8px;
-    margin-bottom: 2px;
-    opacity: 0.7;
-  }
+  font-family: ${FONT_STACK};
+    margin: 6px 0 0;
+    padding-left: 10px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #94a3b8;
+    letter-spacing: 0.015em;
+    line-height: 1.55;
+    transition: color 0.2s ease;
+  
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #93c5fd, #818cf8);
+      vertical-align: middle;
+      margin-right: 8px;
+      margin-bottom: 2px;
+      opacity: 0.7;
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
+    }
+  
+    ${CardHeader}:hover & {
+      color: #64748b;
+  
+      &::before {
+        opacity: 1;
+        transform: scale(1.3);
+      }
+    }
+  
+     @media (max-width: 768px) {
+      padding-left: 0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
 `
 
 export const CardContent = styled.div`

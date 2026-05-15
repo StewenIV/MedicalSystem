@@ -340,7 +340,7 @@ export const Card = styled.div`
 `
 
 export const CardHeader = styled.div`
-    padding: 18px 24px 16px;
+  padding: 18px 24px 16px;
   border-bottom: 1px solid rgba(238, 242, 247, 0.9);
   background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
   border-radius: 12px 12px 0 0;
