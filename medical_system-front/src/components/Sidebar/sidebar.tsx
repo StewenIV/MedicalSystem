@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react'
 import {
   LayoutDashboard,
@@ -10,7 +9,8 @@ import {
   Settings,
   FileUser,
   Stethoscope,
-  Building2
+  Building2,
+  Clock
 } from 'lucide-react'
 
 import {
@@ -42,6 +42,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       { key: 'HospitalWorkplace', label: 'Стационар', icon: Calendar },
       { key: 'beds-admin', label: 'Администрирование стационара', icon: Building2 },
       { key: 'patient-card', label: 'Карточка пациента', icon: FileUser },
+      { key: 'medical-staff-schedule', label: 'График работы медперсонала', icon: Clock },
       { key: 'reports', label: 'Отчёты', icon: BarChart3 },
       { key: 'settings', label: 'Управление', icon: Settings }
     ],

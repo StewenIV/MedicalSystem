@@ -1,6 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { Helmet } from 'react-helmet'
+import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
+import CreatableSelect from 'react-select/creatable'
+import { z } from 'zod'
+import { PatternFormat } from 'react-number-format'
 import {
   User,
   Edit,
@@ -20,10 +24,47 @@ import {
   RotateCcw,
   ChevronLeft,
   ChevronRight,
-  Users
+  Users,
+  Thermometer,
+  Heart,
+  Droplet,
+  Save,
+  Syringe,
+  Phone,
+  Mail,
+  MapPin,
+  Briefcase,
+  Shield,
+  Clock,
+  Stethoscope,
+  TestTube,
+  Pill,
+  Clipboard,
+  Upload,
+  FilePlus,
+  TrendingUp,
+  TrendingDown,
+  Minus as MinusIcon,
+  Calendar,
+  Info,
+  AlertTriangle
 } from 'lucide-react'
+import {
+  ResponsiveContainer,
+  ComposedChart,
+  Line,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine,
+  ReferenceArea
+} from 'recharts'
+import colors from 'consts/colors'
 
-import { mockPatients, mockHospitalBeds } from 'data/mockData'
+import { mockPatients, mockHospitalBeds, mockPathientVitalSigns, VitalSign } from 'data/mockData'
 import {
   PatientCardContainer,
   PatientHeader,
@@ -62,6 +103,7 @@ import {
   SearchFilterSelect,
   SearchResetBtn,
   SearchTableWrap,
+  SearchTableViewport,
   SearchTable,
   SearchThead,
   SearchTh,
@@ -80,7 +122,296 @@ import {
   SearchResultsCount
 } from './styled'
 
+interface SelectOption {
+  value: string
+  label: string
+}
 
+const selectStyles: StylesConfig<SelectOption, false> = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '40px',
+    borderRadius: '10px',
+    borderColor: state.isFocused ? colors.button : 'rgba(191,219,254,0.8)',
+    boxShadow: state.isFocused ? '0 0 0 3px rgba(37,99,235,0.12)' : 'none',
+    backgroundColor: '#ffffff',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    '&:hover': { borderColor: state.isFocused ? colors.button : '#9ca3af' }
+  }),
+  valueContainer: (base) => ({ ...base, padding: '0 8px 0 12px' }),
+  placeholder: (base) => ({ ...base, color: '#94a3b8', fontSize: '14px' }),
+  input: (base) => ({ ...base, color: '#111827', fontSize: '14px' }),
+  singleValue: (base) => ({ ...base, color: '#111827', fontSize: '14px' }),
+  indicatorsContainer: (base) => ({ ...base, paddingRight: '5px' }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? colors.mainColor : '#64748b',
+    padding: '2px',
+    margin: '0 4px',
+    borderRadius: '6px',
+    border: '1px solid #e2e8f0',
+    backgroundColor: state.selectProps.menuIsOpen ? '#eaf1ff' : '#f8fafc',
+    transition: 'all 0.15s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    '&:hover': { color: colors.mainColor, backgroundColor: '#eaf1ff', borderColor: '#c7d2fe' },
+    svg: { width: '14px', height: '14px' }
+  }),
+  menu: (base) => ({
+    ...base,
+    marginTop: '6px',
+    borderRadius: '10px',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 10px 24px rgba(15,23,42,0.12)',
+    overflow: 'hidden',
+    zIndex: 20
+  }),
+  menuList: (base) => ({ ...base, padding: '6px' }),
+  option: (base, state) => ({
+    ...base,
+    borderRadius: '7px',
+    fontSize: '14px',
+    cursor: 'pointer',
+    backgroundColor: state.isSelected ? colors.mainColor : state.isFocused ? '#eff6ff' : '#ffffff',
+    color: state.isSelected ? '#ffffff' : '#1f2937',
+    transition: 'all 0.15s ease',
+    ':active': { backgroundColor: state.isSelected ? colors.mainColor : '#dbeafe' }
+  })
+}
+
+const DropdownIndicator = (props: DropdownIndicatorProps<SelectOption, false>) => (
+  <components.DropdownIndicator {...props} />
+)
+const selectComponents = { DropdownIndicator, IndicatorSeparator: () => null }
+
+const NORMAL_RANGES: Record<string, { min: number; max: number; label: string; unit: string }> = {
+  temperature: { min: 36.0, max: 37.2, label: 'Температура', unit: '°C' },
+  bloodPressureSystolic: { min: 100, max: 130, label: 'АД сист.', unit: 'мм рт. ст.' },
+  bloodPressureDiastolic: { min: 60, max: 90, label: 'АД диаст.', unit: 'мм рт. ст.' },
+  pulse: { min: 65, max: 95, label: 'Пульс', unit: 'уд/мин' },
+  spo2: { min: 95, max: 100, label: 'Сатурация', unit: '%' },
+  respiratoryRate: { min: 12, max: 20, label: 'ЧД', unit: 'дых/мин' }
+}
+
+const getPulseSegments = (pulse: number) => {
+  const min = NORMAL_RANGES.pulse.min
+  const max = NORMAL_RANGES.pulse.max
+
+  if (pulse < min) {
+    return { pulseRange: 0, pulseUpper: pulse }
+  }
+
+  if (pulse <= max) {
+    return { pulseRange: pulse, pulseUpper: 0 }
+  }
+
+  return { pulseRange: max, pulseUpper: pulse - max }
+}
+
+const getBloodPressureSegments = (systolic: number, diastolic: number) => {
+  const min = NORMAL_RANGES.bloodPressureDiastolic.min
+  const max = NORMAL_RANGES.bloodPressureSystolic.max
+  const start = Math.min(diastolic, systolic)
+  const end = Math.max(diastolic, systolic)
+
+  const below = Math.max(Math.min(end, min) - start, 0)
+  const normalStart = Math.max(start, min)
+  const normalEnd = Math.min(end, max)
+  const normal = Math.max(normalEnd - normalStart, 0)
+  const above = Math.max(end - Math.max(start, max), 0)
+
+  return {
+    bpBase: start,
+    bpLow: below,
+    bpNormal: normal,
+    bpHigh: above
+  }
+}
+
+const buildChartData = (signs: VitalSign[]) =>
+  signs.map((v) => {
+    const ps = getPulseSegments(v.pulse)
+    const bp = getBloodPressureSegments(v.bloodPressureSystolic, v.bloodPressureDiastolic)
+    return {
+      ...v,
+      name: v.date,
+      pulseBase: 0,
+      pulseRange: ps.pulseRange,
+      pulseUpper: ps.pulseUpper,
+      bpBase: bp.bpBase,
+      bpLow: bp.bpLow,
+      bpNormal: bp.bpNormal,
+      bpHigh: bp.bpHigh
+    }
+  })
+
+const CustomTempDot = (props: any) => {
+  const { cx, cy, payload } = props
+  const abnormal =
+    payload.temperature > NORMAL_RANGES.temperature.max ||
+    payload.temperature < NORMAL_RANGES.temperature.min ||
+    payload.spo2 > NORMAL_RANGES.spo2.max ||
+    payload.spo2 < NORMAL_RANGES.spo2.min ||
+    payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
+    payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+
+  if (props.dataKey === 'temperature') {
+    return (
+      <g>
+        {abnormal && (
+          <>
+            <circle cx={cx} cy={cy} r={13} fill="#ef4444" fillOpacity={0.12} />
+            <circle cx={cx} cy={cy} r={9} fill="#ef4444" fillOpacity={0.2} />
+          </>
+        )}
+        <circle cx={cx} cy={cy} r={abnormal ? 6 : 4} fill={abnormal ? '#ef4444' : '#f97316'} />
+      </g>
+    )
+  }
+
+  if (props.dataKey === 'spo2') {
+    return (
+      <g>
+        {abnormal && (
+          <>
+            <circle cx={cx} cy={cy} r={14} fill="#3b82f6" fillOpacity={0.15} />
+            <circle cx={cx} cy={cy} r={9} fill="#3b82f6" fillOpacity={0.25} />
+          </>
+        )}
+
+        <circle
+          cx={cx}
+          cy={cy}
+          r={abnormal ? 6 : 4}
+          fill={abnormal ? '#1d4ed8' : '#60a5fa'}
+          stroke={abnormal ? '#fff' : 'none'}
+          strokeWidth={2}
+        />
+      </g>
+    )
+  }
+  if (props.dataKey === 'respiratoryRate') {
+    return (
+      <g>
+        {abnormal && (
+          <>
+            <circle cx={cx} cy={cy} r={14} fill="#10b981" fillOpacity={0.15} />
+            <circle cx={cx} cy={cy} r={9} fill="#10b981" fillOpacity={0.25} />
+          </>
+        )}
+        <circle
+          cx={cx}
+          cy={cy}
+          r={abnormal ? 6 : 4}
+          fill={abnormal ? '#059669' : '#34d399'}
+          stroke={abnormal ? '#fff' : 'none'}
+          strokeWidth={2}
+        />
+      </g>
+    )
+  }
+
+  return null
+}
+
+const CustomTempActiveDot = (props: any) => {
+  const { cx, cy, payload } = props
+  const abnormal =
+    payload.temperature > NORMAL_RANGES.temperature.max ||
+    payload.temperature < NORMAL_RANGES.temperature.min
+  return <circle cx={cx} cy={cy} r={7} fill={abnormal ? '#ef4444' : '#f97316'} />
+}
+
+const DRUG_FORMS: SelectOption[] = [
+  { value: 'таблетки', label: 'Таблетки' },
+  { value: 'капсулы', label: 'Капсулы' },
+  { value: 'раствор', label: 'Раствор для инъекций' },
+  { value: 'аэрозоль', label: 'Аэрозоль (ингалятор)' },
+  { value: 'мазь', label: 'Мазь' },
+  { value: 'гель', label: 'Гель' },
+  { value: 'спрей', label: 'Спрей' },
+  { value: 'сироп', label: 'Сироп' },
+  { value: 'суппозиторий', label: 'Суппозиторий' },
+  { value: 'пластырь', label: 'Трансдермальный пластырь' }
+]
+const DRUG_ROUTES: SelectOption[] = [
+  { value: 'перорально', label: 'Перорально (внутрь)' },
+  { value: 'ингаляционно', label: 'Ингаляционно' },
+  { value: 'внутривенно', label: 'Внутривенно (в/в)' },
+  { value: 'внутримышечно', label: 'Внутримышечно (в/м)' },
+  { value: 'подкожно', label: 'Подкожно (п/к)' },
+  { value: 'местно', label: 'Местно (наружно)' },
+  { value: 'ректально', label: 'Ректально' },
+  { value: 'сублингвально', label: 'Сублингвально' }
+]
+const DRUG_REGIMENS: SelectOption[] = [
+  { value: '1 раз в день', label: '1 раз в день' },
+  { value: '2 раза в день', label: '2 раза в день' },
+  { value: '3 раза в день', label: '3 раза в день' },
+  { value: '4 раза в день', label: '4 раза в день' },
+  { value: 'утром', label: 'Утром' },
+  { value: 'вечером', label: 'Вечером' },
+  { value: 'натощак', label: 'Натощак' },
+  { value: 'после еды', label: 'После еды' },
+  { value: 'по необходимости', label: 'По необходимости' },
+  { value: 'перед сном', label: 'Перед сном' }
+]
+const DRUG_DOSES: SelectOption[] = [
+  { value: '5 мг', label: '5 мг' },
+  { value: '10 мг', label: '10 мг' },
+  { value: '25 мг', label: '25 мг' },
+  { value: '50 мг', label: '50 мг' },
+  { value: '100 мг', label: '100 мг' },
+  { value: '250 мг', label: '250 мг' },
+  { value: '500 мг', label: '500 мг' },
+  { value: '1000 мг', label: '1000 мг' },
+  { value: '100 мкг', label: '100 мкг' },
+  { value: '250 мкг', label: '250 мкг' }
+]
+const RELATION_OPTIONS: SelectOption[] = [
+  { value: 'Супруг(а)', label: 'Супруг(а)' },
+  { value: 'Мать', label: 'Мать' },
+  { value: 'Отец', label: 'Отец' },
+  { value: 'Сын', label: 'Сын' },
+  { value: 'Дочь', label: 'Дочь' },
+  { value: 'Брат', label: 'Брат' },
+  { value: 'Сестра', label: 'Сестра' },
+  { value: 'Бабушка', label: 'Бабушка' },
+  { value: 'Дедушка', label: 'Дедушка' },
+  { value: 'Опекун', label: 'Опекун' },
+  { value: 'Другое', label: 'Другое' }
+]
+const DISEASE_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'Активное', label: 'Активное' },
+  { value: 'Хроническое', label: 'Хроническое' },
+  { value: 'Вылечено', label: 'Вылечено' },
+  { value: 'Ремиссия', label: 'Ремиссия' }
+]
+const SEVERITY_OPTIONS: SelectOption[] = [
+  { value: 'Лёгкая', label: 'Лёгкая' },
+  { value: 'Умеренная', label: 'Умеренная' },
+  { value: 'Тяжёлая', label: 'Тяжёлая' },
+  { value: 'Критическая', label: 'Критическая' }
+]
+const VACCINE_OPTIONS: Array<{ label: string; disease: string; validity: string }> = [
+  { label: 'Гриппол Плюс', disease: 'Грипп', validity: '1 год' },
+  { label: 'Спутник V', disease: 'COVID-19', validity: '1 год' },
+  { label: 'Пневмо-23', disease: 'Пневмококковая инфекция', validity: '5 лет' },
+  { label: 'ЭнцеВир', disease: 'Клещевой энцефалит', validity: '3 года' },
+  { label: 'Вакцина против гепатита B', disease: 'Гепатит B', validity: '10 лет' },
+  { label: 'АДС-М', disease: 'Дифтерия, столбняк', validity: '10 лет' },
+  { label: 'ЖКВ', disease: 'Корь, краснуха, паротит', validity: 'Пожизненно' },
+  { label: 'Полиорикс', disease: 'Полиомиелит', validity: '10 лет' },
+  { label: 'БЦЖ', disease: 'Туберкулёз', validity: '7-10 лет' },
+  { label: 'Другое', disease: '', validity: '' }
+]
+const VACCINE_SELECT_OPTIONS: SelectOption[] = VACCINE_OPTIONS.map((v) => ({
+  value: v.label,
+  label: v.label
+}))
 
 const PAGE_SIZE = 8
 
@@ -90,99 +421,175 @@ const getPatientRoom = (patientId: string): string => {
 }
 
 const getInitials = (firstName: string, lastName: string) => {
-  return `${(lastName?.[0] || '')}${(firstName?.[0] || '')}`.toUpperCase()
+  return `${lastName?.[0] || ''}${firstName?.[0] || ''}`.toUpperCase()
 }
 
-const getUniqueDoctors = (): string[] => {
+const getUniqueDoctors = (): SelectOption[] => {
   const set = new Set(mockPatients.map((p) => p.doctor).filter(Boolean))
-  return Array.from(set).sort()
+  return Array.from(set)
+    .sort()
+    .map((d) => ({ value: d, label: d }))
 }
 
-const getUniqueDepartments = (): string[] => {
-  const set = new Set(mockPatients.map((p) => p.department).filter(Boolean))
-  return Array.from(set).sort()
-}
-
-const getUniqueRooms = (): string[] => {
-  const set = new Set(
-    mockHospitalBeds
-      .filter((b) => b.patientId)
-      .map((b) => b.roomNumber)
-  )
-  return Array.from(set).sort()
-}
+const STATUS_OPTIONS: SelectOption[] = [
+  { value: 'hospitalized', label: 'Госпитализован' },
+  { value: 'outpatient', label: 'Амбулаторно' },
+  { value: 'discharged', label: 'Выписан' }
+]
+const GENDER_OPTIONS: SelectOption[] = [
+  { value: 'Мужской', label: 'Мужской' },
+  { value: 'Женский', label: 'Женский' }
+]
 
 interface PatientSearchPanelProps {
   onSelectPatient: (id: string) => void
+  onDoubleClickPatient?: (patient: any) => void
+  cardRef?: React.MutableRefObject<HTMLDivElement | null>
   initialQuery?: string
 }
 
 const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   onSelectPatient,
+  onDoubleClickPatient,
+  cardRef,
   initialQuery = ''
 }) => {
   const [query, setQuery] = useState(initialQuery)
-  const [doctor, setDoctor] = useState('')
-  const [department, setDepartment] = useState('')
-  const [status, setStatus] = useState('')
+  const [doctor, setDoctor] = useState<SelectOption | null>(null)
+  const [status, setStatus] = useState<SelectOption | null>(null)
+  const [gender, setGender] = useState<SelectOption | null>(null)
   const [room, setRoom] = useState('')
   const [page, setPage] = useState(1)
+
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const clickCountRef = useRef<number>(0)
+  const lastClickedPatientRef = useRef<string | null>(null)
+  const tableWrapRef = useRef<HTMLDivElement>(null)
+  const tableScrollRef = useRef<HTMLDivElement>(null)
+
+  const updateTableScrollHint = useCallback(() => {
+    const wrapEl = tableWrapRef.current
+    const scrollEl = tableScrollRef.current
+    if (!wrapEl || !scrollEl) return
+
+    const isScrollable = scrollEl.scrollWidth - scrollEl.clientWidth > 4
+    const isScrolledEnd =
+      !isScrollable || scrollEl.scrollLeft + scrollEl.clientWidth >= scrollEl.scrollWidth - 4
+    const maxScroll = Math.max(scrollEl.scrollWidth - scrollEl.clientWidth, 1)
+    const scrollProgress = isScrollable ? Math.min(scrollEl.scrollLeft / maxScroll, 1) : 1
+    const hintOpacity = Math.pow(1 - scrollProgress, 2.4)
+
+    wrapEl.classList.toggle('is-scrollable', isScrollable)
+    wrapEl.classList.toggle('is-scrolled-end', isScrolledEnd)
+    wrapEl.style.setProperty('--scroll-hint-opacity', isScrollable ? hintOpacity.toFixed(3) : '0')
+  }, [])
 
   useEffect(() => {
     setQuery(initialQuery)
     setPage(1)
   }, [initialQuery])
 
+  useEffect(() => {
+    return () => {
+      // Очищаем таймер при размонтировании компонента
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const doctors = useMemo(getUniqueDoctors, [])
-  const departments = useMemo(getUniqueDepartments, [])
-  const rooms = useMemo(getUniqueRooms, [])
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
     return mockPatients.filter((p) => {
       const fullName = `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase()
-      if (q && !fullName.includes(q) && !p.id.toLowerCase().includes(q) && !p.medcardNum?.toLowerCase().includes(q)) return false
-      if (doctor && p.doctor !== doctor) return false
-      if (department && p.department !== department) return false
-      if (status && p.status !== status) return false
+      if (
+        q &&
+        !fullName.includes(q) &&
+        !p.id.toLowerCase().includes(q) &&
+        !p.medcardNum?.toLowerCase().includes(q)
+      )
+        return false
+      if (doctor && p.doctor !== doctor.value) return false
+      if (status && p.status !== status.value) return false
+      if (gender && p.gender !== gender.value) return false
       if (room) {
         const bed = mockHospitalBeds.find((b) => b.patientId === p.id && b.roomNumber === room)
         if (!bed) return false
       }
       return true
     })
-  }, [query, doctor, department, status, room])
+  }, [query, doctor, status, gender, room])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
   const safePage = Math.min(page, totalPages)
   const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
 
+  useEffect(() => {
+    updateTableScrollHint()
+    window.addEventListener('resize', updateTableScrollHint)
+
+    return () => {
+      window.removeEventListener('resize', updateTableScrollHint)
+    }
+  }, [updateTableScrollHint, paged.length, safePage])
+
   const resetFilters = () => {
     setQuery('')
-    setDoctor('')
-    setDepartment('')
-    setStatus('')
+    setDoctor(null)
+    setStatus(null)
+    setGender(null)
     setRoom('')
     setPage(1)
   }
 
-  const hasFilters = query || doctor || department || status || room
+  const hasFilters = query || doctor || status || gender || room
 
   const handlePageChange = (p: number) => {
     setPage(p)
-    // scroll to top of table
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleRowClick = (patientId: string) => {
+    if (lastClickedPatientRef.current !== patientId) {
+      clickCountRef.current = 0
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+    }
+
+    lastClickedPatientRef.current = patientId
+    clickCountRef.current++
+
+    if (clickCountRef.current === 1) {
+      clickTimeoutRef.current = setTimeout(() => {
+        if (clickCountRef.current === 1) {
+          onSelectPatient(patientId)
+          setTimeout(() => {
+            cardRef?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          }, 100)
+        }
+        clickCountRef.current = 0
+        lastClickedPatientRef.current = null
+      }, 300)
+    } else if (clickCountRef.current === 2) {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+      const patient = mockPatients.find((p) => p.id === patientId)
+      if (patient) {
+        onDoubleClickPatient?.(patient)
+      }
+      clickCountRef.current = 0
+      lastClickedPatientRef.current = null
+    }
   }
 
   const renderPageBtns = () => {
     const btns = []
     for (let i = 1; i <= totalPages; i++) {
       btns.push(
-        <SearchPageBtn
-          key={i}
-          $active={i === safePage}
-          onClick={() => handlePageChange(i)}
-        >
+        <SearchPageBtn key={i} $active={i === safePage} onClick={() => handlePageChange(i)}>
           {i}
         </SearchPageBtn>
       )
@@ -196,7 +603,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
         <SearchCardHeader>
           <SearchCardTitle>Поиск пациентов</SearchCardTitle>
           <SearchCardSubtitle>
-            Найдите пациента по ФИО, лечащему врачу, отделению или палате
+            Найдите пациента по ФИО, ID, номеру карты, врачу или палате
           </SearchCardSubtitle>
         </SearchCardHeader>
 
@@ -220,51 +627,64 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
             />
             <SearchFilterInput
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setPage(1) }}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setPage(1)
+              }}
               placeholder="ФИО, ID или номер карты..."
               style={{ paddingLeft: 36 }}
             />
           </div>
 
-          <SearchFilterSelect
-            value={doctor}
-            onChange={(e) => { setDoctor(e.target.value); setPage(1) }}
-          >
-            <option value="">Все врачи</option>
-            {doctors.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </SearchFilterSelect>
+          <div style={{ minWidth: 0 }}>
+            <Select
+              inputId="doctor-filter"
+              placeholder="Все врачи"
+              options={doctors}
+              styles={selectStyles}
+              components={selectComponents}
+              isClearable
+              value={doctor}
+              onChange={(opt) => {
+                setDoctor(opt as SelectOption | null)
+                setPage(1)
+              }}
+            />
+          </div>
 
-          <SearchFilterSelect
-            value={department}
-            onChange={(e) => { setDepartment(e.target.value); setPage(1) }}
-          >
-            <option value="">Все отделения</option>
-            {departments.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </SearchFilterSelect>
+          <div style={{ minWidth: 0 }}>
+            <Select
+              inputId="gender-filter"
+              placeholder="Пол"
+              options={GENDER_OPTIONS}
+              styles={selectStyles}
+              components={selectComponents}
+              isClearable
+              isSearchable={false}
+              value={gender}
+              onChange={(opt) => {
+                setGender(opt as SelectOption | null)
+                setPage(1)
+              }}
+            />
+          </div>
 
-          <SearchFilterSelect
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); setPage(1) }}
-          >
-            <option value="">Все статусы</option>
-            <option value="hospitalized">Госпитализирован</option>
-            <option value="outpatient">Амбулаторно</option>
-            <option value="discharged">Выписан</option>
-          </SearchFilterSelect>
-
-          <SearchFilterSelect
-            value={room}
-            onChange={(e) => { setRoom(e.target.value); setPage(1) }}
-          >
-            <option value="">Все палаты</option>
-            {rooms.map((r) => (
-              <option key={r} value={r}>Палата {r}</option>
-            ))}
-          </SearchFilterSelect>
+          <div style={{ minWidth: 0 }}>
+            <Select
+              inputId="status-filter"
+              placeholder="Статус"
+              options={STATUS_OPTIONS}
+              styles={selectStyles}
+              components={selectComponents}
+              isClearable
+              isSearchable={false}
+              value={status}
+              onChange={(opt) => {
+                setStatus(opt as SelectOption | null)
+                setPage(1)
+              }}
+            />
+          </div>
 
           <SearchResetBtn onClick={resetFilters} disabled={!hasFilters as any}>
             <RotateCcw size={13} />
@@ -274,17 +694,19 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
 
         {filtered.length > 0 && (
           <SearchResultsCount>
-            Найдено: <strong>{filtered.length}</strong> пациент{filtered.length === 1 ? '' : filtered.length < 5 ? 'а' : 'ов'}
+            Найдено: <strong>{filtered.length}</strong> пациент
+            {filtered.length === 1 ? '' : filtered.length < 5 ? 'а' : 'ов'}
           </SearchResultsCount>
         )}
 
-        <SearchTableWrap>
-          <SearchTable>
+        <SearchTableWrap ref={tableWrapRef}>
+          <SearchTableViewport ref={tableScrollRef} onScroll={updateTableScrollHint}>
+            <SearchTable>
             <SearchThead>
               <tr>
+                <SearchTh>ID</SearchTh>
                 <SearchTh>Пациент</SearchTh>
                 <SearchTh>Возраст / Пол</SearchTh>
-                <SearchTh>Отделение</SearchTh>
                 <SearchTh>Лечащий врач</SearchTh>
                 <SearchTh>Палата</SearchTh>
                 <SearchTh>Статус</SearchTh>
@@ -298,28 +720,47 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                     <SearchEmptyState>
                       <Users size={48} />
                       <p>Пациенты не найдены</p>
-                      <span>Попробуйте изменить параметры поиска или сбросить фильтры</span>
+                      <span>Попробуйте изменить параметры поиска</span>
                     </SearchEmptyState>
                   </td>
                 </tr>
               ) : (
                 paged.map((patient) => (
-                  <SearchTr key={patient.id} onClick={() => onSelectPatient(patient.id)}>
+                  <SearchTr
+                    key={patient.id}
+                    onClick={() => handleRowClick(patient.id)}
+                    title="Одинарный клик — открыть карту | Двойной клик — быстрый просмотр"
+                  >
+                    <SearchTdMuted
+                      style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}
+                    >
+                      {patient.id}
+                    </SearchTdMuted>
                     <SearchTdBold>
                       <PatientNameCell>
                         <PatientAvatar>
                           {getInitials(patient.firstName, patient.lastName)}
                         </PatientAvatar>
                         <div>
-                          <div>{patient.lastName} {patient.firstName}</div>
-                          <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 400, marginTop: 2 }}>
+                          <div>
+                            {patient.lastName} {patient.firstName}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: '#94a3b8',
+                              fontWeight: 400,
+                              marginTop: 2
+                            }}
+                          >
                             {patient.middleName}
                           </div>
                         </div>
                       </PatientNameCell>
                     </SearchTdBold>
-                    <SearchTd>{patient.age} лет, {patient.gender === 'Мужской' ? 'М' : 'Ж'}</SearchTd>
-                    <SearchTd>{patient.department}</SearchTd>
+                    <SearchTd>
+                      {patient.age} лет, {patient.gender === 'Мужской' ? 'М' : 'Ж'}
+                    </SearchTd>
                     <SearchTd>{patient.doctor}</SearchTd>
                     <SearchTdMuted>{getPatientRoom(patient.id)}</SearchTdMuted>
                     <SearchTd>
@@ -330,7 +771,8 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                 ))
               )}
             </tbody>
-          </SearchTable>
+            </SearchTable>
+          </SearchTableViewport>
         </SearchTableWrap>
 
         {totalPages > 1 && (
@@ -360,7 +802,6 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   )
 }
 
-// ─── PatientCard ───────────────────────────────────────────────────────────────
 
 interface PatientCardPageProps {
   patientId?: string
@@ -370,6 +811,7 @@ interface PatientCardPageProps {
 
 interface PatientCardProps {
   patientId?: string
+  onSelectPatientFromPreview?: (id: string) => void
 }
 
 enum TabsEnum {
@@ -384,7 +826,7 @@ enum TabsEnum {
   Documents = 'Документы'
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFromPreview }) => {
   const [activeTab, setActiveTab] = useState<string>(TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
 
@@ -451,10 +893,144 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
     setLocalPatient(updatedData)
   }
 
-  const modalDefs: Record<
-    string,
-    { title: string; fields?: { name: string; label: string; type?: string }[]; text?: string }
-  > = {
+  const [docFile, setDocFile] = useState<File | null>(null)
+  const [docDragOver, setDocDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDocDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDocDragOver(false)
+    const f = e.dataTransfer.files[0]
+    if (f && f.type === 'application/pdf') {
+      setDocFile(f)
+      setFormData((p: any) => ({ ...p, name: f.name, date: new Date().toISOString().slice(0, 10) }))
+    }
+  }
+
+  const DOCTOR_OPTIONS = useMemo(() => {
+    const docs = new Set<string>()
+    mockPatients.forEach(p => {
+      if (p.doctor) docs.add(p.doctor)
+      p.history?.forEach(h => { if (h.doctor) docs.add(h.doctor) })
+    })
+    return Array.from(docs).map(d => ({ value: d, label: d }))
+  }, [])
+
+  const SELECT_FIELDS: Record<string, { options: SelectOption[]; placeholder: string }> = {
+    form: { options: DRUG_FORMS, placeholder: 'Форма выпуска...' },
+    route: { options: DRUG_ROUTES, placeholder: 'Путь введения...' },
+    regimen: { options: DRUG_REGIMENS, placeholder: 'Режим приёма...' },
+    dose: { options: DRUG_DOSES, placeholder: 'Дозировка...' },
+    relation: { options: RELATION_OPTIONS, placeholder: 'Кем приходится...' },
+    diseaseStatus: { options: DISEASE_STATUS_OPTIONS, placeholder: 'Статус заболевания...' },
+    severity: { options: SEVERITY_OPTIONS, placeholder: 'Степень тяжести...' },
+    gender: { options: GENDER_OPTIONS, placeholder: 'Пол...' },
+    doctor: { options: DOCTOR_OPTIONS, placeholder: 'Выберите врача...' }
+  }
+
+  const phoneSchema = z.string().superRefine((val, ctx) => {
+    const digits = val.replace(/\D/g, '')
+    if (!val || digits.length === 0) return
+    if (!digits.startsWith('373')) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Допускаются только молдавские номера (+373)' })
+      return
+    }
+    if (digits.length !== 11) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Неверный формат: +373 XX XXX XXX (8 цифр после кода)' })
+    }
+  })
+
+  const [phoneErrors, setPhoneErrors] = useState<Record<string, string>>({})
+
+  const validatePhoneWithZod = (fieldName: string, val: string) => {
+    const result = phoneSchema.safeParse(val)
+    if (!result.success) {
+      setPhoneErrors(p => ({ ...p, [fieldName]: result.error.issues[0]?.message || 'Ошибка валидации' }))
+    } else {
+      setPhoneErrors(p => ({ ...p, [fieldName]: '' }))
+    }
+  }
+
+  const PHONE_FIELDS = new Set(['phone', 'phoneMobile', 'phoneHome'])
+  const EMAIL_FIELDS = new Set(['email'])
+  const TEXTAREA_FIELDS = new Set([
+    'description',
+    'complications',
+    'objective',
+    'causeOfDeath',
+    'recommendations',
+    'complaints',
+    'conclusion'
+  ])
+
+  const FIELD_LABELS: Record<string, string> = {
+    name: 'Название',
+    drug: 'Препарат',
+    dose: 'Дозировка',
+    form: 'Форма выпуска',
+    route: 'Путь введения',
+    regimen: 'Режим приёма',
+    doctor: 'Врач',
+    comment: 'Комментарий',
+    dateStart: 'Дата начала',
+    dateEnd: 'Дата окончания',
+    date: 'Дата',
+    type: 'Тип анализа',
+    reason: 'Причина анализа',
+    statusText: 'Статус',
+    reaction: 'Реакция',
+    relation: 'Кем приходится',
+    phone: 'Телефон',
+    phoneMobile: 'Мобильный телефон',
+    phoneHome: 'Домашний телефон',
+    email: 'Email',
+    country: 'Страна',
+    region: 'Область/Регион',
+    city: 'Город',
+    address: 'Адрес',
+    zip: 'Индекс',
+    language: 'Язык',
+    nationality: 'Национальность',
+    dateOfDeath: 'Дата смерти',
+    causeOfDeath: 'Причина смерти',
+    profession: 'Профессия',
+    organization: 'Организация',
+    lastName: 'Фамилия',
+    firstName: 'Имя',
+    middleName: 'Отчество',
+    dateOfBirth: 'Дата рождения',
+    gender: 'Пол',
+    maritalStatus: 'Семейное положение',
+    seriesNumber: 'Серия и номер',
+    issuedBy: 'Кем выдан',
+    dateIssued: 'Дата выдачи',
+    diagnosis: 'Диагноз',
+    description: 'Описание операции',
+    implants: 'Импланты / протезы',
+    result: 'Результат',
+    complications: 'Осложнения',
+    diagnosisDate: 'Дата постановки диагноза',
+    diseaseStatus: 'Статус заболевания',
+    severity: 'Степень тяжести',
+    disease: 'От чего защищает',
+    validity: 'Срок действия',
+    manufacturer: 'Производитель',
+    series: 'Серия',
+    temp: 'Температура (°C)',
+    bp: 'АД (мм рт. ст.)',
+    hr: 'ЧСС (уд/мин)',
+    resp: 'Частота дыхания (д/мин)',
+    spo2: 'SpO2 (%)',
+    complaints: 'Жалобы',
+    objective: 'Объективные данные',
+    conclusion: 'Заключение',
+    recommendations: 'Назначения / Рекомендации',
+    dateTime: 'Дата и время',
+    category: 'Тип записи'
+  }
+
+  type ModalField = { name: string; label: string; type?: string }
+  const modalDefs: Record<string, { title: string; fields?: ModalField[]; text?: string }> = {
     EDIT_BASIC: {
       title: 'Основные данные',
       fields: [
@@ -477,10 +1053,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
       title: 'Контакты',
       fields: [
         { name: 'country', label: 'Страна' },
-        { name: 'region', label: 'Регион' },
+        { name: 'region', label: 'Область/Регион' },
         { name: 'city', label: 'Город' },
         { name: 'address', label: 'Адрес' },
-        { name: 'phone', label: 'Телефон' },
+        { name: 'zip', label: 'Индекс' },
+        { name: 'phoneMobile', label: 'Мобильный телефон' },
+        { name: 'phoneHome', label: 'Домашний телефон' },
         { name: 'email', label: 'Email' }
       ]
     },
@@ -494,7 +1072,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
       ]
     },
     EDIT_NESTED_work: {
-      title: 'Работа',
+      title: 'Место работы',
       fields: [
         { name: 'profession', label: 'Профессия' },
         { name: 'organization', label: 'Организация' },
@@ -504,15 +1082,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
     EDIT_NESTED_vitals: {
       title: 'Внести показатели',
       fields: [
-        { name: 'temp', label: 'Температура' },
-        { name: 'bp', label: 'АД' },
-        { name: 'hr', label: 'ЧСС' },
-        { name: 'resp', label: 'Дыхание' },
-        { name: 'spo2', label: 'SpO2' },
-        { name: 'bmi', label: 'ИМТ' }
+        { name: 'temp', label: 'Температура (°C)' },
+        { name: 'bp', label: 'АД (мм рт. ст.)' },
+        { name: 'hr', label: 'ЧСС (уд/мин)' },
+        { name: 'resp', label: 'Частота дыхания' },
+        { name: 'spo2', label: 'SpO2 (%)' },
       ]
     },
-
     ADD_LIST_relatives: {
       title: 'Добавить родственника',
       fields: [
@@ -530,11 +1106,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
       ]
     },
     DELETE_LIST_relatives: { title: 'Удалить родственника', text: 'Удалить эту запись?' },
-
     ADD_LIST_allergies: {
       title: 'Добавить аллергию',
       fields: [
-        { name: 'name', label: 'Название' },
+        { name: 'name', label: 'Вещество' },
         { name: 'reaction', label: 'Реакция' },
         { name: 'date', label: 'Дата', type: 'date' },
         { name: 'comment', label: 'Комментарий' }
@@ -543,21 +1118,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
     EDIT_LIST_allergies: {
       title: 'Редактировать аллергию',
       fields: [
-        { name: 'name', label: 'Название' },
+        { name: 'name', label: 'Вещество' },
         { name: 'reaction', label: 'Реакция' },
         { name: 'date', label: 'Дата', type: 'date' },
         { name: 'comment', label: 'Комментарий' }
       ]
     },
     DELETE_LIST_allergies: { title: 'Удалить аллергию', text: 'Удалить эту запись?' },
-
     ADD_LIST_currentMeds: {
       title: 'Добавить лекарство',
       fields: [
         { name: 'name', label: 'Препарат' },
         { name: 'dose', label: 'Дозировка' },
-        { name: 'form', label: 'Форма' },
-        { name: 'regimen', label: 'Режим приема' }
+        { name: 'form', label: 'Форма выпуска' },
+        { name: 'regimen', label: 'Режим приёма' }
       ]
     },
     EDIT_LIST_currentMeds: {
@@ -565,30 +1139,71 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
       fields: [
         { name: 'name', label: 'Препарат' },
         { name: 'dose', label: 'Дозировка' },
-        { name: 'form', label: 'Форма' },
-        { name: 'regimen', label: 'Режим приема' }
+        { name: 'form', label: 'Форма выпуска' },
+        { name: 'regimen', label: 'Режим приёма' }
       ]
     },
     DELETE_LIST_currentMeds: { title: 'Удалить лекарство', text: 'Удалить эту запись?' },
-
-    ADD_STR_operations: {
+    ADD_LIST_operations: {
       title: 'Добавить операцию',
-      fields: [{ name: 'value', label: 'Описание операции' }]
+      fields: [
+        { name: 'name', label: 'Название операции' },
+        { name: 'date', label: 'Дата операции', type: 'date' },
+        { name: 'diagnosis', label: 'Диагноз' },
+        { name: 'description', label: 'Описание операции' },
+        { name: 'complications', label: 'Осложнения' },
+        { name: 'implants', label: 'Импланты / протезы' },
+        { name: 'result', label: 'Результат' }
+      ]
     },
-    ADD_STR_medicalProblems: {
-      title: 'Добавить проблему',
-      fields: [{ name: 'value', label: 'Описание проблемы' }]
+    EDIT_LIST_operations: {
+      title: 'Редактировать операцию',
+      fields: [
+        { name: 'name', label: 'Название операции' },
+        { name: 'date', label: 'Дата операции', type: 'date' },
+        { name: 'diagnosis', label: 'Диагноз' },
+        { name: 'description', label: 'Описание операции' },
+        { name: 'complications', label: 'Осложнения' },
+        { name: 'implants', label: 'Импланты / протезы' },
+        { name: 'result', label: 'Результат' }
+      ]
     },
-
+    DELETE_LIST_operations: { title: 'Удалить операцию', text: 'Удалить эту запись?' },
+    ADD_LIST_medicalProblems: {
+      title: 'Добавить заболевание',
+      fields: [
+        { name: 'name', label: 'Название заболевания' },
+        { name: 'diagnosisDate', label: 'Дата постановки диагноза', type: 'date' },
+        { name: 'diseaseStatus', label: 'Статус заболевания' },
+        { name: 'severity', label: 'Степень тяжести' },
+        { name: 'description', label: 'Описание / особенности течения' },
+        { name: 'complications', label: 'Осложнения' }
+      ]
+    },
+    EDIT_LIST_medicalProblems: {
+      title: 'Редактировать заболевание',
+      fields: [
+        { name: 'name', label: 'Название заболевания' },
+        { name: 'diagnosisDate', label: 'Дата постановки диагноза', type: 'date' },
+        { name: 'diseaseStatus', label: 'Статус заболевания' },
+        { name: 'severity', label: 'Степень тяжести' },
+        { name: 'description', label: 'Описание / особенности течения' },
+        { name: 'complications', label: 'Осложнения' }
+      ]
+    },
+    DELETE_LIST_medicalProblems: { title: 'Удалить заболевание', text: 'Удалить эту запись?' },
     ADD_LIST_prescriptions: {
       title: 'Новое назначение',
       fields: [
         { name: 'drug', label: 'Препарат' },
         { name: 'dose', label: 'Дозировка' },
-        { name: 'form', label: 'Форма' },
-        { name: 'route', label: 'Путь' },
-        { name: 'regimen', label: 'Режим' },
-        { name: 'doctor', label: 'Врач' }
+        { name: 'form', label: 'Форма выпуска' },
+        { name: 'route', label: 'Путь введения' },
+        { name: 'regimen', label: 'Режим приёма' },
+        { name: 'dateStart', label: 'Дата начала', type: 'date' },
+        { name: 'dateEnd', label: 'Дата окончания', type: 'date' },
+        { name: 'doctor', label: 'Врач' },
+        { name: 'comment', label: 'Комментарий' }
       ]
     },
     EDIT_LIST_prescriptions: {
@@ -596,41 +1211,153 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
       fields: [
         { name: 'drug', label: 'Препарат' },
         { name: 'dose', label: 'Дозировка' },
-        { name: 'form', label: 'Форма' },
-        { name: 'route', label: 'Путь' },
-        { name: 'regimen', label: 'Режим' },
-        { name: 'doctor', label: 'Врач' }
+        { name: 'form', label: 'Форма выпуска' },
+        { name: 'route', label: 'Путь введения' },
+        { name: 'regimen', label: 'Режим приёма' },
+        { name: 'dateStart', label: 'Дата начала', type: 'date' },
+        { name: 'dateEnd', label: 'Дата окончания', type: 'date' },
+        { name: 'doctor', label: 'Врач' },
+        { name: 'comment', label: 'Комментарий' }
       ]
     },
     DELETE_LIST_prescriptions: { title: 'Удалить назначение', text: 'Удалить это назначение?' },
-
     ADD_LIST_labs: {
       title: 'Назначить анализ',
       fields: [
         { name: 'type', label: 'Тип анализа' },
+        { name: 'reason', label: 'Причина анализа' },
         { name: 'date', label: 'Дата', type: 'date' },
-        { name: 'lab', label: 'Лаборатория' },
         { name: 'doctor', label: 'Врач' }
       ]
     },
-
     ADD_LIST_vaccines: {
       title: 'Внести вакцину',
       fields: [
         { name: 'name', label: 'Вакцина' },
         { name: 'disease', label: 'От чего' },
-        { name: 'date', label: 'Дата', type: 'date' },
-        { name: 'manufacturer', label: 'Производитель' }
+        { name: 'date', label: 'Дата вакцинации', type: 'date' },
+        { name: 'validity', label: 'Срок действия' },
+        { name: 'manufacturer', label: 'Производитель' },
+        { name: 'series', label: 'Серия' }
       ]
     },
-
     ADD_LIST_documents: {
       title: 'Загрузить документ',
       fields: [
-        { name: 'name', label: 'Название' },
+        { name: 'name', label: 'Название документа' },
         { name: 'date', label: 'Дата', type: 'date' }
       ]
     }
+  }
+
+  const renderField = (f: ModalField) => {
+    const sel = SELECT_FIELDS[f.name]
+    if (sel) {
+      const currentVal = formData[f.name]
+      const selectValue = sel.options.find((o) => o.value === currentVal) || 
+                          (currentVal ? { value: currentVal, label: currentVal } : null)
+      return (
+        <FormGroup key={f.name}>
+          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          <CreatableSelect
+            options={sel.options}
+            styles={selectStyles}
+            components={selectComponents}
+            placeholder={sel.placeholder}
+            isClearable
+            formatCreateLabel={(inputValue) => `Ввести вручную: "${inputValue}"`}
+            value={selectValue}
+            onChange={(opt: any) => setFormData((p: any) => ({ ...p, [f.name]: opt?.value || '' }))}
+          />
+        </FormGroup>
+      )
+    }
+    if (PHONE_FIELDS.has(f.name)) {
+      const phoneErr = phoneErrors[f.name]
+      const rawVal: string = formData[f.name] || ''
+
+      return (
+        <FormGroup key={f.name}>
+          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          <PatternFormat
+            format="+373 (##) ###-###"
+            mask="_"
+            allowEmptyFormatting
+            value={rawVal}
+            onValueChange={(v) => {
+              const val = v.formattedValue
+              setFormData((p: any) => ({ ...p, [f.name]: val }))
+              validatePhoneWithZod(f.name, val)
+            }}
+            customInput={Input}
+            style={phoneErr ? { borderColor: '#ef4444' } : {}}
+          />
+          {phoneErr && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, color: '#ef4444', fontSize: 12 }}>
+              <AlertCircle size={13} />
+              {phoneErr}
+            </div>
+          )}
+        </FormGroup>
+      )
+    }
+    if (TEXTAREA_FIELDS.has(f.name)) {
+      return (
+        <FormGroup key={f.name}>
+          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          <textarea
+            value={formData[f.name] || ''}
+            onChange={(e) => setFormData((p: any) => ({ ...p, [f.name]: e.target.value }))}
+            rows={3}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 10,
+              border: '1px solid #cbd5e1',
+              fontSize: 14,
+              fontFamily: 'inherit',
+              resize: 'vertical',
+              outline: 'none'
+            }}
+          />
+        </FormGroup>
+      )
+    }
+    if (f.name === 'name' && modalConfig.type.includes('vaccine')) {
+      return (
+        <FormGroup key={f.name}>
+          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          <CreatableSelect
+            options={VACCINE_SELECT_OPTIONS}
+            styles={selectStyles}
+            components={selectComponents}
+            placeholder="Выберите вакцину..."
+            isClearable
+            formatCreateLabel={(val) => `Ввести вручную: "${val}"`}
+            value={formData[f.name] ? { value: formData[f.name], label: formData[f.name] } : null}
+            onChange={(opt: any) => {
+              const found = VACCINE_OPTIONS.find((v) => v.label === opt?.value)
+              setFormData((p: any) => ({
+                ...p,
+                name: opt?.value || '',
+                disease: found?.disease || p.disease,
+                validity: found?.validity || p.validity
+              }))
+            }}
+          />
+        </FormGroup>
+      )
+    }
+    return (
+      <FormGroup key={f.name}>
+        <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+        <Input
+          value={formData[f.name] || ''}
+          onChange={(e) => setFormData((p: any) => ({ ...p, [f.name]: e.target.value }))}
+          type={f.type || (EMAIL_FIELDS.has(f.name) ? 'email' : 'text')}
+          placeholder={`${FIELD_LABELS[f.name] || f.label}...`}
+        />
+      </FormGroup>
+    )
   }
 
   const renderModal = () => {
@@ -638,61 +1365,210 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
     const def = modalDefs[modalConfig.type] || { title: 'Просмотр', text: 'Детали отсутствуют' }
     const isDelete = modalConfig.type.startsWith('DELETE_')
     const isView = modalConfig.type.startsWith('VIEW_')
+    const isDocUpload = modalConfig.type === 'ADD_LIST_documents'
+    const isDocView = modalConfig.type === 'VIEW_DOCUMENT'
+    const isPatientPreview = modalConfig.type === 'PREVIEW_PATIENT'
+
+    const VIEW_LABELS: Record<string, string> = {
+      dateTime: 'Дата и время',
+      type: 'Тип',
+      doctor: 'Врач',
+      conclusion: 'Заключение',
+      complaints: 'Жалобы',
+      objective: 'Объективные данные',
+      recommendations: 'Рекомендации',
+      date: 'Дата',
+      name: 'Название',
+      statusText: 'Статус',
+      lab: 'Лаборатория',
+      reason: 'Причина',
+      disease: 'От чего',
+      validity: 'Срок',
+      manufacturer: 'Производитель',
+      series: 'Серия',
+      url: 'Файл'
+    }
 
     return createPortal(
       <ModalOverlay onClick={closeModal}>
-        <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalContent
+          onClick={(e) => e.stopPropagation()}
+          style={{ maxWidth: isPatientPreview ? 640 : isDocView ? 900 : 520 }}
+        >
           <ModalHeader>
-            <h2>{def.title}</h2>
+            <h2>{def.title || (isPatientPreview ? 'Быстрый просмотр' : 'Просмотр')}</h2>
             <CloseButton onClick={closeModal}>
               <X size={20} />
             </CloseButton>
           </ModalHeader>
           <ModalBody>
+            {isPatientPreview &&
+              modalConfig.data &&
+              (() => {
+                const p = modalConfig.data
+                return (
+                  <div style={{ display: 'grid', gap: 16 }}>
+                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                      <div
+                        style={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#dbeafe,#ede9fe)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 22,
+                          fontWeight: 800,
+                          color: '#2563eb'
+                        }}
+                      >
+                        {getInitials(p.firstName, p.lastName)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>
+                          {p.lastName} {p.firstName} {p.middleName}
+                        </div>
+                        <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
+                          {p.dateOfBirth} · {p.age} лет · {p.gender}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                      {[
+                        ['ID', p.id],
+                        ['Медкарта', p.medcardNum],
+                        ['Врач', p.doctor],
+                        ['Палата', getPatientRoom(p.id)],
+                        ['Статус', p.statusText],
+                        ['Диагноз', p.activeProblems?.[0] || '—']
+                      ].map(([l, v]) => (
+                        <div
+                          key={l}
+                          style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px' }}
+                        >
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: '#94a3b8',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              marginBottom: 4
+                            }}
+                          >
+                            {l}
+                          </div>
+                          <div style={{ fontWeight: 600, fontSize: 14 }}>{v}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
             {isDelete && <p style={{ fontSize: 15, color: '#334155' }}>{def.text}</p>}
-            {isView && (
-              <div style={{ display: 'grid', gap: 15 }}>
+            {isView && !isPatientPreview && (
+              <div style={{ display: 'grid', gap: 12 }}>
                 {Object.entries(modalConfig.data || {})
                   .filter(([k]) => k !== 'index')
                   .map(([k, v]) => (
                     <div
                       key={k}
                       style={{
-                        gap: '8px',
                         display: 'flex',
-                        alignItems: 'center',
-                        flexWrap: 'wrap'
+                        gap: 8,
+                        padding: '8px 12px',
+                        background: '#f8fafc',
+                        borderRadius: 8
                       }}
                     >
-                      <strong style={{ color: '#475569', textTransform: 'capitalize' }}>
-                        {k}:
+                      <strong style={{ color: '#475569', minWidth: 120 }}>
+                        {VIEW_LABELS[k] || k}:
                       </strong>
-                      {String(v)}
+                      <span>{String(v)}</span>
                     </div>
                   ))}
               </div>
             )}
+            {isDocView && modalConfig.data?.url && (
+              <iframe
+                src={modalConfig.data.url}
+                title="Документ"
+                style={{ width: '100%', height: 600, border: 'none', borderRadius: 8 }}
+              />
+            )}
+            {isDocUpload && (
+              <>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setDocDragOver(true)
+                  }}
+                  onDragLeave={() => setDocDragOver(false)}
+                  onDrop={handleDocDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    border: `2px dashed ${docDragOver ? '#2563eb' : '#cbd5e1'}`,
+                    borderRadius: 16,
+                    padding: 32,
+                    textAlign: 'center',
+                    cursor: 'pointer',
+                    background: docDragOver ? '#eff6ff' : '#f8fafc',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Upload size={32} style={{ color: '#94a3b8', marginBottom: 8 }} />
+                  <div style={{ fontWeight: 600, color: '#374151' }}>
+                    {docFile ? docFile.name : 'Перетащите PDF сюда или нажмите для выбора'}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+                    Только PDF файлы
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0]
+                      if (f) {
+                        setDocFile(f)
+                        setFormData((p: any) => ({
+                          ...p,
+                          name: f.name,
+                          date: new Date().toISOString().slice(0, 10),
+                          url: URL.createObjectURL(f)
+                        }))
+                      }
+                    }}
+                  />
+                </div>
+                {def.fields?.map((f) => renderField(f))}
+              </>
+            )}
             {!isDelete &&
               !isView &&
-              def.fields?.map((f) => (
-                <FormGroup key={f.name}>
-                  <Label>{f.label}</Label>
-                  <Input
-                    value={formData[f.name] || ''}
-                    onChange={(e) => setFormData({ ...formData, [f.name]: e.target.value })}
-                    type={f.type || 'text'}
-                    placeholder={`Введите ${f.label.toLowerCase()}...`}
-                  />
-                </FormGroup>
-              ))}
+              !isDocUpload &&
+              !isPatientPreview &&
+              def.fields?.map((f) => renderField(f))}
           </ModalBody>
           <ModalFooter>
             <ActionButton $variant="ghost" onClick={closeModal}>
               Закрыть
             </ActionButton>
-            {!isView && (
+            {!isView && !isPatientPreview && (
               <ActionButton $variant={isDelete ? 'danger' : 'primary'} onClick={handleSave}>
                 {isDelete ? 'Удалить' : 'Сохранить'}
+              </ActionButton>
+            )}
+            {isPatientPreview && (
+              <ActionButton
+                $variant="primary"
+                onClick={() => {
+                  closeModal()
+                  if (modalConfig.data?.id) onSelectPatientFromPreview?.(modalConfig.data.id)
+                }}
+              >
+                Открыть карту
               </ActionButton>
             )}
           </ModalFooter>
@@ -778,7 +1654,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
                 </InfoItem>
               </div>
             </SectionCard>
-            <SectionCard style={{ gridColumn: 'span 2' }}>
+            <SectionCard $span={2}>
               <h3>Последние анализы</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {localPatient.labs?.slice(0, 3).map((lab: any, i: number) => (
@@ -786,17 +1662,19 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
                     key={i}
                     style={{
                       display: 'flex',
+                      flexWrap: 'wrap',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      padding: '8px 12px',
+                      padding: '10px 12px',
                       background: '#f8fafc',
-                      borderRadius: 6
+                      borderRadius: 8,
+                      gap: 8
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <AlertCircle size={16} color={getStatusColor(lab.statusText).text} />
-                      <span style={{ fontWeight: 500 }}>{lab.type}</span>
-                      <span style={{ color: '#64748b', fontSize: 13 }}>({lab.date})</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
+                      <AlertCircle size={16} color={getStatusColor(lab.statusText).text} style={{ flexShrink: 0 }} />
+                      <span style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lab.type}</span>
+                      <span style={{ color: '#64748b', fontSize: 12, flexShrink: 0 }}>({lab.date})</span>
                     </div>
                     <span
                       style={{
@@ -917,8 +1795,16 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
                   </span>
                 </InfoItem>
                 <InfoItem>
-                  <span className="label">Телефоны</span>
-                  <span className="value">{localPatient.contacts?.phone || 'Не указано'}</span>
+                  <span className="label">Мобильный телефон</span>
+                  <span className="value">
+                    {localPatient.contacts?.phoneMobile ||
+                      localPatient.contacts?.phone ||
+                      'Не указано'}
+                  </span>
+                </InfoItem>
+                <InfoItem>
+                  <span className="label">Домашний телефон</span>
+                  <span className="value">{localPatient.contacts?.phoneHome || 'Не указано'}</span>
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Email</span>
@@ -1142,36 +2028,124 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
               <SectionCard>
                 <h3>
                   Операции{' '}
-                  <ActionButton onClick={() => openModal('ADD_STR_operations')}>
-                    <Plus size={14} />
+                  <ActionButton onClick={() => openModal('ADD_LIST_operations')}>
+                    <Plus size={14} /> Добавить
                   </ActionButton>
                 </h3>
-                <ul style={{ margin: 0, paddingLeft: 20, color: '#334155' }}>
-                  {localPatient.operations?.map((op: string, i: number) => (
-                    <li key={i}>{op}</li>
-                  )) || (
-                    <li style={{ color: '#94a3b8', listStyleType: 'none', marginLeft: -20 }}>
-                      Нет данных
-                    </li>
-                  )}
-                </ul>
+                <TableWrapper>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <th>Операция</th>
+                        <th>Дата</th>
+                        <th>Диагноз</th>
+                        <th>Результат</th>
+                        <th>Осложнения</th>
+                        <th>Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(localPatient.operations?.length > 0 ? localPatient.operations : []).map(
+                        (op: any, i: number) => (
+                          <tr key={i}>
+                            <td>
+                              <strong>{typeof op === 'string' ? op : op.name}</strong>
+                            </td>
+                            <td>{typeof op === 'object' ? op.date || '—' : '—'}</td>
+                            <td>{typeof op === 'object' ? op.diagnosis || '—' : '—'}</td>
+                            <td>{typeof op === 'object' ? op.result || '—' : '—'}</td>
+                            <td>{typeof op === 'object' ? op.complications || 'Нет' : '—'}</td>
+                            <td>
+                              <ActionButton
+                                $variant="ghost"
+                                onClick={() =>
+                                  openModal('EDIT_LIST_operations', { ...op, index: i })
+                                }
+                              >
+                                <Edit size={14} />
+                              </ActionButton>
+                              <ActionButton
+                                $variant="danger"
+                                onClick={() => openModal('DELETE_LIST_operations', { index: i })}
+                              >
+                                <Trash2 size={14} />
+                              </ActionButton>
+                            </td>
+                          </tr>
+                        )
+                      )}
+                      {!localPatient.operations?.length && (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                            Нет данных
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </Table>
+                </TableWrapper>
               </SectionCard>
+
               <SectionCard>
                 <h3>
                   Медицинские проблемы{' '}
-                  <ActionButton onClick={() => openModal('ADD_STR_medicalProblems')}>
-                    <Plus size={14} />
+                  <ActionButton onClick={() => openModal('ADD_LIST_medicalProblems')}>
+                    <Plus size={14} /> Добавить
                   </ActionButton>
                 </h3>
-                <ul style={{ margin: 0, paddingLeft: 20, color: '#334155' }}>
-                  {localPatient.medicalProblems?.map((prob: string, i: number) => (
-                    <li key={i}>{prob}</li>
-                  )) || (
-                    <li style={{ color: '#94a3b8', listStyleType: 'none', marginLeft: -20 }}>
-                      Нет данных
-                    </li>
-                  )}
-                </ul>
+                <TableWrapper>
+                  <Table>
+                    <thead>
+                      <tr>
+                        <th>Заболевание</th>
+                        <th>Статус</th>
+                        <th>Степень</th>
+                        <th>Дата постановки</th>
+                        <th>Осложнения</th>
+                        <th>Действия</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(localPatient.medicalProblems?.length > 0
+                        ? localPatient.medicalProblems
+                        : []
+                      ).map((prob: any, i: number) => (
+                        <tr key={i}>
+                          <td>
+                            <strong>{typeof prob === 'string' ? prob : prob.name}</strong>
+                          </td>
+                          <td>{typeof prob === 'object' ? prob.diseaseStatus || '—' : '—'}</td>
+                          <td>{typeof prob === 'object' ? prob.severity || '—' : '—'}</td>
+                          <td>{typeof prob === 'object' ? prob.diagnosisDate || '—' : '—'}</td>
+                          <td>{typeof prob === 'object' ? prob.complications || 'Нет' : '—'}</td>
+                          <td>
+                            <ActionButton
+                              $variant="ghost"
+                              onClick={() =>
+                                openModal('EDIT_LIST_medicalProblems', { ...prob, index: i })
+                              }
+                            >
+                              <Edit size={14} />
+                            </ActionButton>
+                            <ActionButton
+                              $variant="danger"
+                              onClick={() => openModal('DELETE_LIST_medicalProblems', { index: i })}
+                            >
+                              <Trash2 size={14} />
+                            </ActionButton>
+                          </td>
+                        </tr>
+                      ))}
+                      {!localPatient.medicalProblems?.length && (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                            Нет данных
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </Table>
+                </TableWrapper>
               </SectionCard>
             </GridRow>
           </ContentArea>
@@ -1264,7 +2238,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
                   <tr>
                     <th>Дата</th>
                     <th>Тип анализа</th>
-                    <th>Лаборатория</th>
+                    <th>Причина анализа</th>
                     <th>Врач</th>
                     <th>Статус</th>
                     <th>Действия</th>
@@ -1275,7 +2249,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
                     <tr key={i}>
                       <td>{lab.date}</td>
                       <td>{lab.type}</td>
-                      <td>{lab.lab || 'Основная лаборатория'}</td>
+                      <td>{lab.reason || '—'}</td>
                       <td>{lab.doctor}</td>
                       <td>
                         <span
@@ -1315,7 +2289,49 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
             </TableWrapper>
           </SectionCard>
         )
-      case 'Показатели':
+      case 'Показатели': {
+        const patientSigns: VitalSign[] = mockPathientVitalSigns[localPatient.id] || []
+        const chartData = buildChartData(patientSigns)
+        const latest = patientSigns[patientSigns.length - 1]
+        const VITAL_ITEMS = [
+          {
+            key: 'temp',
+            icon: <Thermometer size={16} color="#f97316" />,
+            label: 'Температура',
+            value: localPatient.vitals?.temp || (latest ? `${latest.temperature} °C` : '—'),
+            range: `${NORMAL_RANGES.temperature.min}–${NORMAL_RANGES.temperature.max} °C`
+          },
+          {
+            key: 'bp',
+            icon: <Activity size={16} color="#2563eb" />,
+            label: 'АД',
+            value:
+              localPatient.vitals?.bp ||
+              (latest ? `${latest.bloodPressureSystolic}/${latest.bloodPressureDiastolic}` : '—'),
+            range: '100–130 / 60–90'
+          },
+          {
+            key: 'hr',
+            icon: <Heart size={16} color="#db2777" />,
+            label: 'ЧСС',
+            value: localPatient.vitals?.hr || (latest ? `${latest.pulse} уд/мин` : '—'),
+            range: `${NORMAL_RANGES.pulse.min}–${NORMAL_RANGES.pulse.max}`
+          },
+          {
+            key: 'spo2',
+            icon: <Droplet size={16} color="#2563eb" />,
+            label: 'SpO2',
+            value: localPatient.vitals?.spo2 || (latest ? `${latest.spo2}%` : '—'),
+            range: `${NORMAL_RANGES.spo2.min}–${NORMAL_RANGES.spo2.max}%`
+          },
+          {
+            key: 'resp',
+            icon: <Activity size={16} color="#10b981" />,
+            label: 'ЧД',
+            value: localPatient.vitals?.resp || (latest ? `${latest.respiratoryRate} д/мин` : '—'),
+            range: `${NORMAL_RANGES.respiratoryRate.min}–${NORMAL_RANGES.respiratoryRate.max}`
+          },
+        ]
         return (
           <ContentArea>
             <SectionCard>
@@ -1325,140 +2341,654 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
                   <Plus size={14} /> Внести
                 </ActionButton>
               </h3>
-              <HeaderInfoGrid style={{ borderTop: 'none', paddingTop: 0 }}>
-                <InfoItem>
-                  <span className="label">Температура</span>
-                  <span className="value">{localPatient.vitals?.temp || '—'}</span>
-                </InfoItem>
-                <InfoItem>
-                  <span className="label">АД</span>
-                  <span className="value">{localPatient.vitals?.bp || '—'}</span>
-                </InfoItem>
-                <InfoItem>
-                  <span className="label">ЧСС</span>
-                  <span className="value">{localPatient.vitals?.hr || '—'}</span>
-                </InfoItem>
-                <InfoItem>
-                  <span className="label">Дыхание</span>
-                  <span className="value">{localPatient.vitals?.resp || '—'}</span>
-                </InfoItem>
-                <InfoItem>
-                  <span className="label">SpO2</span>
-                  <span className="value">{localPatient.vitals?.spo2 || '—'}</span>
-                </InfoItem>
-                <InfoItem>
-                  <span className="label">ИМТ</span>
-                  <span className="value">{localPatient.vitals?.bmi || '—'}</span>
-                </InfoItem>
-              </HeaderInfoGrid>
-            </SectionCard>
-            <SectionCard style={{ minHeight: 300 }}>
-              <h3>Графики показателей</h3>
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  height: 200,
-                  color: '#94a3b8',
-                  border: '1px dashed #cbd5e1',
-                  borderRadius: 8
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px,1fr))',
+                  gap: 16
                 }}
               >
-                <Activity size={32} style={{ marginRight: 8 }} /> Место для рендера графиков
-                (Recharts / Chart.js)
+                {VITAL_ITEMS.map((item) => (
+                  <div
+                    key={item.key}
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: 14,
+                      padding: '14px 16px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 6
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontSize: 12,
+                        color: '#64748b',
+                        fontWeight: 600,
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {item.icon}
+                      {item.label}
+                    </div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: '#0f172a' }}>
+                      {item.value}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94a3b8' }}>Норма: {item.range}</div>
+                  </div>
+                ))}
               </div>
             </SectionCard>
+            {chartData.length >= 2 ? (
+              <>
+                <SectionCard>
+                  <h3>График: Температура, Пульс, АД</h3>
+                  <ResponsiveContainer width="100%" height={420}>
+                    <ComposedChart
+                      data={chartData}
+                      margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+                    >
+                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+
+                      <YAxis
+                        yAxisId="vitals"
+                        domain={[30, 250]}
+                        width={52}
+                        tickCount={12}
+                        label={{
+                          value: 'Пульс / АД',
+                          angle: -90,
+                          position: 'insideLeft',
+                          offset: 0
+                        }}
+                      />
+                      <YAxis
+                        yAxisId="temp"
+                        orientation="right"
+                        domain={[NORMAL_RANGES.temperature.min, NORMAL_RANGES.temperature.max]}
+                        tickCount={10}
+                        width={52}
+                        label={{
+                          value: 'Температура, °C',
+                          angle: 90,
+                          position: 'insideRight',
+                          offset: -10
+                        }}
+                      />
+
+                      <Tooltip
+                        formatter={(value, name, entry) => {
+                          const row = entry.payload as any
+                          const dataKey = entry.dataKey as string
+
+                          const formatAlert = (text: string, alertText?: string) =>
+                            alertText ? (
+                              <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                                {text} ({alertText})
+                              </span>
+                            ) : (
+                              text
+                            )
+
+                          const tempHigh = row.temperature > NORMAL_RANGES.temperature.max
+                          const tempLow = row.temperature < NORMAL_RANGES.temperature.min
+                          const tempAlert = tempHigh
+                            ? '⚠ ↑ выше нормы'
+                            : tempLow
+                              ? '⚠ ↓ ниже нормы'
+                              : ''
+                          const tempValue = `${row.temperature.toFixed(1)} °C`
+
+                          const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max
+                          const pulseLow = row.pulse < NORMAL_RANGES.pulse.min
+                          const pulseAlert = pulseHigh
+                            ? '↑ выше нормы'
+                            : pulseLow
+                              ? '↓ ниже нормы'
+                              : ''
+                          const pulseValue = `${row.pulse} уд/мин`
+
+                          const bpsHigh =
+                            row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
+                          const bpsLow =
+                            row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
+                          const bpdHigh =
+                            row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
+                          const bpdLow =
+                            row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
+
+                          const bpAlerts: string[] = []
+                          if (bpsHigh) bpAlerts.push('↑ сист.')
+                          if (bpsLow) bpAlerts.push('↓ сист.')
+                          if (bpdHigh) bpAlerts.push('↑ диаст.')
+                          if (bpdLow) bpAlerts.push('↓ диаст.')
+                          const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
+                          const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
+
+                          const pulseRangeValue = row.pulseRange ?? 0
+                          const bpNormalValue = row.bpNormal ?? 0
+
+                          if (dataKey === 'temperature') {
+                            return [formatAlert(tempValue, tempAlert), 'Температура']
+                          }
+
+                          if (dataKey === 'pulseBase' || dataKey === 'bpBase') {
+                            return null
+                          }
+
+                          if (dataKey === 'pulseRange' || dataKey === 'pulseUpper') {
+                            const segmentValue = typeof value === 'number' ? value : Number(value)
+                            if (!Number.isFinite(segmentValue) || segmentValue <= 0) {
+                              return null
+                            }
+                            const shouldShowPulse =
+                              dataKey === 'pulseRange' ||
+                              (dataKey === 'pulseUpper' && pulseRangeValue === 0)
+                            if (!shouldShowPulse) {
+                              return null
+                            }
+                            return [formatAlert(pulseValue, pulseAlert), 'Пульс']
+                          }
+
+                          if (dataKey === 'bpNormal') {
+                            return [formatAlert(bpValue, bpAlertText), 'АД']
+                          }
+
+                          if (dataKey === 'bpLow' || dataKey === 'bpHigh') {
+                            if (bpNormalValue !== 0) {
+                              return null
+                            }
+                            return [formatAlert(bpValue, bpAlertText), 'АД']
+                          }
+
+                          return [value, name]
+                        }}
+                      />
+                      <Legend verticalAlign="bottom" align="center" />
+
+                      <ReferenceArea
+                        yAxisId="temp"
+                        y1={NORMAL_RANGES.temperature.min}
+                        y2={NORMAL_RANGES.temperature.max}
+                        fill="#dcfce7"
+                        fillOpacity={0.35}
+                        strokeOpacity={0}
+                      />
+
+                      <ReferenceLine
+                        yAxisId="temp"
+                        y={37.2}
+                        stroke="#16a34a"
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.55}
+                        strokeWidth={1.5}
+                      />
+                      <ReferenceLine
+                        yAxisId="temp"
+                        y={36.0}
+                        stroke="#16a34a"
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.4}
+                        strokeWidth={1.5}
+                      />
+
+                      <ReferenceLine
+                        yAxisId="vitals"
+                        y={NORMAL_RANGES.bloodPressureSystolic.max}
+                        stroke="#f97316"
+                        strokeDasharray="6 4"
+                        strokeOpacity={0.45}
+                        strokeWidth={1.5}
+                      />
+                      <ReferenceLine
+                        yAxisId="vitals"
+                        y={NORMAL_RANGES.bloodPressureDiastolic.min}
+                        stroke="#f97316"
+                        strokeDasharray="4 4"
+                        strokeOpacity={0.35}
+                        strokeWidth={1.5}
+                      />
+
+                      <ReferenceLine
+                        yAxisId="vitals"
+                        y={NORMAL_RANGES.pulse.max}
+                        stroke="#db2777"
+                        strokeDasharray="4 3"
+                        strokeOpacity={0.35}
+                        strokeWidth={1.5}
+                      />
+                      <ReferenceLine
+                        yAxisId="vitals"
+                        y={NORMAL_RANGES.pulse.min}
+                        stroke="#db2777"
+                        strokeDasharray="4 3"
+                        strokeOpacity={0.25}
+                        strokeWidth={1.5}
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="pulseBase"
+                        stackId="pulse"
+                        fill="transparent"
+                        legendType="none"
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="pulseRange"
+                        stackId="pulse"
+                        name="Пульс"
+                        fill="#db2777"
+                        barSize={14}
+                        radius={[4, 4, 0, 0]}
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="pulseUpper"
+                        stackId="pulse"
+                        name="Пульс (плохой)"
+                        fill="#ff0026"
+                        barSize={14}
+                        radius={[4, 4, 4, 4]}
+                        legendType="none"
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="bpBase"
+                        stackId="bp"
+                        fill="transparent"
+                        legendType="none"
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="bpLow"
+                        stackId="bp"
+                        name="АД (выше нормы)"
+                        fill="#000c8b"
+                        legendType="none"
+                        barSize={14}
+                        radius={[4, 4, 4, 4]}
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="bpNormal"
+                        stackId="bp"
+                        name="АД (нижн.-верхн.)"
+                        fill="#2563eb"
+                        barSize={14}
+                        radius={[4, 4, 4, 4]}
+                      />
+
+                      <Bar
+                        yAxisId="vitals"
+                        dataKey="bpHigh"
+                        stackId="bp"
+                        name="АД (ниже нормы)"
+                        fill="#000c8b"
+                        legendType="none"
+                        barSize={14}
+                        radius={[4, 4, 4, 4]}
+                      />
+
+                      <Line
+                        yAxisId="temp"
+                        type="monotone"
+                        dataKey="temperature"
+                        name="Температура"
+                        stroke="#f97316"
+                        strokeWidth={3}
+                        dot={<CustomTempDot />}
+                        activeDot={<CustomTempActiveDot />}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </SectionCard>
+                <SectionCard>
+                  <h3>График: SpO2 и Частота дыхания</h3>
+                  <ResponsiveContainer width="100%" height={420}>
+                    <ComposedChart
+                      data={chartData}
+                      margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+                    >
+                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+
+                      <Tooltip
+                        formatter={(value, name, entry) => {
+                          const row = entry.payload as any
+                          const dataKey = entry.dataKey as string
+
+                          const formatAlert = (text: string, alertText?: string) =>
+                            alertText ? (
+                              <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                                {text} ({alertText})
+                              </span>
+                            ) : (
+                              text
+                            )
+
+                          const spo2High = row.spo2 > NORMAL_RANGES.spo2.max
+                          const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min
+                          const spo2Alert = spo2High
+                            ? '⚠ ↑ выше нормы'
+                            : spo2Low
+                              ? '⚠ ↓ ниже нормы'
+                              : ''
+                          const spo2Value = `${row.spo2.toFixed(1)} %`
+
+                          const respiratoryRateHigh =
+                            row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
+                          const respiratoryRateLow =
+                            row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+                          const respiratoryRateAlert = respiratoryRateHigh
+                            ? '⚠ ↑ выше нормы'
+                            : respiratoryRateLow
+                              ? '⚠ ↓ ниже нормы'
+                              : ''
+                          const respiratoryRateValue = `${row.respiratoryRate} дых/мин`
+
+                          if (dataKey === 'spo2') {
+                            return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)']
+                          }
+                          if (dataKey === 'respiratoryRate') {
+                            return [
+                              formatAlert(respiratoryRateValue, respiratoryRateAlert),
+                              'Частота дыхания'
+                            ]
+                          }
+                          return [value, name]
+                        }}
+                      />
+                      <Legend verticalAlign="bottom" align="center" />
+
+                      <YAxis
+                        yAxisId="spo2"
+                        domain={[NORMAL_RANGES.spo2.min - 5, 102]}
+                        width={52}
+                        tickCount={8}
+                        label={{
+                          value: 'SpO₂ (%)',
+                          angle: -90,
+                          position: 'insideLeft',
+                          offset: 10
+                        }}
+                      />
+
+                      <YAxis
+                        yAxisId="resp"
+                        orientation="right"
+                        domain={[
+                          NORMAL_RANGES.respiratoryRate.min - 5,
+                          NORMAL_RANGES.respiratoryRate.max + 5
+                        ]}
+                        width={52}
+                        tickCount={8}
+                        label={{
+                          value: 'ЧД, дых/мин',
+                          angle: 90,
+                          position: 'insideRight',
+                          offset: 0
+                        }}
+                      />
+
+                      <ReferenceArea
+                        yAxisId="spo2"
+                        y1={NORMAL_RANGES.spo2.min}
+                        y2={NORMAL_RANGES.spo2.max}
+                        fill="#dcfce7"
+                        fillOpacity={0.3}
+                        strokeOpacity={0}
+                      />
+
+                      <ReferenceLine
+                        yAxisId="spo2"
+                        y={NORMAL_RANGES.spo2.max}
+                        stroke="#2563eb"
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.55}
+                        strokeWidth={1.4}
+                      />
+                      <ReferenceLine
+                        yAxisId="spo2"
+                        y={NORMAL_RANGES.spo2.min}
+                        stroke="#2563eb"
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.45}
+                        strokeWidth={1.4}
+                      />
+
+                      <ReferenceArea
+                        yAxisId="resp"
+                        y1={NORMAL_RANGES.respiratoryRate.min}
+                        y2={NORMAL_RANGES.respiratoryRate.max}
+                        fill="#dcfce7"
+                        fillOpacity={0.22}
+                        strokeOpacity={0}
+                      />
+                      <ReferenceLine
+                        yAxisId="resp"
+                        y={NORMAL_RANGES.respiratoryRate.max}
+                        stroke="#10b981"
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.55}
+                        strokeWidth={1.4}
+                      />
+                      <ReferenceLine
+                        yAxisId="resp"
+                        y={NORMAL_RANGES.respiratoryRate.min}
+                        stroke="#10b981"
+                        strokeDasharray="5 4"
+                        strokeOpacity={0.45}
+                        strokeWidth={1.4}
+                      />
+
+                      <Line
+                        yAxisId="spo2"
+                        type="monotone"
+                        dataKey="spo2"
+                        name="SpO₂ (%)"
+                        stroke="#2563eb"
+                        strokeWidth={3}
+                        dot={<CustomTempDot />}
+                      />
+
+                      <Line
+                        yAxisId="resp"
+                        type="monotone"
+                        dataKey="respiratoryRate"
+                        name="Частота дыхания"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        dot={<CustomTempDot />}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </SectionCard>
+              </>
+            ) : (
+              <SectionCard style={{ minHeight: 200 }}>
+                <h3>Графики показателей</h3>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 150,
+                    color: '#94a3b8',
+                    flexDirection: 'column',
+                    gap: 8
+                  }}
+                >
+                  <Activity size={32} />
+                  <p style={{ margin: 0 }}>
+                    Недостаточно данных для графика. Внесите минимум 2 замера.
+                  </p>
+                </div>
+              </SectionCard>
+            )}
           </ContentArea>
         )
-      case 'История':
+      }
+
+      case 'История': {
+        const VISIT_TYPE_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
+          'Осмотр': { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
+          'Консультация': { color: '#7c3aed', bg: '#ede9fe', icon: <User size={18} /> },
+          'Процедура': { color: '#059669', bg: '#d1fae5', icon: <Syringe size={18} /> },
+          'Операция': { color: '#dc2626', bg: '#fee2e2', icon: <Clipboard size={18} /> },
+          'Анализы': { color: '#d97706', bg: '#fef3c7', icon: <TestTube size={18} /> },
+          'Выписка': { color: '#0891b2', bg: '#cffafe', icon: <FileText size={18} /> },
+        }
+        const getVisitConfig = (type: string) =>
+          VISIT_TYPE_CONFIG[type] || { color: '#64748b', bg: '#f1f5f9', icon: <Calendar size={18} /> }
+
+        const history = localPatient.history || []
         return (
           <SectionCard>
-            <h3>История обращений и записей</h3>
-            <TableWrapper>
-              <Table>
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th>Дата/Время</th>
-                    <th>Тип</th>
-                    <th>Врач</th>
-                    <th>Краткое заключение</th>
-                    <th>Действия</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {localPatient.history?.map((h: any, i: number) => (
-                    <React.Fragment key={i}>
-                      <tr
-                        onClick={() => setExpandedHistory(expandedHistory === i ? null : i)}
-                        style={{
-                          cursor: 'pointer',
-                          backgroundColor: expandedHistory === i ? '#f8fafc' : 'transparent'
-                        }}
-                      >
-                        <td>
-                          {expandedHistory === i ? (
-                            <ChevronUp size={16} />
-                          ) : (
-                            <ChevronDown size={16} />
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Clock size={18} color="#2563eb" />
+              История обращений и записей
+              <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 500, color: '#64748b' }}>
+                {history.length} запис{history.length === 1 ? 'ь' : history.length < 5 ? 'и' : 'ей'}
+              </span>
+            </h3>
+
+            {history.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                <Clock size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+                <p style={{ margin: 0 }}>История обращений пуста</p>
+              </div>
+            ) : (
+              <div style={{ position: 'relative', paddingLeft: 4 }}>
+                <div style={{
+                  position: 'absolute', left: 30, top: 0, bottom: 0, width: 2,
+                  background: 'linear-gradient(to bottom, #dbeafe, #e0e7ff, #f1f5f9)',
+                  borderRadius: 2
+                }} />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                  {history.map((h: any, i: number) => {
+                    const cfg = getVisitConfig(h.type)
+                    const isExpanded = expandedHistory === i
+                    return (
+                      <div key={i} style={{ display: 'flex', gap: 0, position: 'relative' }}>
+                        <div style={{
+                          flexShrink: 0, width: 62, display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', paddingTop: 20, zIndex: 1
+                        }}>
+                          <div style={{
+                            width: 40, height: 40, borderRadius: '50%',
+                            background: cfg.bg, border: `2px solid ${cfg.color}`,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: cfg.color, boxShadow: `0 2px 8px ${cfg.color}30`
+                          }}>
+                            {cfg.icon}
+                          </div>
+                          {i < history.length - 1 && (
+                            <div style={{ width: 2, flex: 1, minHeight: 20, background: 'transparent' }} />
                           )}
-                        </td>
-                        <td>{h.dateTime}</td>
-                        <td>{h.type}</td>
-                        <td>{h.doctor}</td>
-                        <td>{h.conclusion}</td>
-                        <td>
-                          <ActionButton
-                            $variant="ghost"
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              openModal('VIEW_HISTORY', h)
+                        </div>
+
+                        <div style={{ flex: 1, paddingBottom: 16, paddingTop: 12 }}>
+                          <div
+                            onClick={() => setExpandedHistory(isExpanded ? null : i)}
+                            style={{
+                              background: isExpanded ? '#f8faff' : '#ffffff',
+                              border: `1px solid ${isExpanded ? cfg.color + '50' : '#e5e7eb'}`,
+                              borderRadius: 14, padding: '14px 18px',
+                              cursor: 'pointer', transition: 'all 0.2s ease',
+                              boxShadow: isExpanded ? `0 4px 16px ${cfg.color}15` : '0 1px 4px rgba(0,0,0,0.04)'
                             }}
                           >
-                            <Eye size={14} />
-                          </ActionButton>
-                        </td>
-                      </tr>
-                      {expandedHistory === i && (
-                        <tr style={{ backgroundColor: '#f8fafc' }}>
-                          <td colSpan={6} style={{ padding: '16px 24px' }}>
-                            <div style={{ display: 'grid', gap: '12px', fontSize: '14px' }}>
-                              <div>
-                                <strong style={{ color: '#475569' }}>Жалобы:</strong>{' '}
-                                {h.complaints || 'Нет данных'}
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                  <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                                    padding: '2px 10px', borderRadius: 20,
+                                    background: cfg.bg, color: cfg.color,
+                                    fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em'
+                                  }}>
+                                    {h.type || 'Запись'}
+                                  </span>
+                                  <span style={{ fontSize: 12, color: '#94a3b8' }}>
+                                    <Calendar size={12} style={{ display: 'inline', marginRight: 3 }} />
+                                    {h.dateTime}
+                                  </span>
+                                </div>
+                                <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 6, fontSize: 14 }}>
+                                  {h.conclusion || 'Заключение не указано'}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
+                                  <User size={12} style={{ display: 'inline', marginRight: 4 }} />
+                                  {h.doctor || 'Врач не указан'}
+                                </div>
                               </div>
-                              <div>
-                                <strong style={{ color: '#475569' }}>Объективные данные:</strong>{' '}
-                                {h.objective || 'Нет данных'}
-                              </div>
-                              <div>
-                                <strong style={{ color: '#475569' }}>Заключение:</strong>{' '}
-                                {h.conclusion || 'Нет данных'}
-                              </div>
-                              <div>
-                                <strong style={{ color: '#475569' }}>
-                                  Назначения/Рекомендации:
-                                </strong>{' '}
-                                {h.recommendations || 'Нет данных'}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                                <ActionButton
+                                  $variant="ghost"
+                                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); openModal('VIEW_HISTORY', h) }}
+                                  title="Просмотр"
+                                >
+                                  <Eye size={14} />
+                                </ActionButton>
+                                <div style={{
+                                  color: isExpanded ? cfg.color : '#94a3b8',
+                                  transition: 'transform 0.2s ease',
+                                  transform: isExpanded ? 'rotate(180deg)' : 'none'
+                                }}>
+                                  <ChevronDown size={18} />
+                                </div>
                               </div>
                             </div>
-                          </td>
-                        </tr>
-                      )}
-                    </React.Fragment>
-                  )) || (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                        Нет данных
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </TableWrapper>
+
+                            {isExpanded && (
+                              <div style={{
+                                marginTop: 16, paddingTop: 16,
+                                borderTop: `1px solid ${cfg.color}25`,
+                                display: 'grid', gap: 12
+                              }}>
+                                {[
+                                  { label: 'Жалобы', value: h.complaints, icon: <AlertCircle size={14} color="#f97316" /> },
+                                  { label: 'Объективные данные', value: h.objective, icon: <Stethoscope size={14} color="#2563eb" /> },
+                                  { label: 'Заключение', value: h.conclusion, icon: <FileText size={14} color="#059669" /> },
+                                  { label: 'Назначения / Рекомендации', value: h.recommendations, icon: <Pill size={14} color="#7c3aed" /> },
+                                ].map(item => item.value ? (
+                                  <div key={item.label} style={{
+                                    display: 'flex', gap: 10, alignItems: 'flex-start',
+                                    background: '#f8fafc', borderRadius: 10, padding: '10px 14px'
+                                  }}>
+                                    <div style={{ marginTop: 1, flexShrink: 0 }}>{item.icon}</div>
+                                    <div>
+                                      <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>
+                                        {item.label}
+                                      </div>
+                                      <div style={{ fontSize: 14, color: '#1e293b', lineHeight: 1.5 }}>{item.value}</div>
+                                    </div>
+                                  </div>
+                                ) : null)}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </SectionCard>
         )
+      }
       case 'Вакцинация':
         return (
           <SectionCard>
@@ -1647,8 +3177,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId }) => {
   )
 }
 
-// ─── PatientCardPageWrapper ────────────────────────────────────────────────────
-// This is the main page component. It combines the search panel with the card.
 
 const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   patientId: externalPatientId,
@@ -1656,6 +3184,8 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   onSelectPatient: externalOnSelect
 }) => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(externalPatientId)
+  const [previewPatient, setPreviewPatient] = useState<any | null>(null)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setSelectedPatientId(externalPatientId)
@@ -1664,11 +3194,29 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id)
     externalOnSelect?.(id)
+  setTimeout(() => {
+  const element = cardRef.current;
+
+  if (!element) return;
+
+  const y =
+    element.getBoundingClientRect().top +
+    window.pageYOffset -
+    20;
+
+  window.scrollTo({
+    top: y,
+    behavior: 'smooth',
+  });
+}, 150);
   }
 
   const handleBackToSearch = () => {
-    setSelectedPatientId(undefined)
-    externalOnSelect?.('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    setTimeout(() => {
+      setSelectedPatientId(undefined)
+      externalOnSelect?.('')
+    }, 150)
   }
 
   return (
@@ -1677,16 +3225,15 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
         <title>Пациенты</title>
       </Helmet>
 
-      {/* Always show the search panel */}
       <PatientSearchPanel
         onSelectPatient={handleSelectPatient}
+        onDoubleClickPatient={(p) => setPreviewPatient(p)}
+        cardRef={cardRef}
         initialQuery={initialSearchQuery}
       />
 
-      {/* Show the patient card if a patient is selected */}
       {selectedPatientId && (
-        <div>
-          {/* Back button */}
+        <div ref={cardRef}>
           <button
             onClick={handleBackToSearch}
             style={{
@@ -1696,7 +3243,7 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
               marginBottom: 16,
               padding: '8px 16px',
               borderRadius: 10,
-              border: '1px solid rgba(191, 219, 254, 0.8)',
+              border: '1px solid rgba(191,219,254,0.8)',
               background: '#ffffff',
               color: '#374151',
               fontSize: 14,
@@ -1706,23 +3253,118 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
               transition: 'all 0.2s ease'
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.background = '#eff6ff'
-              ;(e.currentTarget as HTMLButtonElement).style.color = '#1e40af'
-              ;(e.currentTarget as HTMLButtonElement).style.borderColor = '#2563eb'
+              const b = e.currentTarget as HTMLButtonElement
+              b.style.background = '#eff6ff'
+              b.style.color = '#1e40af'
+              b.style.borderColor = '#2563eb'
             }}
             onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLButtonElement).style.background = '#ffffff'
-              ;(e.currentTarget as HTMLButtonElement).style.color = '#374151'
-              ;(e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(191, 219, 254, 0.8)'
+              const b = e.currentTarget as HTMLButtonElement
+              b.style.background = '#ffffff'
+              b.style.color = '#374151'
+              b.style.borderColor = 'rgba(191,219,254,0.8)'
             }}
           >
             <ChevronLeft size={16} />
             Вернуться к поиску
           </button>
-
-          <PatientCard patientId={selectedPatientId} />
+          <PatientCard
+            patientId={selectedPatientId}
+            onSelectPatientFromPreview={handleSelectPatient}
+          />
         </div>
       )}
+
+      {previewPatient &&
+        (() => {
+          const p = previewPatient
+          return createPortal(
+            <ModalOverlay onClick={() => setPreviewPatient(null)}>
+              <ModalContent onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560 }}>
+                <ModalHeader>
+                  <h2>Быстрый просмотр</h2>
+                  <CloseButton onClick={() => setPreviewPatient(null)}>
+                    <X size={20} />
+                  </CloseButton>
+                </ModalHeader>
+                <ModalBody>
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginBottom: 8 }}>
+                    <div
+                      style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: '50%',
+                        background: 'linear-gradient(135deg,#dbeafe,#ede9fe)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: '#2563eb',
+                        flexShrink: 0
+                      }}
+                    >
+                      {getInitials(p.firstName, p.lastName)}
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 18, fontWeight: 700 }}>
+                        {p.lastName} {p.firstName} {p.middleName}
+                      </div>
+                      <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
+                        {p.dateOfBirth} · {p.age} лет · {p.gender}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                    {(
+                      [
+                        ['ID', p.id],
+                        ['Медкарта', p.medcardNum],
+                        ['Врач', p.doctor],
+                        ['Палата', getPatientRoom(p.id)],
+                        ['Статус', p.statusText],
+                        ['Диагноз', p.activeProblems?.[0] || '—']
+                      ] as [string, string][]
+                    ).map(([l, v]) => (
+                      <div
+                        key={l}
+                        style={{ background: '#f8fafc', borderRadius: 10, padding: '10px 14px' }}
+                      >
+                        <div
+                          style={{
+                            fontSize: 11,
+                            color: '#94a3b8',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            marginBottom: 4
+                          }}
+                        >
+                          {l}
+                        </div>
+                        <div style={{ fontWeight: 600, fontSize: 14 }}>{v}</div>
+                      </div>
+                    ))}
+                  </div>
+                </ModalBody>
+                <ModalFooter>
+                  <ActionButton $variant="ghost" onClick={() => setPreviewPatient(null)}>
+                    Закрыть
+                  </ActionButton>
+                  <ActionButton
+                    $variant="primary"
+                    onClick={() => {
+                      setPreviewPatient(null)
+                      handleSelectPatient(p.id)
+                    }}
+                  >
+                    Открыть карту
+                  </ActionButton>
+                </ModalFooter>
+              </ModalContent>
+            </ModalOverlay>,
+            document.body
+          )
+        })()}
     </div>
   )
 }

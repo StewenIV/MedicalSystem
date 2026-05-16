@@ -6,21 +6,15 @@ export const pathsPublic: { [k: string]: string } = {
   welcome: '/welcome',
   resetPassword: '/reset-password',
   home: '/home',
-  temperatureSheet: '/temperature-sheet'
+  temperatureSheet: '/temperature-sheet',
+  medicalStaffSchedule: '/medical-staff-schedule'
 }
 
 export const pathsPrivate: { [k: string]: string } = {}
 
-export const paths: { [k: string]: string } = Object.assign(
-  {},
-  pathsPublic,
-  pathsPrivate
-)
+export const paths: { [k: string]: string } = Object.assign({}, pathsPublic, pathsPrivate)
 
-export const checkPathMatch = (
-  pathname: string,
-  paths: { [k: string]: string }
-) => {
+export const checkPathMatch = (pathname: string, paths: { [k: string]: string }) => {
   let isMatch = false
 
   const allPaths = Object.keys(paths).map((key) => paths[key])

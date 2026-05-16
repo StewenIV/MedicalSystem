@@ -1,11 +1,5 @@
 import { lazy } from 'react'
-import {
-  Route,
-  Navigate,
-  Routes,
-  useLocation,
-  useNavigate
-} from 'react-router-dom'
+import { Route, Navigate, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { checkPathMatch, paths } from './helpers'
 import { setIsLogged, setUserRole } from 'features/App/reducer'
 import { selectUserRole } from 'features/App/selectors'
@@ -14,6 +8,7 @@ import { useSelector } from 'react-redux'
 
 const HomePage = lazy(() => import('pages/HomePage/index'))
 const TemperaturePage = lazy(() => import('pages/TemperatureSheet/index'))
+const MedicalStaffSchedulePage = lazy(() => import('pages/MedicalStaffSchedule/index'))
 
 const PrivateRoutes: React.FC = () => {
   const location = useLocation()
@@ -38,13 +33,7 @@ const PrivateRoutes: React.FC = () => {
   }
 
   // Преобразование формата роли из snake_case в kebab-case
-  const convertUserRole = (
-    role: string | null
-  ):
-    | 'doctor'
-    | 'nurse'
-    | 'patient'
-    | null => {
+  const convertUserRole = (role: string | null): 'doctor' | 'nurse' | 'patient' | null => {
     if (!role) return null
     return role.replace(/_/g, '-') as any
   }
@@ -61,12 +50,25 @@ const PrivateRoutes: React.FC = () => {
           />
         }
       />
-      <Route path={paths.temperatureSheet} element={<TemperaturePage  onNavigate = {(screen) => {}} onLogout = {() => {}} userRole = {'nurse'} />} />
+      <Route
+        path={paths.temperatureSheet}
+        element={
+          <TemperaturePage onNavigate={(screen) => {}} onLogout={() => {}} userRole={'nurse'} />
+        }
+      />
+      <Route
+        path={paths.medicalStaffSchedule}
+        element={
+          <MedicalStaffSchedulePage
+            onNavigate={(screen) => {}}
+            onLogout={() => {}}
+            userRole={'doctor'}
+          />
+        }
+      />
       <Route
         path="*"
-        element={
-          <Navigate to={isMatch ? location.pathname : paths.home} replace />
-        }
+        element={<Navigate to={isMatch ? location.pathname : paths.home} replace />}
       />
     </Routes>
   )

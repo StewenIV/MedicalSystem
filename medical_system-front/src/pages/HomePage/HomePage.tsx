@@ -1,5 +1,3 @@
-'use client'
-
 import { useState } from 'react'
 import { Helmet } from 'react-helmet'
 
@@ -70,8 +68,7 @@ import TemperaturePage from 'pages/TemperatureSheet'
 import { HospitalWorkplace } from 'pages/HospitalBedsPage'
 import { WardAdmin } from 'pages/BedsAdminPage'
 import { default as PatientCard } from 'pages/PatientCard'
-
-
+import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
 
 interface DoctorDashboardProps {
   onNavigate?: (screen: string, patientId?: string) => void
@@ -159,20 +156,24 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                     placeholder="Поиск пациента..."
                     icon={<Search size={16} />}
                     value={headerSearchQuery}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderSearchQuery(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setHeaderSearchQuery(e.target.value)
+                    }
                     onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                       if (e.key === 'Enter') handleHeaderSearch()
                     }}
                   />
                 </SearchWrapper>
 
-                <SearchIconButton onClick={() => {
-                  if (searchOpen && headerSearchQuery.trim()) {
-                    handleHeaderSearch()
-                  } else {
-                    setSearchOpen((prev) => !prev)
-                  }
-                }}>
+                <SearchIconButton
+                  onClick={() => {
+                    if (searchOpen && headerSearchQuery.trim()) {
+                      handleHeaderSearch()
+                    } else {
+                      setSearchOpen((prev) => !prev)
+                    }
+                  }}
+                >
                   <Search size={18} />
                 </SearchIconButton>
 
@@ -268,6 +269,15 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   }}
                 />
               )}
+
+              {activeSection === 'medical-staff-schedule' && (
+                <MedicalStaffSchedulePage
+                  onNavigate={onNavigate}
+                  onLogout={onLogout}
+                  userRole={userRole}
+                />
+              )}
+
               {activeSection === 'schedule' && (
                 <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>
               )}
@@ -318,7 +328,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                       >
                         <NotificationContent>
                           <NotificationIconWrapper
-                            severity={n.type === 'lab-result' ? n.severity : 'info'}
+                            severity={n.type === 'lab-result' && n.severity ? n.severity : 'info'}
                           >
                             {n.type === 'lab-result' ? (
                               <AlertCircle size={18} />
@@ -331,7 +341,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                             <NotificationHeader>
                               <div style={{ flex: 1 }}>
                                 {n.type === 'lab-result' && n.severity && (
-                                  <SeverityBadge severity={n.severity}>
+                                  <SeverityBadge severity={n.severity as 'critical' | 'warning'}>
                                     {n.severity === 'critical' ? 'Критично' : 'Внимание'}
                                   </SeverityBadge>
                                 )}

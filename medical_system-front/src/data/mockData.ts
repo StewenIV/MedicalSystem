@@ -124,7 +124,6 @@ export interface Patient {
   }[]
 }
 
-
 export interface Appointment {
   id: string
   patientId: string
@@ -252,20 +251,30 @@ export interface Shift {
   hours: number
 }
 
+export interface MonthSchedule {
+  month: number  // 0-based (0=Jan, 3=Apr, 4=May, 5=Jun)
+  year: number
+  shifts: Shift[]
+}
+
 export interface MedicalStaffMember {
   id: string
   name: string
   position: string
   department: string
-  schedule: Shift[]
+  schedule: Shift[]              // legacy (kept for compatibility, used as default month)
+  monthlySchedules?: MonthSchedule[]  // multi-month schedules
 }
+
+export type NotificationType = 'lab-result' | 'appointment-reminder'
+export type SeverityType = 'critical' | 'warning'
 
 export interface Notification {
   id: string
-  type: string
-  severity?: string
-  patientName?: string
-  patientId?: string
+  type: NotificationType
+  severity?: SeverityType
+  patientName: string
+  patientId: string
   dateOfBirth?: string
   doctor?: string
   message: string
@@ -324,9 +333,7 @@ export const mockPatients: Patient[] = [
         status: 'active'
       }
     ],
-    documents: [
-      { id: 'DOC001', name: 'Информированное согласие.pdf', date: '2026-01-15' }
-    ],
+    documents: [{ id: 'DOC001', name: 'Информированное согласие.pdf', date: '2026-01-15' }],
     medcardNum: 'МК-10293',
     historyNum: 'ИБ-2023-45',
     status: 'hospitalized',
@@ -358,7 +365,9 @@ export const mockPatients: Patient[] = [
       dateOfDeath: '',
       causeOfDeath: ''
     },
-    relatives: [{ name: 'Петрова Мария Ивановна', relation: 'Супруга', phone: '+7 (495) 765-43-21' }],
+    relatives: [
+      { name: 'Петрова Мария Ивановна', relation: 'Супруга', phone: '+7 (495) 765-43-21' }
+    ],
     work: {
       profession: 'Инженер',
       organization: 'ООО "ТехСтрой"',
@@ -540,9 +549,7 @@ export const mockPatients: Patient[] = [
       dateOfDeath: '',
       causeOfDeath: ''
     },
-    relatives: [
-      { name: 'Иванов Петр Сергеевич', relation: 'Отец', phone: '+7 (495) 876-54-32' }
-    ],
+    relatives: [{ name: 'Иванов Петр Сергеевич', relation: 'Отец', phone: '+7 (495) 876-54-32' }],
     work: {
       profession: 'Менеджер',
       organization: 'ООО "МедиаГрупп"',
@@ -563,14 +570,23 @@ export const mockPatients: Patient[] = [
         date: '2026-04-20',
         statusText: 'Внимание: ОФВ1 снижен',
         doctor: 'Орлова Е.В.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Сальбутамол', dose: '100 мкг', form: 'аэрозоль', regimen: 'по необходимости' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Бронхиальная астма', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Бронхиальная астма',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-20 11:00',
@@ -696,22 +712,57 @@ export const mockPatients: Patient[] = [
         date: '2026-04-30',
         statusText: 'Критично: HbA1c 9.2%',
         doctor: 'Козлова Н.И.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'Биохимия крови',
         date: '2026-05-01',
         statusText: 'Внимание: Глюкоза 8.4',
         doctor: 'Козлова Н.И.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Метформин', dose: '850 мг', form: 'таблетки', regimen: '2 раза в день' },
       { name: 'Инсулин Актрапид', dose: '8 ед', form: 'раствор', regimen: 'перед едой' }
     ],
-    operations: [{ name: 'Холецистэктомия', date: '2015-01-01', diagnosis: '—', description: 'Подробности не указаны', complications: 'Нет', implants: 'Нет', result: 'Выздоровление' }],
-    medicalProblems: [{ name: 'Сахарный диабет 2 типа', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Ожирение', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Артериальная гипертензия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    operations: [
+      {
+        name: 'Холецистэктомия',
+        date: '2015-01-01',
+        diagnosis: '—',
+        description: 'Подробности не указаны',
+        complications: 'Нет',
+        implants: 'Нет',
+        result: 'Выздоровление'
+      }
+    ],
+    medicalProblems: [
+      {
+        name: 'Сахарный диабет 2 типа',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Ожирение',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Артериальная гипертензия',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-30 09:00',
@@ -814,9 +865,7 @@ export const mockPatients: Patient[] = [
       dateOfDeath: '',
       causeOfDeath: ''
     },
-    relatives: [
-      { name: 'Орлов Владимир Павлович', relation: 'Муж', phone: '+7 (495) 456-71-23' }
-    ],
+    relatives: [{ name: 'Орлов Владимир Павлович', relation: 'Муж', phone: '+7 (495) 456-71-23' }],
     work: {
       profession: 'Педагог',
       organization: 'ГБОУ Школа №1234',
@@ -837,14 +886,21 @@ export const mockPatients: Patient[] = [
         date: '2026-04-22',
         statusText: 'Норма',
         doctor: 'Лукина А.С.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
-    currentMeds: [
-      { name: 'Магне B6', dose: '2 таб', form: 'таблетки', regimen: '2 раза в день' }
-    ],
+    currentMeds: [{ name: 'Магне B6', dose: '2 таб', form: 'таблетки', regimen: '2 раза в день' }],
     operations: [],
-    medicalProblems: [{ name: 'Вегетососудистая дистония', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Вегетососудистая дистония',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-22 10:30',
@@ -970,22 +1026,57 @@ export const mockPatients: Patient[] = [
         date: '2026-04-29',
         statusText: 'Внимание: ХС ЛПНП 3.9',
         doctor: 'Карпов В.Г.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'ЭКГ',
         date: '2026-05-01',
         statusText: 'Внимание: Признаки гипертрофии ЛЖ',
         doctor: 'Карпов В.Г.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Бисопролол', dose: '5 мг', form: 'таблетки', regimen: '1 раз в день' },
       { name: 'Аспирин Кардио', dose: '100 мг', form: 'таблетки', regimen: 'вечером' }
     ],
-    operations: [{ name: 'АКШ', date: '2018-01-01', diagnosis: '—', description: 'Подробности не указаны', complications: 'Нет', implants: 'Нет', result: 'Выздоровление' }],
-    medicalProblems: [{ name: 'ИБС', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Артериальная гипертензия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Атеросклероз', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    operations: [
+      {
+        name: 'АКШ',
+        date: '2018-01-01',
+        diagnosis: '—',
+        description: 'Подробности не указаны',
+        complications: 'Нет',
+        implants: 'Нет',
+        result: 'Выздоровление'
+      }
+    ],
+    medicalProblems: [
+      {
+        name: 'ИБС',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Артериальная гипертензия',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Атеросклероз',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-05-01 08:00',
@@ -1026,7 +1117,9 @@ export const mockPatients: Patient[] = [
       phone: '+7 (495) 613-90-11',
       relation: 'Мать'
     },
-    allergies: [{ name: 'Пыльца берёзы', reaction: 'Ринит, конъюнктивит', date: '2015-04-10', comment: '' }],
+    allergies: [
+      { name: 'Пыльца берёзы', reaction: 'Ринит, конъюнктивит', date: '2015-04-10', comment: '' }
+    ],
     diagnoses: ['Хронический тонзиллит'],
     activeAppointments: [],
     vitalSigns: [
@@ -1088,9 +1181,7 @@ export const mockPatients: Patient[] = [
       dateOfDeath: '',
       causeOfDeath: ''
     },
-    relatives: [
-      { name: 'Громова Инна Ивановна', relation: 'Мать', phone: '+7 (495) 613-90-11' }
-    ],
+    relatives: [{ name: 'Громова Инна Ивановна', relation: 'Мать', phone: '+7 (495) 613-90-11' }],
     work: {
       profession: 'Дизайнер',
       organization: 'ИП Громова С.И.',
@@ -1111,7 +1202,7 @@ export const mockPatients: Patient[] = [
         date: '2026-01-13',
         statusText: 'Внимание: Staphylococcus aureus',
         doctor: 'Белова О.Р.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1119,7 +1210,24 @@ export const mockPatients: Patient[] = [
       { name: 'Амоксициллин', dose: '500 мг', form: 'таблетки', regimen: '3 раза в день' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Хронический тонзиллит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Поллиноз', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Хронический тонзиллит',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Поллиноз',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-01-12 14:00',
@@ -1160,7 +1268,9 @@ export const mockPatients: Patient[] = [
       phone: '+7 (495) 720-88-02',
       relation: 'Сестра'
     },
-    allergies: [{ name: 'Латекс', reaction: 'Контактный дерматит', date: '2011-06-18', comment: '' }],
+    allergies: [
+      { name: 'Латекс', reaction: 'Контактный дерматит', date: '2011-06-18', comment: '' }
+    ],
     diagnoses: ['Поясничный остеохондроз'],
     activeAppointments: [],
     vitalSigns: [
@@ -1245,7 +1355,7 @@ export const mockPatients: Patient[] = [
         date: '2026-04-18',
         statusText: 'Внимание: Протрузия L4-L5 до 4 мм',
         doctor: 'Ершов М.П.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1253,7 +1363,24 @@ export const mockPatients: Patient[] = [
       { name: 'Диклофенак', dose: '75 мг', form: 'гель', regimen: '2 раза в день местно' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Поясничный остеохондроз', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Протрузия дисков', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Поясничный остеохондроз',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Протрузия дисков',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-17 16:00',
@@ -1370,14 +1497,14 @@ export const mockPatients: Patient[] = [
         date: '2026-04-25',
         statusText: 'Внимание: Лейкоцитурия',
         doctor: 'Носова Т.В.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'УЗИ почек',
         date: '2026-04-26',
         statusText: 'Внимание: Расширение ЧЛС справа',
         doctor: 'Носова Т.В.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1385,7 +1512,24 @@ export const mockPatients: Patient[] = [
       { name: 'Ципрофлоксацин', dose: '500 мг', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Хронический пиелонефрит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Мочекаменная болезнь в анамнезе', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Хронический пиелонефрит',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Мочекаменная болезнь в анамнезе',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-24 13:00',
@@ -1511,14 +1655,14 @@ export const mockPatients: Patient[] = [
         date: '2026-01-15',
         statusText: 'Внимание: Гастродуоденит, эрозии луковицы',
         doctor: 'Зимина С.А.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'Хеликобактер (дыхательный тест)',
         date: '2026-01-15',
         statusText: 'Критично: H. pylori положительный',
         doctor: 'Зимина С.А.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1526,7 +1670,24 @@ export const mockPatients: Patient[] = [
       { name: 'Амоксициллин', dose: '1000 мг', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Хронический гастродуоденит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'H. pylori инфекция', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Хронический гастродуоденит',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'H. pylori инфекция',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-01-14 10:00',
@@ -1653,21 +1814,28 @@ export const mockPatients: Patient[] = [
         date: '2026-04-28',
         statusText: 'Критично: Гемоглобин 78 г/л',
         doctor: 'Гаврилова К.Е.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'Ферритин сыворотки',
         date: '2026-04-28',
         statusText: 'Критично: 4 нг/мл',
         doctor: 'Гаврилова К.Е.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
-    currentMeds: [
-      { name: 'Сорбифер', dose: '1 таб', form: 'таблетки', regimen: '2 раза в день' }
-    ],
+    currentMeds: [{ name: 'Сорбифер', dose: '1 таб', form: 'таблетки', regimen: '2 раза в день' }],
     operations: [],
-    medicalProblems: [{ name: 'Железодефицитная анемия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Железодефицитная анемия',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-27 11:30',
@@ -1699,7 +1867,14 @@ export const mockPatients: Patient[] = [
       phone: '+7 (495) 344-18-44',
       relation: 'Дочь'
     },
-    allergies: [{ name: 'Новокаин', reaction: 'Анафилаксия', date: '1995-03-10', comment: 'Реакция при стоматологии' }],
+    allergies: [
+      {
+        name: 'Новокаин',
+        reaction: 'Анафилаксия',
+        date: '1995-03-10',
+        comment: 'Реакция при стоматологии'
+      }
+    ],
     diagnoses: ['ХОБЛ'],
     activeAppointments: [],
     vitalSigns: [
@@ -1784,22 +1959,57 @@ export const mockPatients: Patient[] = [
         date: '2026-04-10',
         statusText: 'Критично: ОФВ1 38% от нормы',
         doctor: 'Антонов Р.С.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'Газы крови',
         date: '2026-05-02',
         statusText: 'Внимание: Гипоксемия PaO2 62',
         doctor: 'Антонов Р.С.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
       { name: 'Беродуал', dose: '20 капель', form: 'раствор', regimen: '2 раза в день' },
       { name: 'Тиотропий', dose: '18 мкг', form: 'капсулы д/инг.', regimen: '1 раз в день' }
     ],
-    operations: [{ name: 'Резекция правого лёгкого', date: '2010-01-01', diagnosis: '—', description: 'Подробности не указаны', complications: 'Нет', implants: 'Нет', result: 'Выздоровление' }],
-    medicalProblems: [{ name: 'ХОБЛ', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Эмфизема', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Лёгочная гипертензия', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    operations: [
+      {
+        name: 'Резекция правого лёгкого',
+        date: '2010-01-01',
+        diagnosis: '—',
+        description: 'Подробности не указаны',
+        complications: 'Нет',
+        implants: 'Нет',
+        result: 'Выздоровление'
+      }
+    ],
+    medicalProblems: [
+      {
+        name: 'ХОБЛ',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Эмфизема',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Лёгочная гипертензия',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-05-01 07:30',
@@ -1910,9 +2120,7 @@ export const mockPatients: Patient[] = [
       dateOfDeath: '',
       causeOfDeath: ''
     },
-    relatives: [
-      { name: 'Макаров Денис Сергеевич', relation: 'Брат', phone: '+7 (495) 277-41-54' }
-    ],
+    relatives: [{ name: 'Макаров Денис Сергеевич', relation: 'Брат', phone: '+7 (495) 277-41-54' }],
     work: {
       profession: 'Журналист',
       organization: 'ООО "МедиаПресс"',
@@ -1933,7 +2141,7 @@ export const mockPatients: Patient[] = [
         date: '2026-04-19',
         statusText: 'Норма: Патологии не выявлено',
         doctor: 'Лебедева И.О.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -1941,7 +2149,16 @@ export const mockPatients: Patient[] = [
       { name: 'Топирамат', dose: '25 мг', form: 'таблетки', regimen: '1 раз в день' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Мигрень без ауры', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Мигрень без ауры',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-04-18 15:00',
@@ -1973,7 +2190,14 @@ export const mockPatients: Patient[] = [
       phone: '+7 (495) 688-15-78',
       relation: 'Супруга'
     },
-    allergies: [{ name: 'Анальгин', reaction: 'Агранулоцитоз', date: '2020-11-05', comment: 'Зафиксировано в стационаре' }],
+    allergies: [
+      {
+        name: 'Анальгин',
+        reaction: 'Агранулоцитоз',
+        date: '2020-11-05',
+        comment: 'Зафиксировано в стационаре'
+      }
+    ],
     diagnoses: ['Острый гнойный синусит'],
     activeAppointments: [],
     vitalSigns: [
@@ -2058,14 +2282,14 @@ export const mockPatients: Patient[] = [
         date: '2026-01-14',
         statusText: 'Критично: Уровень жидкости в обеих гайморовых пазухах',
         doctor: 'Воронова Д.А.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       },
       {
         type: 'Общий анализ крови',
         date: '2026-01-14',
         statusText: 'Внимание: Лейкоцитоз 11.8',
         doctor: 'Воронова Д.А.',
-      reason: 'Плановое обследование'
+        reason: 'Плановое обследование'
       }
     ],
     currentMeds: [
@@ -2073,7 +2297,24 @@ export const mockPatients: Patient[] = [
       { name: 'Амоксиклав', dose: '875/125 мг', form: 'таблетки', regimen: '2 раза в день' }
     ],
     operations: [],
-    medicalProblems: [{ name: 'Хронический синусит (в анамнезе)', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }, { name: 'Аллергический ринит', diagnosisDate: '', diseaseStatus: 'Хроническое', severity: 'Умеренная', description: '', complications: 'Нет' }],
+    medicalProblems: [
+      {
+        name: 'Хронический синусит (в анамнезе)',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      },
+      {
+        name: 'Аллергический ринит',
+        diagnosisDate: '',
+        diseaseStatus: 'Хроническое',
+        severity: 'Умеренная',
+        description: '',
+        complications: 'Нет'
+      }
+    ],
     history: [
       {
         dateTime: '2026-01-13 09:00',
@@ -2341,24 +2582,167 @@ export const roomsConfig: Record<string, { gender: 'male' | 'female' | 'free' }>
 
 export const mockHospitalBeds: HospitalBed[] = [
   // Мужская палата 101
-  { id: 'B101_1', roomNumber: '101', bedNumber: 1, patientId: 'P001', patientName: 'Иван', patientLastName: 'Петров', patientMiddleName: 'Сергеевич', patientAge: 40, diagnosis: 'Гипертонический криз', status: 'stable' },
-  { id: 'B101_2', roomNumber: '101', bedNumber: 2, patientId: 'P003', patientName: 'Алексей', patientLastName: 'Смирнов', patientMiddleName: 'Дмитриевич', patientAge: 47, diagnosis: 'Сахарный диабет 2 типа', status: 'urgent' },
-  { id: 'B101_3', roomNumber: '101', bedNumber: 3, patientId: 'P005', patientName: 'Николай', patientLastName: 'Федоров', patientMiddleName: 'Андреевич', patientAge: 56, diagnosis: 'Ишемическая болезнь сердца', status: 'attention' },
+  {
+    id: 'B101_1',
+    roomNumber: '101',
+    bedNumber: 1,
+    patientId: 'P001',
+    patientName: 'Иван',
+    patientLastName: 'Петров',
+    patientMiddleName: 'Сергеевич',
+    patientAge: 40,
+    diagnosis: 'Гипертонический криз',
+    status: 'stable'
+  },
+  {
+    id: 'B101_2',
+    roomNumber: '101',
+    bedNumber: 2,
+    patientId: 'P003',
+    patientName: 'Алексей',
+    patientLastName: 'Смирнов',
+    patientMiddleName: 'Дмитриевич',
+    patientAge: 47,
+    diagnosis: 'Сахарный диабет 2 типа',
+    status: 'urgent'
+  },
+  {
+    id: 'B101_3',
+    roomNumber: '101',
+    bedNumber: 3,
+    patientId: 'P005',
+    patientName: 'Николай',
+    patientLastName: 'Федоров',
+    patientMiddleName: 'Андреевич',
+    patientAge: 56,
+    diagnosis: 'Ишемическая болезнь сердца',
+    status: 'attention'
+  },
   // Женская палата 102
-  { id: 'B102_1', roomNumber: '102', bedNumber: 1, patientId: 'P002', patientName: 'Мария', patientLastName: 'Иванова', patientMiddleName: 'Александровна', patientAge: 33, diagnosis: 'Бронхиальная астма', status: 'attention' },
-  { id: 'B102_2', roomNumber: '102', bedNumber: 2, patientId: 'P004', patientName: 'Екатерина', patientLastName: 'Орлова', patientMiddleName: 'Владимировна', patientAge: 37, diagnosis: 'Вегетососудистая дистония', status: 'stable' },
-  { id: 'B102_3', roomNumber: '102', bedNumber: 3, patientId: 'P006', patientName: 'Светлана', patientLastName: 'Громова', patientMiddleName: 'Ильинична', patientAge: 30, diagnosis: 'Тонзиллит', status: 'stable' },
+  {
+    id: 'B102_1',
+    roomNumber: '102',
+    bedNumber: 1,
+    patientId: 'P002',
+    patientName: 'Мария',
+    patientLastName: 'Иванова',
+    patientMiddleName: 'Александровна',
+    patientAge: 33,
+    diagnosis: 'Бронхиальная астма',
+    status: 'attention'
+  },
+  {
+    id: 'B102_2',
+    roomNumber: '102',
+    bedNumber: 2,
+    patientId: 'P004',
+    patientName: 'Екатерина',
+    patientLastName: 'Орлова',
+    patientMiddleName: 'Владимировна',
+    patientAge: 37,
+    diagnosis: 'Вегетососудистая дистония',
+    status: 'stable'
+  },
+  {
+    id: 'B102_3',
+    roomNumber: '102',
+    bedNumber: 3,
+    patientId: 'P006',
+    patientName: 'Светлана',
+    patientLastName: 'Громова',
+    patientMiddleName: 'Ильинична',
+    patientAge: 30,
+    diagnosis: 'Тонзиллит',
+    status: 'stable'
+  },
   // Мужская палата 103
-  { id: 'B103_1', roomNumber: '103', bedNumber: 1, patientId: 'P007', patientName: 'Павел', patientLastName: 'Лебедев', patientMiddleName: 'Олегович', patientAge: 44, diagnosis: 'Поясничный остеохондроз', status: 'stable' },
-  { id: 'B103_2', roomNumber: '103', bedNumber: 2, patientId: 'P009', patientName: 'Артем', patientLastName: 'Белов', patientMiddleName: 'Максимович', patientAge: 25, diagnosis: 'Гастродуоденит', status: 'stable' },
-  { id: 'B103_3', roomNumber: '103', bedNumber: 3, patientId: 'P011', patientName: 'Георгий', patientLastName: 'Тимофеев', patientMiddleName: 'Сергеевич', patientAge: 68, diagnosis: 'ХОБЛ', status: 'attention' },
+  {
+    id: 'B103_1',
+    roomNumber: '103',
+    bedNumber: 1,
+    patientId: 'P007',
+    patientName: 'Павел',
+    patientLastName: 'Лебедев',
+    patientMiddleName: 'Олегович',
+    patientAge: 44,
+    diagnosis: 'Поясничный остеохондроз',
+    status: 'stable'
+  },
+  {
+    id: 'B103_2',
+    roomNumber: '103',
+    bedNumber: 2,
+    patientId: 'P009',
+    patientName: 'Артем',
+    patientLastName: 'Белов',
+    patientMiddleName: 'Максимович',
+    patientAge: 25,
+    diagnosis: 'Гастродуоденит',
+    status: 'stable'
+  },
+  {
+    id: 'B103_3',
+    roomNumber: '103',
+    bedNumber: 3,
+    patientId: 'P011',
+    patientName: 'Георгий',
+    patientLastName: 'Тимофеев',
+    patientMiddleName: 'Сергеевич',
+    patientAge: 68,
+    diagnosis: 'ХОБЛ',
+    status: 'attention'
+  },
   // Мужская палата 201
-  { id: 'B201_1', roomNumber: '201', bedNumber: 1, patientId: 'P013', patientName: 'Роман', patientLastName: 'Егоров', patientMiddleName: 'Валерьевич', patientAge: 35, diagnosis: 'Синусит', status: 'stable' },
+  {
+    id: 'B201_1',
+    roomNumber: '201',
+    bedNumber: 1,
+    patientId: 'P013',
+    patientName: 'Роман',
+    patientLastName: 'Егоров',
+    patientMiddleName: 'Валерьевич',
+    patientAge: 35,
+    diagnosis: 'Синусит',
+    status: 'stable'
+  },
   { id: 'B201_2', roomNumber: '201', bedNumber: 2, status: 'free' },
   // Женская палата 202
-  { id: 'B202_1', roomNumber: '202', bedNumber: 1, patientId: 'P008', patientName: 'Людмила', patientLastName: 'Волкова', patientMiddleName: 'Семеновна', patientAge: 51, diagnosis: 'Хронический пиелонефрит', status: 'stable' },
-  { id: 'B202_2', roomNumber: '202', bedNumber: 2, patientId: 'P010', patientName: 'Наталья', patientLastName: 'Зайцева', patientMiddleName: 'Анатольевна', patientAge: 42, diagnosis: 'Железодефицитная анемия', status: 'stable' },
-  { id: 'B202_3', roomNumber: '202', bedNumber: 3, patientId: 'P012', patientName: 'Анастасия', patientLastName: 'Макарова', patientMiddleName: 'Денисовна', patientAge: 27, diagnosis: 'Мигрень', status: 'stable' }
+  {
+    id: 'B202_1',
+    roomNumber: '202',
+    bedNumber: 1,
+    patientId: 'P008',
+    patientName: 'Людмила',
+    patientLastName: 'Волкова',
+    patientMiddleName: 'Семеновна',
+    patientAge: 51,
+    diagnosis: 'Хронический пиелонефрит',
+    status: 'stable'
+  },
+  {
+    id: 'B202_2',
+    roomNumber: '202',
+    bedNumber: 2,
+    patientId: 'P010',
+    patientName: 'Наталья',
+    patientLastName: 'Зайцева',
+    patientMiddleName: 'Анатольевна',
+    patientAge: 42,
+    diagnosis: 'Железодефицитная анемия',
+    status: 'stable'
+  },
+  {
+    id: 'B202_3',
+    roomNumber: '202',
+    bedNumber: 3,
+    patientId: 'P012',
+    patientName: 'Анастасия',
+    patientLastName: 'Макарова',
+    patientMiddleName: 'Денисовна',
+    patientAge: 27,
+    diagnosis: 'Мигрень',
+    status: 'stable'
+  }
 ]
 
 export const patientDetails: Record<string, PatientDetail> = {
@@ -2374,7 +2758,14 @@ export const patientDetails: Record<string, PatientDetail> = {
       { name: 'Амлодипин', qty: '28 табл.' },
       { name: 'Каптоприл', qty: '10 табл.' }
     ],
-    log: [{ who: 'Медсестра Орлова К.', action: 'Выдан Эналаприл 10мг', time: '08:05', amount: '1 табл.' }]
+    log: [
+      {
+        who: 'Медсестра Орлова К.',
+        action: 'Выдан Эналаприл 10мг',
+        time: '08:05',
+        amount: '1 табл.'
+      }
+    ]
   },
   P002: {
     doctorNote: 'Контроль сатурации каждый час. При SpO₂ < 92% — O₂ через маску, вызов врача.',
@@ -2388,7 +2779,14 @@ export const patientDetails: Record<string, PatientDetail> = {
       { name: 'Преднизолон', qty: '5 амп.' },
       { name: 'Беродуал', qty: '1 фл.' }
     ],
-    log: [{ who: 'Медсестра Орлова К.', action: 'Ингаляция Сальбутамол 2.5мг', time: '08:10', amount: '1 амп.' }]
+    log: [
+      {
+        who: 'Медсестра Орлова К.',
+        action: 'Ингаляция Сальбутамол 2.5мг',
+        time: '08:10',
+        amount: '1 амп.'
+      }
+    ]
   },
   P003: {
     doctorNote: 'Инсулинотерапия строго по графику! Контроль гликемии перед каждым введением.',
@@ -2402,7 +2800,14 @@ export const patientDetails: Record<string, PatientDetail> = {
       { name: 'NaCl 0.9%', qty: '4 фл.' },
       { name: 'KCl 4%', qty: '3 амп.' }
     ],
-    log: [{ who: 'Медсестра Петрова И.', action: 'Инсулин Актрапид 8 ед п/к', time: '07:35', amount: '8 ед.' }]
+    log: [
+      {
+        who: 'Медсестра Петрова И.',
+        action: 'Инсулин Актрапид 8 ед п/к',
+        time: '07:35',
+        amount: '8 ед.'
+      }
+    ]
   },
   P004: {
     doctorNote: 'Регулярное наблюдение за АД.',
@@ -2414,7 +2819,9 @@ export const patientDetails: Record<string, PatientDetail> = {
     doctorNote: 'Контроль пульса 3 раза в день.',
     prescriptions: [{ id: 1, name: 'Бисопролол', dose: '5 мг', time: '08:00', done: true }],
     meds: [{ name: 'Бисопролол', qty: '10 табл.' }],
-    log: [{ who: 'Медсестра Петрова', action: 'Выдан Бисопролол', time: '08:05', amount: '1 табл.' }]
+    log: [
+      { who: 'Медсестра Петрова', action: 'Выдан Бисопролол', time: '08:05', amount: '1 табл.' }
+    ]
   },
   P006: {
     doctorNote: 'Полоскание горла каждые 4 часа.',
@@ -2450,11 +2857,15 @@ export const patientDetails: Record<string, PatientDetail> = {
     doctorNote: 'Сатурация каждые 4 часа. Ингаляции.',
     prescriptions: [{ id: 1, name: 'Беродуал', dose: '20 капель', time: '08:00', done: true }],
     meds: [{ name: 'Беродуал', qty: '1 фл.' }],
-    log: [{ who: 'Медсестра Волкова', action: 'Ингаляция Беродуал', time: '08:20', amount: '20 капель' }]
+    log: [
+      { who: 'Медсестра Волкова', action: 'Ингаляция Беродуал', time: '08:20', amount: '20 капель' }
+    ]
   },
   P012: {
     doctorNote: 'Постельный режим при приступе.',
-    prescriptions: [{ id: 1, name: 'Суматриптан', dose: '50 мг', time: 'по потребности', done: false }],
+    prescriptions: [
+      { id: 1, name: 'Суматриптан', dose: '50 мг', time: 'по потребности', done: false }
+    ],
     meds: [{ name: 'Суматриптан', qty: '2 табл.' }],
     log: [{ who: 'Врач', action: 'Осмотр', time: '10:00', amount: '—' }]
   },
@@ -2499,28 +2910,43 @@ export const mockFacilities: Facility[] = [
 ]
 
 export const mockStaff: Staff[] = [
-  { id: 'S001', firstName: 'Анна', lastName: 'Кузнецова', position: 'Врач-терапевт', department: 'Пульмонология', login: 'a.kuznetsova', status: 'active' },
-  { id: 'S002', firstName: 'Дмитрий', lastName: 'Волков', position: 'Врач-хирург', department: 'Пульмонология', login: 'd.volkov', status: 'active' },
-  { id: 'S003', firstName: 'Елена', lastName: 'Соколова', position: 'Медсестра', department: 'Пульмонология', login: 'e.sokolova', status: 'active' },
-  { id: 'S004', firstName: 'Сергей', lastName: 'Морозов', position: 'Врач-педиатр', department: 'Пульмонология', login: 's.morozov', status: 'inactive' }
+  {
+    id: 'S001',
+    firstName: 'Анна',
+    lastName: 'Кузнецова',
+    position: 'Врач-терапевт',
+    department: 'Пульмонология',
+    login: 'a.kuznetsova',
+    status: 'active'
+  },
+  {
+    id: 'S002',
+    firstName: 'Дмитрий',
+    lastName: 'Волков',
+    position: 'Врач-хирург',
+    department: 'Пульмонология',
+    login: 'd.volkov',
+    status: 'active'
+  },
+  {
+    id: 'S003',
+    firstName: 'Елена',
+    lastName: 'Соколова',
+    position: 'Медсестра',
+    department: 'Пульмонология',
+    login: 'e.sokolova',
+    status: 'active'
+  },
+  {
+    id: 'S004',
+    firstName: 'Сергей',
+    lastName: 'Морозов',
+    position: 'Врач-педиатр',
+    department: 'Пульмонология',
+    login: 's.morozov',
+    status: 'inactive'
+  }
 ]
-
-export type NotificationType = 'lab-result' | 'appointment-reminder'
-export type SeverityType = 'critical' | 'warning'
-
-export interface Notification {
-  id: string
-  type: NotificationType
-  severity?: SeverityType
-  patientName: string
-  patientId: string
-  dateOfBirth?: string
-  doctor?: string
-  message: string
-  details?: string
-  time: string
-  read: boolean
-}
 
 export const mockNotifications: Notification[] = [
   {
@@ -2568,6 +2994,511 @@ export const mockNotifications: Notification[] = [
     read: false
   }
 ]
+
+export const mockMedicalStaffSchedule: MedicalStaffMember[] = [
+  {
+    id: 'STAFF001',
+    name: 'Смирнов Александр Алексеевич',
+    position: 'Врач',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day-off', hours: 0 },
+      { day: 4, type: 'day-off', hours: 0 },
+      { day: 5, type: 'day', hours: 8 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day-off', hours: 0 },
+      { day: 9, type: 'day-off', hours: 0 },
+      { day: 10, type: 'night', hours: 12 },
+      { day: 11, type: 'day', hours: 8 },
+      { day: 12, type: 'day', hours: 8 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day-off', hours: 0 },
+      { day: 15, type: 'day-off', hours: 0 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day', hours: 8 },
+      { day: 18, type: 'night', hours: 12 },
+      { day: 19, type: 'day', hours: 8 },
+      { day: 20, type: 'day-off', hours: 0 },
+      { day: 21, type: 'day-off', hours: 0 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day', hours: 8 },
+      { day: 24, type: 'day', hours: 8 },
+      { day: 25, type: 'night', hours: 12 },
+      { day: 26, type: 'day-off', hours: 0 },
+      { day: 27, type: 'day-off', hours: 0 },
+      { day: 28, type: 'day', hours: 8 },
+      { day: 29, type: 'day', hours: 8 },
+      { day: 30, type: 'day', hours: 8 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF002',
+    name: 'Орлова Елена Викторовна',
+    position: 'Врач',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day-off', hours: 0 },
+      { day: 3, type: 'day-off', hours: 0 },
+      { day: 4, type: 'day', hours: 8 },
+      { day: 5, type: 'day', hours: 8 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day-off', hours: 0 },
+      { day: 8, type: 'day-off', hours: 0 },
+      { day: 9, type: 'day', hours: 8 },
+      { day: 10, type: 'day', hours: 8 },
+      { day: 11, type: 'night', hours: 12 },
+      { day: 12, type: 'day-off', hours: 0 },
+      { day: 13, type: 'day-off', hours: 0 },
+      { day: 14, type: 'day', hours: 8 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day-off', hours: 0 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'night', hours: 12 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day-off', hours: 0 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'day', hours: 8 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'night', hours: 12 },
+      { day: 28, type: 'day-off', hours: 0 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day', hours: 8 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF003',
+    name: 'Сокова Ирина Сергеевна',
+    position: 'Старшая медсестра',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day', hours: 8 },
+      { day: 4, type: 'day-off', hours: 0 },
+      { day: 5, type: 'day-off', hours: 0 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day', hours: 8 },
+      { day: 9, type: 'day-off', hours: 0 },
+      { day: 10, type: 'day-off', hours: 0 },
+      { day: 11, type: 'day', hours: 8 },
+      { day: 12, type: 'day', hours: 8 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day-off', hours: 0 },
+      { day: 15, type: 'day-off', hours: 0 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day', hours: 8 },
+      { day: 18, type: 'day', hours: 8 },
+      { day: 19, type: 'day-off', hours: 0 },
+      { day: 20, type: 'day-off', hours: 0 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day', hours: 8 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day-off', hours: 0 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'day', hours: 8 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day-off', hours: 0 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF004',
+    name: 'Федорова Наталья Павловна',
+    position: 'Постовая медсестра',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'night', hours: 24 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day', hours: 8 },
+      { day: 4, type: 'day-off', hours: 0 },
+      { day: 5, type: 'day-off', hours: 0 },
+      { day: 6, type: 'night', hours: 24 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day', hours: 8 },
+      { day: 9, type: 'day-off', hours: 0 },
+      { day: 10, type: 'day-off', hours: 0 },
+      { day: 11, type: 'night', hours: 24 },
+      { day: 12, type: 'day', hours: 8 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day-off', hours: 0 },
+      { day: 15, type: 'day-off', hours: 0 },
+      { day: 16, type: 'night', hours: 24 },
+      { day: 17, type: 'day', hours: 8 },
+      { day: 18, type: 'day', hours: 8 },
+      { day: 19, type: 'day-off', hours: 0 },
+      { day: 20, type: 'day-off', hours: 0 },
+      { day: 21, type: 'night', hours: 24 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day', hours: 8 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day-off', hours: 0 },
+      { day: 26, type: 'night', hours: 24 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'day', hours: 8 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day-off', hours: 0 },
+      { day: 31, type: 'night', hours: 24 }
+    ]
+  },
+  {
+    id: 'STAFF005',
+    name: 'Козлова Ольга Ивановна',
+    position: 'Процедурная медсестра',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day-off', hours: 0 },
+      { day: 4, type: 'day-off', hours: 0 },
+      { day: 5, type: 'day', hours: 8 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day-off', hours: 0 },
+      { day: 9, type: 'day-off', hours: 0 },
+      { day: 10, type: 'day', hours: 8 },
+      { day: 11, type: 'day', hours: 8 },
+      { day: 12, type: 'day', hours: 8 },
+      { day: 13, type: 'day-off', hours: 0 },
+      { day: 14, type: 'day-off', hours: 0 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day', hours: 8 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'day-off', hours: 0 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'day-off', hours: 0 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day', hours: 8 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF006',
+    name: 'Петрова Юлия Геннадьевна',
+    position: 'Постовая медсестра',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day', hours: 8 },
+      { day: 4, type: 'night', hours: 24 },
+      { day: 5, type: 'day-off', hours: 0 },
+      { day: 6, type: 'day-off', hours: 0 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day', hours: 8 },
+      { day: 9, type: 'day', hours: 8 },
+      { day: 10, type: 'night', hours: 24 },
+      { day: 11, type: 'day-off', hours: 0 },
+      { day: 12, type: 'day-off', hours: 0 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day', hours: 8 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'night', hours: 24 },
+      { day: 17, type: 'day-off', hours: 0 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'day', hours: 8 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'night', hours: 24 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'night', hours: 24 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day-off', hours: 0 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF007',
+    name: 'Никонова Виктория Ивановна',
+    position: 'Сестра-хозяйка',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day', hours: 8 },
+      { day: 4, type: 'day-off', hours: 0 },
+      { day: 5, type: 'day-off', hours: 0 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day', hours: 8 },
+      { day: 9, type: 'day-off', hours: 0 },
+      { day: 10, type: 'day-off', hours: 0 },
+      { day: 11, type: 'day', hours: 8 },
+      { day: 12, type: 'day', hours: 8 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day-off', hours: 0 },
+      { day: 15, type: 'day-off', hours: 0 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day', hours: 8 },
+      { day: 18, type: 'day', hours: 8 },
+      { day: 19, type: 'day-off', hours: 0 },
+      { day: 20, type: 'day-off', hours: 0 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day', hours: 8 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day-off', hours: 0 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'day', hours: 8 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day-off', hours: 0 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF008',
+    name: 'Воронова Наталья Сергеевна',
+    position: 'Санитарка',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'night', hours: 24 },
+      { day: 2, type: 'day-off', hours: 0 },
+      { day: 3, type: 'day-off', hours: 0 },
+      { day: 4, type: 'night', hours: 24 },
+      { day: 5, type: 'day', hours: 8 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day-off', hours: 0 },
+      { day: 8, type: 'day-off', hours: 0 },
+      { day: 9, type: 'night', hours: 24 },
+      { day: 10, type: 'day', hours: 8 },
+      { day: 11, type: 'day', hours: 8 },
+      { day: 12, type: 'day-off', hours: 0 },
+      { day: 13, type: 'day-off', hours: 0 },
+      { day: 14, type: 'night', hours: 24 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day-off', hours: 0 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'night', hours: 24 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day-off', hours: 0 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'night', hours: 24 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day-off', hours: 0 },
+      { day: 28, type: 'day-off', hours: 0 },
+      { day: 29, type: 'night', hours: 24 },
+      { day: 30, type: 'day', hours: 8 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF009',
+    name: 'Кузнецова Анна Сергеевна',
+    position: 'Процедурная медсестра',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day-off', hours: 0 },
+      { day: 3, type: 'day-off', hours: 0 },
+      { day: 4, type: 'day', hours: 8 },
+      { day: 5, type: 'day', hours: 8 },
+      { day: 6, type: 'day', hours: 8 },
+      { day: 7, type: 'day-off', hours: 0 },
+      { day: 8, type: 'day-off', hours: 0 },
+      { day: 9, type: 'day', hours: 8 },
+      { day: 10, type: 'day', hours: 8 },
+      { day: 11, type: 'day', hours: 8 },
+      { day: 12, type: 'day-off', hours: 0 },
+      { day: 13, type: 'day-off', hours: 0 },
+      { day: 14, type: 'day', hours: 8 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day-off', hours: 0 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'day', hours: 8 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day-off', hours: 0 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'day', hours: 8 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day-off', hours: 0 },
+      { day: 28, type: 'day-off', hours: 0 },
+      { day: 29, type: 'day', hours: 8 },
+      { day: 30, type: 'day', hours: 8 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF010',
+    name: 'Морозова Екатерина Александровна',
+    position: 'Заведующий отделением',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day', hours: 8 },
+      { day: 4, type: 'day', hours: 8 },
+      { day: 5, type: 'day-off', hours: 0 },
+      { day: 6, type: 'day-off', hours: 0 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day', hours: 8 },
+      { day: 9, type: 'day', hours: 8 },
+      { day: 10, type: 'day', hours: 8 },
+      { day: 11, type: 'day-off', hours: 0 },
+      { day: 12, type: 'day-off', hours: 0 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day', hours: 8 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day-off', hours: 0 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'day', hours: 8 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'day', hours: 8 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day-off', hours: 0 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  },
+  {
+    id: 'STAFF011',
+    name: 'Макарова Анастасия Сергеевна',
+    position: 'Буфетчица',
+    department: 'Пульмонология',
+    schedule: [
+      { day: 1, type: 'day', hours: 8 },
+      { day: 2, type: 'day', hours: 8 },
+      { day: 3, type: 'day', hours: 8 },
+      { day: 4, type: 'day', hours: 8 },
+      { day: 5, type: 'day-off', hours: 0 },
+      { day: 6, type: 'day-off', hours: 0 },
+      { day: 7, type: 'day', hours: 8 },
+      { day: 8, type: 'day', hours: 8 },
+      { day: 9, type: 'day', hours: 8 },
+      { day: 10, type: 'day', hours: 8 },
+      { day: 11, type: 'day-off', hours: 0 },
+      { day: 12, type: 'day-off', hours: 0 },
+      { day: 13, type: 'day', hours: 8 },
+      { day: 14, type: 'day', hours: 8 },
+      { day: 15, type: 'day', hours: 8 },
+      { day: 16, type: 'day', hours: 8 },
+      { day: 17, type: 'day-off', hours: 0 },
+      { day: 18, type: 'day-off', hours: 0 },
+      { day: 19, type: 'day', hours: 8 },
+      { day: 20, type: 'day', hours: 8 },
+      { day: 21, type: 'day', hours: 8 },
+      { day: 22, type: 'day', hours: 8 },
+      { day: 23, type: 'day-off', hours: 0 },
+      { day: 24, type: 'day-off', hours: 0 },
+      { day: 25, type: 'day', hours: 8 },
+      { day: 26, type: 'day', hours: 8 },
+      { day: 27, type: 'day', hours: 8 },
+      { day: 28, type: 'day', hours: 8 },
+      { day: 29, type: 'day-off', hours: 0 },
+      { day: 30, type: 'day-off', hours: 0 },
+      { day: 31, type: 'day', hours: 8 }
+    ]
+  }
+]
+
+
+function genShifts(pattern: Array<'day' | 'night' | 'day-off'>, daysInMonth: number): Shift[] {
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const t = pattern[i % pattern.length]
+    return { day: i + 1, type: t, hours: t === 'day' ? 8 : t === 'night' ? 12 : 0 }
+  })
+}
+
+export const monthlyScheduleData: Record<string, MonthSchedule[]> = {
+  STAFF001: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day-off','day-off','day','day','day','day-off','day-off','night'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day','day','day-off','day-off','night','day','day'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day-off','day-off','day','day','day','night','day-off'], 30) },
+  ],
+  STAFF002: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day','day-off','day-off','night','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day','day-off','night'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day-off','night','day','day-off','day','day','day-off'], 30) },
+  ],
+  STAFF003: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day','day-off','day-off','day','day','day'], 30) },
+  ],
+  STAFF004: [
+    { month: 3, year: 2026, shifts: genShifts(['night','day-off','day-off','day','day','night','day-off','day-off'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['night','day-off','day-off','day','day','day','night','day-off'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','night','day-off','day-off','day','night'], 30) },
+  ],
+  STAFF005: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day','day-off','day-off','day','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day','day'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day-off','day-off','day','day','day','day'], 30) },
+  ],
+  STAFF006: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day-off','day','day','day-off','day','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['night','day-off','day','day','day-off','day'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day-off','day','night','day-off','day'], 30) },
+  ],
+  STAFF007: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day-off','day-off','day','night','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day','day-off','night','day-off','day','day'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day-off','day','night','day','day-off','day'], 30) },
+  ],
+  STAFF008: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day','day-off','day-off','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day','day-off','day-off','day','day'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day'], 30) },
+  ],
+  STAFF009: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day-off','day-off','day','day','day'], 30) },
+  ],
+  STAFF010: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 30) },
+  ],
+  STAFF011: [
+    { month: 3, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 30) },
+    { month: 4, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 31) },
+    { month: 5, year: 2026, shifts: genShifts(['day','day','day','day','day-off','day-off'], 30) },
+  ],
+}
+
+export function getStaffScheduleForMonth(staffId: string, month: number, year: number): Shift[] | null {
+  const staffSchedules = monthlyScheduleData[staffId]
+  if (!staffSchedules) return null
+  const found = staffSchedules.find(s => s.month === month && s.year === year)
+  return found ? found.shifts : null
+}
 
 export function getPatientById(id: string): Patient | undefined {
   return mockPatients.find((p) => p.id === id)

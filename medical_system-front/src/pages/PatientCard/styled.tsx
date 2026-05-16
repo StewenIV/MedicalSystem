@@ -56,6 +56,14 @@ export const PatientHeader = styled.div`
       0 15px 35px -5px rgba(0, 0, 0, 0.08),
       0 5px 15px -5px rgba(0, 0, 0, 0.03);
   }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 20px;
+    gap: 20px;
+    text-align: left;
+  }
 `
 
 export const Avatar = styled.div`
@@ -84,11 +92,15 @@ export const HeaderMain = styled.div`
   flex: 1;
   gap: 12px;
   min-width: 0;
+
+  @media (max-width: 768px) {
+    align-items: flex-start;
+  }
 `
 
 export const PatientName = styled.h1`
   margin: 0;
-  font-size: 28px;
+  font-size: clamp(22px, 5vw, 28px);
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.5px;
@@ -101,9 +113,14 @@ export const Demographics = styled.div`
   display: flex;
   gap: 16px;
   color: #475569;
-  font-size: 15px;
+  font-size: clamp(13px, 3vw, 15px);
   align-items: center;
   font-weight: 500;
+  flex-wrap: wrap;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+  }
 
   span.dot {
     color: #cbd5e1;
@@ -117,6 +134,11 @@ export const HeaderInfoGrid = styled.div`
   margin-top: 16px;
   padding-top: 24px;
   border-top: 1px solid #f1f5f9;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+    gap: 20px;
+  }
 `
 
 export const InfoItem = styled.div`
@@ -135,6 +157,10 @@ export const InfoItem = styled.div`
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+
+    @media (max-width: 480px) {
+      font-size: 11px;
+    }
   }
 
   .value {
@@ -144,6 +170,14 @@ export const InfoItem = styled.div`
     display: flex;
     align-items: center;
     gap: 8px;
+
+    @media (max-width: 768px) {
+      font-size: 14px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 13px;
+    }
   }
 `
 
@@ -213,7 +247,7 @@ export const TabButton = styled.button<{ $active?: boolean }>`
   border: none;
   color: ${({ $active }) => ($active ? '#2563eb' : '#64748b')};
   font-weight: ${({ $active }) => ($active ? '700' : '500')};
-  font-size: 15px;
+  font-size: clamp(13px, 3vw, 15px);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
@@ -255,7 +289,13 @@ export const ContentArea = styled.div`
   min-width: 0;
 `
 
-export const SectionCard = styled.div`
+export const SectionCard = styled.div<{ $span?: number }>`
+  grid-column: span ${({ $span }) => $span || 1};
+
+  @media (max-width: 1024px) {
+    grid-column: span 1;
+  }
+
   background: #ffffff;
   border-radius: 20px;
   padding: 28px;
@@ -263,16 +303,30 @@ export const SectionCard = styled.div`
   display: flex;
   flex-direction: column;
   gap: 20px;
+  text-align: left;
   transition: box-shadow 0.2s ease;
   overflow-x: auto;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  font-size: 14px;
 
   &:hover {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
   }
 
+  @media (max-width: 768px) {
+    padding: 22px 20px;
+    font-size: 13px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 18px 16px;
+    border-radius: 16px;
+    font-size: 13px;
+  }
+
+  /* ── Заголовок карточки: title + кнопки всегда на одной строке ── */
   h3 {
     margin: 0;
     font-size: 18px;
@@ -281,15 +335,47 @@ export const SectionCard = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: nowrap;
+    gap: 8px;
     border-bottom: 2px solid #f1f5f9;
     padding-bottom: 16px;
+    min-width: 0;
 
     .actions {
       display: flex;
-      gap: 8px;
+      gap: 6px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    @media (max-width: 768px) {
+      font-size: 16px;
+    }
+
+    @media (max-width: 480px) {
+      font-size: 15px;
+      padding-bottom: 12px;
+    }
+  }
+
+  /* ── Адаптивный font-size для списков и параграфов внутри карточек ── */
+  ul, ol {
+    margin: 0;
+    color: #1e293b;
+
+    @media (max-width: 480px) {
+      padding-left: 16px;
+      font-size: 13px;
+    }
+  }
+
+  li {
+    @media (max-width: 480px) {
+      font-size: 13px;
     }
   }
 `
+
 
 export const GridRow = styled.div<{ $cols?: number }>`
   display: grid;
@@ -335,7 +421,7 @@ export const Table = styled.table`
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 14px;
+  font-size: clamp(12px, 3vw, 14px);
   min-width: 600px;
 
   th,
@@ -357,7 +443,7 @@ export const Table = styled.table`
     color: #475569;
     background: #f8fafc;
     text-transform: uppercase;
-    font-size: 12px;
+    font-size: clamp(10px, 2.5vw, 12px);
     letter-spacing: 0.5px;
 
     &:first-child {
@@ -395,7 +481,7 @@ export const ActionButton = styled.button<{
   justify-content: center;
   gap: 8px;
   padding: 8px 16px;
-  font-size: 14px;
+  font-size: clamp(12px, 3vw, 14px);
   font-weight: 600;
   border-radius: 10px;
   cursor: ${({ disabled }) => (disabled ? 'not-allowed' : 'pointer')};
@@ -511,6 +597,10 @@ export const ModalHeader = styled.div`
     font-size: 23px;
     font-weight: 900;
     color: #0f172a;
+
+    @media (max-width: 480px) {
+      font-size: 19px;
+    }
   }
 `
 
@@ -573,13 +663,17 @@ export const Label = styled.label`
   font-size: 14px;
   font-weight: 600;
   color: #334155;
+
+  @media (max-width: 480px) {
+    font-size: 13px;
+  }
 `
 
 export const Input = styled.input`
   padding: 12px 16px;
   border-radius: 12px;
   border: 1px solid #cbd5e1;
-  font-size: 15px;
+  font-size: clamp(14px, 3.5vw, 15px);
   color: #0f172a;
   transition: all 0.2s ease;
   background: #ffffff;
@@ -851,20 +945,124 @@ export const SearchResetBtn = styled.button`
 `
 
 export const SearchTableWrap = styled.div`
-  width: 100%;
+  --scroll-hint-opacity: 0;
+  position: relative;
+  width: calc(100% - 40px);
+  max-width: calc(100% - 40px);
+  margin: 18px auto 20px;
+  overflow: hidden;
+  border: 1px solid rgba(191, 219, 254, 0.78);
+  border-radius: 18px;
+  background:
+    linear-gradient(#ffffff, #ffffff) padding-box,
+    linear-gradient(135deg, rgba(147, 197, 253, 0.7), rgba(221, 214, 254, 0.65), rgba(226, 232, 240, 0.9)) border-box;
+  box-shadow:
+    0 16px 36px rgba(15, 23, 42, 0.08),
+    0 4px 12px rgba(37, 99, 235, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: 42px;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0));
+    z-index: 2;
+  }
+
+  @media (max-width: 768px) {
+    width: calc(100% - 24px);
+    max-width: calc(100% - 24px);
+    margin: 14px auto 16px;
+    border-radius: 14px;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 132px;
+    pointer-events: none;
+    border-radius: 0 17px 17px 0;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.08) 18%,
+      rgba(219, 234, 254, 0.18) 40%,
+      rgba(196, 218, 254, 0.38) 72%,
+      rgba(147, 197, 253, 0.46) 100%
+    );
+    backdrop-filter: blur(8px) saturate(1.35);
+    -webkit-backdrop-filter: blur(8px) saturate(1.35);
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 12%,
+      rgba(0, 0, 0, 0.28) 34%,
+      rgba(0, 0, 0, 0.72) 66%,
+      #000000 100%
+    );
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 12%,
+      rgba(0, 0, 0, 0.28) 34%,
+      rgba(0, 0, 0, 0.72) 66%,
+      #000000 100%
+    );
+    opacity: 0;
+    z-index: 3;
+    transition: opacity 0.16s ease-out, transform 0.24s ease;
+    transform: translateX(8px);
+  }
+
+  /* Скрываем когда доскроллили до конца */
+  &.is-scrollable::after {
+    opacity: var(--scroll-hint-opacity);
+    transform: translateX(0);
+  }
+
+  &.is-scrolled-end::after {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+
+  @media (max-width: 768px) {
+    &::after {
+      width: 88px;
+      border-radius: 0 13px 13px 0;
+    }
+  }
+
+`
+
+export const SearchTableViewport = styled.div`
+  position: relative;
+  z-index: 1;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+  border-radius: inherit;
 
   &::-webkit-scrollbar { height: 6px; }
-  &::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
-  &::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; &:hover { background: #94a3b8; } }
+  &::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.8); border-radius: 999px; }
+  &::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 999px; &:hover { background: #93c5fd; } }
 `
 
 export const SearchTable = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #ffffff;
   font-size: 14px;
   min-width: 700px;
+
+  @media (max-width: 900px) {
+    font-size: 13px;
+  }
 `
 
 export const SearchThead = styled.thead`
@@ -884,18 +1082,20 @@ export const SearchTh = styled.th`
 `
 
 export const SearchTr = styled.tr`
-  border-bottom: 1px solid #eef2f7;
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.15s ease;
 
-  &:hover {
-    background: #f0f7ff;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.06);
+  &:not(:last-child) td {
+    border-bottom: 1px solid #eef2f7;
   }
 
-  &:last-child {
-    border-bottom: none;
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.06);
+
+    td {
+      background: #f0f7ff;
+    }
   }
 `
 
@@ -903,6 +1103,10 @@ export const SearchTd = styled.td`
   padding: 14px 16px;
   vertical-align: middle;
   color: #374151;
+
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+  }
 `
 
 export const SearchTdBold = styled(SearchTd)`
@@ -1056,4 +1260,3 @@ export const SearchResultsCount = styled.div`
     color: #1e40af;
   }
 `
-
