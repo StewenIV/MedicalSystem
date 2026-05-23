@@ -3507,3 +3507,288 @@ export function getPatientById(id: string): Patient | undefined {
 export function getPatientFullName(patient: Patient): string {
   return `${patient.lastName} ${patient.firstName} ${patient.middleName}`
 }
+
+// ─── Medicines Tracking ────────────────────────────────────────────────────────
+
+export type MedicineCategory = 'Антибиотики' | 'Анальгетики' | 'Гормоны' | 'Кардио' | 'Антисептики' | 'Прочее'
+export type MedicineUnit = 'мл' | 'мг' | 'табл.' | 'амп.' | 'фл.' | 'ед.'
+export type MedicineStatus = 'norm' | 'low' | 'empty'
+export type OperationType = 'receipt' | 'writeoff' | 'adjustment'
+export type WriteOffReason = 'patient' | 'iv' | 'im' | 'drip' | 'adjustment' | 'other'
+
+export interface MedicineOperationLog {
+  id: string
+  date: string
+  type: OperationType
+  quantity: number
+  balanceAfter: number
+  performedBy: string
+  performedById: string
+  comment: string
+  patientId?: string
+  patientName?: string
+  prescriptionId?: string
+  supplier?: string
+  reason?: WriteOffReason
+}
+
+export interface Medicine {
+  id: string
+  name: string
+  description: string
+  category: MedicineCategory
+  unit: MedicineUnit
+  currentBalance: number
+  minBalance: number
+  totalReceived: number
+  totalWrittenOff: number
+  lastReceiptDate: string | null
+  lastWriteOffDate: string | null
+  lastReceiptFrom: string | null
+  lastOperation: OperationType | null
+  lastChangedBy: string | null
+  lastUpdated: string | null
+  status: MedicineStatus
+  isArchived: boolean
+  operationLog: MedicineOperationLog[]
+}
+
+export const mockMedicines: Medicine[] = [
+  {
+    id: 'MED-001', name: 'Амоксициллин 500 мг',
+    description: 'Антибиотик широкого спектра действия. Применяется при инфекциях дыхательных путей, мочевыводящих путей, кожи и мягких тканей.',
+    category: 'Антибиотики', unit: 'табл.', currentBalance: 48, minBalance: 20,
+    totalReceived: 200, totalWrittenOff: 152, lastReceiptDate: '2026-05-15', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ООО «МедФарм»', lastOperation: 'writeoff', lastChangedBy: 'Иванова И.И.',
+    lastUpdated: '2026-05-22T09:15:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-001-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 100, balanceAfter: 100, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановое пополнение', supplier: 'ООО «МедФарм»' },
+      { id: 'LOG-001-2', date: '2026-05-05T10:30:00', type: 'writeoff', quantity: 30, balanceAfter: 70, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Назначение пациентам', reason: 'patient', patientId: 'P001', patientName: 'Петров Иван Сергеевич' },
+      { id: 'LOG-001-3', date: '2026-05-10T14:00:00', type: 'writeoff', quantity: 22, balanceAfter: 48, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пероральный приём', reason: 'patient', patientId: 'P003', patientName: 'Смирнов Алексей Дмитриевич' },
+      { id: 'LOG-001-4', date: '2026-05-15T09:00:00', type: 'receipt', quantity: 100, balanceAfter: 148, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ООО «МедФарм»' },
+      { id: 'LOG-001-5', date: '2026-05-22T09:15:00', type: 'writeoff', quantity: 100, balanceAfter: 48, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Курс лечения', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-002', name: 'Натрия хлорид 0.9% 500 мл',
+    description: 'Изотонический солевой раствор для в/в инфузий. Используется как растворитель и для поддержания водно-электролитного баланса.',
+    category: 'Прочее', unit: 'фл.', currentBalance: 6, minBalance: 10,
+    totalReceived: 60, totalWrittenOff: 54, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'АО «СолюшнФарм»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
+    lastUpdated: '2026-05-22T11:40:00', status: 'low', isArchived: false,
+    operationLog: [
+      { id: 'LOG-002-1', date: '2026-05-01T07:30:00', type: 'receipt', quantity: 30, balanceAfter: 30, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Первичная поставка', supplier: 'АО «СолюшнФарм»' },
+      { id: 'LOG-002-2', date: '2026-05-05T11:00:00', type: 'writeoff', quantity: 12, balanceAfter: 18, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Инфузионная терапия', reason: 'drip' },
+      { id: 'LOG-002-3', date: '2026-05-10T08:00:00', type: 'receipt', quantity: 30, balanceAfter: 48, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение запаса', supplier: 'АО «СолюшнФарм»' },
+      { id: 'LOG-002-4', date: '2026-05-15T16:00:00', type: 'writeoff', quantity: 22, balanceAfter: 26, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Капельницы', reason: 'drip' },
+      { id: 'LOG-002-5', date: '2026-05-20T10:00:00', type: 'writeoff', quantity: 10, balanceAfter: 16, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Промывание катетера', reason: 'iv' },
+      { id: 'LOG-002-6', date: '2026-05-22T11:40:00', type: 'writeoff', quantity: 10, balanceAfter: 6, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Инфузия пациенту', reason: 'drip', patientId: 'P002', patientName: 'Иванова Мария Александровна' },
+    ]
+  },
+  {
+    id: 'MED-003', name: 'Морфин 10 мг/мл',
+    description: 'Наркотический анальгетик. Применяется для купирования сильных болевых синдромов. Строгий учёт, хранение под замком.',
+    category: 'Анальгетики', unit: 'амп.', currentBalance: 0, minBalance: 5,
+    totalReceived: 20, totalWrittenOff: 20, lastReceiptDate: '2026-04-20', lastWriteOffDate: '2026-05-21',
+    lastReceiptFrom: 'ГУП «Фармация»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
+    lastUpdated: '2026-05-21T20:00:00', status: 'empty', isArchived: false,
+    operationLog: [
+      { id: 'LOG-003-1', date: '2026-04-20T09:00:00', type: 'receipt', quantity: 10, balanceAfter: 10, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Получено со склада', supplier: 'ГУП «Фармация»' },
+      { id: 'LOG-003-2', date: '2026-05-01T22:00:00', type: 'writeoff', quantity: 2, balanceAfter: 8, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Обезболивание', reason: 'im' },
+      { id: 'LOG-003-3', date: '2026-05-10T08:00:00', type: 'receipt', quantity: 10, balanceAfter: 18, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ГУП «Фармация»' },
+      { id: 'LOG-003-4', date: '2026-05-15T01:00:00', type: 'writeoff', quantity: 8, balanceAfter: 10, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Послеоперационное обезболивание', reason: 'im' },
+      { id: 'LOG-003-5', date: '2026-05-21T20:00:00', type: 'writeoff', quantity: 10, balanceAfter: 0, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Курс завершён', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-004', name: 'Гепарин 5000 ЕД/мл',
+    description: 'Антикоагулянт прямого действия. Применяется для профилактики и лечения тромбозов и тромбоэмболий.',
+    category: 'Кардио', unit: 'амп.', currentBalance: 35, minBalance: 15,
+    totalReceived: 100, totalWrittenOff: 65, lastReceiptDate: '2026-05-18', lastWriteOffDate: '2026-05-20',
+    lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'receipt', lastChangedBy: 'Иванова И.И.',
+    lastUpdated: '2026-05-18T10:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-004-1', date: '2026-05-01T08:30:00', type: 'receipt', quantity: 50, balanceAfter: 50, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановое пополнение', supplier: 'ЗАО «КардиоФарм»' },
+      { id: 'LOG-004-2', date: '2026-05-08T11:00:00', type: 'writeoff', quantity: 30, balanceAfter: 20, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Антикоагулянтная терапия', reason: 'iv' },
+      { id: 'LOG-004-3', date: '2026-05-12T09:00:00', type: 'writeoff', quantity: 20, balanceAfter: 0, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Промывание катетеров', reason: 'iv' },
+      { id: 'LOG-004-4', date: '2026-05-18T10:00:00', type: 'receipt', quantity: 50, balanceAfter: 50, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Экстренный заказ', supplier: 'ЗАО «КардиоФарм»' },
+      { id: 'LOG-004-5', date: '2026-05-20T14:00:00', type: 'writeoff', quantity: 15, balanceAfter: 35, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Текущая терапия', reason: 'iv' },
+    ]
+  },
+  {
+    id: 'MED-005', name: 'Дексаметазон 4 мг/мл',
+    description: 'Глюкокортикостероид. Применяется при воспалительных, аллергических заболеваниях, отёках мозга.',
+    category: 'Гормоны', unit: 'амп.', currentBalance: 12, minBalance: 8,
+    totalReceived: 80, totalWrittenOff: 68, lastReceiptDate: '2026-05-12', lastWriteOffDate: '2026-05-21',
+    lastReceiptFrom: 'ООО «ФармМедПлюс»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
+    lastUpdated: '2026-05-21T15:30:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-005-1', date: '2026-05-01T09:00:00', type: 'receipt', quantity: 40, balanceAfter: 40, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ООО «ФармМедПлюс»' },
+      { id: 'LOG-005-2', date: '2026-05-07T12:00:00', type: 'writeoff', quantity: 18, balanceAfter: 22, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Противовоспалительная терапия', reason: 'im' },
+      { id: 'LOG-005-3', date: '2026-05-12T10:00:00', type: 'receipt', quantity: 40, balanceAfter: 62, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение', supplier: 'ООО «ФармМедПлюс»' },
+      { id: 'LOG-005-4', date: '2026-05-17T09:00:00', type: 'writeoff', quantity: 25, balanceAfter: 37, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Лечение отёка', reason: 'iv' },
+      { id: 'LOG-005-5', date: '2026-05-21T15:30:00', type: 'writeoff', quantity: 25, balanceAfter: 12, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Назначение пациенту', reason: 'patient', patientId: 'P001', patientName: 'Петров Иван Сергеевич' },
+    ]
+  },
+  {
+    id: 'MED-006', name: 'Хлоргексидин 0.05%',
+    description: 'Антисептический раствор для обработки ран, слизистых оболочек и операционного поля.',
+    category: 'Антисептики', unit: 'мл', currentBalance: 2500, minBalance: 500,
+    totalReceived: 10000, totalWrittenOff: 7500, lastReceiptDate: '2026-05-20', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ООО «АнтисептикПро»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
+    lastUpdated: '2026-05-22T08:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-006-1', date: '2026-05-01T07:00:00', type: 'receipt', quantity: 5000, balanceAfter: 5000, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Ежемесячная поставка', supplier: 'ООО «АнтисептикПро»' },
+      { id: 'LOG-006-2', date: '2026-05-10T09:00:00', type: 'writeoff', quantity: 2000, balanceAfter: 3000, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Перевязки и обработка', reason: 'other' },
+      { id: 'LOG-006-3', date: '2026-05-15T11:00:00', type: 'writeoff', quantity: 1500, balanceAfter: 1500, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Операционная', reason: 'other' },
+      { id: 'LOG-006-4', date: '2026-05-20T08:00:00', type: 'receipt', quantity: 5000, balanceAfter: 6500, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановое пополнение', supplier: 'ООО «АнтисептикПро»' },
+      { id: 'LOG-006-5', date: '2026-05-22T08:00:00', type: 'writeoff', quantity: 4000, balanceAfter: 2500, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Текущий расход', reason: 'other' },
+    ]
+  },
+  {
+    id: 'MED-007', name: 'Парацетамол 500 мг',
+    description: 'Жаропонижающее и анальгезирующее средство. Широко применяется при болях и повышенной температуре.',
+    category: 'Анальгетики', unit: 'табл.', currentBalance: 4, minBalance: 30,
+    totalReceived: 300, totalWrittenOff: 296, lastReceiptDate: '2026-05-01', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ООО «МедФарм»', lastOperation: 'writeoff', lastChangedBy: 'Иванова И.И.',
+    lastUpdated: '2026-05-22T12:00:00', status: 'low', isArchived: false,
+    operationLog: [
+      { id: 'LOG-007-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 300, balanceAfter: 300, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Месячный запас', supplier: 'ООО «МедФарм»' },
+      { id: 'LOG-007-2', date: '2026-05-08T10:00:00', type: 'writeoff', quantity: 60, balanceAfter: 240, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Раздача пациентам', reason: 'patient' },
+      { id: 'LOG-007-3', date: '2026-05-14T11:00:00', type: 'writeoff', quantity: 80, balanceAfter: 160, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановый расход', reason: 'patient' },
+      { id: 'LOG-007-4', date: '2026-05-20T09:00:00', type: 'writeoff', quantity: 90, balanceAfter: 70, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Назначение', reason: 'patient' },
+      { id: 'LOG-007-5', date: '2026-05-22T12:00:00', type: 'writeoff', quantity: 66, balanceAfter: 4, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Высокая температура у пациентов', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-008', name: 'Инсулин Хумулин Р',
+    description: 'Инсулин короткого действия. Применяется при сахарном диабете 1 и 2 типа для снижения гипергликемии.',
+    category: 'Гормоны', unit: 'ед.', currentBalance: 1500, minBalance: 500,
+    totalReceived: 5000, totalWrittenOff: 3500, lastReceiptDate: '2026-05-16', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ООО «ДиаФарм»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
+    lastUpdated: '2026-05-22T07:30:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-008-1', date: '2026-05-01T07:00:00', type: 'receipt', quantity: 2000, balanceAfter: 2000, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ООО «ДиаФарм»' },
+      { id: 'LOG-008-2', date: '2026-05-08T08:00:00', type: 'writeoff', quantity: 800, balanceAfter: 1200, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Инсулинотерапия', reason: 'patient', patientId: 'P003', patientName: 'Смирнов Алексей Дмитриевич' },
+      { id: 'LOG-008-3', date: '2026-05-14T07:30:00', type: 'writeoff', quantity: 700, balanceAfter: 500, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Регулярные инъекции', reason: 'im' },
+      { id: 'LOG-008-4', date: '2026-05-16T09:00:00', type: 'receipt', quantity: 2000, balanceAfter: 2500, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Экстренное пополнение', supplier: 'ООО «ДиаФарм»' },
+      { id: 'LOG-008-5', date: '2026-05-22T07:30:00', type: 'writeoff', quantity: 1000, balanceAfter: 1500, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Ежедневный расход', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-009', name: 'Цефтриаксон 1 г',
+    description: 'Цефалоспориновый антибиотик III поколения. Применяется при тяжёлых инфекциях.',
+    category: 'Антибиотики', unit: 'фл.', currentBalance: 0, minBalance: 10,
+    totalReceived: 50, totalWrittenOff: 50, lastReceiptDate: '2026-05-05', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'АО «АнтибиоМед»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
+    lastUpdated: '2026-05-22T16:00:00', status: 'empty', isArchived: false,
+    operationLog: [
+      { id: 'LOG-009-1', date: '2026-05-01T09:00:00', type: 'receipt', quantity: 25, balanceAfter: 25, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Поставка', supplier: 'АО «АнтибиоМед»' },
+      { id: 'LOG-009-2', date: '2026-05-05T10:00:00', type: 'receipt', quantity: 25, balanceAfter: 50, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Дополнительный заказ', supplier: 'АО «АнтибиоМед»' },
+      { id: 'LOG-009-3', date: '2026-05-10T14:00:00', type: 'writeoff', quantity: 20, balanceAfter: 30, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Антибактериальная терапия', reason: 'iv' },
+      { id: 'LOG-009-4', date: '2026-05-16T09:00:00', type: 'writeoff', quantity: 20, balanceAfter: 10, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Пневмония', reason: 'patient', patientId: 'P001', patientName: 'Петров Иван Сергеевич' },
+      { id: 'LOG-009-5', date: '2026-05-22T16:00:00', type: 'writeoff', quantity: 10, balanceAfter: 0, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Использован весь запас', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-010', name: 'Метопролол 50 мг',
+    description: 'Кардиоселективный бета-адреноблокатор. Применяется при артериальной гипертензии, ИБС, тахикардии.',
+    category: 'Кардио', unit: 'табл.', currentBalance: 90, minBalance: 20,
+    totalReceived: 200, totalWrittenOff: 110, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-20',
+    lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
+    lastUpdated: '2026-05-20T09:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-010-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 100, balanceAfter: 100, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ЗАО «КардиоФарм»' },
+      { id: 'LOG-010-2', date: '2026-05-08T10:00:00', type: 'writeoff', quantity: 40, balanceAfter: 60, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Гипотензивная терапия', reason: 'patient' },
+      { id: 'LOG-010-3', date: '2026-05-10T09:00:00', type: 'receipt', quantity: 100, balanceAfter: 160, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение', supplier: 'ЗАО «КардиоФарм»' },
+      { id: 'LOG-010-4', date: '2026-05-15T14:00:00', type: 'writeoff', quantity: 50, balanceAfter: 110, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Плановый расход', reason: 'patient' },
+      { id: 'LOG-010-5', date: '2026-05-20T09:00:00', type: 'writeoff', quantity: 20, balanceAfter: 90, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Назначение', reason: 'patient', patientId: 'P001', patientName: 'Петров Иван Сергеевич' },
+    ]
+  },
+  {
+    id: 'MED-011', name: 'Фуросемид 40 мг',
+    description: 'Петлевой диуретик. Применяется при отёках сердечного и почечного происхождения, артериальной гипертензии.',
+    category: 'Кардио', unit: 'табл.', currentBalance: 18, minBalance: 15,
+    totalReceived: 100, totalWrittenOff: 82, lastReceiptDate: '2026-05-12', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
+    lastUpdated: '2026-05-22T10:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-011-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 50, balanceAfter: 50, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ЗАО «КардиоФарм»' },
+      { id: 'LOG-011-2', date: '2026-05-08T09:00:00', type: 'writeoff', quantity: 24, balanceAfter: 26, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Терапия отёков', reason: 'patient' },
+      { id: 'LOG-011-3', date: '2026-05-12T08:00:00', type: 'receipt', quantity: 50, balanceAfter: 76, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение', supplier: 'ЗАО «КардиоФарм»' },
+      { id: 'LOG-011-4', date: '2026-05-18T11:00:00', type: 'writeoff', quantity: 38, balanceAfter: 38, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Регулярный приём', reason: 'patient' },
+      { id: 'LOG-011-5', date: '2026-05-22T10:00:00', type: 'writeoff', quantity: 20, balanceAfter: 18, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Назначение пациентам', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-012', name: 'Кетамин 500 мг/10 мл',
+    description: 'Анестетик общего действия для краткосрочного наркоза и премедикации. Требует строгого учёта.',
+    category: 'Анальгетики', unit: 'амп.', currentBalance: 8, minBalance: 5,
+    totalReceived: 30, totalWrittenOff: 22, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-19',
+    lastReceiptFrom: 'ГУП «Фармация»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
+    lastUpdated: '2026-05-19T13:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-012-1', date: '2026-05-01T09:00:00', type: 'receipt', quantity: 15, balanceAfter: 15, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Получено со склада больницы', supplier: 'ГУП «Фармация»' },
+      { id: 'LOG-012-2', date: '2026-05-07T11:00:00', type: 'writeoff', quantity: 5, balanceAfter: 10, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Анестезия при манипуляциях', reason: 'iv' },
+      { id: 'LOG-012-3', date: '2026-05-10T09:00:00', type: 'receipt', quantity: 15, balanceAfter: 25, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановое пополнение', supplier: 'ГУП «Фармация»' },
+      { id: 'LOG-012-4', date: '2026-05-14T14:00:00', type: 'writeoff', quantity: 7, balanceAfter: 18, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Перевязки под наркозом', reason: 'iv' },
+      { id: 'LOG-012-5', date: '2026-05-19T13:00:00', type: 'writeoff', quantity: 10, balanceAfter: 8, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Плановые процедуры', reason: 'iv' },
+    ]
+  },
+  {
+    id: 'MED-013', name: 'Глюкоза 5% 400 мл',
+    description: 'Раствор для инфузий. Источник углеводного питания, применяется при гипогликемии и для разведения лекарств.',
+    category: 'Прочее', unit: 'фл.', currentBalance: 22, minBalance: 10,
+    totalReceived: 80, totalWrittenOff: 58, lastReceiptDate: '2026-05-18', lastWriteOffDate: '2026-05-21',
+    lastReceiptFrom: 'АО «СолюшнФарм»', lastOperation: 'receipt', lastChangedBy: 'Иванова И.И.',
+    lastUpdated: '2026-05-18T11:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-013-1', date: '2026-05-01T07:30:00', type: 'receipt', quantity: 40, balanceAfter: 40, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Ежемесячная поставка', supplier: 'АО «СолюшнФарм»' },
+      { id: 'LOG-013-2', date: '2026-05-09T10:00:00', type: 'writeoff', quantity: 18, balanceAfter: 22, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Инфузионная терапия', reason: 'drip' },
+      { id: 'LOG-013-3', date: '2026-05-14T09:00:00', type: 'writeoff', quantity: 20, balanceAfter: 2, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Капельницы', reason: 'drip' },
+      { id: 'LOG-013-4', date: '2026-05-18T11:00:00', type: 'receipt', quantity: 40, balanceAfter: 42, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение', supplier: 'АО «СолюшнФарм»' },
+      { id: 'LOG-013-5', date: '2026-05-21T14:00:00', type: 'writeoff', quantity: 20, balanceAfter: 22, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Регулярный расход', reason: 'drip' },
+    ]
+  },
+  {
+    id: 'MED-014', name: 'Но-шпа 40 мг',
+    description: 'Спазмолитик. Применяется при спазмах гладкой мускулатуры органов брюшной полости, желчевыводящих путей.',
+    category: 'Анальгетики', unit: 'табл.', currentBalance: 120, minBalance: 30,
+    totalReceived: 400, totalWrittenOff: 280, lastReceiptDate: '2026-05-14', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ООО «МедФарм»', lastOperation: 'writeoff', lastChangedBy: 'Иванова И.И.',
+    lastUpdated: '2026-05-22T13:00:00', status: 'norm', isArchived: false,
+    operationLog: [
+      { id: 'LOG-014-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 200, balanceAfter: 200, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановое пополнение', supplier: 'ООО «МедФарм»' },
+      { id: 'LOG-014-2', date: '2026-05-08T11:00:00', type: 'writeoff', quantity: 60, balanceAfter: 140, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Расход за неделю', reason: 'patient' },
+      { id: 'LOG-014-3', date: '2026-05-14T08:00:00', type: 'receipt', quantity: 200, balanceAfter: 340, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Повторная поставка', supplier: 'ООО «МедФарм»' },
+      { id: 'LOG-014-4', date: '2026-05-18T10:00:00', type: 'writeoff', quantity: 150, balanceAfter: 190, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Плановый расход', reason: 'patient' },
+      { id: 'LOG-014-5', date: '2026-05-22T13:00:00', type: 'writeoff', quantity: 70, balanceAfter: 120, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Назначение', reason: 'patient' },
+    ]
+  },
+  {
+    id: 'MED-015', name: 'Сальбутамол 100 мкг/доза',
+    description: 'Бронходилататор короткого действия. Применяется для купирования приступов бронхиальной астмы.',
+    category: 'Прочее', unit: 'фл.', currentBalance: 3, minBalance: 5,
+    totalReceived: 30, totalWrittenOff: 27, lastReceiptDate: '2026-05-08', lastWriteOffDate: '2026-05-22',
+    lastReceiptFrom: 'ООО «ФармМедПлюс»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
+    lastUpdated: '2026-05-22T15:00:00', status: 'low', isArchived: false,
+    operationLog: [
+      { id: 'LOG-015-1', date: '2026-05-01T09:00:00', type: 'receipt', quantity: 15, balanceAfter: 15, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ООО «ФармМедПлюс»' },
+      { id: 'LOG-015-2', date: '2026-05-05T12:00:00', type: 'writeoff', quantity: 5, balanceAfter: 10, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Купирование приступов', reason: 'patient', patientId: 'P002', patientName: 'Иванова Мария Александровна' },
+      { id: 'LOG-015-3', date: '2026-05-08T10:00:00', type: 'receipt', quantity: 15, balanceAfter: 25, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Срочный заказ', supplier: 'ООО «ФармМедПлюс»' },
+      { id: 'LOG-015-4', date: '2026-05-14T16:00:00', type: 'writeoff', quantity: 12, balanceAfter: 13, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Ингаляционная терапия', reason: 'patient' },
+      { id: 'LOG-015-5', date: '2026-05-20T11:00:00', type: 'writeoff', quantity: 7, balanceAfter: 6, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Астма', reason: 'patient' },
+      { id: 'LOG-015-6', date: '2026-05-22T15:00:00', type: 'writeoff', quantity: 3, balanceAfter: 3, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Экстренное применение', reason: 'patient', patientId: 'P002', patientName: 'Иванова Мария Александровна' },
+    ]
+  },
+]
+
+export function getMedicineById(id: string): Medicine | undefined {
+  return mockMedicines.find((m) => m.id === id)
+}
+
+export function computeMedicineStatus(currentBalance: number, minBalance: number): MedicineStatus {
+  if (currentBalance === 0) return 'empty'
+  if (currentBalance <= minBalance) return 'low'
+  return 'norm'
+}

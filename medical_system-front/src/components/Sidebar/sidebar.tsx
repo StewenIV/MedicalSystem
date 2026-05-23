@@ -10,7 +10,8 @@ import {
   FileUser,
   Stethoscope,
   Building2,
-  Clock
+  Clock,
+  Pill
 } from 'lucide-react'
 
 import {
@@ -43,6 +44,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       { key: 'beds-admin', label: 'Администрирование стационара', icon: Building2 },
       { key: 'patient-card', label: 'Карточка пациента', icon: FileUser },
       { key: 'medical-staff-schedule', label: 'График работы медперсонала', icon: Clock },
+      { key: 'medicines', label: 'Учёт медикаментов', icon: Pill },
       { key: 'reports', label: 'Отчёты', icon: BarChart3 },
       { key: 'settings', label: 'Управление', icon: Settings }
     ],

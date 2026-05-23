@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react'
+import React, { useState, useMemo, useRef, useCallback } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import {
@@ -11,7 +11,10 @@ import {
   CalendarDays,
   Sun,
   Moon,
-  Coffee
+  Coffee,
+  X,
+  Check,
+  Edit3
 } from 'lucide-react'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 import {
@@ -53,7 +56,29 @@ import {
   EmptyCell,
   LegendBar,
   LegendItem,
-  NoDataState
+  NoDataState,
+  ShiftModal,
+  ModalOverlay,
+  ModalHeader,
+  ModalTitle,
+  ModalSubtitle,
+  ModalBody,
+  ModalTypeGrid,
+  ModalTypeBtn,
+  ModalHoursRow,
+  ModalHoursLabel,
+  ModalHoursInput,
+  ModalFooter,
+  ModalCancelBtn,
+  ModalSaveBtn,
+  MobileEmployeeCard,
+  MobileCardHeader,
+  MobileCardName,
+  MobileCardPosition,
+  MobileScrollRow,
+  MobileDayChip,
+  MobileDayNum,
+  MobileDayLabel
 } from './styled'
 import { mockMedicalStaffSchedule, getStaffScheduleForMonth, Shift } from 'data/mockData'
 
@@ -68,11 +93,23 @@ interface SelectOption {
   label: string
 }
 
+type ShiftType = 'day' | 'night' | 'day-off' | 'empty'
+
+interface EditTarget {
+  employeeId: string
+  employeeName: string
+  day: number
+  currentType: ShiftType
+  currentHours: number
+}
+
+type ScheduleOverrides = Record<string, Record<number, Shift | null>>
+
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
     ...base,
     minHeight: '40px',
-    minWidth: '200px',
+    minWidth: '180px',
     borderRadius: '12px',
     borderColor: state.isFocused ? '#2563eb' : 'rgba(191,219,254,0.8)',
     boxShadow: state.isFocused ? '0 0 0 3px rgba(37,99,235,0.10)' : 'none',
@@ -137,14 +174,33 @@ const monthNames = [
 
 const daysOfWeek = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
+const defaultHours: Record<string, number> = {
+  day: 8,
+  night: 12,
+  'day-off': 0,
+  empty: 0
+}
+
+const shiftLabels = {
+  day: 'Дневная',
+  night: 'Ночная',
+  'day-off': 'Выходной',
+  empty: 'Нет смены'
+}
+
 const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
-  onNavigate = () => {},
-  onLogout = () => {},
+  onNavigate = () => { },
+  onLogout = () => { },
   userRole = null
 }) => {
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth())
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear())
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null)
+  const [overrides, setOverrides] = useState<ScheduleOverrides>({})
+
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
+  const [modalType, setModalType] = useState<ShiftType>('day')
+  const [modalHours, setModalHours] = useState<number | string>(8)
 
   const daysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate()
 
@@ -167,11 +223,15 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
   }
   const daysArray = getDaysArray()
 
-  const getShiftInfo = (employee: (typeof mockMedicalStaffSchedule)[0], day: number): Shift | undefined => {
+  const getShiftInfo = useCallback((employee: (typeof mockMedicalStaffSchedule)[0], day: number): Shift | undefined => {
+    const empOverrides = overrides[employee.id]
+    if (empOverrides && empOverrides[day] !== undefined) {
+      return empOverrides[day] ?? undefined
+    }
     const monthlySchedule = getStaffScheduleForMonth(employee.id, displayMonth, displayYear)
     if (monthlySchedule) return monthlySchedule.find((s) => s.day === day)
     return employee.schedule.find((s) => s.day === day)
-  }
+  }, [overrides, displayMonth, displayYear])
 
   const handlePreviousMonth = () => {
     if (displayMonth === 0) { setDisplayMonth(11); setDisplayYear(displayYear - 1) }
@@ -196,7 +256,7 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
       })
     })
     return { totalShifts, totalNightShifts, totalHours }
-  }, [filteredSchedule, displayMonth, displayYear, daysArray])
+  }, [filteredSchedule, displayMonth, displayYear, daysArray, getShiftInfo])
 
   const [isExporting, setIsExporting] = useState(false)
   const exportContainerRef = useRef<HTMLDivElement>(null)
@@ -221,9 +281,64 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
     }
   }
 
+  const openEditModal = (employee: (typeof mockMedicalStaffSchedule)[0], day: number) => {
+    const shift = getShiftInfo(employee, day)
+    const currentType: ShiftType = shift ? (shift.type as ShiftType) : 'empty'
+    const currentHours = shift ? shift.hours : 0
+    setEditTarget({
+      employeeId: employee.id,
+      employeeName: employee.name,
+      day,
+      currentType,
+      currentHours
+    })
+    setModalType(currentType)
+    setModalHours(currentType === 'empty' ? 8 : currentHours)
+  }
+
+  const closeModal = () => {
+    setEditTarget(null)
+  }
+
+  const handleTypeChange = (type: ShiftType) => {
+    setModalType(type)
+    if (type === 'day-off' || type === 'empty') {
+      setModalHours(0)
+    } else {
+      setModalHours(defaultHours[type])
+    }
+  }
+
+  const handleSave = () => {
+    if (!editTarget) return
+    const { employeeId, day } = editTarget
+
+    setOverrides(prev => {
+      const empOverrides = { ...(prev[employeeId] || {}) }
+      if (modalType === 'empty') {
+        empOverrides[day] = null
+      } else {
+        empOverrides[day] = {
+          day,
+          type: modalType as 'day' | 'night' | 'day-off',
+          hours: modalType === 'day-off' ? 0 : modalHours as number
+        }
+      }
+      return { ...prev, [employeeId]: empOverrides }
+    })
+    closeModal()
+  }
+
   const today = new Date()
   const isCurrentMonth = today.getMonth() === displayMonth && today.getFullYear() === displayYear
   const currentDay = today.getDate()
+
+  const shiftTypeOptions: { type: ShiftType; label: string; icon: React.ReactNode }[] = [
+    { type: 'day', label: 'Дневная', icon: <Sun size={16} /> },
+    { type: 'night', label: 'Ночная', icon: <Moon size={16} /> },
+    { type: 'day-off', label: 'Выходной', icon: <Coffee size={16} /> },
+    { type: 'empty', label: 'Нет смены', icon: <X size={16} /> }
+  ]
 
   return (
     <PageContainer>
@@ -278,7 +393,7 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
             <Briefcase size={15} />
             Должность
           </FilterLabel>
-          <div style={{ minWidth: '220px' }}>
+          <div style={{ minWidth: '200px' }}>
             <Select
               inputId="position-filter"
               placeholder="Все должности"
@@ -301,10 +416,9 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
         </ToolbarRight>
       </Toolbar>
 
-      <TableWrapper>
+      <TableWrapper className="desktop-table">
         <TableScrollWrapper>
           <Table>
-            {/* Glassmorphism sticky header */}
             <TheadGlass as="thead">
               <tr>
                 <NameColumnHeader>Сотрудник</NameColumnHeader>
@@ -330,7 +444,6 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
               {filteredSchedule.length > 0 ? (
                 filteredSchedule.map((employee, idx) => (
                   <React.Fragment key={employee.id}>
-                    {/* Spacer row between cards */}
                     {idx > 0 && (
                       <RowSpacer>
                         <td colSpan={daysArray.length + 1} />
@@ -355,6 +468,8 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
                             key={`${employee.id}-${day}`}
                             $type={type as any}
                             $isWeekend={isWeekend}
+                            onClick={() => openEditModal(employee, day)}
+                            title={`Изменить смену: ${employee.name}, ${day} ${monthNames[displayMonth]}`}
                           >
                             {type === 'empty' ? (
                               <EmptyCell>·</EmptyCell>
@@ -404,10 +519,148 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
           <LegendItem $type="day">Дневная смена (8ч)</LegendItem>
           <LegendItem $type="night">Ночная смена (12ч)</LegendItem>
           <LegendItem $type="day-off">Выходной день</LegendItem>
+          <span style={{ marginLeft: 'auto', fontSize: '11.5px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Edit3 size={12} /> Нажмите на ячейку для редактирования
+          </span>
         </LegendBar>
       </TableWrapper>
 
-      {/* Offscreen export container */}
+      <div className="mobile-schedule">
+        {filteredSchedule.length > 0 ? (
+          filteredSchedule.map((employee) => (
+            <MobileEmployeeCard key={employee.id}>
+              <MobileCardHeader>
+                <MobileCardName>{employee.name}</MobileCardName>
+                <MobileCardPosition>{employee.position}</MobileCardPosition>
+              </MobileCardHeader>
+              <MobileScrollRow>
+                {daysArray.map((day) => {
+                  const date = new Date(displayYear, displayMonth, day)
+                  const dayOfWeek = date.getDay()
+                  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+                  const isToday = isCurrentMonth && day === currentDay
+                  const shift = getShiftInfo(employee, day)
+                  const type = shift ? shift.type : 'empty'
+
+                  return (
+                    <MobileDayChip
+                      key={day}
+                      $type={type as ShiftType}
+                      $isWeekend={isWeekend}
+                      $isToday={isToday}
+                      onClick={() => openEditModal(employee, day)}
+                      title={`${day} ${monthNames[displayMonth]}: ${shiftLabels[type as ShiftType] || ''}`}
+                    >
+                      <MobileDayLabel $isWeekend={isWeekend} $isToday={isToday}>
+                        {daysOfWeek[dayOfWeek]}
+                      </MobileDayLabel>
+                      <MobileDayNum $isWeekend={isWeekend} $isToday={isToday}>{day}</MobileDayNum>
+                      <span className="mobile-shift-icon">
+                        {type === 'day' && <Sun size={10} />}
+                        {type === 'night' && <Moon size={10} />}
+                        {type === 'day-off' && <Coffee size={10} />}
+                        {type === 'empty' && '·'}
+                      </span>
+                    </MobileDayChip>
+                  )
+                })}
+              </MobileScrollRow>
+            </MobileEmployeeCard>
+          ))
+        ) : (
+          <NoDataState>
+            <Users size={40} />
+            <div>Сотрудники не найдены</div>
+          </NoDataState>
+        )}
+      </div>
+
+      {editTarget && (
+        <ModalOverlay onClick={closeModal}>
+          <ShiftModal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <div>
+                <ModalTitle>Редактировать смену</ModalTitle>
+                <ModalSubtitle>
+                  {editTarget.employeeName} · {editTarget.day} {monthNames[displayMonth]} {displayYear}
+                </ModalSubtitle>
+              </div>
+              <button
+                onClick={closeModal}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#94a3b8', padding: '4px', borderRadius: '8px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </ModalHeader>
+
+            <ModalBody>
+              <div style={{ marginBottom: '8px', fontSize: '12px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+                Тип смены
+              </div>
+              <ModalTypeGrid>
+                {shiftTypeOptions.map(({ type, label, icon }) => (
+                  <ModalTypeBtn
+                    key={type}
+                    $type={type}
+                    $active={modalType === type}
+                    onClick={() => handleTypeChange(type)}
+                  >
+                    {icon}
+                    {label}
+                  </ModalTypeBtn>
+                ))}
+              </ModalTypeGrid>
+
+              {(modalType === 'day' || modalType === 'night') && (
+                <ModalHoursRow>
+                  <ModalHoursLabel>Часов в смене</ModalHoursLabel>
+                  <ModalHoursInput
+                    type="number"
+                    min={1}
+                    max={24}
+                    value={modalHours}
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      if (value === '') {
+                        setModalHours('');
+                        return;
+                      }
+
+                      const num = Number(value);
+
+                      if (num >= 1 && num <= 24) {
+                        setModalHours(num);
+                      }
+                    }}
+                    onBlur={() => {
+
+                      if (modalHours === '') {
+                        setModalHours(1);
+                      }
+                    }} />
+                  <span style={{ fontSize: '13px', color: '#64748b' }}>ч</span>
+                </ModalHoursRow>
+              )}
+            </ModalBody>
+
+            <ModalFooter>
+              <ModalCancelBtn onClick={closeModal}>
+                <X size={14} /> Отмена
+              </ModalCancelBtn>
+              <ModalSaveBtn onClick={handleSave}>
+                <Check size={14} /> Сохранить
+              </ModalSaveBtn>
+            </ModalFooter>
+          </ShiftModal>
+        </ModalOverlay>
+      )}
+
       <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
         <div
           ref={exportContainerRef}
@@ -472,8 +725,8 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
                     const shift = getShiftInfo(employee, day)
                     const type = shift ? shift.type : 'empty'
                     const map: Record<string, { bg: string; label: string; color: string }> = {
-                      day:     { bg: '#eff6ff', label: 'Д', color: '#1d4ed8' },
-                      night:   { bg: '#f5f3ff', label: 'Н', color: '#6d28d9' },
+                      day: { bg: '#eff6ff', label: 'Д', color: '#1d4ed8' },
+                      night: { bg: '#f5f3ff', label: 'Н', color: '#6d28d9' },
                       'day-off': { bg: '#fff1f2', label: 'В', color: '#b91c1c' },
                     }
                     const info = map[type]

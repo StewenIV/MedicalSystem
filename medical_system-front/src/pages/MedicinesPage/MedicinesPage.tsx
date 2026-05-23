@@ -1,0 +1,2028 @@
+import React, { useState, useMemo, useCallback, useRef } from 'react'
+import html2canvas from 'html2canvas'
+import { jsPDF } from 'jspdf'
+import {
+  Search,
+  Plus,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Package,
+  AlertTriangle,
+  AlertCircle,
+  CheckCircle,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Edit3,
+  Trash2,
+  RefreshCw,
+  Download,
+  FileText,
+  User,
+  Calendar,
+  Pill,
+  Filter,
+  Archive,
+  RotateCcw,
+  Info,
+  TrendingDown,
+  TrendingUp,
+  Activity,
+  Check
+} from 'lucide-react'
+
+import {
+  PageContainer,
+  Header,
+  HeaderLeft,
+  HeaderTitle,
+  HeaderSubtitle,
+  StatsGrid,
+  StatCard,
+  StatIcon,
+  StatLabel,
+  StatValue,
+  StatSub,
+  ControlBar,
+  ControlLeft,
+  ControlCenter,
+  ControlRight,
+  SearchWrapper,
+  SearchInput,
+  SearchIcon,
+  FilterGroup,
+  FilterLabel,
+  FilterSelect,
+  FilterInput,
+  FilterDateInput,
+  FilterToggle,
+  AddButton,
+  ExportButton,
+  TableWrapper,
+  TableScrollWrapper,
+  Table,
+  Th,
+  Td,
+  Tr,
+  DrugName,
+  DrugCategory,
+  BalanceCell,
+  BalanceValue,
+  BalanceUnit,
+  BalanceBar,
+  BalanceFill,
+  StatusBadge,
+  OperationBadge,
+  DateCell,
+  NullCell,
+  PaginationBar,
+  PaginationInfo,
+  PaginationControls,
+  PageBtn,
+  PageSizeSelect,
+  NoData,
+  DrawerOverlay,
+  DrawerPanel,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerSubtitle,
+  DrawerCloseBtn,
+  TabBar,
+  TabBtn,
+  DrawerContent,
+  OverviewSection,
+  SectionTitle,
+  InfoGrid,
+  InfoCard,
+  InfoCardLabel,
+  InfoCardValue,
+  InfoCardSub,
+  DescriptionBox,
+  DrawerBalanceBar,
+  DrawerBalanceFill,
+  WarningAlert,
+  ActionButtonRow,
+  EditBtn,
+  DeleteBtn,
+  FormGrid,
+  FormField,
+  FormLabel,
+  FormInput,
+  FormSelect,
+  FormTextArea,
+  AutoFillInfo,
+  ErrorAlert,
+  SaveButton,
+  CancelButton,
+  PatientSearchWrapper,
+  PatientDropdown,
+  PatientOption,
+  PatientOptionName,
+  PatientOptionInfo,
+  HistorySearch,
+  HistoryTable,
+  HTh,
+  HTd,
+  HTr,
+  HistoryPagination,
+  ModalOverlay,
+  Modal,
+  ModalHeader,
+  ModalTitle,
+  ModalBody,
+  ModalFooter,
+  ConfirmDeleteText,
+  DangerButton,
+  ArchiveButton,
+  CloseBtn,
+  DrawerFormFooter
+} from './styled'
+
+import {
+  mockMedicines,
+  mockPatients,
+  Medicine,
+  MedicineOperationLog,
+  MedicineStatus,
+  OperationType,
+  WriteOffReason,
+  MedicineCategory,
+  MedicineUnit,
+  computeMedicineStatus
+} from 'data/mockData'
+
+const CURRENT_USER = { id: 'STAFF-01', name: 'Иванова И.И.' }
+
+const CATEGORIES: MedicineCategory[] = [
+  'Антибиотики',
+  'Анальгетики',
+  'Гормоны',
+  'Кардио',
+  'Антисептики',
+  'Прочее'
+]
+const UNITS: MedicineUnit[] = ['мл', 'мг', 'табл.', 'амп.', 'фл.', 'ед.']
+
+const OP_LABELS: Record<OperationType, string> = {
+  receipt: 'Поступление',
+  writeoff: 'Списание',
+  adjustment: 'Корректировка'
+}
+
+const REASON_LABELS: Record<WriteOffReason, string> = {
+  patient: 'Назначение пациенту',
+  iv: 'Внутривенная процедура',
+  im: 'Внутримышечная процедура',
+  drip: 'Капельница',
+  adjustment: 'Корректировка',
+  other: 'Другое'
+}
+
+const STATUS_LABELS: Record<MedicineStatus, string> = {
+  norm: 'Норма',
+  low: 'Мало',
+  empty: 'Отсутствует'
+}
+
+const formatDate = (iso: string | null) => {
+  if (!iso) return null
+  const d = new Date(iso)
+  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+const formatDateTime = (iso: string) => {
+  const d = new Date(iso)
+  return d.toLocaleString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+const genId = () => `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+
+// ─── Component ────────────────────────────────────────────────────────────────
+const MedicinesPage: React.FC = () => {
+  // ── State: medicines list ──
+  const [medicines, setMedicines] = useState<Medicine[]>(mockMedicines)
+
+  // ── State: search & filters ──
+  const [search, setSearch] = useState('')
+  const [filterCategory, setFilterCategory] = useState<string>('')
+  const [filterOnlyActive, setFilterOnlyActive] = useState(false)
+  const [filterOnlyCompleted, setFilterOnlyCompleted] = useState(false)
+  const [filterHideEmpty, setFilterHideEmpty] = useState(false)
+  const [filterReceiptDateFrom, setFilterReceiptDateFrom] = useState('')
+  const [filterReceiptDateTo, setFilterReceiptDateTo] = useState('')
+  const [filterWriteOffDateFrom, setFilterWriteOffDateFrom] = useState('')
+  const [filterWriteOffDateTo, setFilterWriteOffDateTo] = useState('')
+  const [filterOpType, setFilterOpType] = useState<string>('')
+  const [filterBalanceLessThan, setFilterBalanceLessThan] = useState('')
+  const [filterWarnings, setFilterWarnings] = useState(false)
+
+  // ── State: pagination ──
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  // ── State: drawer ──
+  const [drawerMedicineId, setDrawerMedicineId] = useState<string | null>(null)
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'receipt' | 'writeoff' | 'history'>(
+    'overview'
+  )
+
+  // ── State: forms ──
+  const [receiptForm, setReceiptForm] = useState({
+    name: '',
+    date: new Date().toISOString().slice(0, 10),
+    quantity: '',
+    unit: '' as MedicineUnit | '',
+    supplier: '',
+    comment: ''
+  })
+  const [writeoffForm, setWriteoffForm] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    quantity: '',
+    reason: 'patient' as WriteOffReason,
+    patientQuery: '',
+    selectedPatientId: '',
+    selectedPatientName: '',
+    comment: ''
+  })
+  const [writeoffError, setWriteoffError] = useState('')
+  const [patientDropdown, setPatientDropdown] = useState(false)
+
+  // ── State: history ──
+  const [historySearch, setHistorySearch] = useState('')
+  const [historyFilterType, setHistoryFilterType] = useState<string>('')
+  const [historyPage, setHistoryPage] = useState(1)
+  const historyPageSize = 10
+
+  // ── State: modals ──
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [addForm, setAddForm] = useState({
+    name: '',
+    description: '',
+    category: 'Прочее' as MedicineCategory,
+    unit: 'табл.' as MedicineUnit,
+    initialBalance: '',
+    minBalance: ''
+  })
+  const [editForm, setEditForm] = useState({
+    name: '',
+    description: '',
+    category: '' as MedicineCategory,
+    unit: '' as MedicineUnit,
+    minBalance: '',
+    currentBalance: ''
+  })
+
+  // ── PDF export ref ──
+  const historyExportRef = useRef<HTMLDivElement>(null)
+  const [isExporting, setIsExporting] = useState(false)
+
+  // ── Derived: selected medicine ──
+  const selectedMedicine = useMemo(
+    () => (drawerMedicineId ? medicines.find((m) => m.id === drawerMedicineId) || null : null),
+    [drawerMedicineId, medicines]
+  )
+
+  // ── Filtered medicines ──
+  const filteredMedicines = useMemo(() => {
+    const q = search.toLowerCase().trim()
+    return medicines.filter((m) => {
+      if (m.isArchived) return false
+
+      // Search
+      if (q) {
+        const match =
+          m.name.toLowerCase().includes(q) ||
+          m.unit.toLowerCase().includes(q) ||
+          (m.lastReceiptFrom || '').toLowerCase().includes(q) ||
+          (m.lastChangedBy || '').toLowerCase().includes(q) ||
+          STATUS_LABELS[m.status].toLowerCase().includes(q) ||
+          m.operationLog.some((l) => l.performedBy.toLowerCase().includes(q))
+        if (!match) return false
+      }
+
+      // Category filter
+      if (filterCategory && m.category !== filterCategory) return false
+
+      // Active / Completed
+      if (filterOnlyActive && m.status === 'empty') return false
+      if (filterOnlyCompleted && m.status !== 'empty') return false
+
+      // Hide empty
+      if (filterHideEmpty && m.currentBalance === 0) return false
+
+      // Receipt date range
+      if (filterReceiptDateFrom && m.lastReceiptDate && m.lastReceiptDate < filterReceiptDateFrom)
+        return false
+      if (filterReceiptDateTo && m.lastReceiptDate && m.lastReceiptDate > filterReceiptDateTo)
+        return false
+
+      // Write-off date range
+      if (
+        filterWriteOffDateFrom &&
+        m.lastWriteOffDate &&
+        m.lastWriteOffDate < filterWriteOffDateFrom
+      )
+        return false
+      if (filterWriteOffDateTo && m.lastWriteOffDate && m.lastWriteOffDate > filterWriteOffDateTo)
+        return false
+
+      // Operation type
+      if (filterOpType && m.lastOperation !== filterOpType) return false
+
+      // Balance less than
+      if (filterBalanceLessThan !== '' && !isNaN(Number(filterBalanceLessThan))) {
+        if (m.currentBalance >= Number(filterBalanceLessThan)) return false
+      }
+
+      // Warnings
+      if (filterWarnings && m.status === 'norm') return false
+
+      return true
+    })
+  }, [
+    medicines,
+    search,
+    filterCategory,
+    filterOnlyActive,
+    filterOnlyCompleted,
+    filterHideEmpty,
+    filterReceiptDateFrom,
+    filterReceiptDateTo,
+    filterWriteOffDateFrom,
+    filterWriteOffDateTo,
+    filterOpType,
+    filterBalanceLessThan,
+    filterWarnings
+  ])
+
+  // ── Paginated ──
+  const totalPages = Math.max(1, Math.ceil(filteredMedicines.length / pageSize))
+  const paginatedMedicines = filteredMedicines.slice((page - 1) * pageSize, page * pageSize)
+
+  // ── Stats ──
+  const stats = useMemo(() => {
+    const active = medicines.filter((m) => !m.isArchived)
+    const low = active.filter((m) => m.status === 'low').length
+    const empty = active.filter((m) => m.status === 'empty').length
+    const today = new Date().toISOString().slice(0, 10)
+    const todayOps = active.reduce(
+      (acc, m) => acc + m.operationLog.filter((l) => l.date.startsWith(today)).length,
+      0
+    )
+    return { total: active.length, low, empty, todayOps }
+  }, [medicines])
+
+  // ── Open drawer ──
+  const openDrawer = useCallback((med: Medicine) => {
+    setDrawerMedicineId(med.id)
+    setDrawerTab('overview')
+    setHistorySearch('')
+    setHistoryFilterType('')
+    setHistoryPage(1)
+    setWriteoffError('')
+    setReceiptForm((prev) => ({ ...prev, name: med.name, unit: med.unit }))
+    setWriteoffForm((prev) => ({
+      ...prev,
+      date: new Date().toISOString().slice(0, 10),
+      quantity: '',
+      reason: 'patient',
+      patientQuery: '',
+      selectedPatientId: '',
+      selectedPatientName: '',
+      comment: ''
+    }))
+  }, [])
+
+  const closeDrawer = () => setDrawerMedicineId(null)
+
+  // ── Receipt submit ──
+  const handleReceiptSave = () => {
+    if (!selectedMedicine) return
+    const qty = Number(receiptForm.quantity)
+    if (!qty || qty <= 0) return
+
+    const newLog: MedicineOperationLog = {
+      id: genId(),
+      date: new Date(receiptForm.date + 'T' + new Date().toTimeString().slice(0, 5)).toISOString(),
+      type: 'receipt',
+      quantity: qty,
+      balanceAfter: selectedMedicine.currentBalance + qty,
+      performedBy: CURRENT_USER.name,
+      performedById: CURRENT_USER.id,
+      comment: receiptForm.comment,
+      supplier: receiptForm.supplier
+    }
+
+    setMedicines((prev) =>
+      prev.map((m) => {
+        if (m.id !== selectedMedicine.id) return m
+        const newBalance = m.currentBalance + qty
+        return {
+          ...m,
+          currentBalance: newBalance,
+          totalReceived: m.totalReceived + qty,
+          lastReceiptDate: receiptForm.date,
+          lastReceiptFrom: receiptForm.supplier || m.lastReceiptFrom,
+          lastOperation: 'receipt' as OperationType,
+          lastChangedBy: CURRENT_USER.name,
+          lastUpdated: new Date().toISOString(),
+          status: computeMedicineStatus(newBalance, m.minBalance),
+          operationLog: [newLog, ...m.operationLog]
+        }
+      })
+    )
+
+    setReceiptForm((prev) => ({ ...prev, quantity: '', supplier: '', comment: '' }))
+    setDrawerTab('overview')
+  }
+
+  // ── Writeoff submit ──
+  const handleWriteoffSave = () => {
+    if (!selectedMedicine) return
+    const qty = Number(writeoffForm.quantity)
+    if (!qty || qty <= 0) return
+
+    if (qty > selectedMedicine.currentBalance) {
+      setWriteoffError('Недостаточно препарата на складе')
+      return
+    }
+    setWriteoffError('')
+
+    const newLog: MedicineOperationLog = {
+      id: genId(),
+      date: new Date(writeoffForm.date + 'T' + new Date().toTimeString().slice(0, 5)).toISOString(),
+      type: 'writeoff',
+      quantity: qty,
+      balanceAfter: selectedMedicine.currentBalance - qty,
+      performedBy: CURRENT_USER.name,
+      performedById: CURRENT_USER.id,
+      comment: writeoffForm.comment,
+      reason: writeoffForm.reason,
+      patientId: writeoffForm.selectedPatientId || undefined,
+      patientName: writeoffForm.selectedPatientName || undefined
+    }
+
+    setMedicines((prev) =>
+      prev.map((m) => {
+        if (m.id !== selectedMedicine.id) return m
+        const newBalance = m.currentBalance - qty
+        return {
+          ...m,
+          currentBalance: newBalance,
+          totalWrittenOff: m.totalWrittenOff + qty,
+          lastWriteOffDate: writeoffForm.date,
+          lastOperation: 'writeoff' as OperationType,
+          lastChangedBy: CURRENT_USER.name,
+          lastUpdated: new Date().toISOString(),
+          status: computeMedicineStatus(newBalance, m.minBalance),
+          operationLog: [newLog, ...m.operationLog]
+        }
+      })
+    )
+
+    setWriteoffForm((prev) => ({
+      ...prev,
+      quantity: '',
+      patientQuery: '',
+      selectedPatientId: '',
+      selectedPatientName: '',
+      comment: '',
+      date: new Date().toISOString().slice(0, 10)
+    }))
+    setDrawerTab('overview')
+  }
+
+  // ── Edit save ──
+  const handleEditSave = () => {
+    if (!selectedMedicine) return
+    const newBalance = Number(editForm.currentBalance)
+    const newMin = Number(editForm.minBalance)
+    const balanceChanged = newBalance !== selectedMedicine.currentBalance
+
+    const adjustmentLog: MedicineOperationLog | null = balanceChanged
+      ? {
+          id: genId(),
+          date: new Date().toISOString(),
+          type: 'adjustment',
+          quantity: Math.abs(newBalance - selectedMedicine.currentBalance),
+          balanceAfter: newBalance,
+          performedBy: CURRENT_USER.name,
+          performedById: CURRENT_USER.id,
+          comment: `Корректировка остатка с ${selectedMedicine.currentBalance} до ${newBalance}`
+        }
+      : null
+
+    setMedicines((prev) =>
+      prev.map((m) => {
+        if (m.id !== selectedMedicine.id) return m
+        return {
+          ...m,
+          name: editForm.name,
+          description: editForm.description,
+          category: editForm.category,
+          unit: editForm.unit,
+          minBalance: newMin,
+          currentBalance: newBalance,
+          status: computeMedicineStatus(newBalance, newMin),
+          lastChangedBy: CURRENT_USER.name,
+          lastUpdated: new Date().toISOString(),
+          lastOperation: balanceChanged ? 'adjustment' : m.lastOperation,
+          operationLog: adjustmentLog ? [adjustmentLog, ...m.operationLog] : m.operationLog
+        }
+      })
+    )
+    setShowEditModal(false)
+  }
+
+  // ── Add save ──
+  const handleAddSave = () => {
+    if (!addForm.name.trim()) return
+    const balance = Number(addForm.initialBalance) || 0
+    const minBal = Number(addForm.minBalance) || 0
+    const now = new Date().toISOString()
+    const id = `MED-${Date.now()}`
+
+    const initLog: MedicineOperationLog = {
+      id: genId(),
+      date: now,
+      type: 'receipt',
+      quantity: balance,
+      balanceAfter: balance,
+      performedBy: CURRENT_USER.name,
+      performedById: CURRENT_USER.id,
+      comment: 'Первичный ввод препарата'
+    }
+
+    const newMed: Medicine = {
+      id,
+      name: addForm.name.trim(),
+      description: addForm.description.trim(),
+      category: addForm.category,
+      unit: addForm.unit,
+      currentBalance: balance,
+      minBalance: minBal,
+      totalReceived: balance,
+      totalWrittenOff: 0,
+      lastReceiptDate: balance > 0 ? now.slice(0, 10) : null,
+      lastWriteOffDate: null,
+      lastReceiptFrom: null,
+      lastOperation: balance > 0 ? 'receipt' : null,
+      lastChangedBy: CURRENT_USER.name,
+      lastUpdated: now,
+      status: computeMedicineStatus(balance, minBal),
+      isArchived: false,
+      operationLog: balance > 0 ? [initLog] : []
+    }
+
+    setMedicines((prev) => [newMed, ...prev])
+    setShowAddModal(false)
+    setAddForm({
+      name: '',
+      description: '',
+      category: 'Прочее',
+      unit: 'табл.',
+      initialBalance: '',
+      minBalance: ''
+    })
+  }
+
+  // ── Delete ──
+  const handleDelete = () => {
+    if (!selectedMedicine) return
+    if (selectedMedicine.operationLog.length === 0) {
+      setMedicines((prev) => prev.filter((m) => m.id !== selectedMedicine.id))
+    } else {
+      // Soft delete – archive
+      setMedicines((prev) =>
+        prev.map((m) => (m.id === selectedMedicine.id ? { ...m, isArchived: true } : m))
+      )
+    }
+    setShowDeleteConfirm(false)
+    closeDrawer()
+  }
+
+  // ── History filtering ──
+  const filteredHistory = useMemo(() => {
+    if (!selectedMedicine) return []
+    const sorted = [...selectedMedicine.operationLog].sort((a, b) => b.date.localeCompare(a.date))
+    return sorted.filter((l) => {
+      if (historyFilterType && l.type !== historyFilterType) return false
+      if (historySearch.trim()) {
+        const q = historySearch.toLowerCase()
+        return (
+          l.performedBy.toLowerCase().includes(q) ||
+          l.comment.toLowerCase().includes(q) ||
+          (l.patientName || '').toLowerCase().includes(q) ||
+          OP_LABELS[l.type].toLowerCase().includes(q)
+        )
+      }
+      return true
+    })
+  }, [selectedMedicine, historySearch, historyFilterType])
+
+  const historyTotalPages = Math.max(1, Math.ceil(filteredHistory.length / historyPageSize))
+  const paginatedHistory = filteredHistory.slice(
+    (historyPage - 1) * historyPageSize,
+    historyPage * historyPageSize
+  )
+
+  // ── Patient search ──
+  const filteredPatients = useMemo(() => {
+    if (!writeoffForm.patientQuery.trim()) return []
+    const q = writeoffForm.patientQuery.toLowerCase()
+    return mockPatients
+      .filter(
+        (p) =>
+          `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase().includes(q) ||
+          p.medcardNum.toLowerCase().includes(q)
+      )
+      .slice(0, 6)
+  }, [writeoffForm.patientQuery])
+
+  // ── PDF export ──
+  const handleHistoryExport = async () => {
+    if (!historyExportRef.current) return
+    setIsExporting(true)
+    try {
+      const canvas = await html2canvas(historyExportRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      })
+      const imgData = canvas.toDataURL('image/png')
+      const pdf = new jsPDF({
+        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      })
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
+      pdf.save(`История_${selectedMedicine?.name}_${new Date().toLocaleDateString('ru-RU')}.pdf`)
+    } catch (e) {
+      console.error('PDF export error', e)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // ─── Open edit modal ──
+  const openEditModal = () => {
+    if (!selectedMedicine) return
+    setEditForm({
+      name: selectedMedicine.name,
+      description: selectedMedicine.description,
+      category: selectedMedicine.category,
+      unit: selectedMedicine.unit,
+      minBalance: String(selectedMedicine.minBalance),
+      currentBalance: String(selectedMedicine.currentBalance)
+    })
+    setShowEditModal(true)
+  }
+
+  // ─── Status icon ──
+  const StatusIcon = ({ status }: { status: MedicineStatus }) => {
+    if (status === 'empty') return <AlertCircle size={11} />
+    if (status === 'low') return <AlertTriangle size={11} />
+    return <CheckCircle size={11} />
+  }
+
+  const OpIcon = ({ type }: { type: OperationType }) => {
+    if (type === 'receipt') return <TrendingUp size={11} />
+    if (type === 'writeoff') return <TrendingDown size={11} />
+    return <RefreshCw size={11} />
+  }
+
+  // ─── Render ─────────────────────────────────────────────────────────────────
+  return (
+    <PageContainer>
+      {/* ── Header ── */}
+      <Header>
+        <HeaderLeft>
+          <HeaderTitle>Учёт медикаментов</HeaderTitle>
+          <HeaderSubtitle>
+            Контроль движения препаратов отделения · поступление, списание, остатки
+          </HeaderSubtitle>
+        </HeaderLeft>
+      </Header>
+
+      {/* ── Stats ── */}
+      <StatsGrid>
+        <StatCard $color="#2563eb">
+          <StatIcon $bg="#eff6ff" $color="#2563eb">
+            <Package size={20} />
+          </StatIcon>
+          <StatLabel>Препаратов</StatLabel>
+          <StatValue>{stats.total}</StatValue>
+          <StatSub>В активном учёте</StatSub>
+        </StatCard>
+        <StatCard $color="#f59e0b">
+          <StatIcon $bg="#fffbeb" $color="#d97706">
+            <AlertTriangle size={20} />
+          </StatIcon>
+          <StatLabel>Мало остатка</StatLabel>
+          <StatValue>{stats.low}</StatValue>
+          <StatSub>Требуют внимания</StatSub>
+        </StatCard>
+        <StatCard $color="#ef4444">
+          <StatIcon $bg="#fef2f2" $color="#dc2626">
+            <AlertCircle size={20} />
+          </StatIcon>
+          <StatLabel>Отсутствует</StatLabel>
+          <StatValue>{stats.empty}</StatValue>
+          <StatSub>Требует пополнения</StatSub>
+        </StatCard>
+        <StatCard $color="#10b981">
+          <StatIcon $bg="#ecfdf5" $color="#059669">
+            <Activity size={20} />
+          </StatIcon>
+          <StatLabel>Операций сегодня</StatLabel>
+          <StatValue>{stats.todayOps}</StatValue>
+          <StatSub>Все типы операций</StatSub>
+        </StatCard>
+      </StatsGrid>
+
+      {/* ── Control bar ── */}
+      <ControlBar>
+        <ControlLeft>
+          <SearchWrapper>
+            <SearchIcon>
+              <Search size={15} />
+            </SearchIcon>
+            <SearchInput
+              id="medicines-search"
+              placeholder="Поиск препарата, сотрудника, поставщика..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value)
+                setPage(1)
+              }}
+            />
+          </SearchWrapper>
+        </ControlLeft>
+
+        <ControlCenter>
+          <FilterGroup>
+            <FilterLabel>
+              <Filter size={12} /> Катег.
+            </FilterLabel>
+            <FilterSelect
+              value={filterCategory}
+              onChange={(e) => {
+                setFilterCategory(e.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">Все</option>
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </FilterSelect>
+          </FilterGroup>
+
+          <FilterGroup>
+            <FilterLabel>Тип</FilterLabel>
+            <FilterSelect
+              value={filterOpType}
+              onChange={(e) => {
+                setFilterOpType(e.target.value)
+                setPage(1)
+              }}
+            >
+              <option value="">Все</option>
+              <option value="receipt">Поступление</option>
+              <option value="writeoff">Списание</option>
+              <option value="adjustment">Корректировка</option>
+            </FilterSelect>
+          </FilterGroup>
+
+          <FilterGroup>
+            <FilterLabel>Остаток &lt;</FilterLabel>
+            <FilterInput
+              type="number"
+              min={0}
+              placeholder="—"
+              value={filterBalanceLessThan}
+              onChange={(e) => {
+                setFilterBalanceLessThan(e.target.value)
+                setPage(1)
+              }}
+            />
+          </FilterGroup>
+
+          <FilterGroup>
+            <FilterLabel>Поступление</FilterLabel>
+            <FilterDateInput
+              type="date"
+              value={filterReceiptDateFrom}
+              onChange={(e) => {
+                setFilterReceiptDateFrom(e.target.value)
+                setPage(1)
+              }}
+              title="От"
+            />
+            <span style={{ color: '#94a3b8', fontSize: 12 }}>—</span>
+            <FilterDateInput
+              type="date"
+              value={filterReceiptDateTo}
+              onChange={(e) => {
+                setFilterReceiptDateTo(e.target.value)
+                setPage(1)
+              }}
+              title="До"
+            />
+          </FilterGroup>
+
+          <FilterToggle
+            $active={filterWarnings}
+            onClick={() => {
+              setFilterWarnings((p) => !p)
+              setPage(1)
+            }}
+          >
+            <AlertTriangle size={13} />
+            Предупреждения
+          </FilterToggle>
+
+          <FilterToggle
+            $active={filterHideEmpty}
+            onClick={() => {
+              setFilterHideEmpty((p) => !p)
+              setPage(1)
+            }}
+          >
+            Скрыть нулевые
+          </FilterToggle>
+
+          <FilterToggle
+            $active={filterOnlyActive}
+            onClick={() => {
+              setFilterOnlyActive((p) => !p)
+              setFilterOnlyCompleted(false)
+              setPage(1)
+            }}
+          >
+            Только активные
+          </FilterToggle>
+
+          <FilterToggle
+            $active={filterOnlyCompleted}
+            onClick={() => {
+              setFilterOnlyCompleted((p) => !p)
+              setFilterOnlyActive(false)
+              setPage(1)
+            }}
+          >
+            Только завершённые
+          </FilterToggle>
+        </ControlCenter>
+
+        <ControlRight>
+          <AddButton id="add-medicine-btn" onClick={() => setShowAddModal(true)}>
+            <Plus size={16} />
+            Добавить препарат
+          </AddButton>
+        </ControlRight>
+      </ControlBar>
+
+      {/* ── Table ── */}
+      <TableWrapper>
+        <TableScrollWrapper>
+          <Table>
+            <thead>
+              <tr>
+                <Th $minWidth="200px">Препарат</Th>
+                <Th $minWidth="130px">Остаток</Th>
+                <Th $minWidth="120px">Дата поступления</Th>
+                <Th $minWidth="120px">Дата списания</Th>
+                <Th $minWidth="160px">От кого принято</Th>
+                <Th $minWidth="130px">Последняя операция</Th>
+                <Th $minWidth="130px">Кто изменил</Th>
+                <Th $minWidth="130px">Дата обновления</Th>
+                <Th $minWidth="120px" $align="center">
+                  Статус
+                </Th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedMedicines.length === 0 ? (
+                <tr>
+                  <td colSpan={9}>
+                    <NoData>
+                      <Package size={48} strokeWidth={1.2} />
+                      <div>Препараты не найдены по заданным критериям</div>
+                    </NoData>
+                  </td>
+                </tr>
+              ) : (
+                paginatedMedicines.map((med) => {
+                  const pct =
+                    med.minBalance > 0
+                      ? (med.currentBalance / (med.minBalance * 2)) * 100
+                      : med.currentBalance > 0
+                        ? 100
+                        : 0
+
+                  return (
+                    <Tr
+                      key={med.id}
+                      $status={med.status}
+                      onClick={() => openDrawer(med)}
+                      title={`Открыть ${med.name}`}
+                    >
+                      <Td>
+                        <DrugName>{med.name}</DrugName>
+                        <DrugCategory>{med.category}</DrugCategory>
+                      </Td>
+                      <Td>
+                        <BalanceCell>
+                          <div>
+                            <BalanceValue $status={med.status}>
+                              {med.currentBalance.toLocaleString('ru-RU')}
+                            </BalanceValue>
+                            <BalanceUnit>{med.unit}</BalanceUnit>
+                          </div>
+                          <BalanceBar>
+                            <BalanceFill $pct={pct} $status={med.status} />
+                          </BalanceBar>
+                        </BalanceCell>
+                      </Td>
+                      <Td>
+                        {med.lastReceiptDate ? (
+                          <DateCell>{formatDate(med.lastReceiptDate)}</DateCell>
+                        ) : (
+                          <NullCell>—</NullCell>
+                        )}
+                      </Td>
+                      <Td>
+                        {med.lastWriteOffDate ? (
+                          <DateCell>{formatDate(med.lastWriteOffDate)}</DateCell>
+                        ) : (
+                          <NullCell>—</NullCell>
+                        )}
+                      </Td>
+                      <Td>
+                        {med.lastReceiptFrom ? (
+                          <span style={{ fontSize: 12.5, color: '#475569' }}>
+                            {med.lastReceiptFrom}
+                          </span>
+                        ) : (
+                          <NullCell>—</NullCell>
+                        )}
+                      </Td>
+                      <Td>
+                        {med.lastOperation ? (
+                          <OperationBadge $type={med.lastOperation}>
+                            <OpIcon type={med.lastOperation} />
+                            {OP_LABELS[med.lastOperation]}
+                          </OperationBadge>
+                        ) : (
+                          <NullCell>—</NullCell>
+                        )}
+                      </Td>
+                      <Td>
+                        {med.lastChangedBy ? (
+                          <span style={{ fontSize: 12.5, color: '#475569' }}>
+                            {med.lastChangedBy}
+                          </span>
+                        ) : (
+                          <NullCell>—</NullCell>
+                        )}
+                      </Td>
+                      <Td>
+                        {med.lastUpdated ? (
+                          <DateCell>{formatDateTime(med.lastUpdated)}</DateCell>
+                        ) : (
+                          <NullCell>—</NullCell>
+                        )}
+                      </Td>
+                      <Td $align="center">
+                        <StatusBadge $status={med.status}>
+                          <StatusIcon status={med.status} />
+                          {STATUS_LABELS[med.status]}
+                        </StatusBadge>
+                      </Td>
+                    </Tr>
+                  )
+                })
+              )}
+            </tbody>
+          </Table>
+        </TableScrollWrapper>
+
+        {/* ── Pagination ── */}
+        <PaginationBar>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <PaginationInfo>
+              Показано {filteredMedicines.length === 0 ? 0 : (page - 1) * pageSize + 1}–
+              {Math.min(page * pageSize, filteredMedicines.length)} из {filteredMedicines.length}
+            </PaginationInfo>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: '#94a3b8' }}>По</span>
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value))
+                  setPage(1)
+                }}
+              >
+                {[10, 25, 50, 100].map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </PageSizeSelect>
+            </div>
+          </div>
+          <PaginationControls>
+            <PageBtn onClick={() => setPage(1)} disabled={page === 1}>
+              <ChevronLeft size={14} />
+              <ChevronLeft size={14} />
+            </PageBtn>
+            <PageBtn onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
+              <ChevronLeft size={14} />
+            </PageBtn>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let p = i + 1
+              if (totalPages > 5) {
+                const start = Math.max(1, Math.min(page - 2, totalPages - 4))
+                p = start + i
+              }
+              return (
+                <PageBtn key={p} $active={p === page} onClick={() => setPage(p)}>
+                  {p}
+                </PageBtn>
+              )
+            })}
+            <PageBtn onClick={() => setPage((p) => p + 1)} disabled={page === totalPages}>
+              <ChevronRight size={14} />
+            </PageBtn>
+            <PageBtn onClick={() => setPage(totalPages)} disabled={page === totalPages}>
+              <ChevronRight size={14} />
+              <ChevronRight size={14} />
+            </PageBtn>
+          </PaginationControls>
+        </PaginationBar>
+      </TableWrapper>
+
+      {/* ══ DRAWER ══ */}
+      {selectedMedicine && (
+        <>
+          <DrawerOverlay onClick={closeDrawer} />
+          <DrawerPanel onClick={(e) => e.stopPropagation()}>
+            {/* Header */}
+            <DrawerHeader>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <DrawerTitle>{selectedMedicine.name}</DrawerTitle>
+                <DrawerSubtitle>
+                  {selectedMedicine.category} · {selectedMedicine.unit}
+                </DrawerSubtitle>
+                <div style={{ marginTop: 8 }}>
+                  <StatusBadge $status={selectedMedicine.status}>
+                    <StatusIcon status={selectedMedicine.status} />
+                    {STATUS_LABELS[selectedMedicine.status]}
+                  </StatusBadge>
+                </div>
+              </div>
+              <DrawerCloseBtn onClick={closeDrawer} title="Закрыть">
+                <X size={18} />
+              </DrawerCloseBtn>
+            </DrawerHeader>
+
+            {/* Tab bar */}
+            <TabBar>
+              <TabBtn $active={drawerTab === 'overview'} onClick={() => setDrawerTab('overview')}>
+                <Info size={14} /> Обзор
+              </TabBtn>
+              <TabBtn $active={drawerTab === 'receipt'} onClick={() => setDrawerTab('receipt')}>
+                <TrendingUp size={14} /> Поступление
+              </TabBtn>
+              <TabBtn $active={drawerTab === 'writeoff'} onClick={() => setDrawerTab('writeoff')}>
+                <TrendingDown size={14} /> Списание
+              </TabBtn>
+              <TabBtn $active={drawerTab === 'history'} onClick={() => setDrawerTab('history')}>
+                <FileText size={14} /> История
+                {selectedMedicine.operationLog.length > 0 && (
+                  <span
+                    style={{
+                      background: '#eff6ff',
+                      color: '#2563eb',
+                      borderRadius: '99px',
+                      padding: '1px 7px',
+                      fontSize: 10.5,
+                      fontWeight: 700
+                    }}
+                  >
+                    {selectedMedicine.operationLog.length}
+                  </span>
+                )}
+              </TabBtn>
+            </TabBar>
+
+            <DrawerContent>
+              {/* ── Tab: Overview ── */}
+              {drawerTab === 'overview' && (
+                <>
+                  {/* Warnings */}
+                  {selectedMedicine.status === 'empty' && (
+                    <WarningAlert $level="error">
+                      <AlertCircle size={18} />
+                      <span>Требуется пополнение — остаток равен нулю</span>
+                    </WarningAlert>
+                  )}
+                  {selectedMedicine.status === 'low' && (
+                    <WarningAlert $level="warning">
+                      <AlertTriangle size={18} />
+                      <span>
+                        Осталось мало препарата — ниже допустимого минимума (
+                        {selectedMedicine.minBalance} {selectedMedicine.unit})
+                      </span>
+                    </WarningAlert>
+                  )}
+
+                  <OverviewSection>
+                    <SectionTitle>Описание</SectionTitle>
+                    <DescriptionBox>
+                      {selectedMedicine.description || 'Описание не указано'}
+                    </DescriptionBox>
+                  </OverviewSection>
+
+                  <OverviewSection>
+                    <SectionTitle>Остаток</SectionTitle>
+                    <div
+                      style={{
+                        background: '#f8fafc',
+                        borderRadius: 14,
+                        padding: '16px 18px',
+                        border: '1px solid #f1f5f9'
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          marginBottom: 8
+                        }}
+                      >
+                        <div>
+                          <span
+                            style={{
+                              fontSize: 28,
+                              fontWeight: 800,
+                              color:
+                                selectedMedicine.status === 'empty'
+                                  ? '#dc2626'
+                                  : selectedMedicine.status === 'low'
+                                    ? '#d97706'
+                                    : '#0f172a',
+                              letterSpacing: '-0.03em'
+                            }}
+                          >
+                            {selectedMedicine.currentBalance.toLocaleString('ru-RU')}
+                          </span>
+                          <span style={{ fontSize: 14, color: '#94a3b8', marginLeft: 6 }}>
+                            {selectedMedicine.unit}
+                          </span>
+                        </div>
+                        <div style={{ textAlign: 'right', fontSize: 12, color: '#94a3b8' }}>
+                          Мин: {selectedMedicine.minBalance} {selectedMedicine.unit}
+                        </div>
+                      </div>
+                      <DrawerBalanceBar>
+                        <DrawerBalanceFill
+                          $pct={
+                            selectedMedicine.minBalance > 0
+                              ? (selectedMedicine.currentBalance /
+                                  (selectedMedicine.minBalance * 2)) *
+                                100
+                              : selectedMedicine.currentBalance > 0
+                                ? 100
+                                : 0
+                          }
+                          $status={selectedMedicine.status}
+                        />
+                      </DrawerBalanceBar>
+                    </div>
+                  </OverviewSection>
+
+                  <OverviewSection>
+                    <SectionTitle>Статистика</SectionTitle>
+                    <InfoGrid>
+                      <InfoCard>
+                        <InfoCardLabel>
+                          <TrendingUp size={11} style={{ display: 'inline', marginRight: 4 }} />
+                          Всего поступило
+                        </InfoCardLabel>
+                        <InfoCardValue>
+                          {selectedMedicine.totalReceived.toLocaleString('ru-RU')}
+                        </InfoCardValue>
+                        <InfoCardSub>{selectedMedicine.unit}</InfoCardSub>
+                      </InfoCard>
+                      <InfoCard>
+                        <InfoCardLabel>
+                          <TrendingDown size={11} style={{ display: 'inline', marginRight: 4 }} />
+                          Всего списано
+                        </InfoCardLabel>
+                        <InfoCardValue>
+                          {selectedMedicine.totalWrittenOff.toLocaleString('ru-RU')}
+                        </InfoCardValue>
+                        <InfoCardSub>{selectedMedicine.unit}</InfoCardSub>
+                      </InfoCard>
+                      <InfoCard>
+                        <InfoCardLabel>
+                          <Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />
+                          Последнее поступление
+                        </InfoCardLabel>
+                        <InfoCardValue style={{ fontSize: 15 }}>
+                          {formatDate(selectedMedicine.lastReceiptDate) || '—'}
+                        </InfoCardValue>
+                        <InfoCardSub>{selectedMedicine.lastReceiptFrom || '—'}</InfoCardSub>
+                      </InfoCard>
+                      <InfoCard>
+                        <InfoCardLabel>
+                          <Calendar size={11} style={{ display: 'inline', marginRight: 4 }} />
+                          Последнее списание
+                        </InfoCardLabel>
+                        <InfoCardValue style={{ fontSize: 15 }}>
+                          {formatDate(selectedMedicine.lastWriteOffDate) || '—'}
+                        </InfoCardValue>
+                        <InfoCardSub>{selectedMedicine.lastChangedBy || '—'}</InfoCardSub>
+                      </InfoCard>
+                    </InfoGrid>
+                  </OverviewSection>
+
+                  <ActionButtonRow>
+                    <EditBtn onClick={openEditModal}>
+                      <Edit3 size={14} />
+                      Редактировать
+                    </EditBtn>
+                    <DeleteBtn onClick={() => setShowDeleteConfirm(true)}>
+                      <Trash2 size={14} />
+                      Удалить
+                    </DeleteBtn>
+                  </ActionButtonRow>
+                </>
+              )}
+
+              {/* ── Tab: Receipt ── */}
+              {drawerTab === 'receipt' && (
+                <>
+                  <AutoFillInfo>
+                    <CheckCircle size={16} />
+                    Сотрудник и дата создания подставляются автоматически
+                  </AutoFillInfo>
+
+                  <FormGrid $cols={2}>
+                    <FormField style={{ gridColumn: '1 / -1' }}>
+                      <FormLabel>Название препарата</FormLabel>
+                      <FormInput value={receiptForm.name} disabled />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Дата поступления *</FormLabel>
+                      <FormInput
+                        type="date"
+                        value={receiptForm.date}
+                        onChange={(e) => setReceiptForm((p) => ({ ...p, date: e.target.value }))}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Количество *</FormLabel>
+                      <FormInput
+                        id="receipt-quantity"
+                        type="number"
+                        min={1}
+                        placeholder="0"
+                        value={receiptForm.quantity}
+                        onChange={(e) =>
+                          setReceiptForm((p) => ({ ...p, quantity: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Единица измерения</FormLabel>
+                      <FormInput value={selectedMedicine.unit} disabled />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Принято от *</FormLabel>
+                      <FormInput
+                        id="receipt-supplier"
+                        placeholder="Поставщик или организация..."
+                        value={receiptForm.supplier}
+                        onChange={(e) =>
+                          setReceiptForm((p) => ({ ...p, supplier: e.target.value }))
+                        }
+                      />
+                    </FormField>
+                    <FormField style={{ gridColumn: '1 / -1' }}>
+                      <FormLabel>Комментарий</FormLabel>
+                      <FormTextArea
+                        placeholder="Дополнительная информация..."
+                        value={receiptForm.comment}
+                        onChange={(e) => setReceiptForm((p) => ({ ...p, comment: e.target.value }))}
+                        rows={3}
+                      />
+                    </FormField>
+                  </FormGrid>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      border: '1px solid #f1f5f9'
+                    }}
+                  >
+                    <div
+                      style={{ fontSize: 12, color: '#64748b', fontWeight: 600, marginBottom: 4 }}
+                    >
+                      ПОСЛЕ СОХРАНЕНИЯ ОСТАТОК СТАНЕТ
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 800,
+                        color: '#16a34a',
+                        letterSpacing: '-0.03em'
+                      }}
+                    >
+                      {(
+                        selectedMedicine.currentBalance + (Number(receiptForm.quantity) || 0)
+                      ).toLocaleString('ru-RU')}
+                      <span style={{ fontSize: 14, color: '#94a3b8', marginLeft: 6 }}>
+                        {selectedMedicine.unit}
+                      </span>
+                    </div>
+                  </div>
+
+                  <DrawerFormFooter>
+                    <SaveButton
+                      id="receipt-save-btn"
+                      onClick={handleReceiptSave}
+                      disabled={!receiptForm.quantity || Number(receiptForm.quantity) <= 0}
+                    >
+                      <Check size={16} /> Сохранить поступление
+                    </SaveButton>
+                    <CancelButton onClick={() => setDrawerTab('overview')}>
+                      <X size={14} /> Отмена
+                    </CancelButton>
+                  </DrawerFormFooter>
+                </>
+              )}
+
+              {/* ── Tab: Writeoff ── */}
+              {drawerTab === 'writeoff' && (
+                <>
+                  <AutoFillInfo>
+                    <User size={16} />
+                    Исполнитель: {CURRENT_USER.name} · Время подставляется автоматически
+                  </AutoFillInfo>
+
+                  {writeoffError && (
+                    <ErrorAlert>
+                      <AlertCircle size={16} />
+                      {writeoffError}
+                    </ErrorAlert>
+                  )}
+
+                  <FormGrid $cols={2}>
+                    <FormField>
+                      <FormLabel>Дата списания *</FormLabel>
+                      <FormInput
+                        type="date"
+                        value={writeoffForm.date}
+                        onChange={(e) => setWriteoffForm((p) => ({ ...p, date: e.target.value }))}
+                      />
+                    </FormField>
+                    <FormField>
+                      <FormLabel>Количество *</FormLabel>
+                      <FormInput
+                        id="writeoff-quantity"
+                        type="number"
+                        min={1}
+                        max={selectedMedicine.currentBalance}
+                        placeholder="0"
+                        value={writeoffForm.quantity}
+                        onChange={(e) => {
+                          setWriteoffError('')
+                          setWriteoffForm((p) => ({ ...p, quantity: e.target.value }))
+                        }}
+                      />
+                    </FormField>
+                    <FormField style={{ gridColumn: '1 / -1' }}>
+                      <FormLabel>Причина списания *</FormLabel>
+                      <FormSelect
+                        value={writeoffForm.reason}
+                        onChange={(e) =>
+                          setWriteoffForm((p) => ({
+                            ...p,
+                            reason: e.target.value as WriteOffReason
+                          }))
+                        }
+                      >
+                        {Object.entries(REASON_LABELS).map(([k, v]) => (
+                          <option key={k} value={k}>
+                            {v}
+                          </option>
+                        ))}
+                      </FormSelect>
+                    </FormField>
+
+                    {writeoffForm.reason === 'patient' && (
+                      <FormField style={{ gridColumn: '1 / -1' }}>
+                        <FormLabel>Пациент</FormLabel>
+                        <PatientSearchWrapper>
+                          <FormInput
+                            id="writeoff-patient-search"
+                            placeholder="Поиск по ФИО или номеру карты..."
+                            value={writeoffForm.selectedPatientName || writeoffForm.patientQuery}
+                            onChange={(e) => {
+                              setWriteoffForm((p) => ({
+                                ...p,
+                                patientQuery: e.target.value,
+                                selectedPatientId: '',
+                                selectedPatientName: ''
+                              }))
+                              setPatientDropdown(true)
+                            }}
+                            onFocus={() => setPatientDropdown(true)}
+                          />
+                          {writeoffForm.selectedPatientId && (
+                            <button
+                              onClick={() =>
+                                setWriteoffForm((p) => ({
+                                  ...p,
+                                  selectedPatientId: '',
+                                  selectedPatientName: '',
+                                  patientQuery: ''
+                                }))
+                              }
+                              style={{
+                                position: 'absolute',
+                                right: 12,
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#94a3b8'
+                              }}
+                            >
+                              <X size={15} />
+                            </button>
+                          )}
+                          {patientDropdown &&
+                            filteredPatients.length > 0 &&
+                            !writeoffForm.selectedPatientId && (
+                              <PatientDropdown>
+                                {filteredPatients.map((p) => (
+                                  <PatientOption
+                                    key={p.id}
+                                    onClick={() => {
+                                      setWriteoffForm((prev) => ({
+                                        ...prev,
+                                        selectedPatientId: p.id,
+                                        selectedPatientName: `${p.lastName} ${p.firstName} ${p.middleName}`,
+                                        patientQuery: ''
+                                      }))
+                                      setPatientDropdown(false)
+                                    }}
+                                  >
+                                    <PatientOptionName>
+                                      {p.lastName} {p.firstName} {p.middleName}
+                                    </PatientOptionName>
+                                    <PatientOptionInfo>
+                                      {p.medcardNum} · {p.diagnoses.join(', ').slice(0, 50)}
+                                    </PatientOptionInfo>
+                                  </PatientOption>
+                                ))}
+                              </PatientDropdown>
+                            )}
+                        </PatientSearchWrapper>
+                      </FormField>
+                    )}
+
+                    <FormField style={{ gridColumn: '1 / -1' }}>
+                      <FormLabel>Комментарий</FormLabel>
+                      <FormTextArea
+                        placeholder="Дополнительные сведения..."
+                        value={writeoffForm.comment}
+                        onChange={(e) =>
+                          setWriteoffForm((p) => ({ ...p, comment: e.target.value }))
+                        }
+                        rows={3}
+                      />
+                    </FormField>
+                  </FormGrid>
+
+                  <div
+                    style={{
+                      background: '#f8fafc',
+                      borderRadius: 12,
+                      padding: '12px 16px',
+                      border: '1px solid #f1f5f9'
+                    }}
+                  >
+                    <div
+                      style={{ fontSize: 12, color: '#64748b', fontWeight: 600, marginBottom: 4 }}
+                    >
+                      ПОСЛЕ СПИСАНИЯ ОСТАТОК СТАНЕТ
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 22,
+                        fontWeight: 800,
+                        letterSpacing: '-0.03em',
+                        color:
+                          selectedMedicine.currentBalance - (Number(writeoffForm.quantity) || 0) < 0
+                            ? '#dc2626'
+                            : selectedMedicine.currentBalance -
+                                  (Number(writeoffForm.quantity) || 0) <=
+                                selectedMedicine.minBalance
+                              ? '#d97706'
+                              : '#0f172a'
+                      }}
+                    >
+                      {Math.max(
+                        0,
+                        selectedMedicine.currentBalance - (Number(writeoffForm.quantity) || 0)
+                      ).toLocaleString('ru-RU')}
+                      <span style={{ fontSize: 14, color: '#94a3b8', marginLeft: 6 }}>
+                        {selectedMedicine.unit}
+                      </span>
+                    </div>
+                  </div>
+
+                  <DrawerFormFooter>
+                    <SaveButton
+                      id="writeoff-save-btn"
+                      onClick={handleWriteoffSave}
+                      disabled={!writeoffForm.quantity || Number(writeoffForm.quantity) <= 0}
+                    >
+                      <TrendingDown size={16} /> Провести списание
+                    </SaveButton>
+                    <CancelButton
+                      onClick={() => {
+                        setDrawerTab('overview')
+                        setWriteoffError('')
+                      }}
+                    >
+                      <X size={14} /> Отмена
+                    </CancelButton>
+                  </DrawerFormFooter>
+                </>
+              )}
+
+              {/* ── Tab: History ── */}
+              {drawerTab === 'history' && (
+                <>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <SearchWrapper style={{ flex: 1, minWidth: 180 }}>
+                      <SearchIcon>
+                        <Search size={13} />
+                      </SearchIcon>
+                      <SearchInput
+                        placeholder="Поиск по истории..."
+                        value={historySearch}
+                        onChange={(e) => {
+                          setHistorySearch(e.target.value)
+                          setHistoryPage(1)
+                        }}
+                        style={{ fontSize: 12.5, height: 36 }}
+                      />
+                    </SearchWrapper>
+                    <FilterSelect
+                      value={historyFilterType}
+                      onChange={(e) => {
+                        setHistoryFilterType(e.target.value)
+                        setHistoryPage(1)
+                      }}
+                      style={{ height: 36 }}
+                    >
+                      <option value="">Все типы</option>
+                      <option value="receipt">Поступление</option>
+                      <option value="writeoff">Списание</option>
+                      <option value="adjustment">Корректировка</option>
+                    </FilterSelect>
+                    <ExportButton
+                      id="history-pdf-btn"
+                      onClick={handleHistoryExport}
+                      disabled={isExporting}
+                    >
+                      <Download size={14} />
+                      {isExporting ? 'PDF...' : 'PDF'}
+                    </ExportButton>
+                  </div>
+
+                  {/* PDF export ref */}
+                  <div ref={historyExportRef}>
+                    <HistoryTable>
+                      <thead>
+                        <tr>
+                          <HTh>Дата</HTh>
+                          <HTh>Тип</HTh>
+                          <HTh $align="right">Кол-во</HTh>
+                          <HTh $align="right">Остаток</HTh>
+                          <HTh>Кто выполнил</HTh>
+                          <HTh>Комментарий / Пациент</HTh>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedHistory.length === 0 ? (
+                          <tr>
+                            <td
+                              colSpan={6}
+                              style={{
+                                textAlign: 'center',
+                                padding: '24px 12px',
+                                color: '#94a3b8',
+                                fontSize: 13
+                              }}
+                            >
+                              История пуста
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedHistory.map((log) => (
+                            <HTr key={log.id} $type={log.type}>
+                              <HTd style={{ fontSize: 12, whiteSpace: 'nowrap' }}>
+                                {formatDateTime(log.date)}
+                              </HTd>
+                              <HTd>
+                                <OperationBadge $type={log.type}>
+                                  <OpIcon type={log.type} />
+                                  {OP_LABELS[log.type]}
+                                </OperationBadge>
+                              </HTd>
+                              <HTd $align="right">
+                                <span
+                                  style={{
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    color:
+                                      log.type === 'receipt'
+                                        ? '#16a34a'
+                                        : log.type === 'writeoff'
+                                          ? '#dc2626'
+                                          : '#2563eb'
+                                  }}
+                                >
+                                  {log.type === 'writeoff' ? '−' : '+'}
+                                  {log.quantity.toLocaleString('ru-RU')}
+                                </span>
+                              </HTd>
+                              <HTd $align="right">
+                                <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>
+                                  {log.balanceAfter.toLocaleString('ru-RU')}
+                                </span>
+                              </HTd>
+                              <HTd style={{ fontSize: 12 }}>{log.performedBy}</HTd>
+                              <HTd style={{ fontSize: 12, maxWidth: 160 }}>
+                                <div
+                                  style={{
+                                    color: '#475569',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {log.comment}
+                                </div>
+                                {log.patientName && (
+                                  <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 2 }}>
+                                    <User size={10} style={{ display: 'inline', marginRight: 3 }} />
+                                    {log.patientName}
+                                  </div>
+                                )}
+                                {log.supplier && (
+                                  <div style={{ color: '#94a3b8', fontSize: 11, marginTop: 2 }}>
+                                    {log.supplier}
+                                  </div>
+                                )}
+                              </HTd>
+                            </HTr>
+                          ))
+                        )}
+                      </tbody>
+                    </HistoryTable>
+                  </div>
+
+                  <HistoryPagination>
+                    <PaginationInfo style={{ fontSize: 12 }}>
+                      {filteredHistory.length === 0 ? '0' : (historyPage - 1) * historyPageSize + 1}
+                      –{Math.min(historyPage * historyPageSize, filteredHistory.length)} из{' '}
+                      {filteredHistory.length}
+                    </PaginationInfo>
+                    <PaginationControls>
+                      <PageBtn
+                        onClick={() => setHistoryPage((p) => p - 1)}
+                        disabled={historyPage === 1}
+                        style={{ width: 30, height: 30 }}
+                      >
+                        <ChevronLeft size={13} />
+                      </PageBtn>
+                      {Array.from({ length: Math.min(historyTotalPages, 5) }, (_, i) => i + 1).map(
+                        (p) => (
+                          <PageBtn
+                            key={p}
+                            $active={p === historyPage}
+                            onClick={() => setHistoryPage(p)}
+                            style={{ width: 30, height: 30, fontSize: 12 }}
+                          >
+                            {p}
+                          </PageBtn>
+                        )
+                      )}
+                      <PageBtn
+                        onClick={() => setHistoryPage((p) => p + 1)}
+                        disabled={historyPage === historyTotalPages}
+                        style={{ width: 30, height: 30 }}
+                      >
+                        <ChevronRight size={13} />
+                      </PageBtn>
+                    </PaginationControls>
+                  </HistoryPagination>
+                </>
+              )}
+            </DrawerContent>
+          </DrawerPanel>
+        </>
+      )}
+
+      {/* ══ MODAL: Add Medicine ══ */}
+      {showAddModal && (
+        <ModalOverlay onClick={() => setShowAddModal(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <div>
+                <ModalTitle>Добавить препарат</ModalTitle>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>
+                  Новый препарат в базу учёта
+                </p>
+              </div>
+              <CloseBtn onClick={() => setShowAddModal(false)}>
+                <X size={17} />
+              </CloseBtn>
+            </ModalHeader>
+            <ModalBody>
+              <FormGrid $cols={1}>
+                <FormField>
+                  <FormLabel>Название препарата *</FormLabel>
+                  <FormInput
+                    id="add-name"
+                    placeholder="Напр. Амоксициллин 500 мг"
+                    value={addForm.name}
+                    onChange={(e) => setAddForm((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel>Описание</FormLabel>
+                  <FormTextArea
+                    placeholder="Краткое описание, показания..."
+                    value={addForm.description}
+                    onChange={(e) => setAddForm((p) => ({ ...p, description: e.target.value }))}
+                    rows={3}
+                  />
+                </FormField>
+              </FormGrid>
+              <FormGrid $cols={2}>
+                <FormField>
+                  <FormLabel>Категория *</FormLabel>
+                  <FormSelect
+                    value={addForm.category}
+                    onChange={(e) =>
+                      setAddForm((p) => ({ ...p, category: e.target.value as MedicineCategory }))
+                    }
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </FormField>
+                <FormField>
+                  <FormLabel>Единица измерения *</FormLabel>
+                  <FormSelect
+                    value={addForm.unit}
+                    onChange={(e) =>
+                      setAddForm((p) => ({ ...p, unit: e.target.value as MedicineUnit }))
+                    }
+                  >
+                    {UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </FormField>
+                <FormField>
+                  <FormLabel>Начальное количество</FormLabel>
+                  <FormInput
+                    id="add-initial-balance"
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={addForm.initialBalance}
+                    onChange={(e) => setAddForm((p) => ({ ...p, initialBalance: e.target.value }))}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel>Минимальный остаток</FormLabel>
+                  <FormInput
+                    id="add-min-balance"
+                    type="number"
+                    min={0}
+                    placeholder="0"
+                    value={addForm.minBalance}
+                    onChange={(e) => setAddForm((p) => ({ ...p, minBalance: e.target.value }))}
+                  />
+                </FormField>
+              </FormGrid>
+              <AutoFillInfo>
+                <CheckCircle size={15} />
+                Дата создания и ответственный сотрудник ({CURRENT_USER.name}) подставятся
+                автоматически
+              </AutoFillInfo>
+            </ModalBody>
+            <ModalFooter>
+              <CancelButton onClick={() => setShowAddModal(false)}>
+                <X size={14} /> Отмена
+              </CancelButton>
+              <SaveButton id="add-save-btn" onClick={handleAddSave} disabled={!addForm.name.trim()}>
+                <Plus size={16} /> Добавить
+              </SaveButton>
+            </ModalFooter>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {/* ══ MODAL: Edit Medicine ══ */}
+      {showEditModal && selectedMedicine && (
+        <ModalOverlay onClick={() => setShowEditModal(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <div>
+                <ModalTitle>Редактировать препарат</ModalTitle>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>
+                  {selectedMedicine.name}
+                </p>
+              </div>
+              <CloseBtn onClick={() => setShowEditModal(false)}>
+                <X size={17} />
+              </CloseBtn>
+            </ModalHeader>
+            <ModalBody>
+              <FormGrid $cols={1}>
+                <FormField>
+                  <FormLabel>Название *</FormLabel>
+                  <FormInput
+                    id="edit-name"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel>Описание</FormLabel>
+                  <FormTextArea
+                    value={editForm.description}
+                    onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
+                    rows={3}
+                  />
+                </FormField>
+              </FormGrid>
+              <FormGrid $cols={2}>
+                <FormField>
+                  <FormLabel>Категория</FormLabel>
+                  <FormSelect
+                    value={editForm.category}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, category: e.target.value as MedicineCategory }))
+                    }
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </FormField>
+                <FormField>
+                  <FormLabel>Единица измерения</FormLabel>
+                  <FormSelect
+                    value={editForm.unit}
+                    onChange={(e) =>
+                      setEditForm((p) => ({ ...p, unit: e.target.value as MedicineUnit }))
+                    }
+                  >
+                    {UNITS.map((u) => (
+                      <option key={u} value={u}>
+                        {u}
+                      </option>
+                    ))}
+                  </FormSelect>
+                </FormField>
+                <FormField>
+                  <FormLabel>Текущий остаток</FormLabel>
+                  <FormInput
+                    id="edit-balance"
+                    type="number"
+                    min={0}
+                    value={editForm.currentBalance}
+                    onChange={(e) => setEditForm((p) => ({ ...p, currentBalance: e.target.value }))}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel>Минимальный остаток</FormLabel>
+                  <FormInput
+                    id="edit-min-balance"
+                    type="number"
+                    min={0}
+                    value={editForm.minBalance}
+                    onChange={(e) => setEditForm((p) => ({ ...p, minBalance: e.target.value }))}
+                  />
+                </FormField>
+              </FormGrid>
+              {Number(editForm.currentBalance) !== selectedMedicine.currentBalance && (
+                <AutoFillInfo>
+                  <RefreshCw size={15} />
+                  Изменение остатка создаст запись «Корректировка» в журнале операций
+                </AutoFillInfo>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <CancelButton onClick={() => setShowEditModal(false)}>
+                <X size={14} /> Отмена
+              </CancelButton>
+              <SaveButton id="edit-save-btn" onClick={handleEditSave}>
+                <Check size={16} /> Сохранить
+              </SaveButton>
+            </ModalFooter>
+          </Modal>
+        </ModalOverlay>
+      )}
+
+      {/* ══ MODAL: Confirm Delete ══ */}
+      {showDeleteConfirm && selectedMedicine && (
+        <ModalOverlay onClick={() => setShowDeleteConfirm(false)}>
+          <Modal onClick={(e) => e.stopPropagation()}>
+            <ModalHeader>
+              <div>
+                <ModalTitle>Удаление препарата</ModalTitle>
+                <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>
+                  {selectedMedicine.name}
+                </p>
+              </div>
+              <CloseBtn onClick={() => setShowDeleteConfirm(false)}>
+                <X size={17} />
+              </CloseBtn>
+            </ModalHeader>
+            <ModalBody>
+              {selectedMedicine.operationLog.length === 0 ? (
+                <ConfirmDeleteText>
+                  У препарата нет истории операций. Вы можете <strong>удалить его полностью</strong>{' '}
+                  из базы без возможности восстановления.
+                </ConfirmDeleteText>
+              ) : (
+                <>
+                  <ConfirmDeleteText>
+                    Препарат имеет <strong>{selectedMedicine.operationLog.length} записей</strong> в
+                    журнале операций. Полное удаление невозможно.
+                  </ConfirmDeleteText>
+                  <ConfirmDeleteText>
+                    Вы можете перевести препарат в статус <strong>«Архивный»</strong> — он исчезнет
+                    из активного учёта, но история операций сохранится.
+                  </ConfirmDeleteText>
+                </>
+              )}
+            </ModalBody>
+            <ModalFooter>
+              <CancelButton onClick={() => setShowDeleteConfirm(false)}>
+                <X size={14} /> Отмена
+              </CancelButton>
+              {selectedMedicine.operationLog.length === 0 ? (
+                <DangerButton id="confirm-delete-btn" onClick={handleDelete}>
+                  <Trash2 size={15} /> Удалить полностью
+                </DangerButton>
+              ) : (
+                <ArchiveButton id="confirm-archive-btn" onClick={handleDelete}>
+                  <Archive size={15} /> Перевести в архив
+                </ArchiveButton>
+              )}
+            </ModalFooter>
+          </Modal>
+        </ModalOverlay>
+      )}
+    </PageContainer>
+  )
+}
+
+export default MedicinesPage

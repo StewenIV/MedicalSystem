@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'
 import {
   Thermometer,
   Activity,
@@ -14,8 +14,8 @@ import {
   FileText,
   User,
   Home,
-  Calendar
-} from 'lucide-react';
+  Calendar,
+} from 'lucide-react'
 
 import {
   ResponsiveContainer,
@@ -29,14 +29,14 @@ import {
   Legend,
   ReferenceLine,
   ReferenceArea
-} from 'recharts';
-import { toast } from 'react-toastify';
-import { mockHospitalBeds } from 'data/mockData';
-import { VitalSign } from 'data/mockData';
-import { mockPathientVitalSigns } from 'data/mockData';
-import { mockReferenceVitalSings } from 'data/mockData';
-import { z } from 'zod';
-import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select';
+} from 'recharts'
+import { toast } from 'react-toastify'
+import { mockHospitalBeds } from 'data/mockData'
+import { VitalSign } from 'data/mockData'
+import { mockPathientVitalSigns } from 'data/mockData'
+import { mockReferenceVitalSings } from 'data/mockData'
+import { z } from 'zod'
+import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 
 import {
   Content,
@@ -62,10 +62,10 @@ import {
   InfoText,
   InfoLabel,
   InfoValue
-} from './styled';
+} from './styled'
 
-import Input from 'components/Input/index';
-import colors from 'consts/colors';
+import Input from 'components/Input/index'
+import colors from 'consts/colors'
 
 type VitalSignField =
   | 'temperature'
@@ -73,7 +73,7 @@ type VitalSignField =
   | 'bloodPressureDiastolic'
   | 'pulse'
   | 'spo2'
-  | 'respiratoryRate';
+  | 'respiratoryRate'
 
 const NORMAL_RANGES: Record<string, { min: number; max: number; label: string; unit: string }> = {
   temperature: { min: 36.0, max: 37.2, label: 'Температура', unit: '°C' },
@@ -82,7 +82,7 @@ const NORMAL_RANGES: Record<string, { min: number; max: number; label: string; u
   pulse: { min: 65, max: 95, label: 'Пульс', unit: 'уд/мин' },
   spo2: { min: 95, max: 100, label: 'Сатурация', unit: '%' },
   respiratoryRate: { min: 12, max: 20, label: 'Частота дыхания', unit: 'дых/мин' }
-};
+}
 
 const VITAL_RULES: Record<
   VitalSignField,
@@ -124,7 +124,7 @@ const VITAL_RULES: Record<
     max: 60,
     integerOnly: true
   }
-};
+}
 
 const createFieldErrors = (): Record<VitalSignField, string> => ({
   temperature: '',
@@ -133,45 +133,45 @@ const createFieldErrors = (): Record<VitalSignField, string> => ({
   pulse: '',
   spo2: '',
   respiratoryRate: ''
-});
+})
 
 const getPulseSegments = (pulse: number) => {
-  const min = NORMAL_RANGES.pulse.min;
-  const max = NORMAL_RANGES.pulse.max;
+  const min = NORMAL_RANGES.pulse.min
+  const max = NORMAL_RANGES.pulse.max
 
   if (pulse < min) {
-    return { pulseRange: 0, pulseUpper: pulse };
+    return { pulseRange: 0, pulseUpper: pulse }
   }
 
   if (pulse <= max) {
-    return { pulseRange: pulse, pulseUpper: 0 };
+    return { pulseRange: pulse, pulseUpper: 0 }
   }
 
-  return { pulseRange: max, pulseUpper: pulse - max };
-};
+  return { pulseRange: max, pulseUpper: pulse - max }
+}
 
 const getBloodPressureSegments = (systolic: number, diastolic: number) => {
-  const min = NORMAL_RANGES.bloodPressureDiastolic.min;
-  const max = NORMAL_RANGES.bloodPressureSystolic.max;
-  const start = Math.min(diastolic, systolic);
-  const end = Math.max(diastolic, systolic);
+  const min = NORMAL_RANGES.bloodPressureDiastolic.min
+  const max = NORMAL_RANGES.bloodPressureSystolic.max
+  const start = Math.min(diastolic, systolic)
+  const end = Math.max(diastolic, systolic)
 
-  const below = Math.max(Math.min(end, min) - start, 0);
-  const normalStart = Math.max(start, min);
-  const normalEnd = Math.min(end, max);
-  const normal = Math.max(normalEnd - normalStart, 0);
-  const above = Math.max(end - Math.max(start, max), 0);
+  const below = Math.max(Math.min(end, min) - start, 0)
+  const normalStart = Math.max(start, min)
+  const normalEnd = Math.min(end, max)
+  const normal = Math.max(normalEnd - normalStart, 0)
+  const above = Math.max(end - Math.max(start, max), 0)
 
   return {
     bpBase: start,
     bpLow: below,
     bpNormal: normal,
     bpHigh: above
-  };
-};
+  }
+}
 
 const createVitalFieldSchema = (field: VitalSignField) => {
-  const rule = VITAL_RULES[field];
+  const rule = VITAL_RULES[field]
 
   return z
     .string()
@@ -186,10 +186,10 @@ const createVitalFieldSchema = (field: VitalSignField) => {
       `${rule.label}: допустимы только целые числа`
     )
     .refine((value) => {
-      const numberValue = Number(value.replace(',', '.'));
-      return numberValue >= rule.min && numberValue <= rule.max;
-    }, `${rule.label}: диапазон ${rule.min}-${rule.max}`);
-};
+      const numberValue = Number(value.replace(',', '.'))
+      return numberValue >= rule.min && numberValue <= rule.max
+    }, `${rule.label}: диапазон ${rule.min}-${rule.max}`)
+}
 
 const vitalFieldSchemas: Record<VitalSignField, ReturnType<typeof createVitalFieldSchema>> = {
   temperature: createVitalFieldSchema('temperature'),
@@ -198,40 +198,37 @@ const vitalFieldSchemas: Record<VitalSignField, ReturnType<typeof createVitalFie
   pulse: createVitalFieldSchema('pulse'),
   spo2: createVitalFieldSchema('spo2'),
   respiratoryRate: createVitalFieldSchema('respiratoryRate')
-};
+}
 
-const vitalSignsSchema = z.object(vitalFieldSchemas);
+const vitalSignsSchema = z.object(vitalFieldSchemas)
 
 const mapZodErrors = (error: z.ZodError): Record<VitalSignField, string> => {
-  const nextErrors = createFieldErrors();
+  const nextErrors = createFieldErrors()
 
   for (const issue of error.issues) {
-    const key = issue.path[0];
+    const key = issue.path[0]
 
     if (typeof key !== 'string' || !(key in nextErrors)) {
-      continue;
+      continue
     }
 
-    const field = key as VitalSignField;
+    const field = key as VitalSignField
     if (!nextErrors[field]) {
-      nextErrors[field] = issue.message;
+      nextErrors[field] = issue.message
     }
   }
 
-  return nextErrors;
-};
+  return nextErrors
+}
 
 const CustomTempDot = (props: any) => {
-  const { cx, cy, payload } = props;
-  const abnormal =
-    payload.temperature > NORMAL_RANGES.temperature.max ||
-    payload.temperature < NORMAL_RANGES.temperature.min ||
-    payload.spo2 > NORMAL_RANGES.spo2.max ||
-    payload.spo2 < NORMAL_RANGES.spo2.min ||
-    payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
-    payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min;
+  const { cx, cy, payload } = props
 
   if (props.dataKey === 'temperature') {
+    const abnormal =
+      payload.temperature > NORMAL_RANGES.temperature.max ||
+      payload.temperature < NORMAL_RANGES.temperature.min
+
     return (
       <g>
         {abnormal && (
@@ -242,10 +239,12 @@ const CustomTempDot = (props: any) => {
         )}
         <circle cx={cx} cy={cy} r={abnormal ? 6 : 4} fill={abnormal ? '#ef4444' : '#f97316'} />
       </g>
-    );
+    )
   }
 
   if (props.dataKey === 'spo2') {
+    const abnormal = payload.spo2 > NORMAL_RANGES.spo2.max || payload.spo2 < NORMAL_RANGES.spo2.min
+
     return (
       <g>
         {abnormal && (
@@ -264,9 +263,14 @@ const CustomTempDot = (props: any) => {
           strokeWidth={2}
         />
       </g>
-    );
+    )
   }
+
   if (props.dataKey === 'respiratoryRate') {
+    const abnormal =
+      payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
+      payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+
     return (
       <g>
         {abnormal && (
@@ -284,28 +288,28 @@ const CustomTempDot = (props: any) => {
           strokeWidth={2}
         />
       </g>
-    );
+    )
   }
 
-  return null;
-};
+  return null
+}
 
 const CustomTempActiveDot = (props: any) => {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload } = props
   const abnormal =
     payload.temperature > NORMAL_RANGES.temperature.max ||
-    payload.temperature < NORMAL_RANGES.temperature.min;
-  return <circle cx={cx} cy={cy} r={7} fill={abnormal ? '#ef4444' : '#f97316'} />;
-};
+    payload.temperature < NORMAL_RANGES.temperature.min
+  return <circle cx={cx} cy={cy} r={7} fill={abnormal ? '#ef4444' : '#f97316'} />
+}
 
 interface PatientOption {
-  value: string;
-  label: string;
+  value: string
+  label: string
 }
 
 const DropdownIndicator = (props: DropdownIndicatorProps<PatientOption, false>) => {
-  return <components.DropdownIndicator {...props}></components.DropdownIndicator>;
-};
+  return <components.DropdownIndicator {...props}></components.DropdownIndicator>
+}
 
 const patientSelectStyles: StylesConfig<PatientOption, false> = {
   control: (base, state) => ({
@@ -395,37 +399,43 @@ const patientSelectStyles: StylesConfig<PatientOption, false> = {
       backgroundColor: state.isSelected ? colors.mainColor : '#dbeafe'
     }
   })
-};
-
-interface NurseWorkplaceProps {
-  onNavigate: (screen: string) => void;
-  onLogout: () => void;
-  userRole: 'doctor' | 'nurse' | 'patient' | null;
 }
 
-type TrendDir = 'up' | 'down' | 'stable';
+interface NurseWorkplaceProps {
+  onNavigate: (screen: string) => void
+  onLogout: () => void
+  userRole: 'doctor' | 'nurse' | 'patient' | null
+  patientId?: string
+}
+
+type TrendDir = 'up' | 'down' | 'stable'
 
 const TREND_META: {
-  field: keyof Omit<VitalSign, 'id' | 'date'>;
-  label: string;
-  goodDir: TrendDir | 'any';
+  field: keyof Omit<VitalSign, 'id' | 'date'>
+  label: string
+  goodDir: TrendDir | 'any'
 }[] = [
-  { field: 'temperature', label: 'Темп.', goodDir: 'any' },
-  { field: 'pulse', label: 'Пульс', goodDir: 'any' },
-  { field: 'bloodPressureSystolic', label: 'АД с.', goodDir: 'any' },
-  { field: 'bloodPressureDiastolic', label: 'АД д.', goodDir: 'any' },
-  { field: 'respiratoryRate', label: 'ЧД', goodDir: 'any' },
-  { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
-];
+    { field: 'temperature', label: 'Темп.', goodDir: 'any' },
+    { field: 'pulse', label: 'Пульс', goodDir: 'any' },
+    { field: 'bloodPressureSystolic', label: 'АД с.', goodDir: 'any' },
+    { field: 'bloodPressureDiastolic', label: 'АД д.', goodDir: 'any' },
+    { field: 'respiratoryRate', label: 'ЧД', goodDir: 'any' },
+    { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
+  ]
 
-const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, userRole }) => {
+const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, userRole, patientId }) => {
   const [patientsVitals, setPatientsVitals] =
-    useState<Record<string, VitalSign[]>>(mockPathientVitalSigns);
+    useState<Record<string, VitalSign[]>>(mockPathientVitalSigns)
   const [referenceVitals, setReferenceVitals] =
-    useState<Record<string, VitalSign[]>>(mockReferenceVitalSings);
-  const [hospitalBeds, setHospitalBeds] = useState(mockHospitalBeds);
-  const [selectedPatientId, setSelectedPatientId] = useState<string>('');
-  const [showTemperatureSheet, setShowTemperatureSheet] = useState(true);
+    useState<Record<string, VitalSign[]>>(mockReferenceVitalSings)
+  const [hospitalBeds, setHospitalBeds] = useState(mockHospitalBeds)
+  const [selectedPatientId, setSelectedPatientId] = useState<string>(patientId || '')
+
+  useEffect(() => {
+    if (patientId) setSelectedPatientId(patientId)
+  }, [patientId])
+
+  const [showTemperatureSheet, setShowTemperatureSheet] = useState(true)
   const [vitalSigns, setVitalSigns] = useState({
     temperature: '',
     bloodPressureSystolic: '',
@@ -433,22 +443,22 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
     pulse: '',
     spo2: '',
     respiratoryRate: ''
-  });
+  })
   const [fieldErrors, setFieldErrors] =
-    useState<Record<VitalSignField, string>>(createFieldErrors());
+    useState<Record<VitalSignField, string>>(createFieldErrors())
 
   const spoRespiratoryRate = (patientsVitals[selectedPatientId] || []).map((item) => ({
     name: item.date,
     spo2: item.spo2,
     respiratoryRate: item.respiratoryRate
-  }));
+  }))
 
   const chartData = (patientsVitals[selectedPatientId] || []).map((item) => {
-    const pulseSegments = getPulseSegments(item.pulse);
+    const pulseSegments = getPulseSegments(item.pulse)
     const bpSegments = getBloodPressureSegments(
       item.bloodPressureSystolic,
       item.bloodPressureDiastolic
-    );
+    )
 
     return {
       ...item,
@@ -464,15 +474,15 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
       bpsLower: NORMAL_RANGES.bloodPressureSystolic.min,
       bpdUpper: NORMAL_RANGES.bloodPressureDiastolic.max,
       bpdLower: NORMAL_RANGES.bloodPressureDiastolic.min
-    };
-  });
+    }
+  })
 
   const referenceData = referenceVitals['Good']?.map((item) => {
-    const pulseSegments = getPulseSegments(item.pulse);
+    const pulseSegments = getPulseSegments(item.pulse)
     const bpSegments = getBloodPressureSegments(
       item.bloodPressureSystolic,
       item.bloodPressureDiastolic
-    );
+    )
 
     return {
       ...item,
@@ -486,14 +496,14 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
       bpHigh: bpSegments.bpHigh,
       spo2: item.spo2,
       respiratoryRate: item.respiratoryRate
-    };
-  });
+    }
+  })
 
-  const patientVitalsList = patientsVitals[selectedPatientId] || [];
-  const latestVitals = patientVitalsList.at(-1) ?? null;
-  const previousVitals = patientVitalsList.at(-2) ?? null;
+  const patientVitalsList = patientsVitals[selectedPatientId] || []
+  const latestVitals = patientVitalsList.at(-1) ?? null
+  const previousVitals = patientVitalsList.at(-2) ?? null
 
-  const warnings: { label: string; value: number; unit: string; direction: 'high' | 'low' }[] = [];
+  const warnings: { label: string; value: number; unit: string; direction: 'high' | 'low' }[] = []
   if (latestVitals) {
     const checks = [
       { key: 'temperature', value: latestVitals.temperature },
@@ -502,84 +512,84 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
       { key: 'pulse', value: latestVitals.pulse },
       { key: 'spo2', value: latestVitals.spo2 },
       { key: 'respiratoryRate', value: latestVitals.respiratoryRate }
-    ] as const;
+    ] as const
 
     for (const { key, value } of checks) {
-      const range = NORMAL_RANGES[key];
+      const range = NORMAL_RANGES[key]
       if (value < range.min)
-        warnings.push({ label: range.label, value, unit: range.unit, direction: 'low' });
+        warnings.push({ label: range.label, value, unit: range.unit, direction: 'low' })
       if (value > range.max)
-        warnings.push({ label: range.label, value, unit: range.unit, direction: 'high' });
+        warnings.push({ label: range.label, value, unit: range.unit, direction: 'high' })
     }
   }
 
   const getMonthsFromVitals = (vitals: Record<string, VitalSign[]>): string[] => {
     if (!selectedPatientId || !vitals[selectedPatientId]) {
-      return [];
+      return []
     }
-    const monthsSet = new Set<string>();
+    const monthsSet = new Set<string>()
 
-    const monthFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long' });
+    const monthFormatter = new Intl.DateTimeFormat('ru-RU', { month: 'long' })
 
     vitals[selectedPatientId].forEach((vital) => {
       if (vital.date) {
-        const date = new Date(vital.date);
+        const date = new Date(vital.date)
         if (!isNaN(date.getTime())) {
-          const monthName = monthFormatter.format(date);
-          const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-          monthsSet.add(capitalizedMonth);
+          const monthName = monthFormatter.format(date)
+          const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+          monthsSet.add(capitalizedMonth)
         }
       }
-    });
+    })
 
-    return Array.from(monthsSet);
-  };
+    return Array.from(monthsSet)
+  }
 
   const getTrend = (field: keyof Omit<VitalSign, 'id' | 'date'>): TrendDir => {
-    if (!latestVitals || !previousVitals) return 'stable';
-    const diff = (latestVitals[field] as number) - (previousVitals[field] as number);
-    return diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable';
-  };
+    if (!latestVitals || !previousVitals) return 'stable'
+    const diff = (latestVitals[field] as number) - (previousVitals[field] as number)
+    return diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+  }
 
-  const patientsWithVitals = mockHospitalBeds.filter((bed) => bed.patientId);
-  const selectedPatient = patientsWithVitals.find((bed) => bed.patientId === selectedPatientId); //берем только занятый койки
+  const patientsWithVitals = mockHospitalBeds.filter((bed) => bed.patientId)
+  const selectedPatient = patientsWithVitals.find((bed) => bed.patientId === selectedPatientId) //берем только занятый койки
 
   const validateField = (field: VitalSignField, rawValue: string): string => {
-    const result = vitalFieldSchemas[field].safeParse(rawValue);
-    return result.success ? '' : (result.error.issues[0]?.message ?? '');
-  };
+    const result = vitalFieldSchemas[field].safeParse(rawValue)
+    return result.success ? '' : (result.error.issues[0]?.message ?? '')
+  }
 
   const handleVitalChange = (field: VitalSignField, nextValue: string) => {
     setVitalSigns((prev) => ({
       ...prev,
       [field]: nextValue
-    }));
+    }))
 
     if (nextValue.trim() === '') {
       setFieldErrors((prev) => ({
         ...prev,
         [field]: ''
-      }));
-      return;
+      }))
+      return
     }
 
     setFieldErrors((prev) => ({
       ...prev,
       [field]: validateField(field, nextValue)
-    }));
-  };
+    }))
+  }
 
   const handleSaveVitals = () => {
-    const validationResult = vitalSignsSchema.safeParse(vitalSigns);
+    const validationResult = vitalSignsSchema.safeParse(vitalSigns)
 
     if (!validationResult.success) {
-      setFieldErrors(mapZodErrors(validationResult.error));
-      toast.error('Проверьте корректность показателей перед сохранением');
-      return;
+      setFieldErrors(mapZodErrors(validationResult.error))
+      toast.error('Проверьте корректность показателей перед сохранением')
+      return
     }
 
-    setFieldErrors(createFieldErrors());
-    toast.success('Показатели сохранены в карточку пациента');
+    setFieldErrors(createFieldErrors())
+    toast.success('Показатели сохранены в карточку пациента')
     setVitalSigns({
       temperature: '',
       bloodPressureSystolic: '',
@@ -587,21 +597,21 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
       pulse: '',
       spo2: '',
       respiratoryRate: ''
-    });
-  };
+    })
+  }
 
   const patientOptions: PatientOption[] = patientsWithVitals.reduce<PatientOption[]>((acc, bed) => {
     if (!bed.patientId) {
-      return acc;
+      return acc
     }
 
     acc.push({
       value: bed.patientId,
       label: `${bed.patientName} (Палата ${bed.bedNumber})`
-    });
+    })
 
-    return acc;
-  }, []);
+    return acc
+  }, [])
 
   return (
     <Content>
@@ -654,8 +664,8 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                   <InfoLabel>Месяц</InfoLabel>
                   <InfoValue>
                     {(() => {
-                      const months = getMonthsFromVitals(patientsVitals);
-                      return months && months.length > 0 ? months.join(', ') : '';
+                      const months = getMonthsFromVitals(patientsVitals)
+                      return months && months.length > 0 ? months.join(', ') : ''
                     })()}
                   </InfoValue>
                 </InfoText>
@@ -884,17 +894,17 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                     Динамика:
                   </span>
                   {TREND_META.map(({ field, label, goodDir }) => {
-                    if (field === 'spo2' || field === 'respiratoryRate') return null;
-                    const dir = getTrend(field);
-                    const currentValue = latestVitals?.[field] as number | undefined;
-                    const range = NORMAL_RANGES[field];
+                    if (field === 'spo2' || field === 'respiratoryRate') return null
+                    const dir = getTrend(field)
+                    const currentValue = latestVitals?.[field] as number | undefined
+                    const range = NORMAL_RANGES[field]
                     const isOutOfRange =
                       currentValue !== undefined &&
-                      (currentValue < range.min || currentValue > range.max);
+                      (currentValue < range.min || currentValue > range.max)
                     const isGood =
-                      !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable');
-                    const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626';
-                    const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus;
+                      !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable')
+                    const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626'
+                    const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus
                     return (
                       <div
                         key={field}
@@ -914,7 +924,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                         <Icon size={13} />
                         <span>{label}</span>
                       </div>
-                    );
+                    )
                   })}
                   <span
                     style={{
@@ -966,14 +976,14 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                   <Tooltip
                     formatter={(value, name, entry) => {
                       const row = entry.payload as {
-                        pulse: number;
-                        temperature: number;
-                        bloodPressureSystolic: number;
-                        bloodPressureDiastolic: number;
-                        pulseRange?: number;
-                        bpNormal?: number;
-                      };
-                      const dataKey = entry.dataKey as string;
+                        pulse: number
+                        temperature: number
+                        bloodPressureSystolic: number
+                        bloodPressureDiastolic: number
+                        pulseRange?: number
+                        bpNormal?: number
+                      }
+                      const dataKey = entry.dataKey as string
 
                       const formatAlert = (text: string, alertText?: string) =>
                         alertText ? (
@@ -982,80 +992,76 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                           </span>
                         ) : (
                           text
-                        );
+                        )
 
-                      const tempHigh = row.temperature > NORMAL_RANGES.temperature.max;
-                      const tempLow = row.temperature < NORMAL_RANGES.temperature.min;
+                      const tempHigh = row.temperature > NORMAL_RANGES.temperature.max
+                      const tempLow = row.temperature < NORMAL_RANGES.temperature.min
                       const tempAlert = tempHigh
                         ? '⚠ ↑ выше нормы'
                         : tempLow
                           ? '⚠ ↓ ниже нормы'
-                          : '';
-                      const tempValue = `${row.temperature.toFixed(1)} °C`;
+                          : ''
+                      const tempValue = `${row.temperature.toFixed(1)} °C`
 
-                      const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max;
-                      const pulseLow = row.pulse < NORMAL_RANGES.pulse.min;
-                      const pulseAlert = pulseHigh
-                        ? '↑ выше нормы'
-                        : pulseLow
-                          ? '↓ ниже нормы'
-                          : '';
-                      const pulseValue = `${row.pulse} уд/мин`;
+                      const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max
+                      const pulseLow = row.pulse < NORMAL_RANGES.pulse.min
+                      const pulseAlert = pulseHigh ? '↑ выше нормы' : pulseLow ? '↓ ниже нормы' : ''
+                      const pulseValue = `${row.pulse} уд/мин`
 
                       const bpsHigh =
-                        row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max;
+                        row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
                       const bpsLow =
-                        row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min;
+                        row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
                       const bpdHigh =
-                        row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max;
+                        row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
                       const bpdLow =
-                        row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min;
+                        row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
 
-                      const bpAlerts: string[] = [];
-                      if (bpsHigh) bpAlerts.push('↑ сист.');
-                      if (bpsLow) bpAlerts.push('↓ сист.');
-                      if (bpdHigh) bpAlerts.push('↑ диаст.');
-                      if (bpdLow) bpAlerts.push('↓ диаст.');
-                      const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : '';
-                      const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`;
+                      const bpAlerts: string[] = []
+                      if (bpsHigh) bpAlerts.push('↑ сист.')
+                      if (bpsLow) bpAlerts.push('↓ сист.')
+                      if (bpdHigh) bpAlerts.push('↑ диаст.')
+                      if (bpdLow) bpAlerts.push('↓ диаст.')
+                      const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
+                      const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
 
-                      const pulseRangeValue = row.pulseRange ?? 0;
-                      const bpNormalValue = row.bpNormal ?? 0;
+                      const pulseRangeValue = row.pulseRange ?? 0
+                      const bpNormalValue = row.bpNormal ?? 0
 
                       if (dataKey === 'temperature') {
-                        return [formatAlert(tempValue, tempAlert), 'Температура'];
+                        return [formatAlert(tempValue, tempAlert), 'Температура']
                       }
 
                       if (dataKey === 'pulseBase' || dataKey === 'bpBase') {
-                        return null;
+                        return null
                       }
 
                       if (dataKey === 'pulseRange' || dataKey === 'pulseUpper') {
-                        const segmentValue = typeof value === 'number' ? value : Number(value);
+                        const segmentValue = typeof value === 'number' ? value : Number(value)
                         if (!Number.isFinite(segmentValue) || segmentValue <= 0) {
-                          return null;
+                          return null
                         }
                         const shouldShowPulse =
                           dataKey === 'pulseRange' ||
-                          (dataKey === 'pulseUpper' && pulseRangeValue === 0);
+                          (dataKey === 'pulseUpper' && pulseRangeValue === 0)
                         if (!shouldShowPulse) {
-                          return null;
+                          return null
                         }
-                        return [formatAlert(pulseValue, pulseAlert), 'Пульс'];
+                        return [formatAlert(pulseValue, pulseAlert), 'Пульс']
                       }
 
                       if (dataKey === 'bpNormal') {
-                        return [formatAlert(bpValue, bpAlertText), 'АД'];
+                        return [formatAlert(bpValue, bpAlertText), 'АД']
                       }
 
                       if (dataKey === 'bpLow' || dataKey === 'bpHigh') {
                         if (bpNormalValue !== 0) {
-                          return null;
+                          return null
                         }
-                        return [formatAlert(bpValue, bpAlertText), 'АД'];
+                        return [formatAlert(bpValue, bpAlertText), 'АД']
                       }
 
-                      return [value, name];
+                      return [value, name]
                     }}
                   />
                   <Legend verticalAlign="bottom" align="center" />
@@ -1271,23 +1277,23 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                 {TREND_META.filter(
                   (meta) => meta.field === 'spo2' || meta.field === 'respiratoryRate'
                 ).map((meta) => {
-                  const dir = getTrend(meta.field);
-                  const currentValue = latestVitals?.[meta.field] as number | undefined;
-                  const range = NORMAL_RANGES[meta.field];
-                  const goodDir = meta.goodDir;
+                  const dir = getTrend(meta.field)
+                  const currentValue = latestVitals?.[meta.field] as number | undefined
+                  const range = NORMAL_RANGES[meta.field]
+                  const goodDir = meta.goodDir
 
                   const isOutOfRange =
                     currentValue !== undefined &&
-                    (currentValue < range.min || currentValue > range.max);
+                    (currentValue < range.min || currentValue > range.max)
 
                   const isGood =
-                    !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable');
+                    !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable')
 
-                  const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626';
-                  const bgColor = isGood ? '#16a34a14' : '#dc262614';
-                  const borderColor = isGood ? '#16a34a33' : '#dc262633';
+                  const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626'
+                  const bgColor = isGood ? '#16a34a14' : '#dc262614'
+                  const borderColor = isGood ? '#16a34a33' : '#dc262633'
 
-                  const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus;
+                  const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : Minus
                   return (
                     <div
                       key={meta.field}
@@ -1307,7 +1313,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                       <Icon size={13} />
                       <span>{meta.label}</span>
                     </div>
-                  );
+                  )
                 })}
                 <span
                   style={{
@@ -1332,10 +1338,10 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                 <Tooltip
                   formatter={(value, name, entry) => {
                     const row = entry.payload as {
-                      spo2: number;
-                      respiratoryRate: number;
-                    };
-                    const dataKey = entry.dataKey as string;
+                      spo2: number
+                      respiratoryRate: number
+                    }
+                    const dataKey = entry.dataKey as string
 
                     const formatAlert = (text: string, alertText?: string) =>
                       alertText ? (
@@ -1344,34 +1350,34 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
                         </span>
                       ) : (
                         text
-                      );
+                      )
 
-                    const spo2High = row.spo2 > NORMAL_RANGES.spo2.max;
-                    const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min;
-                    const spo2Alert = spo2High ? '⚠ ↑ выше нормы' : spo2Low ? '⚠ ↓ ниже нормы' : '';
-                    const spo2Value = `${row.spo2.toFixed(1)} %`;
+                    const spo2High = row.spo2 > NORMAL_RANGES.spo2.max
+                    const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min
+                    const spo2Alert = spo2High ? '⚠ ↑ выше нормы' : spo2Low ? '⚠ ↓ ниже нормы' : ''
+                    const spo2Value = `${row.spo2.toFixed(1)} %`
 
                     const respiratoryRateHigh =
-                      row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max;
+                      row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
                     const respiratoryRateLow =
-                      row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min;
+                      row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
                     const respiratoryRateAlert = respiratoryRateHigh
                       ? '⚠ ↑ выше нормы'
                       : respiratoryRateLow
                         ? '⚠ ↓ ниже нормы'
-                        : '';
-                    const respiratoryRateValue = `${row.respiratoryRate} дых/мин`;
+                        : ''
+                    const respiratoryRateValue = `${row.respiratoryRate} дых/мин`
 
                     if (dataKey === 'spo2') {
-                      return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)'];
+                      return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)']
                     }
                     if (dataKey === 'respiratoryRate') {
                       return [
                         formatAlert(respiratoryRateValue, respiratoryRateAlert),
                         'Частота дыхания'
-                      ];
+                      ]
                     }
-                    return [value, name];
+                    return [value, name]
                   }}
                 />
                 <Legend verticalAlign="bottom" align="center" />
@@ -1509,7 +1515,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ onNavigate, onLogout, 
         </div>
       </TwoColumnGrid>
     </Content>
-  );
-};
+  )
+}
 
-export default TemperaturePage;
+export default TemperaturePage

@@ -352,13 +352,14 @@ export const StatLabel = styled.div<{ $light?: boolean }>`
 
 export const StatValue = styled.div<{ $light?: boolean; $color?: string; $delta?: string }>`
   margin: ${(p) => (p.$delta ? '2px 0' : 'auto 0')};
-  font-size: 32px;
-  font-weight: 700;
+  font-size: 34px;
+  font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1;
   color: ${(p) => (p.$light ? '#fff' : p.$color || '#111827')};
   font-variant-numeric: tabular-nums;
 `
+
 
 export const StatDelta = styled.div<{ $positive?: boolean; $light?: boolean }>`
   font-size: 12px;

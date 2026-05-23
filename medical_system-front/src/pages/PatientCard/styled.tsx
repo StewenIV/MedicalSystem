@@ -1,4 +1,39 @@
-import styled, { keyframes } from 'styled-components'
+import styled, { css, keyframes } from 'styled-components'
+import { AppButton } from 'components/Button'
+
+
+const FONT_STACK = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
+
+const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
+const GRADIENT_TITLE = 'linear-gradient(135deg, #0f172a 0%, #1e40af 55%, #3b82f6 100%)'
+
+const controlBase = `
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(191, 219, 254, 0.8);
+  background: #ffffff;
+  color: #0f172a;
+  font-family: ${FONT_STACK};
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  &::placeholder { color: #94a3b8; }
+  &:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  }
+`
+const GRADIENT_SHIMMER =
+  'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.06) 50%, transparent 100%)'
+
+const shimmer = keyframes`
+  0%   { background-position: -200% center }
+  100% { background-position:  200% center }
+`
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(10px); }
@@ -327,7 +362,7 @@ export const SectionCard = styled.div<{ $span?: number }>`
   }
 
   /* ── Заголовок карточки: title + кнопки всегда на одной строке ── */
-  h3 {
+  > h3 {
     margin: 0;
     font-size: 18px;
     font-weight: 700;
@@ -373,6 +408,138 @@ export const SectionCard = styled.div<{ $span?: number }>`
     @media (max-width: 480px) {
       font-size: 13px;
     }
+  }
+`
+
+
+
+export const OpenSheetBtn = styled(AppButton)`
+  width: 100%;
+  max-width: 340px;
+  margin-top: 12px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  }
+`
+
+export const CardHeader = styled.div`
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(238, 242, 247, 0.9);
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
+  border-radius: 12px 12px 0 0;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    background: ${GRADIENT_ACCENT};
+    border-radius: 0 3px 3px 0;
+    box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
+    transition:
+      box-shadow 0.25s ease,
+      width 0.2s ease;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: ${GRADIENT_SHIMMER};
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    width: 4px;
+    box-shadow: 2px 0 14px rgba(37, 99, 235, 0.35);
+  }
+
+  &:hover::after {
+    opacity: 1;
+    animation: ${shimmer} 1.4s ease infinite;
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px 18px 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px 14px 12px;
+  }
+`
+
+export const CardTitle = styled.h3`
+  font-family: ${FONT_STACK};
+  margin: 0;
+  padding-left: 10px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+
+  ${gradientText(GRADIENT_TITLE)}
+
+  filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.08));
+
+  transition:
+    filter 0.25s ease,
+    letter-spacing 0.25s ease;
+
+  ${CardHeader}:hover & {
+    filter: drop-shadow(0 2px 6px rgba(37, 99, 235, 0.2));
+    letter-spacing: -0.03em;
+  }
+`
+
+export const CardSubtitle = styled.p`
+  font-family: ${FONT_STACK};
+  margin: 6px 0 0;
+  padding-left: 10px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #94a3b8;
+  letter-spacing: 0.015em;
+  line-height: 1.55;
+  transition: color 0.2s ease;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #93c5fd, #818cf8);
+    vertical-align: middle;
+    margin-right: 8px;
+    margin-bottom: 2px;
+    opacity: 0.7;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  ${CardHeader}:hover & {
+    color: #64748b;
+
+    &::before {
+      opacity: 1;
+      transform: scale(1.3);
+    }
+  }
+
+   @media (max-width: 768px) {
+    padding-left: 0;
+    font-size: 12px;
+    line-height: 1.45;
   }
 `
 
@@ -702,34 +869,6 @@ export const Badge = styled.span<{ $color?: string; $bg?: string }>`
   gap: 4px;
 `
 
-// ─── Patient Search Panel ──────────────────────────────────────────────────────
-
-const FONT_STACK = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
-
-const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
-const GRADIENT_TITLE = 'linear-gradient(135deg, #0f172a 0%, #1e40af 55%, #3b82f6 100%)'
-
-const controlBase = `
-  width: 100%;
-  min-width: 0;
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(191, 219, 254, 0.8);
-  background: #ffffff;
-  color: #0f172a;
-  font-family: ${FONT_STACK};
-  font-size: 14px;
-  font-weight: 500;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  &::placeholder { color: #94a3b8; }
-  &:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-  }
-`
-
 export const SearchPageWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -753,23 +892,55 @@ export const SearchCard = styled.div`
 `
 
 export const SearchCardHeader = styled.div`
-  padding: 22px 28px 20px;
-  border-bottom: 1px solid rgba(238, 242, 247, 0.9);
-  background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 12px;
-    bottom: 12px;
-    width: 3px;
-    border-radius: 0 3px 3px 0;
-    background: ${GRADIENT_ACCENT};
-    box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
-  }
+  padding: 20px 24px 18px;
+    border-bottom: 1px solid rgba(238, 242, 247, 0.9);
+    background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
+    position: relative;
+    overflow: hidden;
+  
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: ${GRADIENT_ACCENT};
+      box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
+      transition:
+        box-shadow 0.25s ease,
+        width 0.2s ease;
+    }
+  
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: ${GRADIENT_SHIMMER};
+      background-size: 200% 100%;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+  
+    &:hover::before {
+      width: 4px;
+      box-shadow: 2px 0 14px rgba(37, 99, 235, 0.35);
+    }
+  
+    &:hover::after {
+      opacity: 1;
+      animation: ${shimmer} 1.4s ease infinite;
+    }
+  
+    @media (max-width: 768px) {
+      padding: 16px 18px 14px;
+    }
+  
+    @media (max-width: 480px) {
+      padding: 14px;
+    }
 `
 
 export const SearchCardTitle = styled.h2`
@@ -785,9 +956,9 @@ export const SearchCardTitle = styled.h2`
       linear-gradient(
         135deg,
         #0f172a  0%,
-        #1d4ed8 10%,
-        #6d28d9 20%,
-        #2563eb 30%
+        #1d4ed8 45%,
+        #6d28d9 75%,
+        #2563eb 100%
       )
     `)}
   

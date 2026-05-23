@@ -8,7 +8,7 @@ const WelcomeScreen = lazy(() => import('pages/WelcomeScreen'))
 const ResetPasswordPage = lazy(() => import('pages/ResetPasswordPage'))
 
 const HomePage = lazy(() => import('pages/HomePage'))
-const TemperaturePage = lazy(() => import('pages/TemperatureSheet/index'))
+const TemperaturePage = lazy(() => import('pages/TemperatureSheet'))
 const PatientCardPage = lazy(() => import('pages/PatientCard'))
 
 const PublicRoutes: React.FC = () => {

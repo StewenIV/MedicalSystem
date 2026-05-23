@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import TemperaturePage from 'pages/TemperatureSheet'
 import { Helmet } from 'react-helmet'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 import CreatableSelect from 'react-select/creatable'
@@ -46,8 +47,7 @@ import {
   TrendingDown,
   Minus as MinusIcon,
   Calendar,
-  Info,
-  AlertTriangle
+  FileLineChart
 } from 'lucide-react'
 import {
   ResponsiveContainer,
@@ -119,7 +119,11 @@ import {
   SearchPaginationBtns,
   SearchPageBtn,
   SearchEmptyState,
-  SearchResultsCount
+  SearchResultsCount,
+  CardHeader,
+  CardTitle,
+  CardSubtitle,
+  OpenSheetBtn
 } from './styled'
 
 interface SelectOption {
@@ -196,6 +200,16 @@ const NORMAL_RANGES: Record<string, { min: number; max: number; label: string; u
   respiratoryRate: { min: 12, max: 20, label: 'ЧД', unit: 'дых/мин' }
 }
 
+const VITAL_RULES = {
+  temperature: { label: 'Температура', min: 34, max: 42 },
+  bloodPressureSystolic: { label: 'Систолическое давление', min: 70, max: 250 },
+  bloodPressureDiastolic: { label: 'Диастолическое давление', min: 40, max: 150 },
+  pulse: { label: 'Пульс', min: 30, max: 220 },
+  spo2: { label: 'Сатурация', min: 50, max: 100 },
+  respiratoryRate: { label: 'Частота дыхания', min: 5, max: 60 }
+}
+
+
 const getPulseSegments = (pulse: number) => {
   const min = NORMAL_RANGES.pulse.min
   const max = NORMAL_RANGES.pulse.max
@@ -249,16 +263,13 @@ const buildChartData = (signs: VitalSign[]) =>
   })
 
 const CustomTempDot = (props: any) => {
-  const { cx, cy, payload } = props
-  const abnormal =
-    payload.temperature > NORMAL_RANGES.temperature.max ||
-    payload.temperature < NORMAL_RANGES.temperature.min ||
-    payload.spo2 > NORMAL_RANGES.spo2.max ||
-    payload.spo2 < NORMAL_RANGES.spo2.min ||
-    payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
-    payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+  const { cx, cy, payload } = props;
 
   if (props.dataKey === 'temperature') {
+    const abnormal =
+      payload.temperature > NORMAL_RANGES.temperature.max ||
+      payload.temperature < NORMAL_RANGES.temperature.min;
+
     return (
       <g>
         {abnormal && (
@@ -269,10 +280,14 @@ const CustomTempDot = (props: any) => {
         )}
         <circle cx={cx} cy={cy} r={abnormal ? 6 : 4} fill={abnormal ? '#ef4444' : '#f97316'} />
       </g>
-    )
+    );
   }
 
   if (props.dataKey === 'spo2') {
+    const abnormal =
+      payload.spo2 > NORMAL_RANGES.spo2.max ||
+      payload.spo2 < NORMAL_RANGES.spo2.min;
+
     return (
       <g>
         {abnormal && (
@@ -291,9 +306,14 @@ const CustomTempDot = (props: any) => {
           strokeWidth={2}
         />
       </g>
-    )
+    );
   }
+
   if (props.dataKey === 'respiratoryRate') {
+    const abnormal =
+      payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
+      payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min;
+
     return (
       <g>
         {abnormal && (
@@ -311,11 +331,11 @@ const CustomTempDot = (props: any) => {
           strokeWidth={2}
         />
       </g>
-    )
+    );
   }
 
-  return null
-}
+  return null;
+};
 
 const CustomTempActiveDot = (props: any) => {
   const { cx, cy, payload } = props
@@ -702,75 +722,75 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
         <SearchTableWrap ref={tableWrapRef}>
           <SearchTableViewport ref={tableScrollRef} onScroll={updateTableScrollHint}>
             <SearchTable>
-            <SearchThead>
-              <tr>
-                <SearchTh>ID</SearchTh>
-                <SearchTh>Пациент</SearchTh>
-                <SearchTh>Возраст / Пол</SearchTh>
-                <SearchTh>Лечащий врач</SearchTh>
-                <SearchTh>Палата</SearchTh>
-                <SearchTh>Статус</SearchTh>
-                <SearchTh>Номер карты</SearchTh>
-              </tr>
-            </SearchThead>
-            <tbody>
-              {paged.length === 0 ? (
+              <SearchThead>
                 <tr>
-                  <td colSpan={7}>
-                    <SearchEmptyState>
-                      <Users size={48} />
-                      <p>Пациенты не найдены</p>
-                      <span>Попробуйте изменить параметры поиска</span>
-                    </SearchEmptyState>
-                  </td>
+                  <SearchTh>ID</SearchTh>
+                  <SearchTh>Пациент</SearchTh>
+                  <SearchTh>Возраст / Пол</SearchTh>
+                  <SearchTh>Лечащий врач</SearchTh>
+                  <SearchTh>Палата</SearchTh>
+                  <SearchTh>Статус</SearchTh>
+                  <SearchTh>Номер карты</SearchTh>
                 </tr>
-              ) : (
-                paged.map((patient) => (
-                  <SearchTr
-                    key={patient.id}
-                    onClick={() => handleRowClick(patient.id)}
-                    title="Одинарный клик — открыть карту | Двойной клик — быстрый просмотр"
-                  >
-                    <SearchTdMuted
-                      style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}
+              </SearchThead>
+              <tbody>
+                {paged.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <SearchEmptyState>
+                        <Users size={48} />
+                        <p>Пациенты не найдены</p>
+                        <span>Попробуйте изменить параметры поиска</span>
+                      </SearchEmptyState>
+                    </td>
+                  </tr>
+                ) : (
+                  paged.map((patient) => (
+                    <SearchTr
+                      key={patient.id}
+                      onClick={() => handleRowClick(patient.id)}
+                      title="Одинарный клик — открыть карту | Двойной клик — быстрый просмотр"
                     >
-                      {patient.id}
-                    </SearchTdMuted>
-                    <SearchTdBold>
-                      <PatientNameCell>
-                        <PatientAvatar>
-                          {getInitials(patient.firstName, patient.lastName)}
-                        </PatientAvatar>
-                        <div>
+                      <SearchTdMuted
+                        style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}
+                      >
+                        {patient.id}
+                      </SearchTdMuted>
+                      <SearchTdBold>
+                        <PatientNameCell>
+                          <PatientAvatar>
+                            {getInitials(patient.firstName, patient.lastName)}
+                          </PatientAvatar>
                           <div>
-                            {patient.lastName} {patient.firstName}
+                            <div>
+                              {patient.lastName} {patient.firstName}
+                            </div>
+                            <div
+                              style={{
+                                fontSize: 12,
+                                color: '#94a3b8',
+                                fontWeight: 400,
+                                marginTop: 2
+                              }}
+                            >
+                              {patient.middleName}
+                            </div>
                           </div>
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: '#94a3b8',
-                              fontWeight: 400,
-                              marginTop: 2
-                            }}
-                          >
-                            {patient.middleName}
-                          </div>
-                        </div>
-                      </PatientNameCell>
-                    </SearchTdBold>
-                    <SearchTd>
-                      {patient.age} лет, {patient.gender === 'Мужской' ? 'М' : 'Ж'}
-                    </SearchTd>
-                    <SearchTd>{patient.doctor}</SearchTd>
-                    <SearchTdMuted>{getPatientRoom(patient.id)}</SearchTdMuted>
-                    <SearchTd>
-                      <StatusPill $status={patient.status}>{patient.statusText}</StatusPill>
-                    </SearchTd>
-                    <SearchTdMuted>{patient.medcardNum}</SearchTdMuted>
-                  </SearchTr>
-                ))
-              )}
-            </tbody>
+                        </PatientNameCell>
+                      </SearchTdBold>
+                      <SearchTd>
+                        {patient.age} лет, {patient.gender === 'Мужской' ? 'М' : 'Ж'}
+                      </SearchTd>
+                      <SearchTd>{patient.doctor}</SearchTd>
+                      <SearchTdMuted>{getPatientRoom(patient.id)}</SearchTdMuted>
+                      <SearchTd>
+                        <StatusPill $status={patient.status}>{patient.statusText}</StatusPill>
+                      </SearchTd>
+                      <SearchTdMuted>{patient.medcardNum}</SearchTdMuted>
+                    </SearchTr>
+                  ))
+                )}
+              </tbody>
             </SearchTable>
           </SearchTableViewport>
         </SearchTableWrap>
@@ -807,11 +827,13 @@ interface PatientCardPageProps {
   patientId?: string
   initialSearchQuery?: string
   onSelectPatient?: (id: string) => void
+  onNavigateToTemperatureSheet?: (id: string) => void
 }
 
 interface PatientCardProps {
   patientId?: string
   onSelectPatientFromPreview?: (id: string) => void
+  onNavigateToTemperatureSheet?: (id: string) => void
 }
 
 enum TabsEnum {
@@ -826,7 +848,7 @@ enum TabsEnum {
   Documents = 'Документы'
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFromPreview }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFromPreview, onNavigateToTemperatureSheet }) => {
   const [activeTab, setActiveTab] = useState<string>(TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
 
@@ -847,6 +869,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
   const openModal = (type: string, data: any = null) => {
     setModalConfig({ isOpen: true, type, data })
     setFormData(data || {})
+  }
+
+  const handleBack = () => {
+    if (onNavigateToTemperatureSheet) {
+      window.scrollTo({
+        top: 0
+      });
+      onNavigateToTemperatureSheet(localPatient?.id || patientId || '')
+    }
   }
 
   const closeModal = () => {
@@ -1254,8 +1285,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     const sel = SELECT_FIELDS[f.name]
     if (sel) {
       const currentVal = formData[f.name]
-      const selectValue = sel.options.find((o) => o.value === currentVal) || 
-                          (currentVal ? { value: currentVal, label: currentVal } : null)
+      const selectValue = sel.options.find((o) => o.value === currentVal) ||
+        (currentVal ? { value: currentVal, label: currentVal } : null)
       return (
         <FormGroup key={f.name}>
           <Label>{FIELD_LABELS[f.name] || f.label}</Label>
@@ -1880,12 +1911,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         </td>
                       </tr>
                     )) || (
-                      <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Нет данных
-                        </td>
-                      </tr>
-                    )}
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                            Нет данных
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                 </Table>
               </TableWrapper>
@@ -1961,12 +1992,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         </td>
                       </tr>
                     )) || (
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Аллергии не зафиксированы
-                        </td>
-                      </tr>
-                    )}
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                            Аллергии не зафиксированы
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                 </Table>
               </TableWrapper>
@@ -2014,12 +2045,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         </td>
                       </tr>
                     )) || (
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Нет текущих лекарств
-                        </td>
-                      </tr>
-                    )}
+                        <tr>
+                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                            Нет текущих лекарств
+                          </td>
+                        </tr>
+                      )}
                   </tbody>
                 </Table>
               </TableWrapper>
@@ -2212,12 +2243,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       </td>
                     </tr>
                   )) || (
-                    <tr>
-                      <td colSpan={10} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                        Нет данных
-                      </td>
-                    </tr>
-                  )}
+                      <tr>
+                        <td colSpan={10} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Нет данных
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -2278,12 +2309,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       </td>
                     </tr>
                   )) || (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                        Нет данных
-                      </td>
-                    </tr>
-                  )}
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Нет данных
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -2293,6 +2324,27 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
         const patientSigns: VitalSign[] = mockPathientVitalSigns[localPatient.id] || []
         const chartData = buildChartData(patientSigns)
         const latest = patientSigns[patientSigns.length - 1]
+        const previous = patientSigns[patientSigns.length - 2]
+
+        const TREND_META: {
+          field: keyof Omit<VitalSign, 'id' | 'date'>;
+          label: string;
+          goodDir: 'up' | 'down' | 'stable' | 'any';
+        }[] = [
+            { field: 'temperature', label: 'Темп.', goodDir: 'any' },
+            { field: 'pulse', label: 'Пульс', goodDir: 'any' },
+            { field: 'bloodPressureSystolic', label: 'АД с.', goodDir: 'any' },
+            { field: 'bloodPressureDiastolic', label: 'АД д.', goodDir: 'any' },
+            { field: 'respiratoryRate', label: 'ЧД', goodDir: 'any' },
+            { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
+          ]
+
+        const getTrend = (field: keyof Omit<VitalSign, 'id' | 'date'>): 'up' | 'down' | 'stable' => {
+          if (!latest || !previous) return 'stable'
+          const diff = (latest[field] as number) - (previous[field] as number)
+          return diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        }
+
         const VITAL_ITEMS = [
           {
             key: 'temp',
@@ -2381,437 +2433,663 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                   </div>
                 ))}
               </div>
+              <div style={{ marginTop: "10px", display: 'flex', justifyContent: 'center' }}>
+                <OpenSheetBtn onClick={() => { handleBack() }}>
+                  <FileLineChart size={20} />
+                  <span>Открыть температурный лист</span>
+                </OpenSheetBtn>
+              </div>
             </SectionCard>
             {chartData.length >= 2 ? (
               <>
-                <SectionCard>
-                  <h3>График: Температура, Пульс, АД</h3>
-                  <ResponsiveContainer width="100%" height={420}>
-                    <ComposedChart
-                      data={chartData}
-                      margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+                <SectionCard style={{ padding: 0 }}>
+                  <CardHeader>
+                    <CardTitle>Температура, Пульс, АД</CardTitle>
+                    <CardSubtitle>График изменения температуры и жизненно важных функций</CardSubtitle>
+                  </CardHeader>
+                  {patientSigns.length >= 2 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '8px',
+                        flexWrap: 'wrap',
+                        padding: '12px 20px',
+                        borderBottom: '1px solid #f1f5f9'
+                      }}
                     >
-                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
+                      <span style={{ fontSize: '11px', color: '#94a3b8', alignSelf: 'center' }}>
+                        Динамика:
+                      </span>
 
-                      <YAxis
-                        yAxisId="vitals"
-                        domain={[30, 250]}
-                        width={52}
-                        tickCount={12}
-                        label={{
-                          value: 'Пульс / АД',
-                          angle: -90,
-                          position: 'insideLeft',
-                          offset: 0
+                      {TREND_META.filter(
+                        (meta) =>
+                          meta.field === 'temperature' ||
+                          meta.field === 'pulse' ||
+                          meta.field === 'bloodPressureSystolic' ||
+                          meta.field === 'bloodPressureDiastolic'
+                      ).map((meta) => {
+                        const dir = getTrend(meta.field)
+                        const currentValue = latest?.[meta.field] as number | undefined
+                        const range = NORMAL_RANGES[meta.field]
+                        const goodDir = meta.goodDir
+
+                        const isOutOfRange =
+                          currentValue !== undefined &&
+                          (currentValue < range.min || currentValue > range.max)
+
+                        const isGood =
+                          !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable')
+
+                        const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626'
+                        const bgColor = isGood ? '#16a34a14' : '#dc262614'
+                        const borderColor = isGood ? '#16a34a33' : '#dc262633'
+
+                        const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : MinusIcon
+                        return (
+                          <div
+                            key={meta.field}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '4px 10px',
+                              borderRadius: '20px',
+                              backgroundColor: bgColor,
+                              border: `1px solid ${borderColor}`,
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color
+                            }}
+                          >
+                            <Icon size={13} />
+                            <span>{meta.label}</span>
+                          </div>
+                        )
+                      })}
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          color: '#94a3b8',
+                          alignSelf: 'center',
+                          marginLeft: 'auto'
                         }}
-                      />
-                      <YAxis
-                        yAxisId="temp"
-                        orientation="right"
-                        domain={[NORMAL_RANGES.temperature.min, NORMAL_RANGES.temperature.max]}
-                        tickCount={10}
-                        width={52}
-                        label={{
-                          value: 'Температура, °C',
-                          angle: 90,
-                          position: 'insideRight',
-                          offset: -10
-                        }}
-                      />
+                      >
+                        ← vs предыдущий замер
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ padding: '0 20px 20px 20px' }}>
+                    <ResponsiveContainer width="100%" height={420}>
+                      <ComposedChart
+                        data={chartData}
+                        margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+                      >
+                        <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
 
-                      <Tooltip
-                        formatter={(value, name, entry) => {
-                          const row = entry.payload as any
-                          const dataKey = entry.dataKey as string
+                        <YAxis
+                          yAxisId="vitals"
+                          domain={[30, 250]}
+                          width={52}
+                          tickCount={12}
+                          label={{
+                            value: 'Пульс / АД',
+                            angle: -90,
+                            position: 'insideLeft',
+                            offset: 0
+                          }}
+                        />
+                        <YAxis
+                          yAxisId="temp"
+                          orientation="right"
+                          domain={[VITAL_RULES.temperature.min, VITAL_RULES.temperature.max]}
+                          tickCount={10}
+                          width={52}
+                          label={{
+                            value: 'Температура, °C',
+                            angle: 90,
+                            position: 'insideRight',
+                            offset: -10
+                          }}
+                        />
 
-                          const formatAlert = (text: string, alertText?: string) =>
-                            alertText ? (
-                              <span style={{ color: '#dc2626', fontWeight: 600 }}>
-                                {text} ({alertText})
-                              </span>
-                            ) : (
-                              text
-                            )
+                        <Tooltip
+                          formatter={(value, name, entry) => {
+                            const row = entry.payload as any
+                            const dataKey = entry.dataKey as string
 
-                          const tempHigh = row.temperature > NORMAL_RANGES.temperature.max
-                          const tempLow = row.temperature < NORMAL_RANGES.temperature.min
-                          const tempAlert = tempHigh
-                            ? '⚠ ↑ выше нормы'
-                            : tempLow
-                              ? '⚠ ↓ ниже нормы'
-                              : ''
-                          const tempValue = `${row.temperature.toFixed(1)} °C`
+                            const formatAlert = (text: string, alertText?: string) =>
+                              alertText ? (
+                                <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                                  {text} ({alertText})
+                                </span>
+                              ) : (
+                                text
+                              )
 
-                          const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max
-                          const pulseLow = row.pulse < NORMAL_RANGES.pulse.min
-                          const pulseAlert = pulseHigh
-                            ? '↑ выше нормы'
-                            : pulseLow
-                              ? '↓ ниже нормы'
-                              : ''
-                          const pulseValue = `${row.pulse} уд/мин`
+                            const tempHigh = row.temperature > NORMAL_RANGES.temperature.max
+                            const tempLow = row.temperature < NORMAL_RANGES.temperature.min
+                            const tempAlert = tempHigh
+                              ? '⚠ ↑ выше нормы'
+                              : tempLow
+                                ? '⚠ ↓ ниже нормы'
+                                : ''
+                            const tempValue = `${row.temperature.toFixed(1)} °C`
 
-                          const bpsHigh =
-                            row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
-                          const bpsLow =
-                            row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
-                          const bpdHigh =
-                            row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
-                          const bpdLow =
-                            row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
+                            const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max
+                            const pulseLow = row.pulse < NORMAL_RANGES.pulse.min
+                            const pulseAlert = pulseHigh
+                              ? '↑ выше нормы'
+                              : pulseLow
+                                ? '↓ ниже нормы'
+                                : ''
+                            const pulseValue = `${row.pulse} уд/мин`
 
-                          const bpAlerts: string[] = []
-                          if (bpsHigh) bpAlerts.push('↑ сист.')
-                          if (bpsLow) bpAlerts.push('↓ сист.')
-                          if (bpdHigh) bpAlerts.push('↑ диаст.')
-                          if (bpdLow) bpAlerts.push('↓ диаст.')
-                          const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
-                          const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
+                            const bpsHigh =
+                              row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
+                            const bpsLow =
+                              row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
+                            const bpdHigh =
+                              row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
+                            const bpdLow =
+                              row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
 
-                          const pulseRangeValue = row.pulseRange ?? 0
-                          const bpNormalValue = row.bpNormal ?? 0
+                            const bpAlerts: string[] = []
+                            if (bpsHigh) bpAlerts.push('↑ сист.')
+                            if (bpsLow) bpAlerts.push('↓ сист.')
+                            if (bpdHigh) bpAlerts.push('↑ диаст.')
+                            if (bpdLow) bpAlerts.push('↓ диаст.')
+                            const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
+                            const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
 
-                          if (dataKey === 'temperature') {
-                            return [formatAlert(tempValue, tempAlert), 'Температура']
-                          }
+                            const pulseRangeValue = row.pulseRange ?? 0
+                            const bpNormalValue = row.bpNormal ?? 0
 
-                          if (dataKey === 'pulseBase' || dataKey === 'bpBase') {
-                            return null
-                          }
+                            if (dataKey === 'temperature') {
+                              return [formatAlert(tempValue, tempAlert), 'Температура']
+                            }
 
-                          if (dataKey === 'pulseRange' || dataKey === 'pulseUpper') {
-                            const segmentValue = typeof value === 'number' ? value : Number(value)
-                            if (!Number.isFinite(segmentValue) || segmentValue <= 0) {
+                            if (dataKey === 'pulseBase' || dataKey === 'bpBase') {
                               return null
                             }
-                            const shouldShowPulse =
-                              dataKey === 'pulseRange' ||
-                              (dataKey === 'pulseUpper' && pulseRangeValue === 0)
-                            if (!shouldShowPulse) {
-                              return null
+
+                            if (dataKey === 'pulseRange' || dataKey === 'pulseUpper') {
+                              const segmentValue = typeof value === 'number' ? value : Number(value)
+                              if (!Number.isFinite(segmentValue) || segmentValue <= 0) {
+                                return null
+                              }
+                              const shouldShowPulse =
+                                dataKey === 'pulseRange' ||
+                                (dataKey === 'pulseUpper' && pulseRangeValue === 0)
+                              if (!shouldShowPulse) {
+                                return null
+                              }
+                              return [formatAlert(pulseValue, pulseAlert), 'Пульс']
                             }
-                            return [formatAlert(pulseValue, pulseAlert), 'Пульс']
-                          }
 
-                          if (dataKey === 'bpNormal') {
-                            return [formatAlert(bpValue, bpAlertText), 'АД']
-                          }
-
-                          if (dataKey === 'bpLow' || dataKey === 'bpHigh') {
-                            if (bpNormalValue !== 0) {
-                              return null
+                            if (dataKey === 'bpNormal') {
+                              return [formatAlert(bpValue, bpAlertText), 'АД']
                             }
-                            return [formatAlert(bpValue, bpAlertText), 'АД']
-                          }
 
-                          return [value, name]
-                        }}
-                      />
-                      <Legend verticalAlign="bottom" align="center" />
+                            if (dataKey === 'bpLow' || dataKey === 'bpHigh') {
+                              if (bpNormalValue !== 0) {
+                                return null
+                              }
+                              return [formatAlert(bpValue, bpAlertText), 'АД']
+                            }
 
-                      <ReferenceArea
-                        yAxisId="temp"
-                        y1={NORMAL_RANGES.temperature.min}
-                        y2={NORMAL_RANGES.temperature.max}
-                        fill="#dcfce7"
-                        fillOpacity={0.35}
-                        strokeOpacity={0}
-                      />
+                            return [value, name]
+                          }}
+                        />
+                        <Legend verticalAlign="bottom" align="center" />
 
-                      <ReferenceLine
-                        yAxisId="temp"
-                        y={37.2}
-                        stroke="#16a34a"
-                        strokeDasharray="5 4"
-                        strokeOpacity={0.55}
-                        strokeWidth={1.5}
-                      />
-                      <ReferenceLine
-                        yAxisId="temp"
-                        y={36.0}
-                        stroke="#16a34a"
-                        strokeDasharray="5 4"
-                        strokeOpacity={0.4}
-                        strokeWidth={1.5}
-                      />
+                        <ReferenceArea
+                          yAxisId="temp"
+                          y1={NORMAL_RANGES.temperature.min}
+                          y2={NORMAL_RANGES.temperature.max}
+                          fill="#dcfce7"
+                          fillOpacity={0.35}
+                          strokeOpacity={0}
+                        />
 
-                      <ReferenceLine
-                        yAxisId="vitals"
-                        y={NORMAL_RANGES.bloodPressureSystolic.max}
-                        stroke="#f97316"
-                        strokeDasharray="6 4"
-                        strokeOpacity={0.45}
-                        strokeWidth={1.5}
-                      />
-                      <ReferenceLine
-                        yAxisId="vitals"
-                        y={NORMAL_RANGES.bloodPressureDiastolic.min}
-                        stroke="#f97316"
-                        strokeDasharray="4 4"
-                        strokeOpacity={0.35}
-                        strokeWidth={1.5}
-                      />
+                        <ReferenceLine
+                          yAxisId="temp"
+                          y={37.2}
+                          stroke="#16a34a"
+                          strokeDasharray="5 4"
+                          strokeOpacity={0.55}
+                          strokeWidth={1.5}
+                          label={{
+                            value: `${NORMAL_RANGES.temperature.max}°`,
+                            position: 'left',
+                            fontSize: 10,
+                            fill: '#16a34a',
+                            dy: -12,
+                            dx: 4
+                          }}
+                        />
+                        <ReferenceLine
+                          yAxisId="temp"
+                          y={36.0}
+                          stroke="#16a34a"
+                          strokeDasharray="5 4"
+                          strokeOpacity={0.4}
+                          strokeWidth={1.5}
+                          label={{
+                            value: `${NORMAL_RANGES.temperature.min}.0°`,
+                            position: 'left',
+                            fontSize: 10,
+                            fill: '#16a34a',
+                            dy: -4,
+                            dx: 4
+                          }}
+                        />
 
-                      <ReferenceLine
-                        yAxisId="vitals"
-                        y={NORMAL_RANGES.pulse.max}
-                        stroke="#db2777"
-                        strokeDasharray="4 3"
-                        strokeOpacity={0.35}
-                        strokeWidth={1.5}
-                      />
-                      <ReferenceLine
-                        yAxisId="vitals"
-                        y={NORMAL_RANGES.pulse.min}
-                        stroke="#db2777"
-                        strokeDasharray="4 3"
-                        strokeOpacity={0.25}
-                        strokeWidth={1.5}
-                      />
+                        <ReferenceLine
+                          yAxisId="vitals"
+                          y={NORMAL_RANGES.bloodPressureSystolic.max}
+                          stroke="#f97316"
+                          strokeDasharray="6 4"
+                          strokeOpacity={0.45}
+                          strokeWidth={1.5}
+                          label={{
+                            value: `АД ${NORMAL_RANGES.bloodPressureSystolic.max}`,
+                            position: 'left',
+                            fontSize: 10,
+                            fill: '#f97316',
+                            dy: -7,
+                            dx: 3
+                          }}
+                        />
+                        <ReferenceLine
+                          yAxisId="vitals"
+                          y={NORMAL_RANGES.bloodPressureDiastolic.min}
+                          stroke="#f97316"
+                          strokeDasharray="4 4"
+                          strokeOpacity={0.35}
+                          strokeWidth={1.5}
+                          label={{
+                            value: `АД ${NORMAL_RANGES.bloodPressureDiastolic.min}`,
+                            position: 'left',
+                            fontSize: 10,
+                            fill: '#f97316',
+                            dy: 2,
+                            dx: 3
+                          }}
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="pulseBase"
-                        stackId="pulse"
-                        fill="transparent"
-                        legendType="none"
-                      />
+                        <ReferenceLine
+                          yAxisId="vitals"
+                          y={NORMAL_RANGES.pulse.max}
+                          stroke="#db2777"
+                          strokeDasharray="4 3"
+                          strokeOpacity={0.35}
+                          strokeWidth={1.5}
+                          label={{
+                            value: `Пульс ${NORMAL_RANGES.pulse.max}`,
+                            position: 'right',
+                            fontSize: 10,
+                            fill: '#db2777'
+                          }}
+                        />
+                        <ReferenceLine
+                          yAxisId="vitals"
+                          y={NORMAL_RANGES.pulse.min}
+                          stroke="#db2777"
+                          strokeDasharray="4 3"
+                          strokeOpacity={0.25}
+                          strokeWidth={1.5}
+                          label={{
+                            value: `Пульс ${NORMAL_RANGES.pulse.min}`,
+                            position: 'right',
+                            fontSize: 10,
+                            fill: '#db2777',
+                            dy: -5
+                          }}
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="pulseRange"
-                        stackId="pulse"
-                        name="Пульс"
-                        fill="#db2777"
-                        barSize={14}
-                        radius={[4, 4, 0, 0]}
-                      />
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="pulseBase"
+                          stackId="pulse"
+                          fill="transparent"
+                          legendType="none"
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="pulseUpper"
-                        stackId="pulse"
-                        name="Пульс (плохой)"
-                        fill="#ff0026"
-                        barSize={14}
-                        radius={[4, 4, 4, 4]}
-                        legendType="none"
-                      />
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="pulseRange"
+                          stackId="pulse"
+                          name="Пульс"
+                          fill="#db2777"
+                          barSize={14}
+                          radius={[4, 4, 0, 0]}
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="bpBase"
-                        stackId="bp"
-                        fill="transparent"
-                        legendType="none"
-                      />
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="pulseUpper"
+                          stackId="pulse"
+                          name="Пульс (плохой)"
+                          fill="#ff0026"
+                          barSize={14}
+                          radius={[4, 4, 4, 4]}
+                          legendType="none"
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="bpLow"
-                        stackId="bp"
-                        name="АД (выше нормы)"
-                        fill="#000c8b"
-                        legendType="none"
-                        barSize={14}
-                        radius={[4, 4, 4, 4]}
-                      />
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="bpBase"
+                          stackId="bp"
+                          fill="transparent"
+                          legendType="none"
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="bpNormal"
-                        stackId="bp"
-                        name="АД (нижн.-верхн.)"
-                        fill="#2563eb"
-                        barSize={14}
-                        radius={[4, 4, 4, 4]}
-                      />
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="bpLow"
+                          stackId="bp"
+                          name="АД (выше нормы)"
+                          fill="#000c8b"
+                          legendType="none"
+                          barSize={14}
+                          radius={[4, 4, 4, 4]}
+                        />
 
-                      <Bar
-                        yAxisId="vitals"
-                        dataKey="bpHigh"
-                        stackId="bp"
-                        name="АД (ниже нормы)"
-                        fill="#000c8b"
-                        legendType="none"
-                        barSize={14}
-                        radius={[4, 4, 4, 4]}
-                      />
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="bpNormal"
+                          stackId="bp"
+                          name="АД (нижн.-верхн.)"
+                          fill="#2563eb"
+                          barSize={14}
+                          radius={[4, 4, 4, 4]}
+                        />
 
-                      <Line
-                        yAxisId="temp"
-                        type="monotone"
-                        dataKey="temperature"
-                        name="Температура"
-                        stroke="#f97316"
-                        strokeWidth={3}
-                        dot={<CustomTempDot />}
-                        activeDot={<CustomTempActiveDot />}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
+                        <Bar
+                          yAxisId="vitals"
+                          dataKey="bpHigh"
+                          stackId="bp"
+                          name="АД (ниже нормы)"
+                          fill="#000c8b"
+                          legendType="none"
+                          barSize={14}
+                          radius={[4, 4, 4, 4]}
+                        />
+
+                        <Line
+                          yAxisId="temp"
+                          type="monotone"
+                          dataKey="temperature"
+                          name="Температура"
+                          stroke="#f97316"
+                          strokeWidth={3}
+                          dot={<CustomTempDot />}
+                          activeDot={<CustomTempActiveDot />}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
                 </SectionCard>
-                <SectionCard>
-                  <h3>График: SpO2 и Частота дыхания</h3>
-                  <ResponsiveContainer width="100%" height={420}>
-                    <ComposedChart
-                      data={chartData}
-                      margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+                <SectionCard style={{ padding: 0 }}>
+                  <CardHeader>
+                    <CardTitle>SpO2 и Частота дыхания</CardTitle>
+                    <CardSubtitle>График изменения насыщения кислородом и частоты дыхания</CardSubtitle>
+                  </CardHeader>
+                  {patientSigns.length >= 2 && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: '8px',
+                        flexWrap: 'wrap',
+                        padding: '12px 20px',
+                        borderBottom: '1px solid #f1f5f9'
+                      }}
                     >
-                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
+                      <span style={{ fontSize: '11px', color: '#94a3b8', alignSelf: 'center' }}>
+                        Динамика:
+                      </span>
 
-                      <Tooltip
-                        formatter={(value, name, entry) => {
-                          const row = entry.payload as any
-                          const dataKey = entry.dataKey as string
+                      {TREND_META.filter(
+                        (meta) => meta.field === 'spo2' || meta.field === 'respiratoryRate'
+                      ).map((meta) => {
+                        const dir = getTrend(meta.field)
+                        const currentValue = latest?.[meta.field] as number | undefined
+                        const range = NORMAL_RANGES[meta.field]
+                        const goodDir = meta.goodDir
 
-                          const formatAlert = (text: string, alertText?: string) =>
-                            alertText ? (
-                              <span style={{ color: '#dc2626', fontWeight: 600 }}>
-                                {text} ({alertText})
-                              </span>
-                            ) : (
-                              text
-                            )
+                        const isOutOfRange =
+                          currentValue !== undefined &&
+                          (currentValue < range.min || currentValue > range.max)
 
-                          const spo2High = row.spo2 > NORMAL_RANGES.spo2.max
-                          const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min
-                          const spo2Alert = spo2High
-                            ? '⚠ ↑ выше нормы'
-                            : spo2Low
-                              ? '⚠ ↓ ниже нормы'
-                              : ''
-                          const spo2Value = `${row.spo2.toFixed(1)} %`
+                        const isGood =
+                          !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable')
 
-                          const respiratoryRateHigh =
-                            row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
-                          const respiratoryRateLow =
-                            row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
-                          const respiratoryRateAlert = respiratoryRateHigh
-                            ? '⚠ ↑ выше нормы'
-                            : respiratoryRateLow
-                              ? '⚠ ↓ ниже нормы'
-                              : ''
-                          const respiratoryRateValue = `${row.respiratoryRate} дых/мин`
+                        const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626'
+                        const bgColor = isGood ? '#16a34a14' : '#dc262614'
+                        const borderColor = isGood ? '#16a34a33' : '#dc262633'
 
-                          if (dataKey === 'spo2') {
-                            return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)']
-                          }
-                          if (dataKey === 'respiratoryRate') {
-                            return [
-                              formatAlert(respiratoryRateValue, respiratoryRateAlert),
-                              'Частота дыхания'
-                            ]
-                          }
-                          return [value, name]
+                        const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : MinusIcon
+                        return (
+                          <div
+                            key={meta.field}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '4px 10px',
+                              borderRadius: '20px',
+                              backgroundColor: bgColor,
+                              border: `1px solid ${borderColor}`,
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              color
+                            }}
+                          >
+                            <Icon size={13} />
+                            <span>{meta.label}</span>
+                          </div>
+                        )
+                      })}
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          color: '#94a3b8',
+                          alignSelf: 'center',
+                          marginLeft: 'auto'
                         }}
-                      />
-                      <Legend verticalAlign="bottom" align="center" />
+                      >
+                        ← vs предыдущий замер
+                      </span>
+                    </div>
+                  )}
+                  <div style={{ padding: '0 20px 20px 20px' }}>
+                    <ResponsiveContainer width="100%" height={420}>
+                      <ComposedChart
+                        data={chartData}
+                        margin={{ top: 20, right: 20, bottom: 6, left: 6 }}
+                      >
+                        <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
 
-                      <YAxis
-                        yAxisId="spo2"
-                        domain={[NORMAL_RANGES.spo2.min - 5, 102]}
-                        width={52}
-                        tickCount={8}
-                        label={{
-                          value: 'SpO₂ (%)',
-                          angle: -90,
-                          position: 'insideLeft',
-                          offset: 10
-                        }}
-                      />
+                        <Tooltip
+                          formatter={(value, name, entry) => {
+                            const row = entry.payload as any
+                            const dataKey = entry.dataKey as string
 
-                      <YAxis
-                        yAxisId="resp"
-                        orientation="right"
-                        domain={[
-                          NORMAL_RANGES.respiratoryRate.min - 5,
-                          NORMAL_RANGES.respiratoryRate.max + 5
-                        ]}
-                        width={52}
-                        tickCount={8}
-                        label={{
-                          value: 'ЧД, дых/мин',
-                          angle: 90,
-                          position: 'insideRight',
-                          offset: 0
-                        }}
-                      />
+                            const formatAlert = (text: string, alertText?: string) =>
+                              alertText ? (
+                                <span style={{ color: '#dc2626', fontWeight: 600 }}>
+                                  {text} ({alertText})
+                                </span>
+                              ) : (
+                                text
+                              )
 
-                      <ReferenceArea
-                        yAxisId="spo2"
-                        y1={NORMAL_RANGES.spo2.min}
-                        y2={NORMAL_RANGES.spo2.max}
-                        fill="#dcfce7"
-                        fillOpacity={0.3}
-                        strokeOpacity={0}
-                      />
+                            const spo2High = row.spo2 > NORMAL_RANGES.spo2.max
+                            const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min
+                            const spo2Alert = spo2High
+                              ? '⚠ ↑ выше нормы'
+                              : spo2Low
+                                ? '⚠ ↓ ниже нормы'
+                                : ''
+                            const spo2Value = `${row.spo2.toFixed(1)} %`
 
-                      <ReferenceLine
-                        yAxisId="spo2"
-                        y={NORMAL_RANGES.spo2.max}
-                        stroke="#2563eb"
-                        strokeDasharray="5 4"
-                        strokeOpacity={0.55}
-                        strokeWidth={1.4}
-                      />
-                      <ReferenceLine
-                        yAxisId="spo2"
-                        y={NORMAL_RANGES.spo2.min}
-                        stroke="#2563eb"
-                        strokeDasharray="5 4"
-                        strokeOpacity={0.45}
-                        strokeWidth={1.4}
-                      />
+                            const respiratoryRateHigh =
+                              row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
+                            const respiratoryRateLow =
+                              row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+                            const respiratoryRateAlert = respiratoryRateHigh
+                              ? '⚠ ↑ выше нормы'
+                              : respiratoryRateLow
+                                ? '⚠ ↓ ниже нормы'
+                                : ''
+                            const respiratoryRateValue = `${row.respiratoryRate} дых/мин`
 
-                      <ReferenceArea
-                        yAxisId="resp"
-                        y1={NORMAL_RANGES.respiratoryRate.min}
-                        y2={NORMAL_RANGES.respiratoryRate.max}
-                        fill="#dcfce7"
-                        fillOpacity={0.22}
-                        strokeOpacity={0}
-                      />
-                      <ReferenceLine
-                        yAxisId="resp"
-                        y={NORMAL_RANGES.respiratoryRate.max}
-                        stroke="#10b981"
-                        strokeDasharray="5 4"
-                        strokeOpacity={0.55}
-                        strokeWidth={1.4}
-                      />
-                      <ReferenceLine
-                        yAxisId="resp"
-                        y={NORMAL_RANGES.respiratoryRate.min}
-                        stroke="#10b981"
-                        strokeDasharray="5 4"
-                        strokeOpacity={0.45}
-                        strokeWidth={1.4}
-                      />
+                            if (dataKey === 'spo2') {
+                              return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)']
+                            }
+                            if (dataKey === 'respiratoryRate') {
+                              return [
+                                formatAlert(respiratoryRateValue, respiratoryRateAlert),
+                                'Частота дыхания'
+                              ]
+                            }
+                            return [value, name]
+                          }}
+                        />
+                        <Legend verticalAlign="bottom" align="center" />
 
-                      <Line
-                        yAxisId="spo2"
-                        type="monotone"
-                        dataKey="spo2"
-                        name="SpO₂ (%)"
-                        stroke="#2563eb"
-                        strokeWidth={3}
-                        dot={<CustomTempDot />}
-                      />
+                        <YAxis
+                          yAxisId="spo2"
+                          domain={[VITAL_RULES.spo2.min, VITAL_RULES.spo2.max]}
+                          width={52}
+                          tickCount={8}
+                          label={{
+                            value: 'SpO₂ (%)',
+                            angle: -90,
+                            position: 'insideLeft',
+                            offset: 10,
+                            dy: 50
+                          }}
+                        />
 
-                      <Line
-                        yAxisId="resp"
-                        type="monotone"
-                        dataKey="respiratoryRate"
-                        name="Частота дыхания"
-                        stroke="#10b981"
-                        strokeWidth={3}
-                        dot={<CustomTempDot />}
-                      />
-                    </ComposedChart>
-                  </ResponsiveContainer>
+                        <YAxis
+                          yAxisId="resp"
+                          orientation="right"
+                          domain={[VITAL_RULES.respiratoryRate.min, VITAL_RULES.respiratoryRate.max]}
+                          width={52}
+                          tickCount={8}
+                          label={{
+                            value: 'Частота дыхания, дых/мин',
+                            angle: 90,
+                            position: 'insideRight',
+                            offset: 0,
+                            dy: 90
+                          }}
+                        />
+
+                        <ReferenceArea
+                          yAxisId="spo2"
+                          y1={NORMAL_RANGES.spo2.min}
+                          y2={NORMAL_RANGES.spo2.max}
+                          fill="#dcfce7"
+                          fillOpacity={0.3}
+                          strokeOpacity={0}
+                        />
+
+                        <ReferenceLine
+                          yAxisId="spo2"
+                          y={NORMAL_RANGES.spo2.max}
+                          stroke="#2563eb"
+                          strokeDasharray="5 4"
+                          strokeOpacity={0.55}
+                          strokeWidth={1.4}
+                          label={{
+                            value: `SpO₂ ${NORMAL_RANGES.spo2.max}%`,
+                            position: 'center',
+                            fontSize: 10,
+                            fill: '#2563eb',
+                            dy: -6
+                          }}
+                        />
+                        <ReferenceLine
+                          yAxisId="spo2"
+                          y={NORMAL_RANGES.spo2.min}
+                          stroke="#2563eb"
+                          strokeDasharray="5 4"
+                          strokeOpacity={0.45}
+                          strokeWidth={1.4}
+                          label={{
+                            value: `SpO₂ ${NORMAL_RANGES.spo2.min}%`,
+                            position: 'left',
+                            fontSize: 10,
+                            fill: '#2563eb',
+                            dy: 12
+                          }}
+                        />
+
+                        <ReferenceArea
+                          yAxisId="resp"
+                          y1={NORMAL_RANGES.respiratoryRate.min}
+                          y2={NORMAL_RANGES.respiratoryRate.max}
+                          fill="#dcfce7"
+                          fillOpacity={0.22}
+                          strokeOpacity={0}
+                        />
+                        <ReferenceLine
+                          yAxisId="resp"
+                          y={NORMAL_RANGES.respiratoryRate.max}
+                          stroke="#10b981"
+                          strokeDasharray="5 4"
+                          strokeOpacity={0.55}
+                          strokeWidth={1.4}
+                          label={{
+                            value: `ЧД ${NORMAL_RANGES.respiratoryRate.max}`,
+                            position: 'right',
+                            fontSize: 10,
+                            fill: '#10b981',
+                            dy: 5
+                          }}
+                        />
+                        <ReferenceLine
+                          yAxisId="resp"
+                          y={NORMAL_RANGES.respiratoryRate.min}
+                          stroke="#10b981"
+                          strokeDasharray="5 4"
+                          strokeOpacity={0.45}
+                          strokeWidth={1.4}
+                          label={{
+                            value: `ЧД ${NORMAL_RANGES.respiratoryRate.min}`,
+                            position: 'right',
+                            fontSize: 10,
+                            fill: '#10b981',
+                            dy: 12
+                          }}
+                        />
+
+                        <Line
+                          yAxisId="spo2"
+                          type="monotone"
+                          dataKey="spo2"
+                          name="SpO₂ (%)"
+                          stroke="#2563eb"
+                          strokeWidth={3}
+                          dot={<CustomTempDot />}
+                        />
+
+                        <Line
+                          yAxisId="resp"
+                          type="monotone"
+                          dataKey="respiratoryRate"
+                          name="Частота дыхания"
+                          stroke="#10b981"
+                          strokeWidth={3}
+                          dot={<CustomTempDot />}
+                        />
+                      </ComposedChart>
+                    </ResponsiveContainer>
+                  </div>
                 </SectionCard>
               </>
             ) : (
@@ -3021,12 +3299,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       <td>{v.series}</td>
                     </tr>
                   )) || (
-                    <tr>
-                      <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                        Нет данных
-                      </td>
-                    </tr>
-                  )}
+                      <tr>
+                        <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Нет данных
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -3074,12 +3352,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       </td>
                     </tr>
                   )) || (
-                    <tr>
-                      <td colSpan={3} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                        Нет документов
-                      </td>
-                    </tr>
-                  )}
+                      <tr>
+                        <td colSpan={3} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Нет документов
+                        </td>
+                      </tr>
+                    )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -3181,7 +3459,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
 const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   patientId: externalPatientId,
   initialSearchQuery = '',
-  onSelectPatient: externalOnSelect
+  onSelectPatient: externalOnSelect,
+  onNavigateToTemperatureSheet
 }) => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(externalPatientId)
   const [previewPatient, setPreviewPatient] = useState<any | null>(null)
@@ -3194,21 +3473,21 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id)
     externalOnSelect?.(id)
-  setTimeout(() => {
-  const element = cardRef.current;
+    setTimeout(() => {
+      const element = cardRef.current;
 
-  if (!element) return;
+      if (!element) return;
 
-  const y =
-    element.getBoundingClientRect().top +
-    window.pageYOffset -
-    20;
+      const y =
+        element.getBoundingClientRect().top +
+        window.pageYOffset -
+        20;
 
-  window.scrollTo({
-    top: y,
-    behavior: 'smooth',
-  });
-}, 150);
+      window.scrollTo({
+        top: y,
+        behavior: 'smooth',
+      });
+    }, 150);
   }
 
   const handleBackToSearch = () => {
@@ -3271,6 +3550,7 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
           <PatientCard
             patientId={selectedPatientId}
             onSelectPatientFromPreview={handleSelectPatient}
+            onNavigateToTemperatureSheet={onNavigateToTemperatureSheet}
           />
         </div>
       )}

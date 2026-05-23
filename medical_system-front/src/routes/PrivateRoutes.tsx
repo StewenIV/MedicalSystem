@@ -32,7 +32,6 @@ const PrivateRoutes: React.FC = () => {
     navigate(paths.auth)
   }
 
-  // Преобразование формата роли из snake_case в kebab-case
   const convertUserRole = (role: string | null): 'doctor' | 'nurse' | 'patient' | null => {
     if (!role) return null
     return role.replace(/_/g, '-') as any

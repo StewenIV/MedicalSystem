@@ -69,6 +69,7 @@ import { HospitalWorkplace } from 'pages/HospitalBedsPage'
 import { WardAdmin } from 'pages/BedsAdminPage'
 import { default as PatientCard } from 'pages/PatientCard'
 import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
+import MedicinesPage from 'pages/MedicinesPage'
 
 interface DoctorDashboardProps {
   onNavigate?: (screen: string, patientId?: string) => void
@@ -247,7 +248,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
               )}
 
               {activeSection === 'temperature-sheet' && (
-                <TemperaturePage onNavigate={onNavigate} onLogout={onLogout} userRole={userRole} />
+                <TemperaturePage onNavigate={onNavigate} onLogout={onLogout} userRole={userRole} patientId={selectedPatientId} />
               )}
 
               {activeSection === 'HospitalWorkplace' && (
@@ -267,6 +268,10 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   onSelectPatient={(id) => {
                     setSelectedPatientId(id || undefined)
                   }}
+                  onNavigateToTemperatureSheet={(id) => {
+                    setActiveSection('temperature-sheet')
+                    setSelectedPatientId(id || undefined)
+                  }}
                 />
               )}
 
@@ -277,6 +282,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   userRole={userRole}
                 />
               )}
+
+              {activeSection === 'medicines' && <MedicinesPage />}
 
               {activeSection === 'schedule' && (
                 <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>
