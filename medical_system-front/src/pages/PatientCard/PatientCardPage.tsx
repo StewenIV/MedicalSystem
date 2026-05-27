@@ -65,6 +65,7 @@ import {
 import colors from 'consts/colors'
 
 import { mockPatients, mockHospitalBeds, mockPathientVitalSigns, VitalSign } from 'data/mockData'
+import { usePatientData } from 'context/PatientDataContext'
 import {
   PatientCardContainer,
   PatientHeader,
@@ -444,8 +445,8 @@ const getInitials = (firstName: string, lastName: string) => {
   return `${lastName?.[0] || ''}${firstName?.[0] || ''}`.toUpperCase()
 }
 
-const getUniqueDoctors = (): SelectOption[] => {
-  const set = new Set(mockPatients.map((p) => p.doctor).filter(Boolean))
+const getUniqueDoctors = (patientsList: any[]): SelectOption[] => {
+  const set = new Set(patientsList.map((p) => p.doctor).filter(Boolean))
   return Array.from(set)
     .sort()
     .map((d) => ({ value: d, label: d }))
@@ -474,6 +475,8 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   cardRef,
   initialQuery = ''
 }) => {
+  const { patients } = usePatientData()
+
   const [query, setQuery] = useState(initialQuery)
   const [doctor, setDoctor] = useState<SelectOption | null>(null)
   const [status, setStatus] = useState<SelectOption | null>(null)
@@ -518,11 +521,11 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
     }
   }, [])
 
-  const doctors = useMemo(getUniqueDoctors, [])
+  const doctors = useMemo(() => getUniqueDoctors(patients), [patients])
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase().trim()
-    return mockPatients.filter((p) => {
+    return patients.filter((p) => {
       const fullName = `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase()
       if (
         q &&
@@ -596,7 +599,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current)
       }
-      const patient = mockPatients.find((p) => p.id === patientId)
+      const patient = patients.find((p) => p.id === patientId)
       if (patient) {
         onDoubleClickPatient?.(patient)
       }
@@ -828,12 +831,14 @@ interface PatientCardPageProps {
   initialSearchQuery?: string
   onSelectPatient?: (id: string) => void
   onNavigateToTemperatureSheet?: (id: string) => void
+  onNavigateToWardRound?: (id: string) => void
 }
 
 interface PatientCardProps {
   patientId?: string
   onSelectPatientFromPreview?: (id: string) => void
   onNavigateToTemperatureSheet?: (id: string) => void
+  onNavigateToWardRound?: (id: string) => void
 }
 
 enum TabsEnum {
@@ -848,16 +853,18 @@ enum TabsEnum {
   Documents = 'Документы'
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFromPreview, onNavigateToTemperatureSheet }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFromPreview, onNavigateToTemperatureSheet, onNavigateToWardRound }) => {
+  const { patients } = usePatientData()
+  
   const [activeTab, setActiveTab] = useState<string>(TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
 
-  const initialPatient = patientId ? mockPatients.find((p) => p.id === patientId) : null
+  const initialPatient = patientId ? patients.find((p) => p.id === patientId) : null
   const [localPatient, setLocalPatient] = useState<any>(initialPatient)
 
   useEffect(() => {
-    setLocalPatient(patientId ? mockPatients.find((p) => p.id === patientId) : null)
-  }, [patientId])
+    setLocalPatient(patientId ? patients.find((p) => p.id === patientId) : null)
+  }, [patientId, patients])
 
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; type: string; data: any }>({
     isOpen: false,
@@ -3437,6 +3444,44 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
               </InfoItem>
             </HeaderInfoGrid>
           </HeaderMain>
+          {onNavigateToWardRound && localPatient && (
+            <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+              <button
+                id="btn-ward-round"
+                onClick={() => onNavigateToWardRound(localPatient.id)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '10px 20px',
+                  borderRadius: 10,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
+                  color: 'white',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, system-ui, sans-serif',
+                  boxShadow: '0 4px 14px rgba(29,78,216,0.35)',
+                  transition: 'all 0.2s ease',
+                  whiteSpace: 'nowrap',
+                }}
+                onMouseEnter={(e) => {
+                  const b = e.currentTarget as HTMLButtonElement
+                  b.style.transform = 'translateY(-1px)'
+                  b.style.boxShadow = '0 6px 20px rgba(29,78,216,0.45)'
+                }}
+                onMouseLeave={(e) => {
+                  const b = e.currentTarget as HTMLButtonElement
+                  b.style.transform = 'translateY(0)'
+                  b.style.boxShadow = '0 4px 14px rgba(29,78,216,0.35)'
+                }}
+              >
+                <Stethoscope size={16} />
+                Провести осмотр
+              </button>
+            </div>
+          )}
         </PatientHeader>
 
         <TabsContainer>
@@ -3460,7 +3505,8 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   patientId: externalPatientId,
   initialSearchQuery = '',
   onSelectPatient: externalOnSelect,
-  onNavigateToTemperatureSheet
+  onNavigateToTemperatureSheet,
+  onNavigateToWardRound
 }) => {
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(externalPatientId)
   const [previewPatient, setPreviewPatient] = useState<any | null>(null)
@@ -3551,6 +3597,7 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
             patientId={selectedPatientId}
             onSelectPatientFromPreview={handleSelectPatient}
             onNavigateToTemperatureSheet={onNavigateToTemperatureSheet}
+            onNavigateToWardRound={onNavigateToWardRound}
           />
         </div>
       )}

@@ -1,0 +1,12 @@
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\bin\Debug\net10.0\MedicalSystem.Data.Test.deps.json
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\bin\Debug\net10.0\MedicalSystem.Data.Test.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\bin\Debug\net10.0\MedicalSystem.Data.Test.pdb
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.GeneratedMSBuildEditorConfig.editorconfig
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.AssemblyInfoInputs.cache
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.AssemblyInfo.cs
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.csproj.CoreCompileInputs.cache
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.sourcelink.json
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\refint\MedicalSystem.Data.Test.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\MedicalSystem.Data.Test.pdb
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Data.Test\obj\Debug\net10.0\ref\MedicalSystem.Data.Test.dll

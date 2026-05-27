@@ -11,8 +11,7 @@ namespace MedicalSystem.Domain.Models
         public DateTime? Date { get; set; }
         public string? StatusText { get; set; }
         public string? Reason { get; set; }
-
-        // Navigation properties
+        
         public virtual Patient Patient { get; set; }
         public virtual MedicalStaff Doctor { get; set; }
     }

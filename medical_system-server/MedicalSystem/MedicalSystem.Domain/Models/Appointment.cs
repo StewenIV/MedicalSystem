@@ -1,4 +1,5 @@
 using System;
+using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.Domain.Models
 {
@@ -9,10 +10,9 @@ namespace MedicalSystem.Domain.Models
         public Guid? DoctorId { get; set; }
         public DateTime Time { get; set; }
         public string? Reason { get; set; }
-        public byte Status { get; set; } // enum
-        public byte Type { get; set; } // enum
-
-        // Navigation properties
+        public AppointmentStatus Status { get; set; }
+        public AppointmentType Type { get; set; }
+        
         public virtual Patient Patient { get; set; }
         public virtual MedicalStaff Doctor { get; set; }
     }

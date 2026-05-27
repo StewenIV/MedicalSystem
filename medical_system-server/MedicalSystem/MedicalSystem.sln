@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Application", "Application", "{24EF377E-352B-4ED9-87CB-4F5199E63B28}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalSystem.App", "MedicalSystem.App\MedicalSystem.App.csproj", "{D5E662B7-39E0-45DB-BE5D-440405099772}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalSystem.App.Test", "MedicalSystem.App.Test\MedicalSystem.App.Test.csproj", "{376E9D06-3DC7-41BB-9D9F-21BAD57E02E3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Domain", "Domain", "{D13975CB-55D3-44F1-B1DD-E683C04AFD80}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "infrastructure", "infrastructure", "{A0D989FB-D18F-40F3-8883-39BD802C719A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalSystem.Domain", "MedicalSystem.Domain\MedicalSystem.Domain.csproj", "{B19E51A0-BD38-4694-A675-E029F7B32F9C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalSystem.Data", "MedicalSystem.Data\MedicalSystem.Data.csproj", "{FBA03240-6D3C-44AF-9874-04795E9032E5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalSystem.Data.Test", "MedicalSystem.Data.Test\MedicalSystem.Data.Test.csproj", "{77007300-8668-49BD-A981-B4E3B0BB5EED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MedicalSystem.API", "MedicalSystem.API\MedicalSystem.API.csproj", "{51F84C92-2AAE-4350-83D9-C9AA04E63281}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D5E662B7-39E0-45DB-BE5D-440405099772}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D5E662B7-39E0-45DB-BE5D-440405099772}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D5E662B7-39E0-45DB-BE5D-440405099772}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D5E662B7-39E0-45DB-BE5D-440405099772}.Release|Any CPU.Build.0 = Release|Any CPU
+		{376E9D06-3DC7-41BB-9D9F-21BAD57E02E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{376E9D06-3DC7-41BB-9D9F-21BAD57E02E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{376E9D06-3DC7-41BB-9D9F-21BAD57E02E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{376E9D06-3DC7-41BB-9D9F-21BAD57E02E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B19E51A0-BD38-4694-A675-E029F7B32F9C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B19E51A0-BD38-4694-A675-E029F7B32F9C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B19E51A0-BD38-4694-A675-E029F7B32F9C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B19E51A0-BD38-4694-A675-E029F7B32F9C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBA03240-6D3C-44AF-9874-04795E9032E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBA03240-6D3C-44AF-9874-04795E9032E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBA03240-6D3C-44AF-9874-04795E9032E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBA03240-6D3C-44AF-9874-04795E9032E5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77007300-8668-49BD-A981-B4E3B0BB5EED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77007300-8668-49BD-A981-B4E3B0BB5EED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77007300-8668-49BD-A981-B4E3B0BB5EED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77007300-8668-49BD-A981-B4E3B0BB5EED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{51F84C92-2AAE-4350-83D9-C9AA04E63281}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{51F84C92-2AAE-4350-83D9-C9AA04E63281}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{51F84C92-2AAE-4350-83D9-C9AA04E63281}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{51F84C92-2AAE-4350-83D9-C9AA04E63281}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D5E662B7-39E0-45DB-BE5D-440405099772} = {24EF377E-352B-4ED9-87CB-4F5199E63B28}
+		{376E9D06-3DC7-41BB-9D9F-21BAD57E02E3} = {24EF377E-352B-4ED9-87CB-4F5199E63B28}
+		{B19E51A0-BD38-4694-A675-E029F7B32F9C} = {D13975CB-55D3-44F1-B1DD-E683C04AFD80}
+		{FBA03240-6D3C-44AF-9874-04795E9032E5} = {A0D989FB-D18F-40F3-8883-39BD802C719A}
+		{77007300-8668-49BD-A981-B4E3B0BB5EED} = {A0D989FB-D18F-40F3-8883-39BD802C719A}
+		{51F84C92-2AAE-4350-83D9-C9AA04E63281} = {A0D989FB-D18F-40F3-8883-39BD802C719A}
+	EndGlobalSection
+EndGlobal

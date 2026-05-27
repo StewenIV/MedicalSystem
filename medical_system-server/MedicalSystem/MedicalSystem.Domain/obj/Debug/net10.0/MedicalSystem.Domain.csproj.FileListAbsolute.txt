@@ -1,0 +1,12 @@
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\bin\Debug\net10.0\MedicalSystem.Domain.deps.json
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\bin\Debug\net10.0\MedicalSystem.Domain.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\bin\Debug\net10.0\MedicalSystem.Domain.pdb
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.AssemblyInfoInputs.cache
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.AssemblyInfo.cs
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.csproj.CoreCompileInputs.cache
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.sourcelink.json
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\refint\MedicalSystem.Domain.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\MedicalSystem.Domain.pdb
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.Domain\obj\Debug\net10.0\ref\MedicalSystem.Domain.dll

@@ -5,6 +5,8 @@ namespace MedicalSystem.Data.DbContext
 {
     public class MedicalSystemDbContext : Microsoft.EntityFrameworkCore.DbContext
     {
+        // Этот конструктор - единственный, который нам нужен.
+        // Он принимает опции (включая строку подключения) извне.
         public MedicalSystemDbContext(DbContextOptions<MedicalSystemDbContext> options) : base(options) { }
 
         public DbSet<Patient> Patients { get; set; }
@@ -35,7 +37,10 @@ namespace MedicalSystem.Data.DbContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Мы будем применять конфигурации из отдельных файлов
+
+            // Этот метод найдет все классы конфигурации (типа PatientConfiguration)
+            // в этой сборке и применит их.
+            // Логику HasData мы отсюда полностью убрали.
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedicalSystemDbContext).Assembly);
         }
     }

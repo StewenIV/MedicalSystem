@@ -10,4 +10,5 @@ namespace MedicalSystem.App.Contracts.Query
     {
         Task<IReadOnlyCollection<VitalSign>> GetPeriodAsync(Guid patientId, DateTime from, DateTime to, CancellationToken token);
     }
+    
 }

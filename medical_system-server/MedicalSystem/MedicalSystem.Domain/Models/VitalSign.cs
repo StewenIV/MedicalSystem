@@ -13,8 +13,7 @@ namespace MedicalSystem.Domain.Models
         public short? Pulse { get; set; }
         public short? SpO2 { get; set; }
         public short? RespiratoryRate { get; set; }
-
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }

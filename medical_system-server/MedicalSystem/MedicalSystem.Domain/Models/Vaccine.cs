@@ -12,8 +12,7 @@ namespace MedicalSystem.Domain.Models
         public string? Validity { get; set; }
         public string? Manufacturer { get; set; }
         public string? Series { get; set; }
-
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }

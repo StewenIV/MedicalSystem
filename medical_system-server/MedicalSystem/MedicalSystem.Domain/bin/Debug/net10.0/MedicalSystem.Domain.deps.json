@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "MedicalSystem.Domain/1.0.0": {
+        "runtime": {
+          "MedicalSystem.Domain.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MedicalSystem.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

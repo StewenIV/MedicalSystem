@@ -184,14 +184,14 @@ const STATUS_LABELS: Record<MedicineStatus, string> = {
   empty: 'Отсутствует'
 }
 
-const formatDate = (iso: string | null) => {
-  if (!iso) return null
-  const d = new Date(iso)
+const formatDate = (date: string | null) => {
+  if (!date) return null
+  const d = new Date(date)
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-const formatDateTime = (iso: string) => {
-  const d = new Date(iso)
+const formatDateTime = (date: string) => {
+  const d = new Date(date)
   return d.toLocaleString('ru-RU', {
     day: '2-digit',
     month: '2-digit',
@@ -203,36 +203,32 @@ const formatDateTime = (iso: string) => {
 
 const genId = () => `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
-// ─── Component ────────────────────────────────────────────────────────────────
 const MedicinesPage: React.FC = () => {
-  // ── State: medicines list ──
   const [medicines, setMedicines] = useState<Medicine[]>(mockMedicines)
 
-  // ── State: search & filters ──
   const [search, setSearch] = useState('')
+
   const [filterCategory, setFilterCategory] = useState<string>('')
   const [filterOnlyActive, setFilterOnlyActive] = useState(false)
   const [filterOnlyCompleted, setFilterOnlyCompleted] = useState(false)
   const [filterHideEmpty, setFilterHideEmpty] = useState(false)
+  const [filterWarnings, setFilterWarnings] = useState(false)
+
   const [filterReceiptDateFrom, setFilterReceiptDateFrom] = useState('')
   const [filterReceiptDateTo, setFilterReceiptDateTo] = useState('')
   const [filterWriteOffDateFrom, setFilterWriteOffDateFrom] = useState('')
   const [filterWriteOffDateTo, setFilterWriteOffDateTo] = useState('')
   const [filterOpType, setFilterOpType] = useState<string>('')
   const [filterBalanceLessThan, setFilterBalanceLessThan] = useState('')
-  const [filterWarnings, setFilterWarnings] = useState(false)
 
-  // ── State: pagination ──
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
-  // ── State: drawer ──
   const [drawerMedicineId, setDrawerMedicineId] = useState<string | null>(null)
   const [drawerTab, setDrawerTab] = useState<'overview' | 'receipt' | 'writeoff' | 'history'>(
     'overview'
   )
 
-  // ── State: forms ──
   const [receiptForm, setReceiptForm] = useState({
     name: '',
     date: new Date().toISOString().slice(0, 10),
@@ -250,16 +246,17 @@ const MedicinesPage: React.FC = () => {
     selectedPatientName: '',
     comment: ''
   })
+
+
   const [writeoffError, setWriteoffError] = useState('')
   const [patientDropdown, setPatientDropdown] = useState(false)
 
-  // ── State: history ──
+
   const [historySearch, setHistorySearch] = useState('')
   const [historyFilterType, setHistoryFilterType] = useState<string>('')
   const [historyPage, setHistoryPage] = useState(1)
   const historyPageSize = 10
 
-  // ── State: modals ──
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -280,23 +277,19 @@ const MedicinesPage: React.FC = () => {
     currentBalance: ''
   })
 
-  // ── PDF export ref ──
   const historyExportRef = useRef<HTMLDivElement>(null)
   const [isExporting, setIsExporting] = useState(false)
 
-  // ── Derived: selected medicine ──
   const selectedMedicine = useMemo(
     () => (drawerMedicineId ? medicines.find((m) => m.id === drawerMedicineId) || null : null),
     [drawerMedicineId, medicines]
   )
 
-  // ── Filtered medicines ──
   const filteredMedicines = useMemo(() => {
     const q = search.toLowerCase().trim()
     return medicines.filter((m) => {
       if (m.isArchived) return false
 
-      // Search
       if (q) {
         const match =
           m.name.toLowerCase().includes(q) ||
@@ -308,41 +301,34 @@ const MedicinesPage: React.FC = () => {
         if (!match) return false
       }
 
-      // Category filter
       if (filterCategory && m.category !== filterCategory) return false
 
-      // Active / Completed
       if (filterOnlyActive && m.status === 'empty') return false
       if (filterOnlyCompleted && m.status !== 'empty') return false
 
-      // Hide empty
       if (filterHideEmpty && m.currentBalance === 0) return false
 
-      // Receipt date range
       if (filterReceiptDateFrom && m.lastReceiptDate && m.lastReceiptDate < filterReceiptDateFrom)
         return false
       if (filterReceiptDateTo && m.lastReceiptDate && m.lastReceiptDate > filterReceiptDateTo)
         return false
 
-      // Write-off date range
       if (
         filterWriteOffDateFrom &&
         m.lastWriteOffDate &&
         m.lastWriteOffDate < filterWriteOffDateFrom
       )
         return false
+
       if (filterWriteOffDateTo && m.lastWriteOffDate && m.lastWriteOffDate > filterWriteOffDateTo)
         return false
 
-      // Operation type
       if (filterOpType && m.lastOperation !== filterOpType) return false
 
-      // Balance less than
       if (filterBalanceLessThan !== '' && !isNaN(Number(filterBalanceLessThan))) {
         if (m.currentBalance >= Number(filterBalanceLessThan)) return false
       }
 
-      // Warnings
       if (filterWarnings && m.status === 'norm') return false
 
       return true
@@ -363,11 +349,9 @@ const MedicinesPage: React.FC = () => {
     filterWarnings
   ])
 
-  // ── Paginated ──
   const totalPages = Math.max(1, Math.ceil(filteredMedicines.length / pageSize))
   const paginatedMedicines = filteredMedicines.slice((page - 1) * pageSize, page * pageSize)
 
-  // ── Stats ──
   const stats = useMemo(() => {
     const active = medicines.filter((m) => !m.isArchived)
     const low = active.filter((m) => m.status === 'low').length
@@ -380,7 +364,7 @@ const MedicinesPage: React.FC = () => {
     return { total: active.length, low, empty, todayOps }
   }, [medicines])
 
-  // ── Open drawer ──
+
   const openDrawer = useCallback((med: Medicine) => {
     setDrawerMedicineId(med.id)
     setDrawerTab('overview')
@@ -403,7 +387,6 @@ const MedicinesPage: React.FC = () => {
 
   const closeDrawer = () => setDrawerMedicineId(null)
 
-  // ── Receipt submit ──
   const handleReceiptSave = () => {
     if (!selectedMedicine) return
     const qty = Number(receiptForm.quantity)
@@ -444,7 +427,6 @@ const MedicinesPage: React.FC = () => {
     setDrawerTab('overview')
   }
 
-  // ── Writeoff submit ──
   const handleWriteoffSave = () => {
     if (!selectedMedicine) return
     const qty = Number(writeoffForm.quantity)
@@ -500,7 +482,6 @@ const MedicinesPage: React.FC = () => {
     setDrawerTab('overview')
   }
 
-  // ── Edit save ──
   const handleEditSave = () => {
     if (!selectedMedicine) return
     const newBalance = Number(editForm.currentBalance)
@@ -542,7 +523,6 @@ const MedicinesPage: React.FC = () => {
     setShowEditModal(false)
   }
 
-  // ── Add save ──
   const handleAddSave = () => {
     if (!addForm.name.trim()) return
     const balance = Number(addForm.initialBalance) || 0
@@ -1500,7 +1480,7 @@ const MedicinesPage: React.FC = () => {
                                       {p.lastName} {p.firstName} {p.middleName}
                                     </PatientOptionName>
                                     <PatientOptionInfo>
-                                      {p.medcardNum} · {p.diagnoses.join(', ').slice(0, 50)}
+                                      {p.medcardNum} · {p.activeProblems?.join(', ').slice(0, 50)}
                                     </PatientOptionInfo>
                                   </PatientOption>
                                 ))}

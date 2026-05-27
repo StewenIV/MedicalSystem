@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "MedicalSystem.Data.Test/1.0.0": {
+        "runtime": {
+          "MedicalSystem.Data.Test.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "MedicalSystem.Data.Test/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

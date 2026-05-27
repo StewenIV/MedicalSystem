@@ -11,7 +11,8 @@ import {
   Stethoscope,
   Building2,
   Clock,
-  Pill
+  Pill,
+  ClipboardList
 } from 'lucide-react'
 
 import {
@@ -41,6 +42,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
       { key: 'patients', label: 'Пациенты', icon: Users },
       { key: 'temperature-sheet', label: 'Температурный лист', icon: Thermometer },
       { key: 'HospitalWorkplace', label: 'Стационар', icon: Calendar },
+      { key: 'ward-round', label: 'Обходы', icon: ClipboardList },
       { key: 'beds-admin', label: 'Администрирование стационара', icon: Building2 },
       { key: 'patient-card', label: 'Карточка пациента', icon: FileUser },
       { key: 'medical-staff-schedule', label: 'График работы медперсонала', icon: Clock },

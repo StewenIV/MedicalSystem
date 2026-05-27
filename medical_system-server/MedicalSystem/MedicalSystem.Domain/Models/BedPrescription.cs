@@ -12,8 +12,7 @@ namespace MedicalSystem.Domain.Models
         public TimeSpan? ScheduledTime { get; set; }
         public DateTime Date { get; set; }
         public bool IsDone { get; set; }
-
-        // Navigation properties
+        
         public virtual Patient Patient { get; set; }
         public virtual PatientMedication PatientMedication { get; set; }
     }

@@ -13,8 +13,7 @@ namespace MedicalSystem.Domain.Models
         public string? Complications { get; set; }
         public string? Implants { get; set; }
         public string? Result { get; set; }
-
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }

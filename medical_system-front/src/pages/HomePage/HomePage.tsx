@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Helmet } from 'react-helmet'
 
 import {
@@ -70,6 +70,8 @@ import { WardAdmin } from 'pages/BedsAdminPage'
 import { default as PatientCard } from 'pages/PatientCard'
 import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
 import MedicinesPage from 'pages/MedicinesPage'
+import { WardRoundPage, WardRoundsHub, PrimaryInspectionPage } from 'pages/WardRound'
+import { PatientDataProvider } from 'context/PatientDataContext'
 
 interface DoctorDashboardProps {
   onNavigate?: (screen: string, patientId?: string) => void
@@ -88,6 +90,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>('dashboard')
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
+  const [wardRoundPatientId, setWardRoundPatientId] = useState<string | undefined>()
+  const [wardRoundType, setWardRoundType] = useState<'hub' | 'primary' | 'daily'>('hub')
 
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 
@@ -97,6 +101,30 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const openPatientCard = (patientId?: string) => {
     setActiveSection('patients')
     setSelectedPatientId(patientId)
+  }
+
+  const openWardRound = (patientId?: string) => {
+    setWardRoundPatientId(patientId)
+    setWardRoundType(patientId ? 'daily' : 'hub')
+    setActiveSection('ward-round')
+  }
+
+  const openPrimary = (patientId: string) => {
+    setWardRoundPatientId(patientId)
+    setWardRoundType('primary')
+    setActiveSection('ward-round')
+  }
+
+  const openDaily = (patientId: string) => {
+    setWardRoundPatientId(patientId)
+    setWardRoundType('daily')
+    setActiveSection('ward-round')
+  }
+
+  const openWardRoundHub = () => {
+    setWardRoundPatientId(undefined)
+    setWardRoundType('hub')
+    setActiveSection('ward-round')
   }
 
   const handleHeaderSearch = () => {
@@ -127,6 +155,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   }
 
   return (
+    <PatientDataProvider>
     <>
       <Helmet>
         <title>Главная страница</title>
@@ -142,7 +171,13 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
             } as React.CSSProperties
           }
         >
-          <AppSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
+          <AppSidebar activeSection={activeSection} onSectionChange={(s) => {
+            if (s === 'ward-round') {
+              openWardRoundHub()
+            } else {
+              setActiveSection(s)
+            }
+          }} />
 
           <SidebarInset className="overflow-x-hidden min-w-0">
             <Header>
@@ -268,11 +303,44 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   onSelectPatient={(id) => {
                     setSelectedPatientId(id || undefined)
                   }}
-                  onNavigateToTemperatureSheet={(id) => {
+                  onNavigateToTemperatureSheet={(id: string) => {
                     setActiveSection('temperature-sheet')
                     setSelectedPatientId(id || undefined)
                   }}
+                  onNavigateToWardRound={(id) => openWardRound(id || undefined)}
                 />
+              )}
+
+              {activeSection === 'ward-round' && (
+                <>
+                  {wardRoundType === 'hub' && (
+                    <WardRoundsHub
+                      onStartPrimary={openPrimary}
+                      onStartDaily={openDaily}
+                      onOpenPatient={(id) => { setSelectedPatientId(id); setActiveSection('patients') }}
+                    />
+                  )}
+                  {wardRoundType === 'primary' && wardRoundPatientId && (
+                    <PrimaryInspectionPage
+                      patientId={wardRoundPatientId}
+                      onClose={openWardRoundHub}
+                      onNavigateToTemperatureSheet={(id: string) => {
+                        setActiveSection('temperature-sheet')
+                        setSelectedPatientId(id)
+                      }}
+                    />
+                  )}
+                  {wardRoundType === 'daily' && wardRoundPatientId && (
+                    <WardRoundPage
+                      patientId={wardRoundPatientId}
+                      onClose={openWardRoundHub}
+                      onNavigateToTemperatureSheet={(id: string) => {
+                        setActiveSection('temperature-sheet')
+                        setSelectedPatientId(id)
+                      }}
+                    />
+                  )}
+                </>
               )}
 
               {activeSection === 'medical-staff-schedule' && (
@@ -381,7 +449,9 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
         </SidebarProvider>
       </HomePageContainer>
     </>
+    </PatientDataProvider>
   )
 }
+
 
 export default HomePage

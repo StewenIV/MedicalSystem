@@ -10,8 +10,7 @@ namespace MedicalSystem.Domain.Models
         public string Action { get; set; }
         public DateTime PerformedAt { get; set; }
         public string? Amount { get; set; }
-
-        // Navigation properties
+        
         public virtual Patient Patient { get; set; }
         public virtual MedicalStaff PerformedBy { get; set; }
     }

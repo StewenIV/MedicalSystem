@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.Domain.Models
 {
@@ -7,10 +8,9 @@ namespace MedicalSystem.Domain.Models
     {
         public Guid Id { get; set; }
         public string RoomNumber { get; set; }
-        public byte Gender { get; set; } // enum
+        public RoomGender Gender { get; set; }
         public Guid? DepartmentId { get; set; }
-
-        // Navigation properties
+        
         public virtual Department Department { get; set; }
         public virtual ICollection<HospitalBed> HospitalBeds { get; set; }
     }

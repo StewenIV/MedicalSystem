@@ -14,7 +14,6 @@ namespace MedicalSystem.Data.DataGeneration
         {
             try
             {
-                // 1. Проверяем, нужно ли вообще заполнять базу
                 if (await context.Patients.AnyAsync())
                 {
                     logger.LogInformation("База данных уже содержит данные. Заполнение не требуется.");
@@ -22,18 +21,15 @@ namespace MedicalSystem.Data.DataGeneration
                 }
                 logger.LogInformation("База данных пуста. Начинается процесс заполнения тестовыми данными...");
 
-                // 2. Генерируем данные в памяти с помощью TestDataGenerator
+                // --- Генерация ---
                 var departments = TestDataGenerator.GenerateDepartments(10);
                 var positions = TestDataGenerator.GeneratePositions(20);
                 var institutions = TestDataGenerator.GenerateInstitutions(5);
-
                 var medicalStaff = TestDataGenerator.GenerateMedicalStaff(50, positions, departments);
                 var patients = TestDataGenerator.GeneratePatients(200, medicalStaff, departments, institutions);
-                
                 var medicines = TestDataGenerator.GenerateMedicines(100, medicalStaff);
                 var rooms = TestDataGenerator.GenerateRooms(40, departments);
                 var hospitalBeds = TestDataGenerator.GenerateHospitalBeds(120, rooms, patients);
-
                 var appointments = TestDataGenerator.GenerateAppointments(500, patients, medicalStaff);
                 var allergies = TestDataGenerator.GenerateAllergies(150, patients);
                 var medicalProblems = TestDataGenerator.GenerateMedicalProblems(300, patients);
@@ -47,13 +43,16 @@ namespace MedicalSystem.Data.DataGeneration
                 var shifts = TestDataGenerator.GenerateShifts(150, medicalStaff);
                 var notifications = TestDataGenerator.GenerateNotifications(50, medicalStaff, patients);
                 var patientRelatives = TestDataGenerator.GeneratePatientRelatives(250, patients);
+                var bedPrescriptions = TestDataGenerator.GenerateBedPrescriptions(1000, patients, patientMedications);
+                var bedActionLogs = TestDataGenerator.GenerateBedActionLogs(1500, patients, medicalStaff);
+                var medicineOperationLogs = TestDataGenerator.GenerateMedicineOperationLogs(500, medicines, medicalStaff, patients, patientMedications);
 
-                // 3. Добавляем сгенерированные данные в DbContext
+                // --- Сохранение ---
                 await context.Departments.AddRangeAsync(departments);
                 await context.Positions.AddRangeAsync(positions);
                 await context.Institutions.AddRangeAsync(institutions);
                 await context.MedicalStaff.AddRangeAsync(medicalStaff);
-                await context.Patients.AddRangeAsync(patients);
+                await context.Patients.AddRangeAsync(patients); // Включая Owned типы
                 await context.Medicines.AddRangeAsync(medicines);
                 await context.Rooms.AddRangeAsync(rooms);
                 await context.HospitalBeds.AddRangeAsync(hospitalBeds);
@@ -70,8 +69,10 @@ namespace MedicalSystem.Data.DataGeneration
                 await context.Shifts.AddRangeAsync(shifts);
                 await context.Notifications.AddRangeAsync(notifications);
                 await context.PatientRelatives.AddRangeAsync(patientRelatives);
+                await context.BedPrescriptions.AddRangeAsync(bedPrescriptions);
+                await context.BedActionLogs.AddRangeAsync(bedActionLogs);
+                await context.MedicineOperationLogs.AddRangeAsync(medicineOperationLogs);
 
-                // 4. Сохраняем все изменения в базу данных одной транзакцией
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("Заполнение базы данных тестовыми данными успешно завершено.");

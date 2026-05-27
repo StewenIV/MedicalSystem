@@ -245,7 +245,7 @@ export const NavButton = styled.button<{ $active?: boolean }>`
 export const Main = styled.main`
   flex: 1;
   min-width: 0;
-  padding: 24px;
+  padding: 10px;
   overflow-x: hidden;
   overflow-y: auto;
   width: 100%;

@@ -9,8 +9,7 @@ namespace MedicalSystem.Domain.Models
         public string Name { get; set; }
         public DateTime? Date { get; set; }
         public string? FilePath { get; set; }
-
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }
