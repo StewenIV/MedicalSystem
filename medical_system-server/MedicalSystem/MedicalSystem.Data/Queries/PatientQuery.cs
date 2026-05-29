@@ -1,10 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Contracts.Query;
 using MedicalSystem.Data.DbContext;
+using MedicalSystem.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace MedicalSystem.Data.Queries
@@ -16,6 +18,24 @@ namespace MedicalSystem.Data.Queries
         public PatientQuery(MedicalSystemDbContext context)
         {
             _context = context;
+        }
+
+        public async Task<IEnumerable<PatientLookupDto>> GetPatientsByStatusAsync(PatientStatus status, CancellationToken token)
+        {
+            return await _context.Patients
+                .AsNoTracking()
+                .Where(p => p.Status == status)
+                .Select(p => new PatientLookupDto
+                {
+                    Id = p.Id,
+                    FullName = $"{p.LastName} {p.FirstName} {p.MiddleName}",
+                    RoomAndBed = _context.HospitalBeds
+                                    .Include(b => b.Room)
+                                    .Where(b => b.PatientId == p.Id)
+                                    .Select(b => $"Палата {b.Room.RoomNumber} / {b.BedNumber}")
+                                    .FirstOrDefault()
+                })
+                .ToListAsync(token);
         }
 
         public async Task<PatientCardDto?> GetCardByIdAsync(Guid patientId, CancellationToken token)
@@ -41,7 +61,6 @@ namespace MedicalSystem.Data.Queries
                 .Include(b => b.Room)
                 .FirstOrDefaultAsync(b => b.PatientId == patientId, token);
 
-            // Маппинг в DTO
             return new PatientCardDto
             {
                 Id = patient.Id,
@@ -93,12 +112,14 @@ namespace MedicalSystem.Data.Queries
 
                 VitalSigns = patient.VitalSigns.Select(vs => new VitalSignDto
                 {
-                    Id = vs.Id,
-                    RecordedAt = vs.RecordedAt,
-                    Temperature = vs.Temperature,
-                    BloodPressure = $"{vs.BloodPressureSystolic}/{vs.BloodPressureDiastolic}",
-                    Pulse = vs.Pulse,
-                    SpO2 = vs.SpO2
+                    Id                    = vs.Id,
+                    RecordedAt            = vs.RecordedAt,
+                    Temperature           = vs.Temperature,
+                    BloodPressureSystolic  = vs.BloodPressureSystolic,
+                    BloodPressureDiastolic = vs.BloodPressureDiastolic,
+                    Pulse                 = vs.Pulse,
+                    SpO2                  = vs.SpO2,
+                    RespiratoryRate       = vs.RespiratoryRate
                 }).ToList()
             };
         }

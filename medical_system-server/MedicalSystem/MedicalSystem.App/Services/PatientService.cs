@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Contracts.Query;
+using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.App.Services
 {
@@ -17,11 +19,12 @@ namespace MedicalSystem.App.Services
 
         public async Task<PatientCardDto?> GetPatientCardAsync(Guid patientId, CancellationToken token)
         {
-            // В будущем здесь может быть дополнительная логика:
-            // - Проверка прав доступа
-            // - Логирование
-            // - Координация нескольких репозиториев
             return await _patientQuery.GetCardByIdAsync(patientId, token);
+        }
+
+        public async Task<IEnumerable<PatientLookupDto>> GetHospitalizedPatientsAsync(CancellationToken token)
+        {
+            return await _patientQuery.GetPatientsByStatusAsync(PatientStatus.Hospitalized, token);
         }
     }
 }

@@ -1,6 +1,14 @@
 const path = require('path')
 
 module.exports = {
+  devServer: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5046',
+        changeOrigin: true,
+      },
+    },
+  },
   babel: {
     plugins: [
       [
@@ -20,7 +28,6 @@ module.exports = {
   webpack: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
-
     },
     configure: webpackConfig => {
       const excludeZodFromSourceMaps = rule => {

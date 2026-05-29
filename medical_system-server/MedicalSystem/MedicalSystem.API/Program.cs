@@ -1,56 +1,99 @@
-using MedicalSystem.Data.DbContext;
+using MedicalSystem.App.Contracts.Query;
+using MedicalSystem.App.Contracts.Storage;
+using MedicalSystem.App.Services;
 using MedicalSystem.Data.DataGeneration;
+using MedicalSystem.Data.DbContext;
+using MedicalSystem.Data.Queries;
+using MedicalSystem.Data.Storages;
 using Microsoft.EntityFrameworkCore;
-using Scalar.AspNetCore; // Добавляем пространство имен Scalar
+using Scalar.AspNetCore;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Встроенная поддержка генерации OpenAPI-спецификации (.NET 9+)
-builder.Services.AddOpenApi();
+const string CorsPolicy = "FrontendCors";
+builder.Services.AddCors(options =>
+    options.AddPolicy(CorsPolicy, policy =>
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+              .AllowAnyHeader()
+              .AllowAnyMethod()));
 
-// Регистрация DbContext
+
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
 builder.Services.AddDbContext<MedicalSystemDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+
+builder.Services.AddScoped<IPatientQuery, PatientQuery>();
+
+builder.Services.AddScoped<PatientService>();
+builder.Services.AddScoped<IVitalSignStorage, VitalSignStorage>();
+
+builder.Services.AddScoped<VitalSignService>();
+
+
 builder.Services.AddControllers();
+
+
+builder.Services.AddOpenApi();
+
 
 var app = builder.Build();
 
-// --- БЛОК ЗАПОЛНЕНИЯ ДАННЫМИ ---
+
 using (var scope = app.Services.CreateScope())
+
 {
     var services = scope.ServiceProvider;
+
     var logger = services.GetRequiredService<ILogger<Program>>();
+
     var context = services.GetRequiredService<MedicalSystemDbContext>();
 
+
     try
+
     {
         await context.Database.MigrateAsync();
+
         await DataSeeder.SeedAsync(context, logger);
     }
+
     catch (Exception ex)
+
     {
         logger.LogError(ex, "Произошла ошибка при миграции или заполнении базы данных.");
     }
 }
 
-// Настройка окружения для разработки
+
 if (app.Environment.IsDevelopment())
+
 {
-    // 1. Включаем генерацию JSON-документа по стандарту OpenAPI (доступен по адресу /openapi/v1.json)
     app.MapOpenApi();
-    
-    // 2. Подключаем красивый интерфейс Scalar (доступен по адресу /scalar/v1)
-    app.MapScalarApiReference(); 
+
+
+    app.MapScalarApiReference(options =>
+    {
+        options
+            .WithTitle("Medical System API")
+            .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
+
 
 app.UseHttpsRedirection();
 
+
+app.UseCors(CorsPolicy);
+
 app.UseAuthorization();
 
+
 app.MapControllers();
+
 
 app.Run();

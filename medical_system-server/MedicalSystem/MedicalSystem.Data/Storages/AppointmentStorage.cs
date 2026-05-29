@@ -66,7 +66,7 @@ namespace MedicalSystem.Data.Storages
             var appointment = await GetAsync(appointmentId, token);
             if (appointment != null)
             {
-                appointment.Status = AppointmentStatus.Free; // Or some other cancelled status
+                appointment.Status = AppointmentStatus.Free;
                 await UpdateAsync(appointment, token);
             }
         }

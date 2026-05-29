@@ -206,81 +206,81 @@ export const InfoText = styled.div`
 export const InfoLabel = styled.div`
   font-family: ${FONT_STACK};
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 800;
   color: #94a3b8;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   line-height: 1.4;
   transition: color 0.2s ease;
 
+  position: relative;
+  padding-left: 10px;
+
   &::before {
     content: '';
-    display: inline-block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+
     width: 2px;
     height: 1px;
-    background: linear-gradient(90deg, #bfdbfe, transparent);
-    vertical-align: middle;
-    margin-right: 6px;
-    margin-bottom: 1px;
+
+    background: linear-gradient(90deg, #237eedff, transparent);
+
     opacity: 0.8;
     transition: width 0.2s ease;
   }
 
   ${InfoItem}:hover & {
     color: #64748b;
+
     &::before {
       width: 5px;
     }
   }
 
   @media (max-width: 768px) {
+    padding-left: 0;
+
     &::before {
       display: none;
     }
   }
-`
+`;
 
 export const InfoValue = styled.div`
- font-family: ${FONT_STACK};
+  font-family: ${FONT_STACK};
   font-size: 17px;
   font-weight: 700;
   color: #0f172a;
   letter-spacing: -0.025em;
   line-height: 1.3;
+
   transition:
     color 0.2s ease,
     letter-spacing 0.2s ease;
+
   font-variant-numeric: tabular-nums;
+
   word-break: break-word;
+
+  padding-left: 10px;
 
   ${InfoItem}:hover & {
     color: #1e40af;
     letter-spacing: -0.02em;
   }
 
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 2px;
-    height: 1px;
-    background: transparent;
-    vertical-align: middle;
-    margin-right: 6px;
-    margin-bottom: 1px;
-  }
-
   @media (max-width: 768px) {
     font-size: 16px;
-
-    &::before {
-      display: none;
-    }
+    padding-left: 0;
   }
 
   @media (max-width: 480px) {
     font-size: 15px;
   }
-`
+`;
 
 export const TwoColumnGrid = styled.div`
   display: grid;

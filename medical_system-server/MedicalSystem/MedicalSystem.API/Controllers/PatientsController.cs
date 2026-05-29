@@ -17,6 +17,13 @@ namespace MedicalSystem.API.Controllers
             _patientService = patientService;
         }
 
+        [HttpGet("hospitalized")]
+        public async Task<IActionResult> GetHospitalizedPatients(CancellationToken token)
+        {
+            var patients = await _patientService.GetHospitalizedPatientsAsync(token);
+            return Ok(patients);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPatientCardById(Guid id, CancellationToken token)
         {
