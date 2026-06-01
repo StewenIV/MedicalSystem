@@ -270,8 +270,7 @@ namespace MedicalSystem.App.Services
                         Floor = floor,
                         RoomNumber = $"{floor}0{roomNum}",
                         Gender = faker.PickRandom<RoomGender>(),
-                        DepartmentId = departmentId,
-                        Status = RoomStatus.Free // Изначально все палаты свободны
+                        DepartmentId = departmentId
                     });
                 }
             }
@@ -300,10 +299,8 @@ namespace MedicalSystem.App.Services
                     {
                         if (room.Gender == RoomGender.Male)
                             patientToAdmit = availablePatients.FirstOrDefault(p => p.Gender == Gender.Male);
-                        else if (room.Gender == RoomGender.Female)
+                        else // Female
                             patientToAdmit = availablePatients.FirstOrDefault(p => p.Gender == Gender.Female);
-                        else // Unisex
-                            patientToAdmit = availablePatients.FirstOrDefault();
                     }
 
                     if (patientToAdmit != null)

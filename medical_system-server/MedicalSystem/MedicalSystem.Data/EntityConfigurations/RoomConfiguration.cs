@@ -28,13 +28,6 @@ namespace MedicalSystem.Data.EntityConfigurations
                     v => (RoomGender)Enum.Parse(typeof(RoomGender), v))
                 .HasMaxLength(50);
 
-            builder.Property(r => r.Status)
-                .IsRequired()
-                .HasConversion(
-                    v => v.ToString(),
-                    v => (RoomStatus)Enum.Parse(typeof(RoomStatus), v))
-                .HasMaxLength(50);
-
             builder.HasOne(r => r.Department)
                 .WithMany(d => d.Rooms)
                 .HasForeignKey(r => r.DepartmentId);

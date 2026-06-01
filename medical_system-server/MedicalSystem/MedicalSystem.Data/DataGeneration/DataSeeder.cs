@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
 using MedicalSystem.Domain.Models;
-using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.Data.DataGeneration
 {
@@ -32,18 +31,6 @@ namespace MedicalSystem.Data.DataGeneration
                 
                 // 3. Зависимые сущности
                 var hospitalBeds = await GetOrCreateAsync(context, context.HospitalBeds, () => TestDataGenerator.GenerateHospitalBeds(0, rooms, patients));
-
-                // 4. Установка статуса палат после генерации коек
-                if (rooms.Any() && hospitalBeds.Any())
-                {
-                    foreach (var room in rooms)
-                    {
-                        room.Status = hospitalBeds.Any(b => b.RoomId == room.Id && b.Status != BedStatus.Free) 
-                            ? RoomStatus.Occupied 
-                            : RoomStatus.Free;
-                    }
-                }
-
                 var appointments = await GetOrCreateAsync(context, context.Appointments, () => TestDataGenerator.GenerateAppointments(500, patients, medicalStaff));
                 var allergies = await GetOrCreateAsync(context, context.Allergies, () => TestDataGenerator.GenerateAllergies(150, patients));
                 var medicalProblems = await GetOrCreateAsync(context, context.MedicalProblems, () => TestDataGenerator.GenerateMedicalProblems(300, patients));
