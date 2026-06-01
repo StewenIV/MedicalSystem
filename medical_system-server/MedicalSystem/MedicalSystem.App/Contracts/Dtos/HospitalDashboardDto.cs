@@ -12,11 +12,4 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string RoomNumber { get; set; }
         public List<BedDto> Beds { get; set; }
     }
-
-    public class BedDto
-    {
-        public int BedNumber { get; set; }
-        public string PatientName { get; set; }
-        public string Status { get; set; }
-    }
 }

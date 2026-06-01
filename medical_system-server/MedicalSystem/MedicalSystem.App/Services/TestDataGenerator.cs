@@ -12,7 +12,6 @@ namespace MedicalSystem.App.Services
     {
         private static string Truncate(string value, int maxLength) => value.Length <= maxLength ? value : value.Substring(0, maxLength);
 
-        // --- Генераторы для Owned Types ---
         private static Faker<PatientContacts> GetPatientContactsGenerator() =>
             new Faker<PatientContacts>("ru")
                 .RuleFor(c => c.PhoneMobile, f => Truncate(f.Phone.PhoneNumber(), 20))
@@ -35,7 +34,6 @@ namespace MedicalSystem.App.Services
                 .RuleFor(o => o.Language, f => "Русский")
                 .RuleFor(o => o.Nationality, f => "Россиянин");
 
-        // --- Справочники ---
         public static List<Department> GenerateDepartments(int count) =>
             new Faker<Department>("ru").UseSeed(0)
                 .RuleFor(d => d.Id, f => f.Random.Guid())
@@ -54,7 +52,6 @@ namespace MedicalSystem.App.Services
                 .RuleFor(i => i.Name, f => Truncate($"Больница №{f.Random.Number(1, 100)}", 200))
                 .Generate(count);
 
-        // --- Основные сущности ---
         public static List<MedicalStaff> GenerateMedicalStaff(int count, List<Position> positions, List<Department> departments)
         {
             if (!positions.Any() || !departments.Any()) return new List<MedicalStaff>();
@@ -97,19 +94,25 @@ namespace MedicalSystem.App.Services
             if (!staff.Any()) return new List<Medicine>();
             return new Faker<Medicine>("ru").UseSeed(0)
                 .RuleFor(m => m.Id, f => f.Random.Guid())
-                .RuleFor(m => m.Name, f => Truncate(f.Commerce.ProductName(), 200))
+                .RuleFor(m => m.Name, f => Truncate($"{f.Commerce.ProductName()} {f.UniqueIndex}", 200))
                 .RuleFor(m => m.Description, f => Truncate(f.Lorem.Sentence(), 1000))
                 .RuleFor(m => m.Category, f => f.PickRandom<MedicineCategory>())
                 .RuleFor(m => m.Unit, f => f.PickRandom<MedicineUnit>())
                 .RuleFor(m => m.CurrentBalance, f => f.Random.Decimal(10, 1000))
-                .RuleFor(m => m.MinBalance, 50)
-                .RuleFor(m => m.Status, f => f.PickRandom<MedicineStatus>())
+                .RuleFor(m => m.MinBalance, f => f.Random.Decimal(5, 50))
+                .RuleFor(m => m.TotalReceived, f => f.Random.Decimal(1000, 5000))
+                .RuleFor(m => m.TotalWrittenOff, (f, m) => f.Random.Decimal(100, m.TotalReceived))
+                .RuleFor(m => m.LastReceiptDate, f => f.Date.Past(1))
+                .RuleFor(m => m.LastWriteOffDate, (f, m) => f.Date.Between(m.LastReceiptDate.Value, DateTime.Now))
+                .RuleFor(m => m.LastReceiptFrom, f => Truncate(f.Company.CompanyName(), 200))
+                .RuleFor(m => m.LastOperation, f => f.PickRandom<OperationType>())
                 .RuleFor(m => m.LastChangedById, f => f.PickRandom(staff).Id)
+                .RuleFor(m => m.LastUpdated, f => f.Date.Past(1))
+                .RuleFor(m => m.Status, f => f.PickRandom<MedicineStatus>())
                 .RuleFor(m => m.IsArchived, f => f.Random.Bool(0.1f))
                 .Generate(count);
         }
 
-        // --- Зависимые сущности ---
         public static List<PatientRelative> GeneratePatientRelatives(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<PatientRelative>();
@@ -252,39 +255,83 @@ namespace MedicalSystem.App.Services
         public static List<Room> GenerateRooms(int count, List<Department> departments)
         {
             if (!departments.Any()) return new List<Room>();
-            return new Faker<Room>("ru").UseSeed(0)
-                .RuleFor(r => r.Id, f => f.Random.Guid())
-                .RuleFor(r => r.RoomNumber, f => f.UniqueIndex.ToString())
-                .RuleFor(r => r.Gender, f => f.PickRandom<RoomGender>())
-                .RuleFor(r => r.DepartmentId, f => f.PickRandom(departments).Id)
-                .Generate(count);
+
+            var rooms = new List<Room>();
+            var faker = new Faker("ru");
+            var departmentId = faker.PickRandom(departments).Id;
+
+            for (int floor = 1; floor <= 2; floor++)
+            {
+                for (int roomNum = 1; roomNum <= 8; roomNum++)
+                {
+                    rooms.Add(new Room
+                    {
+                        Id = Guid.NewGuid(),
+                        Floor = floor,
+                        RoomNumber = $"{floor}0{roomNum}",
+                        Gender = faker.PickRandom<RoomGender>(),
+                        DepartmentId = departmentId,
+                        Status = RoomStatus.Free // Изначально все палаты свободны
+                    });
+                }
+            }
+            return rooms;
         }
 
         public static List<HospitalBed> GenerateHospitalBeds(int count, List<Room> rooms, List<Patient> patients)
         {
-            if (!rooms.Any()) return new List<HospitalBed>();
+            if (!rooms.Any() || !patients.Any()) return new List<HospitalBed>();
+
             var beds = new List<HospitalBed>();
             var availablePatients = patients.ToList();
             var faker = new Faker("ru");
-            int bedsPerRoom = (int)Math.Ceiling((double)count / rooms.Count);
-            if (bedsPerRoom < 1) bedsPerRoom = 1;
+
+            var occupiedStatuses = new[] { BedStatus.Stable, BedStatus.Attention, BedStatus.Urgent };
+
             foreach (var room in rooms)
             {
-                for (int bedNum = 1; bedNum <= bedsPerRoom; bedNum++)
+                int bedsInRoom = faker.Random.Int(1, 4);
+                for (int bedNum = 1; bedNum <= bedsInRoom; bedNum++)
                 {
-                    if (beds.Count >= count) break;
-                    var status = faker.PickRandom<BedStatus>();
-                    Guid? patientId = null;
-                    if (status != BedStatus.Free && availablePatients.Any())
+                    bool shouldBeOccupied = faker.Random.Bool(0.7f);
+                    Patient patientToAdmit = null;
+
+                    if (shouldBeOccupied)
                     {
-                        var patient = faker.PickRandom(availablePatients);
-                        availablePatients.Remove(patient);
-                        patientId = patient.Id;
+                        if (room.Gender == RoomGender.Male)
+                            patientToAdmit = availablePatients.FirstOrDefault(p => p.Gender == Gender.Male);
+                        else if (room.Gender == RoomGender.Female)
+                            patientToAdmit = availablePatients.FirstOrDefault(p => p.Gender == Gender.Female);
+                        else // Unisex
+                            patientToAdmit = availablePatients.FirstOrDefault();
                     }
-                    else { status = BedStatus.Free; }
-                    beds.Add(new HospitalBed { Id = faker.Random.Guid(), RoomId = room.Id, BedNumber = bedNum, Status = status, PatientId = patientId, BedNote = Truncate(faker.Lorem.Sentence(), 1000) });
+
+                    if (patientToAdmit != null)
+                    {
+                        availablePatients.Remove(patientToAdmit);
+                        beds.Add(new HospitalBed
+                        {
+                            Id = Guid.NewGuid(),
+                            RoomId = room.Id,
+                            BedNumber = bedNum,
+                            Status = faker.PickRandom(occupiedStatuses),
+                            PatientId = patientToAdmit.Id,
+                            BedNote = Truncate(faker.Lorem.Sentence(), 1000)
+                        });
+                    }
+                    else
+                    {
+                        beds.Add(new HospitalBed
+                        {
+                            Id = Guid.NewGuid(),
+                            RoomId = room.Id,
+                            BedNumber = bedNum,
+                            Status = BedStatus.Free,
+                            PatientId = null,
+                            BedNote = ""
+                        });
+                    }
                 }
-                if (beds.Count >= count) break;
             }
             return beds;
         }
@@ -328,6 +375,8 @@ namespace MedicalSystem.App.Services
                 .RuleFor(bp => bp.Dose, (f, bp) => patientMedications.First(pm => pm.Id == bp.PatientMedicationId).Dose)
                 .RuleFor(bp => bp.Date, f => f.Date.Recent())
                 .RuleFor(bp => bp.IsDone, f => f.Random.Bool())
+                .RuleFor(bp => bp.DoneAt, (f, bp) => bp.IsDone ? f.Date.Recent() : null)
+                .RuleFor(bp => bp.DoneBy, (f, bp) => bp.IsDone ? Truncate(f.Name.FullName(), 100) : null)
                 .Generate(count);
         }
 

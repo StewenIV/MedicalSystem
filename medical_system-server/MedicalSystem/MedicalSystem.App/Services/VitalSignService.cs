@@ -18,7 +18,7 @@ namespace MedicalSystem.App.Services
             { nameof(VitalSign.Temperature),           (36.0m, 37.2m) },
             { nameof(VitalSign.BloodPressureSystolic), (100,   130)   },
             { nameof(VitalSign.BloodPressureDiastolic),(60,    90)    },
-            { nameof(VitalSign.Pulse),                 (65,    95)   },
+            { nameof(VitalSign.Pulse),                 (60,    100)   },
             { nameof(VitalSign.SpO2),                  (95,    100)   },
             { nameof(VitalSign.RespiratoryRate),        (12,    20)    }
         };

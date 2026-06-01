@@ -13,13 +13,6 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-const string CorsPolicy = "FrontendCors";
-builder.Services.AddCors(options =>
-    options.AddPolicy(CorsPolicy, policy =>
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
-              .AllowAnyHeader()
-              .AllowAnyMethod()));
-
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -29,10 +22,16 @@ builder.Services.AddDbContext<MedicalSystemDbContext>(options =>
 
 builder.Services.AddScoped<IPatientQuery, PatientQuery>();
 
-builder.Services.AddScoped<PatientService>();
 builder.Services.AddScoped<IVitalSignStorage, VitalSignStorage>();
+builder.Services.AddScoped<IBedQuery, BedQuery>();
+builder.Services.AddScoped<IHospitalBedStorage, HospitalBedStorage>();
+builder.Services.AddScoped<IPrescriptionStorage, PrescriptionStorage>();
+builder.Services.AddScoped<IPatientStorage, PatientStorage>();
+builder.Services.AddScoped<IMedicalProblemStorage, MedicalProblemStorage>();
 
 builder.Services.AddScoped<VitalSignService>();
+builder.Services.AddScoped<PatientService>();
+builder.Services.AddScoped<BedService>();
 
 
 builder.Services.AddControllers();
@@ -87,8 +86,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-
-app.UseCors(CorsPolicy);
 
 app.UseAuthorization();
 

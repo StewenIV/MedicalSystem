@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
+using System;
 
 namespace MedicalSystem.Data.EntityConfigurations
 {
@@ -24,7 +26,11 @@ namespace MedicalSystem.Data.EntityConfigurations
                 .HasMaxLength(100);
 
             builder.Property(p => p.Gender)
-                .IsRequired();
+                .IsRequired()
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (Gender)Enum.Parse(typeof(Gender), v))
+                .HasMaxLength(50);
 
             builder.Property(p => p.DateOfBirth)
                 .IsRequired();
@@ -41,7 +47,11 @@ namespace MedicalSystem.Data.EntityConfigurations
                 .HasFilter("\"HistoryNum\" IS NOT NULL");
 
             builder.Property(p => p.Status)
-                .IsRequired();
+                .IsRequired()
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (PatientStatus)Enum.Parse(typeof(PatientStatus), v))
+                .HasMaxLength(50);
 
             // Конфигурация Owned Entities
             builder.OwnsOne(p => p.Contacts, contacts =>

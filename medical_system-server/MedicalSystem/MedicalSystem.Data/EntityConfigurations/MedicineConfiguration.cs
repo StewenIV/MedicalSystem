@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
+using System;
 
 namespace MedicalSystem.Data.EntityConfigurations
 {
@@ -28,6 +30,30 @@ namespace MedicalSystem.Data.EntityConfigurations
 
             builder.Property(m => m.TotalWrittenOff)
                 .HasColumnType("decimal(10,3)");
+
+            builder.Property(m => m.Category)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (MedicineCategory)Enum.Parse(typeof(MedicineCategory), v))
+                .HasMaxLength(50);
+
+            builder.Property(m => m.Unit)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (MedicineUnit)Enum.Parse(typeof(MedicineUnit), v))
+                .HasMaxLength(50);
+
+            builder.Property(m => m.LastOperation)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (OperationType)Enum.Parse(typeof(OperationType), v))
+                .HasMaxLength(50);
+
+            builder.Property(m => m.Status)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (MedicineStatus)Enum.Parse(typeof(MedicineStatus), v))
+                .HasMaxLength(50);
         }
     }
 }

@@ -4,6 +4,6 @@ namespace MedicalSystem.Domain.Enums
     {
         Male,
         Female,
-        Free
+        Unisex // 'Free' заменено на 'Unisex' для описания типа палаты
     }
 }

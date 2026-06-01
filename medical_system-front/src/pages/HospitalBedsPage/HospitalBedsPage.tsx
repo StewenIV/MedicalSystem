@@ -99,7 +99,19 @@ import {
 } from './styled'
 
 import { Icon } from 'pages/img/imageBedsPage'
-import { mockHospitalBeds, patientDetails, roomsConfig, HospitalBed } from 'data/mockData'
+import { toast } from 'react-toastify'
+import {
+  fetchBeds,
+  fetchRooms,
+  fetchRoomsConfig,
+  fetchFloors,
+  fetchAlerts,
+  fetchPatientDetails,
+  togglePrescription,
+  type BedDto,
+  type RoomsConfigDto,
+  type PatientDetailDto,
+} from 'api/bedsApi'
 
 function useCounter(target: number, duration = 1000) {
   const [value, setValue] = useState(0)
@@ -127,6 +139,37 @@ function useCounter(target: number, duration = 1000) {
   }, [target])
 
   return { value, replay: () => animate(0, target, Math.round(duration * 0.8)) }
+}
+
+function LoadingSpinner() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 48,
+        color: '#9ca3af',
+        fontSize: 14,
+        gap: 8,
+      }}
+    >
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="#2563eb"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        style={{ animation: 'spin 1s linear infinite' }}
+      >
+        <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+        <path d="M12 2a10 10 0 0 1 10 10" />
+      </svg>
+      Загрузка данных...
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
 }
 
 function AnimatedStatCard({
@@ -226,8 +269,31 @@ function AnimatedFloorStat({
   )
 }
 
-function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
+function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
   const [completedPrescriptions, setCompletedPrescriptions] = useState<Set<string>>(new Set())
+  const [details, setDetails] = useState<PatientDetailDto | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+
+  // Загрузка деталей пациента при смене койки
+  useEffect(() => {
+    setDetails(null)
+    setCompletedPrescriptions(new Set())
+    if (!bed?.patientId) return
+    setDetailsLoading(true)
+    fetchPatientDetails(bed.patientId)
+      .then((data) => {
+        setDetails(data)
+        const doneIds = new Set<string>(
+          data.prescriptions.filter((rx) => rx.done).map((rx) => String(rx.id))
+        )
+        setCompletedPrescriptions(doneIds)
+      })
+      .catch((err) => {
+        setDetails(null)
+        toast.error(err.message || 'Ошибка загрузки данных пациента')
+      })
+      .finally(() => setDetailsLoading(false))
+  }, [bed?.patientId])
 
   if (!bed) {
     return (
@@ -244,10 +310,9 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
   }
 
 
-  const details = bed.patientId ? patientDetails[bed.patientId] : null
-
   const handleRxToggle = (rxId: string | number) => {
     const idStr = String(rxId)
+    const newDone = !completedPrescriptions.has(idStr)
     setCompletedPrescriptions((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(idStr)) {
@@ -257,6 +322,19 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
       }
       return newSet
     })
+    // Отправка на сервер
+    if (bed.patientId) {
+      togglePrescription(bed.patientId, idStr, newDone).catch((err) => {
+        toast.error(err.message || 'Ошибка при обновлении назначения')
+        // Откат при ошибке
+        setCompletedPrescriptions((prev) => {
+          const newSet = new Set(prev)
+          if (newDone) newSet.delete(idStr)
+          else newSet.add(idStr)
+          return newSet
+        })
+      })
+    }
   }
   
   const initials = bed.patientName ? `${bed.patientName[0]}${bed.patientLastName?.[0] ?? ''}` : '—'
@@ -264,8 +342,8 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
   return (
     <DetailPanel key={bed.id}>
       <DetailHeader>
-        <DetailTitle>Детали объекта</DetailTitle>
-        <DetailId>ID: {bed.id}</DetailId>
+        <DetailTitle>Палата {bed.roomNumber}</DetailTitle>
+        <DetailId>Койка {bed.bedNumber}</DetailId>
       </DetailHeader>
 
       {bed.status === 'free' ? (
@@ -283,8 +361,14 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
                   {bed.patientLastName} {bed.patientName} {bed.patientMiddleName}
                 </PatientName>
                 <PatientMeta>
-                  {bed.patientId} · {bed.patientAge} лет
+                  {bed.patientAge} лет
+                  {bed.admissionDate && ` · Поступил(а): ${new Date(bed.admissionDate).toLocaleDateString('ru-RU')}`}
                 </PatientMeta>
+                {bed.doctorName && (
+                  <PatientMeta style={{ marginTop: 2 }}>
+                    Лечащий врач: {bed.doctorName}
+                  </PatientMeta>
+                )}
               </div>
             </PatientRow>
 
@@ -306,7 +390,9 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
               {bed.diagnosis}
             </div>
 
-            {details && (
+            {detailsLoading && <LoadingSpinner />}
+
+            {!detailsLoading && details && (
               <DoctorNoteBlock>
                 <RowsDoctorBlock>
                   <Icon.ClipBoard size={14} style={{ marginRight: 4, color: '#2563eb' }} />
@@ -317,7 +403,7 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
             )}
           </PatientBlock>
 
-          {details && (
+          {!detailsLoading && details && (
             <>
               <SectionDivider>
                 <Icon.Pill /> Назначения
@@ -347,12 +433,14 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
               </SectionDivider>
 
               <MedsGrid>
-                {details.meds.map((m, i) => (
-                  <MedCard key={i}>
-                    <MedName>{m.name}</MedName>
-                    <MedQty>{m.qty}</MedQty>
-                  </MedCard>
-                ))}
+                {details.meds
+                  .filter((m) => details.prescriptions.some((rx) => rx.name === m.name))
+                  .map((m, i) => (
+                    <MedCard key={i}>
+                      <MedName>{m.name}</MedName>
+                      <MedQty>{m.qty}</MedQty>
+                    </MedCard>
+                  ))}
               </MedsGrid>
 
               <SectionDivider>
@@ -365,7 +453,7 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
                   <LogAction>{entry.action}</LogAction>
                   <LogMeta>
                     <span>{entry.time}</span>
-                    <span>Списано: {entry.amount}</span>
+                    {entry.amount && <span>Списано: {entry.amount}</span>}
                   </LogMeta>
                 </LogEntry>
               ))}
@@ -377,15 +465,37 @@ function PatientDetailPanel({ bed }: { bed: HospitalBed | null }) {
   )
 }
 
-function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () => void }) {
+function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => void }) {
   const [completedPrescriptions, setCompletedPrescriptions] = useState<Set<string>>(new Set())
+  const [details, setDetails] = useState<PatientDetailDto | null>(null)
+  const [detailsLoading, setDetailsLoading] = useState(false)
+
+  // Загрузка деталей пациента при открытии модала
+  useEffect(() => {
+    setDetails(null)
+    setCompletedPrescriptions(new Set())
+    if (!bed?.patientId) return
+    setDetailsLoading(true)
+    fetchPatientDetails(bed.patientId)
+      .then((data) => {
+        setDetails(data)
+        const doneIds = new Set<string>(
+          data.prescriptions.filter((rx) => rx.done).map((rx) => String(rx.id))
+        )
+        setCompletedPrescriptions(doneIds)
+      })
+      .catch((err) => {
+        setDetails(null)
+        toast.error(err.message || 'Ошибка загрузки данных пациента')
+      })
+      .finally(() => setDetailsLoading(false))
+  }, [bed?.patientId])
 
   if (!bed) return null
 
-  const details = bed.patientId ? patientDetails[bed.patientId] : null
-
   const handleRxToggle = (rxId: string | number) => {
     const idStr = String(rxId)
+    const newDone = !completedPrescriptions.has(idStr)
     setCompletedPrescriptions((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(idStr)) {
@@ -395,6 +505,17 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
       }
       return newSet
     })
+    if (bed.patientId) {
+      togglePrescription(bed.patientId, idStr, newDone).catch((err) => {
+        toast.error(err.message || 'Ошибка при обновлении назначения')
+        setCompletedPrescriptions((prev) => {
+          const newSet = new Set(prev)
+          if (newDone) newSet.delete(idStr)
+          else newSet.add(idStr)
+          return newSet
+        })
+      })
+    }
   }
   const initials = bed.patientName ? `${bed.patientName[0]}${bed.patientLastName?.[0] ?? ''}` : '—'
 
@@ -418,9 +539,14 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
                 {bed.patientLastName} {bed.patientName} {bed.patientMiddleName}
               </div>
               <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
-                {bed.patientId} · {bed.patientAge} лет · Палата {bed.roomNumber}, Койка{' '}
-                {bed.bedNumber}
+                {bed.patientAge} лет · Палата {bed.roomNumber}, Койка {bed.bedNumber}
+                {bed.admissionDate && ` · Поступил(а): ${new Date(bed.admissionDate).toLocaleDateString('ru-RU')}`}
               </div>
+              {bed.doctorName && (
+                <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
+                  Лечащий врач: {bed.doctorName}
+                </div>
+              )}
             </div>
           </div>
           <ModalClose onClick={onClose}>
@@ -444,7 +570,8 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
           <div style={{ fontSize: 14, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
             {bed.diagnosis}
           </div>
-          {details && (
+          {detailsLoading && <LoadingSpinner />}
+          {!detailsLoading && details && (
             <DoctorNoteBlock>
               <DoctorNoteLabel>⚕ Указание врача медсестре</DoctorNoteLabel>
               <DoctorNoteText style={{ fontSize: 13 }}>{details.doctorNote}</DoctorNoteText>
@@ -452,7 +579,7 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
           )}
         </ModalSection>
 
-        {details && (
+        {!detailsLoading && details && (
           <>
             <ModalSection>
               <ModalSectionTitle>
@@ -486,12 +613,14 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
                 <Icon.FillBox /> Остатки медикаментов
               </ModalSectionTitle>
               <ModalMedsGrid>
-                {details.meds.map((m, i) => (
-                  <ModalMedCard key={i}>
-                    <ModalMedName>{m.name}</ModalMedName>
-                    <ModalMedQty>{m.qty}</ModalMedQty>
-                  </ModalMedCard>
-                ))}
+                {details.meds
+                  .filter((m) => details.prescriptions.some((rx) => rx.name === m.name))
+                  .map((m, i) => (
+                    <ModalMedCard key={i}>
+                      <ModalMedName>{m.name}</ModalMedName>
+                      <ModalMedQty>{m.qty}</ModalMedQty>
+                    </ModalMedCard>
+                  ))}
               </ModalMedsGrid>
             </ModalSection>
 
@@ -505,7 +634,7 @@ function PatientModal({ bed, onClose }: { bed: HospitalBed | null; onClose: () =
                   <LogAction style={{ fontSize: 12 }}>{entry.action}</LogAction>
                   <LogMeta>
                     <span>🕐 {entry.time}</span>
-                    <span>Списано: {entry.amount}</span>
+                    {entry.amount && <span>Списано: {entry.amount}</span>}
                   </LogMeta>
                 </ModalLogEntry>
               ))}
@@ -543,33 +672,58 @@ const [triggers, setTriggers] = useState({
   const [selectedWard, setSelectedWard] = useState<string | null>(null)
   const [modalBedId, setModalBedId] = useState<string | null>(null)
 
-  const totalBeds = mockHospitalBeds.length
-  const occupiedBeds = mockHospitalBeds.filter((b) => b.status !== 'free').length
-  const freeBeds = mockHospitalBeds.filter((b) => b.status === 'free').length
+  // ── Данные с сервера ──────────────────────────────────────────────────────
+  const [allBeds, setAllBeds] = useState<BedDto[]>([])
+  const [floors, setFloors] = useState<number[]>([])
+  const [roomsConfig, setRoomsConfig] = useState<RoomsConfigDto>({})
+  const [urgentBeds, setUrgentBeds] = useState<BedDto[]>([])
+  const [attentionBeds, setAttentionBeds] = useState<BedDto[]>([])
+  const [pageLoading, setPageLoading] = useState(true)
+
+  // ── Начальная загрузка ─────────────────────────────────────────────────────
+  useEffect(() => {
+    setPageLoading(true)
+    Promise.all([
+      fetchBeds(),
+      fetchFloors(),
+      fetchRoomsConfig(),
+      fetchAlerts(),
+    ])
+      .then(([bedsResp, floorsResp, configResp, alertsResp]) => {
+        setAllBeds(bedsResp.beds)
+        setFloors(floorsResp.floors)
+        setRoomsConfig(configResp)
+        setUrgentBeds(alertsResp.urgent)
+        setAttentionBeds(alertsResp.attention)
+      })
+      .catch((err) => toast.error(err.message || 'Ошибка загрузки данных'))
+      .finally(() => setPageLoading(false))
+  }, [])
+
+  // ── Вычисления (та же самая логика, что была с mock, но из серверных данных) ──
+  const totalBeds = allBeds.length
+  const occupiedBeds = allBeds.filter((b) => b.status !== 'free').length
+  const freeBeds = allBeds.filter((b) => b.status === 'free').length
   const occupancyPct = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0
 
-  const floors = Array.from(
-    new Set(mockHospitalBeds.map((b) => parseInt(b.roomNumber.charAt(0))))
-  ).sort((a, b) => a - b)
-
   const filteredBeds = activeFloor
-    ? mockHospitalBeds.filter((b) => parseInt(b.roomNumber.charAt(0)) === activeFloor)
-    : mockHospitalBeds
+    ? allBeds.filter((b) => parseInt(b.roomNumber.charAt(0)) === activeFloor)
+    : allBeds
 
   const rooms = Object.values(
-    mockHospitalBeds.reduce(
+    allBeds.reduce(
       (acc, bed) => {
         if (!acc[bed.roomNumber]) {
           acc[bed.roomNumber] = {
             id: bed.roomNumber,
             name: `Палата ${bed.roomNumber}`,
-            beds: [] as HospitalBed[]
+            beds: [] as BedDto[]
           }
         }
         acc[bed.roomNumber].beds.push(bed)
         return acc
       },
-      {} as Record<string, { id: string; name: string; beds: HospitalBed[] }>
+      {} as Record<string, { id: string; name: string; beds: BedDto[] }>
     )
   ).filter((room) => !activeFloor || parseInt(room.id.charAt(0)) === activeFloor)
 
@@ -582,13 +736,10 @@ const [triggers, setTriggers] = useState({
     (b) => b.status === 'free' && roomsConfig[b.roomNumber]?.gender === 'female'
   ).length
 
-  const selectedBed = mockHospitalBeds.find((b) => b.id === selectedBedId) ?? null
-  const modalBed = mockHospitalBeds.find((b) => b.id === modalBedId) ?? null
+  const selectedBed = allBeds.find((b) => b.id === selectedBedId) ?? null
+  const modalBed = allBeds.find((b) => b.id === modalBedId) ?? null
 
-  const urgentBeds = mockHospitalBeds.filter((b) => b.status === 'urgent')
-  const attentionBeds = mockHospitalBeds.filter((b) => b.status === 'attention')
-
-  const getRoomUrgency = (room: { beds: HospitalBed[] }): 'urgent' | 'attention' | 'normal' => {
+  const getRoomUrgency = (room: { beds: BedDto[] }): 'urgent' | 'attention' | 'normal' => {
     if (room.beds.some((b) => b.status === 'urgent')) return 'urgent'
     if (room.beds.some((b) => b.status === 'attention')) return 'attention'
     return 'normal'
@@ -611,39 +762,43 @@ const [triggers, setTriggers] = useState({
             </CardHeader>
 
             <CardContent>
-              <InfoGrid>
-                <InfoItem>
-                  <AnimatedStatCard
-                    icon={<Icon.Bed />}
-                    label="Всего коек"
-                    targetValue={totalBeds}
-                    color="#2563eb"
-                  />
-                </InfoItem>
-                <InfoItem>
-                  <AnimatedStatCard
-                    icon={<Icon.BedDouble />}
-                    label="Занято"
-                    targetValue={occupiedBeds}
-                    color="#eb2525"
-                    delta="+2 за сегодня"
-                    deltaPositive
-                  />
-                </InfoItem>
-                <InfoItem>
-                  <AnimatedStatCard
-                    icon={<Icon.BedSingle />}
-                    label="Свободно"
-                    targetValue={freeBeds}
-                    color="#16a34a"
-                    delta="−5% от вчера"
-                    deltaPositive={false}
-                  />
-                </InfoItem>
-                <InfoItem>
-                  <AnimatedAccentCard targetPct={occupancyPct} />
-                </InfoItem>
-              </InfoGrid>
+              {pageLoading ? (
+                <LoadingSpinner />
+              ) : (
+                <InfoGrid>
+                  <InfoItem>
+                    <AnimatedStatCard
+                      icon={<Icon.Bed />}
+                      label="Всего коек"
+                      targetValue={totalBeds}
+                      color="#2563eb"
+                    />
+                  </InfoItem>
+                  <InfoItem>
+                    <AnimatedStatCard
+                      icon={<Icon.BedDouble />}
+                      label="Занято"
+                      targetValue={occupiedBeds}
+                      color="#eb2525"
+                      delta="+2 за сегодня"
+                      deltaPositive
+                    />
+                  </InfoItem>
+                  <InfoItem>
+                    <AnimatedStatCard
+                      icon={<Icon.BedSingle />}
+                      label="Свободно"
+                      targetValue={freeBeds}
+                      color="#16a34a"
+                      delta="−5% от вчера"
+                      deltaPositive={false}
+                    />
+                  </InfoItem>
+                  <InfoItem>
+                    <AnimatedAccentCard targetPct={occupancyPct} />
+                  </InfoItem>
+                </InfoGrid>
+              )}
             </CardContent>
           </StyledCard>
         </Container>
@@ -784,7 +939,7 @@ const [triggers, setTriggers] = useState({
                       </WardCardTop>
 
                       <BedsRow>
-                        {room.beds.map((bed) => (
+                        {room.beds.sort((a, b) => a.bedNumber - b.bedNumber).map((bed) => (
                           <BedChip
                             key={bed.id}
                             $s={bed.status}
@@ -804,7 +959,7 @@ const [triggers, setTriggers] = useState({
                             }}
                           >
                             <Icon.BedIcon />
-                            {bed.id}
+                            Палата {bed.bedNumber}
                           </BedChip>
                         ))}
                       </BedsRow>

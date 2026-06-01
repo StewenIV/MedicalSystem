@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
+using System;
 
 namespace MedicalSystem.Data.EntityConfigurations
 {
@@ -13,6 +15,18 @@ namespace MedicalSystem.Data.EntityConfigurations
             builder.HasKey(n => n.Id);
 
             builder.Property(n => n.Message).IsRequired().HasMaxLength(500);
+
+            builder.Property(n => n.Type)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (NotificationType)Enum.Parse(typeof(NotificationType), v))
+                .HasMaxLength(50);
+
+            builder.Property(n => n.Severity)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (SeverityType)Enum.Parse(typeof(SeverityType), v))
+                .HasMaxLength(50);
 
             builder.HasOne(n => n.Recipient)
                 .WithMany(r => r.Notifications)

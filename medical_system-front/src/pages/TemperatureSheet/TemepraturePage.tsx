@@ -78,7 +78,7 @@ import {
 
 interface LocalVitalSign {
   id: string
-  recordedAt: string   // ISO — для вычисления месяцев
+  recordedAt: string  
   bloodPressureSystolic: number
   bloodPressureDiastolic: number
   temperature: number
@@ -575,7 +575,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                 </div>
               )}
 
-              {/* Предупреждения из сервера */}
               {!loading && selectedPatientId && warnings.length > 0 && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', borderRadius: '10px', backgroundColor: '#fff5f5', border: '1px solid #fecaca' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, fontSize: '13px', color: '#dc2626' }}>
@@ -684,9 +683,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
           </Card>
         </div>
 
-        {/* ── Правая колонка: графики ── */}
         <div>
-          {/* График 1: Температура / Пульс / АД */}
           <Card>
             <CardHeader>
               <CardTitle>Динамика состояния</CardTitle>

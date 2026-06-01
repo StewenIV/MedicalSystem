@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,41 +23,67 @@ namespace MedicalSystem.Data.Queries
         public async Task<BedsSummaryDto> GetBedsSummaryAsync(int? floor, string? status, CancellationToken token)
         {
             var bedsQuery = _context.HospitalBeds.AsNoTracking();
-
+            
             if (floor.HasValue)
             {
-                bedsQuery = bedsQuery.Where(b => b.Room.RoomNumber.StartsWith(floor.Value.ToString()));
+                string floorStr = floor.Value.ToString();
+                bedsQuery = bedsQuery.Where(b => b.Room.RoomNumber.StartsWith(floorStr));
             }
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<BedStatus>(status, true, out var bedStatus))
             {
                 bedsQuery = bedsQuery.Where(b => b.Status == bedStatus);
             }
 
-            var beds = await bedsQuery
-                .Include(b => b.Patient).ThenInclude(p => p.Doctor)
-                .Include(b => b.Room)
-                .Select(b => new BedDto
+            var rawBeds = await bedsQuery
+                .Select(b => new
                 {
-                    Id = b.Id,
+                    b.Id,
                     RoomNumber = b.Room.RoomNumber,
-                    BedNumber = b.BedNumber,
-                    Status = b.Status.ToString().ToLower(),
-                    PatientId = b.PatientId,
-                    PatientName = b.Patient.FirstName,
-                    PatientLastName = b.Patient.LastName,
-                    PatientMiddleName = b.Patient.MiddleName,
-                    PatientAge = (int)((DateTime.Now - b.Patient.DateOfBirth).TotalDays / 365.25),
-                    Diagnosis = b.Patient.MedicalProblems.FirstOrDefault(mp => mp.IsActive).Name,
-                    DoctorName = b.Patient.Doctor.Name,
-                    AdmissionDate = b.AdmissionDate,
-                    BedNote = b.BedNote
-                }).ToListAsync(token);
+                    b.BedNumber,
+                    b.Status,
+                    b.PatientId,
+                    Patient = b.Patient == null ? null : new
+                    {
+                        b.Patient.FirstName,
+                        b.Patient.LastName,
+                        b.Patient.MiddleName,
+                        b.Patient.DateOfBirth,
+                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
+                        DoctorName = b.Patient.Doctor.Name
+                    },
+                    b.AdmissionDate,
+                    b.BedNote
+                })
+                .ToListAsync(token);
+            
+            
+            var beds = rawBeds.Select(b => new BedDto
+            {
+                Id = b.Id,
+                RoomNumber = b.RoomNumber,
+                BedNumber = b.BedNumber,
+                Status = b.Status.ToString().ToLower(),
+                PatientId = b.PatientId,
+                PatientName = b.Patient?.FirstName,
+                PatientLastName = b.Patient?.LastName,
+                PatientMiddleName = b.Patient?.MiddleName,
+                // Безопасное вычисление возраста в C#
+                PatientAge = b.Patient != null ? (int)((DateTime.UtcNow - b.Patient.DateOfBirth).TotalDays / 365.25) : (int?)null,
+                Diagnosis = b.Patient?.Diagnosis,
+                DoctorName = b.Patient?.DoctorName,
+                AdmissionDate = b.AdmissionDate,
+                BedNote = b.BedNote
+            }).ToList();
 
             var stats = new BedStatsDto
             {
                 Total = await _context.HospitalBeds.CountAsync(token),
                 Occupied = await _context.HospitalBeds.CountAsync(b => b.PatientId != null, token),
                 Free = await _context.HospitalBeds.CountAsync(b => b.PatientId == null, token),
+                // Сегодняшние поступления и выписки можно реализовать, если добавить соответствующую таблицу (например, госпитализации).
+                // Пока оставим заглушки или 0, чтобы API отвечал корректно.
+                TodayAdmissions = 0,
+                TodayDischarges = 0
             };
             stats.OccupancyPct = stats.Total > 0 ? (int)Math.Round((double)stats.Occupied / stats.Total * 100) : 0;
 
@@ -68,54 +95,184 @@ namespace MedicalSystem.Data.Queries
             var roomsQuery = _context.Rooms.AsNoTracking();
             if (floor.HasValue)
             {
-                roomsQuery = roomsQuery.Where(r => r.RoomNumber.StartsWith(floor.Value.ToString()));
+                string floorStr = floor.Value.ToString();
+                roomsQuery = roomsQuery.Where(r => r.RoomNumber.StartsWith(floorStr));
             }
 
-            var rooms = await roomsQuery
-                .Include(r => r.HospitalBeds).ThenInclude(b => b.Patient)
-                .Select(r => new RoomWithBedsDto
+            var rawRooms = await roomsQuery
+                .Select(r => new
                 {
-                    Id = r.Id,
-                    Name = $"Палата {r.RoomNumber}",
-                    Floor = int.Parse(r.RoomNumber.Substring(0, 1)),
-                    Gender = r.Gender.ToString().ToLower(),
-                    Urgency = r.HospitalBeds.Any(b => b.Status == BedStatus.Urgent) ? "urgent" : r.HospitalBeds.Any(b => b.Status == BedStatus.Attention) ? "attention" : "normal",
-                    Beds = r.HospitalBeds.Select(b => new BedInRoomDto
+                    r.Id,
+                    r.RoomNumber,
+                    r.Gender,
+                    Beds = r.HospitalBeds.Select(b => new
                     {
-                        Id = b.Id,
-                        BedNumber = b.BedNumber,
-                        Status = b.Status.ToString().ToLower(),
-                        PatientLastName = b.Patient.LastName,
-                        PatientName = b.Patient.FirstName
+                        b.Id,
+                        b.BedNumber,
+                        b.Status,
+                        PatientLastName = b.Patient != null ? b.Patient.LastName : null,
+                        PatientName = b.Patient != null ? b.Patient.FirstName : null
                     }).ToList()
-                }).ToListAsync(token);
+                })
+                .ToListAsync(token);
+
+            var rooms = rawRooms.Select(r => new RoomWithBedsDto
+            {
+                Id = r.Id,
+                Name = $"Палата {r.RoomNumber}",
+                Floor = int.TryParse(r.RoomNumber.Substring(0, 1), out int parsedFloor) ? parsedFloor : 0,
+                Gender = r.Gender.ToString().ToLower(),
+                Urgency = r.Beds.Any(b => b.Status == BedStatus.Urgent) ? "urgent" : r.Beds.Any(b => b.Status == BedStatus.Attention) ? "attention" : "normal",
+                Beds = r.Beds.Select(b => new BedInRoomDto
+                {
+                    Id = b.Id,
+                    BedNumber = b.BedNumber,
+                    Status = b.Status.ToString().ToLower(),
+                    PatientLastName = b.PatientLastName,
+                    PatientName = b.PatientName
+                }).ToList()
+            }).ToList();
 
             return new RoomsWithBedsDto { Rooms = rooms };
         }
-        
-        public Task<RoomConfigDto> GetRoomConfigAsync(CancellationToken token)
+
+        public async Task<RoomConfigDto> GetRoomConfigAsync(CancellationToken token)
         {
-            throw new NotImplementedException();
+            var rooms = await _context.Rooms.AsNoTracking().ToListAsync(token);
+            var config = rooms.ToDictionary(r => r.RoomNumber, r => new GenderConfig { Gender = r.Gender.ToString().ToLower() });
+            return new RoomConfigDto { Rooms = config };
         }
 
-        public Task<FloorsDto> GetFloorsAsync(CancellationToken token)
+        public async Task<FloorsDto> GetFloorsAsync(CancellationToken token)
         {
-            throw new NotImplementedException();
+            var floorStrings = await _context.Rooms.AsNoTracking()
+                .Select(r => r.RoomNumber.Substring(0, 1))
+                .Distinct()
+                .ToListAsync(token);
+
+             var floors = floorStrings
+                .Where(f => int.TryParse(f, out _))
+                .Select(int.Parse)
+                .OrderBy(f => f)
+                .ToList();
+
+            return new FloorsDto { Floors = floors };
         }
 
-        public Task<AlertsDto> GetAlertsAsync(CancellationToken token)
+        public async Task<AlertsDto> GetAlertsAsync(CancellationToken token)
         {
-            throw new NotImplementedException();
+            var rawAlerts = await _context.HospitalBeds.AsNoTracking()
+                .Where(b => (b.Status == BedStatus.Urgent || b.Status == BedStatus.Attention) && b.PatientId != null)
+                .Select(b => new
+                {
+                    b.Id,
+                    b.Status,
+                    RoomNumber = b.Room.RoomNumber,
+                    PatientId = b.PatientId.Value, // Гарантированно не null благодаря фильтру
+                    PatientName = b.Patient.FirstName,
+                    PatientLastName = b.Patient.LastName
+                })
+                .ToListAsync(token);
+
+            return new AlertsDto
+            {
+                Urgent = rawAlerts.Where(a => a.Status == BedStatus.Urgent).Select(a => new AlertBedDto { Id = a.Id, RoomNumber = a.RoomNumber, PatientId = a.PatientId, PatientName = a.PatientName, PatientLastName = a.PatientLastName }).ToList(),
+                Attention = rawAlerts.Where(a => a.Status == BedStatus.Attention).Select(a => new AlertBedDto { Id = a.Id, RoomNumber = a.RoomNumber, PatientId = a.PatientId, PatientName = a.PatientName, PatientLastName = a.PatientLastName }).ToList()
+            };
         }
 
-        public Task<BedDto> GetBedByIdAsync(Guid bedId, CancellationToken token)
+        public async Task<BedDto> GetBedByIdAsync(Guid bedId, CancellationToken token)
         {
-            throw new NotImplementedException();
+            var rawBed = await _context.HospitalBeds.AsNoTracking()
+                .Where(b => b.Id == bedId)
+                .Select(b => new
+                {
+                    b.Id,
+                    RoomNumber = b.Room.RoomNumber,
+                    b.BedNumber,
+                    b.Status,
+                    b.PatientId,
+                    Patient = b.Patient == null ? null : new
+                    {
+                        b.Patient.FirstName,
+                        b.Patient.LastName,
+                        b.Patient.MiddleName,
+                        b.Patient.DateOfBirth,
+                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
+                        DoctorName = b.Patient.Doctor.Name
+                    },
+                    b.AdmissionDate,
+                    b.BedNote
+                })
+                .FirstOrDefaultAsync(token);
+
+            if (rawBed == null) return null;
+
+            return new BedDto
+            {
+                Id = rawBed.Id,
+                RoomNumber = rawBed.RoomNumber,
+                BedNumber = rawBed.BedNumber,
+                Status = rawBed.Status.ToString().ToLower(),
+                PatientId = rawBed.PatientId,
+                PatientName = rawBed.Patient?.FirstName,
+                PatientLastName = rawBed.Patient?.LastName,
+                PatientMiddleName = rawBed.Patient?.MiddleName,
+                PatientAge = rawBed.Patient != null ? (int)((DateTime.UtcNow - rawBed.Patient.DateOfBirth).TotalDays / 365.25) : (int?)null,
+                Diagnosis = rawBed.Patient?.Diagnosis,
+                DoctorName = rawBed.Patient?.DoctorName,
+                AdmissionDate = rawBed.AdmissionDate,
+                BedNote = rawBed.BedNote
+            };
         }
 
-        public Task<PatientDetailsDto> GetPatientDetailsAsync(Guid patientId, CancellationToken token)
+        public async Task<PatientDetailsDto> GetPatientDetailsAsync(Guid patientId, CancellationToken token)
         {
-            throw new NotImplementedException();
+                var bedNote = await _context.HospitalBeds.AsNoTracking()
+                .Where(b => b.PatientId == patientId)
+                .Select(b => b.BedNote)
+                .FirstOrDefaultAsync(token);
+
+            var dbPrescriptions = await _context.BedPrescriptions.AsNoTracking()
+                .Where(p => p.PatientId == patientId)
+                .ToListAsync(token);
+            
+            var prescriptions = dbPrescriptions.Select(p => new PrescriptionDto 
+            { 
+                Id = p.Id, 
+                Name = p.Name, 
+                Dose = p.Dose, 
+                Time = p.ScheduledTime?.ToString(@"hh\:mm") ?? "", 
+                Done = p.IsDone 
+            }).ToList();
+
+            var dbMeds = await _context.PatientMedications.AsNoTracking()
+                .Where(p => p.PatientId == patientId)
+                .ToListAsync(token);
+
+            var meds = dbMeds.Select(p => new MedicationInStockDto { Name = p.Name, Qty = p.Dose }).ToList();
+
+            var dbLog = await _context.BedActionLogs.AsNoTracking()
+                .Include(l => l.PerformedBy)
+                .Where(l => l.PatientId == patientId)
+                .OrderByDescending(l => l.PerformedAt)
+                .ToListAsync(token);
+
+            var log = dbLog.Select(l => new ActionLogDto 
+            { 
+                Who = l.PerformedBy?.Name ?? "Неизвестно", 
+                Action = l.Action, 
+                Time = l.PerformedAt.ToString("HH:mm"), 
+                Amount = l.Amount 
+            }).ToList();
+
+            return new PatientDetailsDto
+            {
+                DoctorNote = bedNote,
+                Prescriptions = prescriptions,
+                Meds = meds,
+                Log = log
+            };
         }
     }
 }
