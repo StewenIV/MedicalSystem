@@ -170,7 +170,10 @@ namespace MedicalSystem.App.Services
                 .RuleFor(pm => pm.PatientId, f => f.PickRandom(patients).Id)
                 .RuleFor(pm => pm.MedicineId, f => f.PickRandom(medicines).Id)
                 .RuleFor(pm => pm.Name, (f, pm) => medicines.First(m => m.Id == pm.MedicineId).Name)
-                .RuleFor(pm => pm.Dose, f => Truncate($"{f.Random.Int(1, 2)} таб.", 50))
+                .RuleFor(pm => pm.Dose, (f, pm) => {
+                    var medicine = medicines.First(m => m.Id == pm.MedicineId);
+                    return Truncate($"{System.Math.Round(f.Random.Decimal(0.5m, 3.0m), 1)} {medicine.Unit.ToString().ToLower()}", 50);
+                })
                 .RuleFor(pm => pm.Regimen, f => Truncate("2 раза в день", 200))
                 .RuleFor(pm => pm.Status, f => f.PickRandom<MedicationStatus>())
                 .RuleFor(pm => pm.DoctorId, f => f.PickRandom(staff).Id)
@@ -306,6 +309,9 @@ namespace MedicalSystem.App.Services
                     if (patientToAdmit != null)
                     {
                         availablePatients.Remove(patientToAdmit);
+                        // Admission: 30% today, 70% yesterday/before to show deltas
+                        var admissionDate = faker.Random.Bool(0.3f) ? DateTime.UtcNow : DateTime.UtcNow.AddDays(-faker.Random.Int(1, 3));
+                        
                         beds.Add(new HospitalBed
                         {
                             Id = Guid.NewGuid(),
@@ -313,7 +319,8 @@ namespace MedicalSystem.App.Services
                             BedNumber = bedNum,
                             Status = faker.PickRandom(occupiedStatuses),
                             PatientId = patientToAdmit.Id,
-                            BedNote = Truncate(faker.Lorem.Sentence(), 1000)
+                            BedNote = Truncate(faker.Lorem.Sentence(), 1000),
+                            AdmissionDate = admissionDate
                         });
                     }
                     else
@@ -325,7 +332,8 @@ namespace MedicalSystem.App.Services
                             BedNumber = bedNum,
                             Status = BedStatus.Free,
                             PatientId = null,
-                            BedNote = ""
+                            BedNote = "",
+                            AdmissionDate = null
                         });
                     }
                 }
@@ -370,6 +378,7 @@ namespace MedicalSystem.App.Services
                 .RuleFor(bp => bp.PatientMedicationId, f => f.PickRandom(patientMedications).Id)
                 .RuleFor(bp => bp.Name, (f, bp) => patientMedications.First(pm => pm.Id == bp.PatientMedicationId).Name)
                 .RuleFor(bp => bp.Dose, (f, bp) => patientMedications.First(pm => pm.Id == bp.PatientMedicationId).Dose)
+                .RuleFor(bp => bp.ScheduledTime, f => new TimeSpan(f.Random.Int(8, 22), f.Random.Int(0, 59), 0))
                 .RuleFor(bp => bp.Date, f => f.Date.Recent())
                 .RuleFor(bp => bp.IsDone, f => f.Random.Bool())
                 .RuleFor(bp => bp.DoneAt, (f, bp) => bp.IsDone ? f.Date.Recent() : null)
@@ -403,6 +412,67 @@ namespace MedicalSystem.App.Services
                 .RuleFor(mol => mol.PatientId, (f, mol) => mol.Type == OperationType.Writeoff ? f.PickRandom(patients).Id : null)
                 .RuleFor(mol => mol.PrescriptionId, (f, mol) => mol.Type == OperationType.Writeoff ? f.PickRandom(patientMedications).Id : null)
                 .Generate(count);
+        }
+
+        public static List<BedOccupancyHistory> GenerateBedOccupancyHistories(List<HospitalBed> beds, List<Patient> patients)
+        {
+            var histories = new List<BedOccupancyHistory>();
+            var faker = new Faker("ru");
+            
+            var activePatientIds = beds.Where(b => b.PatientId.HasValue).Select(b => b.PatientId.Value).ToHashSet();
+            var dischargedPatients = patients.Where(p => !activePatientIds.Contains(p.Id)).ToList();
+            
+            // 1. Active records
+            foreach (var bed in beds.Where(b => b.Status != BedStatus.Free && b.PatientId.HasValue))
+            {
+                histories.Add(new BedOccupancyHistory
+                {
+                    Id = Guid.NewGuid(),
+                    BedId = bed.Id,
+                    PatientId = bed.PatientId.Value,
+                    AdmittedAt = bed.AdmissionDate ?? DateTime.UtcNow,
+                    DischargedAt = null
+                });
+            }
+
+            // 2. Historical records for both free and occupied beds
+            foreach (var bed in beds)
+            {
+                int pastRecords = faker.Random.Int(1, 3);
+                for (int i = 0; i < pastRecords; i++)
+                {
+                    if (!dischargedPatients.Any()) break;
+                    
+                    var p = faker.PickRandom(dischargedPatients);
+                    dischargedPatients.Remove(p);
+
+                    bool dischargedToday = faker.Random.Bool(0.3f); // 30% chance they discharged today
+                    DateTime dischargeDate;
+                    DateTime admissionDate;
+                    
+                    if (dischargedToday)
+                    {
+                        dischargeDate = DateTime.UtcNow.Date.AddHours(faker.Random.Int(8, 18)); // Sometime today
+                        admissionDate = dischargeDate.AddDays(-faker.Random.Int(1, 5));
+                    }
+                    else
+                    {
+                        dischargeDate = DateTime.UtcNow.Date.AddDays(-faker.Random.Int(1, 5)); // Sometime yesterday or before
+                        admissionDate = dischargeDate.AddDays(-faker.Random.Int(1, 5));
+                    }
+                    
+                    histories.Add(new BedOccupancyHistory
+                    {
+                        Id = Guid.NewGuid(),
+                        BedId = bed.Id,
+                        PatientId = p.Id,
+                        AdmittedAt = admissionDate,
+                        DischargedAt = dischargeDate
+                    });
+                }
+            }
+            
+            return histories;
         }
     }
 }

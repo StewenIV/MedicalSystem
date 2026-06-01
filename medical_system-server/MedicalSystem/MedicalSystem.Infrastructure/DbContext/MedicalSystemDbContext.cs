@@ -23,6 +23,7 @@ namespace MedicalSystem.Infrastructure.DbContext
         public DbSet<HospitalBed> HospitalBeds { get; set; }
         public DbSet<BedPrescription> BedPrescriptions { get; set; }
         public DbSet<BedActionLog> BedActionLogs { get; set; }
+        public DbSet<BedOccupancyHistory> BedOccupancyHistories { get; set; }
         public DbSet<Medicine> Medicines { get; set; }
         public DbSet<MedicineOperationLog> MedicineOperationLogs { get; set; }
         public DbSet<MedicalStaff> MedicalStaff { get; set; }

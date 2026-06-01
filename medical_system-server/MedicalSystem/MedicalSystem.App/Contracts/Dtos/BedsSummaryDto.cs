@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace MedicalSystem.App.Contracts.Dtos
@@ -35,5 +35,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public int OccupancyPct { get; set; }
         public int TodayAdmissions { get; set; }
         public int TodayDischarges { get; set; }
+        public int OccupancyDelta { get; set; }
+        public int FreeDeltaPct { get; set; }
     }
 }

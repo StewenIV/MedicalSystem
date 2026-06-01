@@ -574,7 +574,7 @@ export const AlertsRow = styled.div`
   flex-wrap: wrap;
 `
 
-export const AlertPill = styled.button<{ $gray?: boolean }>`
+export const AlertPill = styled.button<{ $attention?: boolean }>`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -584,17 +584,26 @@ export const AlertPill = styled.button<{ $gray?: boolean }>`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.14s;
-  border: 1px solid ${(p) => (p.$gray ? '#e5e7eb' : '#fecaca')};
-  background: ${(p) => (p.$gray ? '#f9fafb' : '#fff5f5')};
-  color: ${(p) => (p.$gray ? '#6b7280' : '#dc2626')};
+  border: 1px solid ${(p) => (p.$attention ? '#fde68a' : '#fecaca')};
+  background: ${(p) => (p.$attention ? '#fffbeb' : '#fff5f5')};
+  color: ${(p) => (p.$attention ? '#d97706' : '#dc2626')};
+
+  ${(p) =>
+    p.$attention
+      ? css`
+          animation: ${attentionPulse} 2.5s infinite;
+        `
+      : css`
+          animation: ${pulse} 2s infinite;
+        `}
 
   &:hover {
-    border-color: ${(p) => (p.$gray ? '#9ca3af' : '#f87171')};
-    background: ${(p) => (p.$gray ? '#f3f4f6' : '#fee2e2')};
+    border-color: ${(p) => (p.$attention ? '#fbbf24' : '#f87171')};
+    background: ${(p) => (p.$attention ? '#fef3c7' : '#fee2e2')};
   }
 `
 
-export const AlertNum = styled.span<{ $gray?: boolean }>`
+export const AlertNum = styled.span<{ $attention?: boolean }>`
   width: 28px;
   height: 28px;
   border-radius: 6px;
@@ -603,8 +612,8 @@ export const AlertNum = styled.span<{ $gray?: boolean }>`
   justify-content: center;
   font-size: 14px;
   font-weight: 700;
-  background: ${(p) => (p.$gray ? '#e5e7eb' : '#fee2e2')};
-  color: ${(p) => (p.$gray ? '#374151' : '#dc2626')};
+  background: ${(p) => (p.$attention ? '#fef3c7' : '#fee2e2')};
+  color: ${(p) => (p.$attention ? '#d97706' : '#dc2626')};
   flex-shrink: 0;
 `
 

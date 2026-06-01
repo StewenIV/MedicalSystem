@@ -25,6 +25,7 @@ builder.Services.AddScoped<IPatientQuery, PatientQuery>();
 builder.Services.AddScoped<IVitalSignStorage, VitalSignStorage>();
 builder.Services.AddScoped<IBedQuery, BedQuery>();
 builder.Services.AddScoped<IHospitalBedStorage, HospitalBedStorage>();
+builder.Services.AddScoped<IBedOccupancyHistoryStorage, BedOccupancyHistoryStorage>();
 builder.Services.AddScoped<IPrescriptionStorage, PrescriptionStorage>();
 builder.Services.AddScoped<IPatientStorage, PatientStorage>();
 builder.Services.AddScoped<IMedicalProblemStorage, MedicalProblemStorage>();

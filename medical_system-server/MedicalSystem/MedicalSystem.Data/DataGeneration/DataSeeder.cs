@@ -48,6 +48,8 @@ namespace MedicalSystem.Data.DataGeneration
                 var bedPrescriptions = await GetOrCreateAsync(context, context.BedPrescriptions, () => TestDataGenerator.GenerateBedPrescriptions(1000, patients, patientMedications));
                 var bedActionLogs = await GetOrCreateAsync(context, context.BedActionLogs, () => TestDataGenerator.GenerateBedActionLogs(1500, patients, medicalStaff));
                 var medicineOperationLogs = await GetOrCreateAsync(context, context.MedicineOperationLogs, () => TestDataGenerator.GenerateMedicineOperationLogs(500, medicines, medicalStaff, patients, patientMedications));
+                
+                var bedOccupancyHistories = await GetOrCreateAsync(context, context.BedOccupancyHistories, () => TestDataGenerator.GenerateBedOccupancyHistories(hospitalBeds, patients));
 
                 // Сохраняем все изменения
                 await context.SaveChangesAsync();

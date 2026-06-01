@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -75,17 +75,29 @@ namespace MedicalSystem.Data.Queries
                 BedNote = b.BedNote
             }).ToList();
 
+            var today = DateTime.UtcNow.Date;
+            var todayAdmissions = await _context.BedOccupancyHistories.CountAsync(h => h.AdmittedAt.Date == today, token);
+            var todayDischarges = await _context.BedOccupancyHistories.CountAsync(h => h.DischargedAt != null && h.DischargedAt.Value.Date == today, token);
+
+            var total = await _context.HospitalBeds.CountAsync(token);
+            var occupied = await _context.HospitalBeds.CountAsync(b => b.PatientId != null, token);
+            var free = await _context.HospitalBeds.CountAsync(b => b.PatientId == null, token);
+
+            var occupancyDelta = todayAdmissions - todayDischarges;
+            var freeYesterday = total - (occupied - occupancyDelta);
+            var freeDeltaPct = freeYesterday > 0 ? (int)Math.Round((double)(free - freeYesterday) / freeYesterday * 100) : 0;
+
             var stats = new BedStatsDto
             {
-                Total = await _context.HospitalBeds.CountAsync(token),
-                Occupied = await _context.HospitalBeds.CountAsync(b => b.PatientId != null, token),
-                Free = await _context.HospitalBeds.CountAsync(b => b.PatientId == null, token),
-                // Сегодняшние поступления и выписки можно реализовать, если добавить соответствующую таблицу (например, госпитализации).
-                // Пока оставим заглушки или 0, чтобы API отвечал корректно.
-                TodayAdmissions = 0,
-                TodayDischarges = 0
+                Total = total,
+                Occupied = occupied,
+                Free = free,
+                TodayAdmissions = todayAdmissions,
+                TodayDischarges = todayDischarges,
+                OccupancyDelta = occupancyDelta,
+                FreeDeltaPct = freeDeltaPct,
+                OccupancyPct = total > 0 ? (int)Math.Round((double)occupied / total * 100) : 0
             };
-            stats.OccupancyPct = stats.Total > 0 ? (int)Math.Round((double)stats.Occupied / stats.Total * 100) : 0;
 
             return new BedsSummaryDto { Beds = beds, Stats = stats };
         }
@@ -234,6 +246,8 @@ namespace MedicalSystem.Data.Queries
                 .FirstOrDefaultAsync(token);
 
             var dbPrescriptions = await _context.BedPrescriptions.AsNoTracking()
+                .Include(p => p.PatientMedication)
+                .ThenInclude(pm => pm.Medicine)
                 .Where(p => p.PatientId == patientId)
                 .ToListAsync(token);
             
@@ -246,11 +260,16 @@ namespace MedicalSystem.Data.Queries
                 Done = p.IsDone 
             }).ToList();
 
-            var dbMeds = await _context.PatientMedications.AsNoTracking()
-                .Where(p => p.PatientId == patientId)
-                .ToListAsync(token);
-
-            var meds = dbMeds.Select(p => new MedicationInStockDto { Name = p.Name, Qty = p.Dose }).ToList();
+            var meds = dbPrescriptions
+                .Where(p => p.PatientMedication != null && p.PatientMedication.Medicine != null)
+                .Select(p => p.PatientMedication.Medicine)
+                .DistinctBy(m => m.Id)
+                .Select(m => new MedicationInStockDto 
+                { 
+                    Name = m.Name, 
+                    Qty = $"{Math.Round(m.CurrentBalance, 2)} {m.Unit.ToString().ToLower()}" 
+                })
+                .ToList();
 
             var dbLog = await _context.BedActionLogs.AsNoTracking()
                 .Include(l => l.PerformedBy)

@@ -111,6 +111,7 @@ import {
   type BedDto,
   type RoomsConfigDto,
   type PatientDetailDto,
+  type BedStatsDto,
 } from 'api/bedsApi'
 
 function useCounter(target: number, duration = 1000) {
@@ -324,16 +325,20 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
     })
     // Отправка на сервер
     if (bed.patientId) {
-      togglePrescription(bed.patientId, idStr, newDone).catch((err) => {
-        toast.error(err.message || 'Ошибка при обновлении назначения')
-        // Откат при ошибке
-        setCompletedPrescriptions((prev) => {
-          const newSet = new Set(prev)
-          if (newDone) newSet.delete(idStr)
-          else newSet.add(idStr)
-          return newSet
+      togglePrescription(bed.patientId, idStr, newDone)
+        .then(() => {
+          fetchPatientDetails(bed.patientId!).then(setDetails).catch(console.error)
         })
-      })
+        .catch((err) => {
+          toast.error(err.message || 'Ошибка при обновлении назначения')
+          // Откат при ошибке
+          setCompletedPrescriptions((prev) => {
+            const newSet = new Set(prev)
+            if (newDone) newSet.delete(idStr)
+            else newSet.add(idStr)
+            return newSet
+          })
+        })
     }
   }
   
@@ -433,9 +438,7 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
               </SectionDivider>
 
               <MedsGrid>
-                {details.meds
-                  .filter((m) => details.prescriptions.some((rx) => rx.name === m.name))
-                  .map((m, i) => (
+                {details.meds.map((m, i) => (
                     <MedCard key={i}>
                       <MedName>{m.name}</MedName>
                       <MedQty>{m.qty}</MedQty>
@@ -447,16 +450,18 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
                 <Icon.Log /> Журнал
               </SectionDivider>
 
-              {details.log.map((entry, i) => (
-                <LogEntry key={i}>
-                  <LogWho>{entry.who}</LogWho>
-                  <LogAction>{entry.action}</LogAction>
-                  <LogMeta>
-                    <span>{entry.time}</span>
-                    {entry.amount && <span>Списано: {entry.amount}</span>}
-                  </LogMeta>
-                </LogEntry>
-              ))}
+              <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 8 }}>
+                {details.log.map((entry, i) => (
+                  <LogEntry key={i}>
+                    <LogWho>{entry.who}</LogWho>
+                    <LogAction>{entry.action}</LogAction>
+                    <LogMeta>
+                      <span>🕐{entry.time}</span>
+                      {entry.amount && <span>Списано: {entry.amount}</span>}
+                    </LogMeta>
+                  </LogEntry>
+                ))}
+              </div>
             </>
           )}
         </>
@@ -506,15 +511,20 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
       return newSet
     })
     if (bed.patientId) {
-      togglePrescription(bed.patientId, idStr, newDone).catch((err) => {
-        toast.error(err.message || 'Ошибка при обновлении назначения')
-        setCompletedPrescriptions((prev) => {
-          const newSet = new Set(prev)
-          if (newDone) newSet.delete(idStr)
-          else newSet.add(idStr)
-          return newSet
+      togglePrescription(bed.patientId, idStr, newDone)
+        .then(() => {
+          // Refetch patient details to update medicine balances dynamically
+          fetchPatientDetails(bed.patientId!).then(setDetails).catch(console.error)
         })
-      })
+        .catch((err) => {
+          toast.error(err.message || 'Ошибка при обновлении назначения')
+          setCompletedPrescriptions((prev) => {
+            const newSet = new Set(prev)
+            if (newDone) newSet.delete(idStr)
+            else newSet.add(idStr)
+            return newSet
+          })
+        })
     }
   }
   const initials = bed.patientName ? `${bed.patientName[0]}${bed.patientLastName?.[0] ?? ''}` : '—'
@@ -613,9 +623,7 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
                 <Icon.FillBox /> Остатки медикаментов
               </ModalSectionTitle>
               <ModalMedsGrid>
-                {details.meds
-                  .filter((m) => details.prescriptions.some((rx) => rx.name === m.name))
-                  .map((m, i) => (
+                {details.meds.map((m, i) => (
                     <ModalMedCard key={i}>
                       <ModalMedName>{m.name}</ModalMedName>
                       <ModalMedQty>{m.qty}</ModalMedQty>
@@ -628,7 +636,8 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
               <ModalSectionTitle>
                 <Icon.Log /> Журнал выполнения
               </ModalSectionTitle>
-              {details.log.map((entry, i) => (
+              <div style={{ maxHeight: 200, overflowY: 'auto', paddingRight: 8 }}>
+                {details.log.map((entry, i) => (
                 <ModalLogEntry key={i}>
                   <LogWho style={{ fontSize: 13 }}>{entry.who}</LogWho>
                   <LogAction style={{ fontSize: 12 }}>{entry.action}</LogAction>
@@ -638,6 +647,7 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
                   </LogMeta>
                 </ModalLogEntry>
               ))}
+              </div>
             </ModalSection>
           </>
         )}
@@ -678,6 +688,7 @@ const [triggers, setTriggers] = useState({
   const [roomsConfig, setRoomsConfig] = useState<RoomsConfigDto>({})
   const [urgentBeds, setUrgentBeds] = useState<BedDto[]>([])
   const [attentionBeds, setAttentionBeds] = useState<BedDto[]>([])
+  const [stats, setStats] = useState<BedStatsDto | null>(null)
   const [pageLoading, setPageLoading] = useState(true)
 
   // ── Начальная загрузка ─────────────────────────────────────────────────────
@@ -691,6 +702,7 @@ const [triggers, setTriggers] = useState({
     ])
       .then(([bedsResp, floorsResp, configResp, alertsResp]) => {
         setAllBeds(bedsResp.beds)
+        setStats(bedsResp.stats)
         setFloors(floorsResp.floors)
         setRoomsConfig(configResp)
         setUrgentBeds(alertsResp.urgent)
@@ -700,7 +712,6 @@ const [triggers, setTriggers] = useState({
       .finally(() => setPageLoading(false))
   }, [])
 
-  // ── Вычисления (та же самая логика, что была с mock, но из серверных данных) ──
   const totalBeds = allBeds.length
   const occupiedBeds = allBeds.filter((b) => b.status !== 'free').length
   const freeBeds = allBeds.filter((b) => b.status === 'free').length
@@ -780,8 +791,8 @@ const [triggers, setTriggers] = useState({
                       label="Занято"
                       targetValue={occupiedBeds}
                       color="#eb2525"
-                      delta="+2 за сегодня"
-                      deltaPositive
+                      delta={stats?.occupancyDelta ? `${stats.occupancyDelta > 0 ? '+' : ''}${stats.occupancyDelta} за сегодня` : '0 за сегодня'}
+                      deltaPositive={stats ? stats.occupancyDelta >= 0 : true}
                     />
                   </InfoItem>
                   <InfoItem>
@@ -790,8 +801,8 @@ const [triggers, setTriggers] = useState({
                       label="Свободно"
                       targetValue={freeBeds}
                       color="#16a34a"
-                      delta="−5% от вчера"
-                      deltaPositive={false}
+                      delta={stats?.freeDeltaPct ? `${stats.freeDeltaPct > 0 ? '+' : ''}${stats.freeDeltaPct}% от вчера` : '0% от вчера'}
+                      deltaPositive={stats ? stats.freeDeltaPct >= 0 : true}
                     />
                   </InfoItem>
                   <InfoItem>
@@ -889,8 +900,8 @@ const [triggers, setTriggers] = useState({
                     </AlertPill>
                   ))}
                   {attentionBeds.map((b) => (
-                    <AlertPill key={b.id} $gray onClick={() => setModalBedId(b.id)}>
-                      <AlertNum $gray>{b.roomNumber}</AlertNum>
+                    <AlertPill key={b.id} $attention onClick={() => setModalBedId(b.id)}>
+                      <AlertNum $attention>{b.roomNumber}</AlertNum>
                       Внимание — {b.patientLastName} {b.patientName?.[0]}.
                     </AlertPill>
                   ))}

@@ -66,6 +66,8 @@ export interface BedStatsDto {
   occupancyPct: number
   todayAdmissions?: number
   todayDischarges?: number
+  occupancyDelta: number
+  freeDeltaPct: number
 }
 
 export interface RoomsConfigDto {

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
@@ -16,14 +16,16 @@ namespace MedicalSystem.App.Services
         private readonly IPrescriptionStorage _prescriptionStorage;
         private readonly IPatientStorage _patientStorage;
         private readonly IMedicalProblemStorage _medicalProblemStorage;
+        private readonly IBedOccupancyHistoryStorage _occupancyHistoryStorage;
 
-        public BedService(IBedQuery bedQuery, IHospitalBedStorage bedStorage, IPrescriptionStorage prescriptionStorage, IPatientStorage patientStorage, IMedicalProblemStorage medicalProblemStorage)
+        public BedService(IBedQuery bedQuery, IHospitalBedStorage bedStorage, IPrescriptionStorage prescriptionStorage, IPatientStorage patientStorage, IMedicalProblemStorage medicalProblemStorage, IBedOccupancyHistoryStorage occupancyHistoryStorage)
         {
             _bedQuery = bedQuery;
             _bedStorage = bedStorage;
             _prescriptionStorage = prescriptionStorage;
             _patientStorage = patientStorage;
             _medicalProblemStorage = medicalProblemStorage;
+            _occupancyHistoryStorage = occupancyHistoryStorage;
         }
 
         public Task<BedsSummaryDto> GetBedsSummaryAsync(int? floor, string? status, CancellationToken token) => _bedQuery.GetBedsSummaryAsync(floor, status, token);
@@ -40,18 +42,24 @@ namespace MedicalSystem.App.Services
             
             if (prescription != null && prescription.PatientId == patientId)
             {
-                prescription.IsDone = isDone;
-                if (isDone)
+                // Only change if the status is actually changing
+                if (prescription.IsDone != isDone)
                 {
-                    prescription.DoneAt = DateTime.UtcNow;
-                    prescription.DoneBy = "Текущий пользователь"; // Заглушка, пока нет авторизации
+                    prescription.IsDone = isDone;
+                    if (isDone)
+                    {
+                        prescription.DoneAt = DateTime.UtcNow;
+                        prescription.DoneBy = "Текущий пользователь"; // Заглушка, пока нет авторизации
+                        await _prescriptionStorage.UpdateBalanceAsync(prescriptionId, deduct: true, token);
+                    }
+                    else
+                    {
+                        prescription.DoneAt = null;
+                        prescription.DoneBy = null;
+                        await _prescriptionStorage.UpdateBalanceAsync(prescriptionId, deduct: false, token);
+                    }
+                    await _prescriptionStorage.UpdateAsync(prescription, token);
                 }
-                else
-                {
-                    prescription.DoneAt = null;
-                    prescription.DoneBy = null;
-                }
-                await _prescriptionStorage.UpdateAsync(prescription, token);
             }
         }
 
@@ -103,6 +111,16 @@ namespace MedicalSystem.App.Services
                     };
                     await _medicalProblemStorage.AddAsync(newProblem, token);
                 }
+
+                // 4. Добавляем запись в историю
+                var history = new BedOccupancyHistory
+                {
+                    Id = Guid.NewGuid(),
+                    BedId = bed.Id,
+                    PatientId = request.PatientId,
+                    AdmittedAt = request.AdmissionDate
+                };
+                await _occupancyHistoryStorage.AddAsync(history, token);
             }
         }
 
@@ -124,6 +142,14 @@ namespace MedicalSystem.App.Services
                 {
                     patient.Status = PatientStatus.Discharged;
                     await _patientStorage.UpdateAsync(patient, token);
+                }
+
+                var histories = await _occupancyHistoryStorage.GetAllAsync(token);
+                var activeHistory = histories.FirstOrDefault(h => h.BedId == bedId && h.PatientId == patientId && h.DischargedAt == null);
+                if (activeHistory != null)
+                {
+                    activeHistory.DischargedAt = DateTime.UtcNow;
+                    await _occupancyHistoryStorage.UpdateAsync(activeHistory, token);
                 }
             }
         }
