@@ -23,9 +23,24 @@ type PatientDataContextValue = PatientDataState & PatientDataActions
 const PatientDataContext = createContext<PatientDataContextValue | null>(null)
 // ─── Провайдер ────────────────────────────────────────────────────
 export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [patients, setPatients] = useState<Patient[]>(mockPatients)
+  const [patients, setPatients] = useState<any[]>([])
   const [inspections, setInspections] = useState<Record<string, SavedInspection[]>>({})
   const [drafts, setDrafts] = useState<Record<string, any>>({})
+
+  React.useEffect(() => {
+    import('../api/patientsApi').then(({ fetchAllPatients }) => {
+      fetchAllPatients().then((data) => {
+        const mapped = data.map(dto => ({
+          ...dto,
+          doctor: dto.doctorName,
+          department: dto.departmentName,
+          statusText: dto.statusText || 'Госпитализирован',
+          activeProblems: dto.medicalProblems?.map(m => m.name) || []
+        }))
+        setPatients(mapped)
+      }).catch(console.error)
+    })
+  }, [])
 
   const saveDraft = useCallback((key: string, draft: any) => {
     setDrafts(prev => ({ ...prev, [key]: draft }))

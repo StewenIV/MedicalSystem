@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using MedicalSystem.Domain.Enums;
-using MedicalSystem.Domain.Models.Owned; // Добавляем using
+using MedicalSystem.Domain.Models.Owned;
 
 namespace MedicalSystem.Domain.Models
 {
@@ -75,5 +75,6 @@ namespace MedicalSystem.Domain.Models
         public virtual ICollection<BedActionLog> BedActionLogs { get; set; }
         public virtual ICollection<MedicineOperationLog> MedicineOperationLogs { get; set; }
         public virtual ICollection<Notification> Notifications { get; set; }
+        public virtual ICollection<Prescription> Prescriptions { get; set; }
     }
 }

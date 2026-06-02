@@ -64,7 +64,7 @@ import {
 } from 'recharts'
 import colors from 'consts/colors'
 
-import { mockPatients, mockHospitalBeds, mockPathientVitalSigns, VitalSign } from 'data/mockData'
+// no mock imports needed
 import { usePatientData } from 'context/PatientDataContext'
 import {
   PatientCardContainer,
@@ -246,7 +246,7 @@ const getBloodPressureSegments = (systolic: number, diastolic: number) => {
   }
 }
 
-const buildChartData = (signs: VitalSign[]) =>
+const buildChartData = (signs: any[]) =>
   signs.map((v) => {
     const ps = getPulseSegments(v.pulse)
     const bp = getBloodPressureSegments(v.bloodPressureSystolic, v.bloodPressureDiastolic)
@@ -434,11 +434,9 @@ const VACCINE_SELECT_OPTIONS: SelectOption[] = VACCINE_OPTIONS.map((v) => ({
   label: v.label
 }))
 
-const PAGE_SIZE = 8
-
-const getPatientRoom = (patientId: string): string => {
-  const bed = mockHospitalBeds.find((b) => b.patientId === patientId)
-  return bed ? `Палата ${bed.roomNumber}` : '—'
+// PAGE_SIZE removed
+const getPatientRoom = (patient: any): string => {
+  return patient.roomNumber ? `Палата ${patient.roomNumber}` : '—'
 }
 
 const getInitials = (firstName: string, lastName: string) => {
@@ -458,8 +456,8 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'discharged', label: 'Выписан' }
 ]
 const GENDER_OPTIONS: SelectOption[] = [
-  { value: 'Мужской', label: 'Мужской' },
-  { value: 'Женский', label: 'Женский' }
+  { value: 'Male', label: 'Мужской' },
+  { value: 'Female', label: 'Женский' }
 ]
 
 interface PatientSearchPanelProps {
@@ -483,6 +481,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   const [gender, setGender] = useState<SelectOption | null>(null)
   const [room, setRoom] = useState('')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(8)
 
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const clickCountRef = useRef<number>(0)
@@ -535,19 +534,18 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
       )
         return false
       if (doctor && p.doctor !== doctor.value) return false
-      if (status && p.status !== status.value) return false
+      if (status && p.status?.toLowerCase() !== status.value.toLowerCase()) return false
       if (gender && p.gender !== gender.value) return false
       if (room) {
-        const bed = mockHospitalBeds.find((b) => b.patientId === p.id && b.roomNumber === room)
-        if (!bed) return false
+        if ((p as any).roomNumber !== room) return false
       }
       return true
     })
   }, [query, doctor, status, gender, room])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
-  const paged = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+  const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   useEffect(() => {
     updateTableScrollHint()
@@ -727,7 +725,6 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
             <SearchTable>
               <SearchThead>
                 <tr>
-                  <SearchTh>ID</SearchTh>
                   <SearchTh>Пациент</SearchTh>
                   <SearchTh>Возраст / Пол</SearchTh>
                   <SearchTh>Лечащий врач</SearchTh>
@@ -739,7 +736,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
               <tbody>
                 {paged.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={6}>
                       <SearchEmptyState>
                         <Users size={48} />
                         <p>Пациенты не найдены</p>
@@ -754,11 +751,6 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                       onClick={() => handleRowClick(patient.id)}
                       title="Одинарный клик — открыть карту | Двойной клик — быстрый просмотр"
                     >
-                      <SearchTdMuted
-                        style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 600 }}
-                      >
-                        {patient.id}
-                      </SearchTdMuted>
                       <SearchTdBold>
                         <PatientNameCell>
                           <PatientAvatar>
@@ -782,10 +774,10 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                         </PatientNameCell>
                       </SearchTdBold>
                       <SearchTd>
-                        {patient.age} лет, {patient.gender === 'Мужской' ? 'М' : 'Ж'}
+                        {patient.age} лет, {(patient.gender as any) === 'Male' || (patient.gender as any) === '0' || (patient.gender as any) === 0 || (patient.gender as any) === 'Мужской' ? 'М' : (patient.gender as any) === 'Female' || (patient.gender as any) === '1' || (patient.gender as any) === 1 || (patient.gender as any) === 'Женский' ? 'Ж' : patient.gender}
                       </SearchTd>
                       <SearchTd>{patient.doctor}</SearchTd>
-                      <SearchTdMuted>{getPatientRoom(patient.id)}</SearchTdMuted>
+                      <SearchTdMuted>{getPatientRoom(patient)}</SearchTdMuted>
                       <SearchTd>
                         <StatusPill $status={patient.status}>{patient.statusText}</StatusPill>
                       </SearchTd>
@@ -798,9 +790,22 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
           </SearchTableViewport>
         </SearchTableWrap>
 
-        {totalPages > 1 && (
+        {totalPages >= 1 && (
           <SearchPaginationRow>
             <SearchPaginationInfo>
+              <select 
+                value={pageSize} 
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value))
+                  setPage(1)
+                }}
+                style={{ marginRight: 12, padding: '4px', borderRadius: 4, border: '1px solid #cbd5e1', outline: 'none', background: '#fff', fontSize: 13 }}
+              >
+                <option value={5}>5 / стр</option>
+                <option value={8}>8 / стр</option>
+                <option value={15}>15 / стр</option>
+                <option value={50}>50 / стр</option>
+              </select>
               Страница {safePage} из {totalPages} · Записей {filtered.length}
             </SearchPaginationInfo>
             <SearchPaginationBtns>
@@ -859,12 +864,41 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
   const [activeTab, setActiveTab] = useState<string>(TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
 
-  const initialPatient = patientId ? patients.find((p) => p.id === patientId) : null
-  const [localPatient, setLocalPatient] = useState<any>(initialPatient)
+  const [localPatient, setLocalPatient] = useState<any>(null)
 
   useEffect(() => {
-    setLocalPatient(patientId ? patients.find((p) => p.id === patientId) : null)
-  }, [patientId, patients])
+    if (patientId) {
+      import('../../api/patientsApi').then(({ fetchPatientCard, fetchPatientVitals }) => {
+        Promise.all([
+          fetchPatientCard(patientId),
+          fetchPatientVitals(patientId).catch(() => [])
+        ]).then(([dto, vitalsData]) => {
+          setLocalPatient({
+            ...dto,
+            doctor: dto.doctorName,
+            department: dto.departmentName,
+            activeProblems: dto.medicalProblems?.map((m: any) => m.name) || [],
+            contacts: dto.contacts || {},
+            passport: dto.passport || {},
+            work: dto.work || {},
+            other: dto.other || {},
+            vitals: dto.vitals || {},
+            vitalsHistory: vitalsData,
+            currentMeds: dto.currentMeds || [],
+            history: dto.history || [],
+            vaccines: dto.vaccines || [],
+            operations: dto.operations || [],
+            documents: dto.documents || [],
+            labs: dto.labs || [],
+            allergies: dto.allergies || [],
+            relatives: dto.relatives || []
+          })
+        }).catch(console.error)
+      })
+    } else {
+      setLocalPatient(null)
+    }
+  }, [patientId])
 
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; type: string; data: any }>({
     isOpen: false,
@@ -947,7 +981,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
 
   const DOCTOR_OPTIONS = useMemo(() => {
     const docs = new Set<string>()
-    mockPatients.forEach(p => {
+    patients.forEach(p => {
       if (p.doctor) docs.add(p.doctor)
       p.history?.forEach(h => { if (h.doctor) docs.add(h.doctor) })
     })
@@ -1477,7 +1511,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         ['ID', p.id],
                         ['Медкарта', p.medcardNum],
                         ['Врач', p.doctor],
-                        ['Палата', getPatientRoom(p.id)],
+                        ['Палата', getPatientRoom(p)],
                         ['Статус', p.statusText],
                         ['Диагноз', p.activeProblems?.[0] || '—']
                       ].map(([l, v]) => (
@@ -2328,13 +2362,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
           </SectionCard>
         )
       case 'Показатели': {
-        const patientSigns: VitalSign[] = mockPathientVitalSigns[localPatient.id] || []
+        const patientSigns: any[] = localPatient.vitalsHistory || []
         const chartData = buildChartData(patientSigns)
         const latest = patientSigns[patientSigns.length - 1]
         const previous = patientSigns[patientSigns.length - 2]
 
         const TREND_META: {
-          field: keyof Omit<VitalSign, 'id' | 'date'>;
+          field: string;
           label: string;
           goodDir: 'up' | 'down' | 'stable' | 'any';
         }[] = [
@@ -2346,7 +2380,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
             { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
           ]
 
-        const getTrend = (field: keyof Omit<VitalSign, 'id' | 'date'>): 'up' | 'down' | 'stable' => {
+        const getTrend = (field: string): 'up' | 'down' | 'stable' => {
           if (!latest || !previous) return 'stable'
           const diff = (latest[field] as number) - (previous[field] as number)
           return diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
@@ -3648,7 +3682,7 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
                         ['ID', p.id],
                         ['Медкарта', p.medcardNum],
                         ['Врач', p.doctor],
-                        ['Палата', getPatientRoom(p.id)],
+                        ['Палата', getPatientRoom(p)],
                         ['Статус', p.statusText],
                         ['Диагноз', p.activeProblems?.[0] || '—']
                       ] as [string, string][]

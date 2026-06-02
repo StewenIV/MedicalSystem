@@ -1,6 +1,6 @@
 const BASE_URL = process.env.REACT_APP_API_URL ?? ''
 
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
+export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${url}`, {
     headers: { 'Content-Type': 'application/json', ...init?.headers },
     ...init,
@@ -8,17 +8,21 @@ async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     let errorMsg = `Ошибка сервера (${res.status})`
     try {
-      const errorData = await res.json()
-      if (errorData.message) errorMsg = errorData.message
-      else if (errorData.detail) errorMsg = errorData.detail
-      else if (errorData.title) errorMsg = errorData.title
-      else if (typeof errorData === 'string') errorMsg = errorData
-      else errorMsg = JSON.stringify(errorData)
+      const errorText = await res.text()
+      if (errorText) {
+        try {
+          const errorData = JSON.parse(errorText)
+          if (errorData.message) errorMsg = errorData.message
+          else if (errorData.detail) errorMsg = errorData.detail
+          else if (errorData.title) errorMsg = errorData.title
+          else if (typeof errorData === 'string') errorMsg = errorData
+          else errorMsg = errorText
+        } catch {
+          errorMsg = errorText
+        }
+      }
     } catch {
-      try {
-        const errorText = await res.text()
-        if (errorText) errorMsg = errorText
-      } catch {}
+      // fallback to default error message if reading text fails
     }
     throw new Error(errorMsg)
   }

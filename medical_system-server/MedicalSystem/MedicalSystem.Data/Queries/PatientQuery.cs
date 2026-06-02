@@ -38,16 +38,57 @@ namespace MedicalSystem.Data.Queries
                 .ToListAsync(token);
         }
 
+        public async Task<IEnumerable<PatientListDto>> GetAllPatientsAsync(CancellationToken token)
+        {
+            return await _context.Patients
+                .AsNoTracking()
+                .Include(p => p.Doctor)
+                .Include(p => p.Department)
+                .Include(p => p.MedicalProblems)
+                .Select(p => new PatientListDto
+                {
+                    Id = p.Id,
+                    FirstName = p.FirstName,
+                    LastName = p.LastName,
+                    MiddleName = p.MiddleName,
+                    Age = (int)((DateTime.Now - p.DateOfBirth).TotalDays / 365.25),
+                    DateOfBirth = p.DateOfBirth,
+                    Gender = p.Gender.ToString(),
+                    Status = p.Status.ToString(),
+                    StatusText = GetStatusText(p.Status),
+                    MedcardNum = p.MedcardNum,
+                    HistoryNum = p.HistoryNum,
+                    DoctorName = p.Doctor != null ? p.Doctor.Name : null,
+                    DepartmentName = p.Department != null ? p.Department.Name : null,
+                    RoomNumber = _context.HospitalBeds
+                        .Where(b => b.PatientId == p.Id)
+                        .Select(b => b.Room.RoomNumber.ToString())
+                        .FirstOrDefault(),
+                    ActiveProblems = p.MedicalProblems
+                        .Where(mp => mp.IsActive)
+                        .Select(mp => mp.Name)
+                        .ToArray()
+                })
+                .ToListAsync(token);
+        }
+
         public async Task<PatientCardDto?> GetCardByIdAsync(Guid patientId, CancellationToken token)
         {
             var patient = await _context.Patients
                 .AsNoTracking()
                 .Include(p => p.Doctor)
                 .Include(p => p.Department)
+                .Include(p => p.Institution)
                 .Include(p => p.Encounters).ThenInclude(e => e.Doctor)
                 .Include(p => p.PatientMedications)
+                .Include(p => p.PatientRelatives)
                 .Include(p => p.Allergies)
                 .Include(p => p.MedicalProblems)
+                .Include(p => p.Operations)
+                .Include(p => p.Prescriptions).ThenInclude(r => r.Doctor)
+                .Include(p => p.LabResults).ThenInclude(l => l.Doctor)
+                .Include(p => p.Vaccines)
+                .Include(p => p.PatientDocuments)
                 .Include(p => p.VitalSigns)
                 .FirstOrDefaultAsync(p => p.Id == patientId, token);
 
@@ -61,23 +102,189 @@ namespace MedicalSystem.Data.Queries
                 .Include(b => b.Room)
                 .FirstOrDefaultAsync(b => b.PatientId == patientId, token);
 
-            return new PatientCardDto
+            var latestVitals = patient.VitalSigns.OrderByDescending(v => v.RecordedAt).FirstOrDefault();
+
+            var dto = new PatientCardDto
             {
                 Id = patient.Id,
                 FirstName = patient.FirstName,
                 LastName = patient.LastName,
                 MiddleName = patient.MiddleName,
                 Age = (int)((DateTime.Now - patient.DateOfBirth).TotalDays / 365.25),
+                DateOfBirth = patient.DateOfBirth,
                 Gender = patient.Gender.ToString(),
                 Status = patient.Status.ToString(),
+                StatusText = GetStatusText(patient.Status),
                 MedcardNum = patient.MedcardNum,
                 HistoryNum = patient.HistoryNum,
                 MaritalStatus = patient.MaritalStatus,
+                Institution = patient.Institution?.Name,
+                LastUpdated = patient.LastUpdated,
                 DoctorName = patient.Doctor?.Name,
                 DepartmentName = patient.Department?.Name,
-                RoomNumber = bed?.Room?.RoomNumber,
+                RoomNumber = bed?.Room?.RoomNumber.ToString(),
                 BedNumber = bed?.BedNumber,
 
+                // Owned entities
+                Passport = new PassportInfoDto
+                {
+                    SeriesNumber = patient.Passport?.SeriesNumber,
+                    IssuedBy = patient.Passport?.IssuedBy,
+                    DateIssued = patient.Passport?.DateIssued
+                },
+                Contacts = new ContactsInfoDto
+                {
+                    Country = patient.Contacts?.Country,
+                    Region = patient.Contacts?.Region,
+                    City = patient.Contacts?.City,
+                    Address = patient.Contacts?.Address,
+                    Zip = patient.Contacts?.Zip,
+                    PhoneMobile = patient.Contacts?.PhoneMobile,
+                    PhoneHome = patient.Contacts?.PhoneHome,
+                    Email = patient.Contacts?.Email
+                },
+                Work = new WorkInfoDto
+                {
+                    Profession = patient.Work?.Profession,
+                    Organization = patient.Work?.Organization,
+                    Address = patient.Work?.Address
+                },
+                Other = new OtherInfoDto
+                {
+                    Language = patient.Other?.Language,
+                    Nationality = patient.Other?.Nationality,
+                    DateOfDeath = patient.Other?.DateOfDeath,
+                    CauseOfDeath = patient.Other?.CauseOfDeath
+                },
+
+                // Vitals
+                Vitals = latestVitals != null ? new VitalsDto
+                {
+                    Temp = latestVitals.Temperature.HasValue ? $"{latestVitals.Temperature} °C" : null,
+                    Bp = latestVitals.BloodPressureSystolic.HasValue && latestVitals.BloodPressureDiastolic.HasValue
+                        ? $"{latestVitals.BloodPressureSystolic}/{latestVitals.BloodPressureDiastolic}"
+                        : null,
+                    Hr = latestVitals.Pulse.HasValue ? $"{latestVitals.Pulse} уд/мин" : null,
+                    Resp = latestVitals.RespiratoryRate.HasValue ? $"{latestVitals.RespiratoryRate} д/мин" : null,
+                    Spo2 = latestVitals.SpO2.HasValue ? $"{latestVitals.SpO2}%" : null
+                } : null,
+
+                // Relatives
+                Relatives = patient.PatientRelatives.Select(r => new RelativeDto
+                {
+                    Id = r.Id,
+                    Name = r.Name,
+                    Relation = r.Relation,
+                    Phone = r.Phone
+                }).ToList(),
+
+                // Allergies
+                Allergies = patient.Allergies.Select(a => new AllergyDto
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    Reaction = a.Reaction,
+                    Date = a.Date,
+                    Comment = a.Comment
+                }).ToList(),
+
+                // Current medications
+                CurrentMeds = patient.PatientMedications.Select(pm => new MedicationDto
+                {
+                    Id = pm.Id,
+                    Name = pm.Name,
+                    Dose = pm.Dose,
+                    Form = pm.Form,
+                    Regimen = pm.Regimen
+                }).ToList(),
+
+                // Operations
+                Operations = patient.Operations.Select(o => new OperationDto
+                {
+                    Id = o.Id,
+                    Name = o.Name,
+                    Date = o.Date,
+                    Diagnosis = o.Diagnosis,
+                    Description = o.Description,
+                    Complications = o.Complications,
+                    Implants = o.Implants,
+                    Result = o.Result
+                }).ToList(),
+
+                // Medical problems
+                MedicalProblems = patient.MedicalProblems.Select(mp => new MedicalProblemDto
+                {
+                    Id = mp.Id,
+                    Name = mp.Name,
+                    DiagnosisDate = mp.DiagnosisDate,
+                    DiseaseStatus = mp.DiseaseStatus,
+                    Severity = mp.Severity,
+                    Description = mp.Description,
+                    Complications = mp.Complications,
+                    IsActive = mp.IsActive
+                }).ToList(),
+
+                // Prescriptions
+                Prescriptions = patient.Prescriptions.Select(pr => new PrescriptionDto
+                {
+                    Id = pr.Id,
+                    Drug = pr.Drug,
+                    Dose = pr.Dose,
+                    Form = pr.Form,
+                    Route = pr.Route,
+                    Regimen = pr.Regimen,
+                    DateStart = pr.DateStart,
+                    DateEnd = pr.DateEnd,
+                    DoctorName = pr.Doctor?.Name,
+                    Comment = pr.Comment
+                }).ToList(),
+
+                // Lab results
+                Labs = patient.LabResults.Select(l => new LabDto
+                {
+                    Id = l.Id,
+                    Date = l.Date,
+                    Type = l.Type,
+                    Reason = l.Reason,
+                    DoctorName = l.Doctor?.Name,
+                    StatusText = l.StatusText
+                }).ToList(),
+
+                // Vaccines
+                Vaccines = patient.Vaccines.Select(v => new VaccineDto
+                {
+                    Id = v.Id,
+                    Name = v.Name,
+                    Disease = v.Disease,
+                    Date = v.Date,
+                    Validity = v.Validity,
+                    Manufacturer = v.Manufacturer,
+                    Series = v.Series
+                }).ToList(),
+
+                // Documents
+                Documents = patient.PatientDocuments.Select(d => new DocumentDto
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Date = d.Date,
+                    FilePath = d.FilePath
+                }).ToList(),
+
+                // History (encounters mapped to history)
+                History = patient.Encounters.Select(e => new HistoryEntryDto
+                {
+                    Id = e.Id,
+                    DateTime = e.DateTime,
+                    Type = e.Type,
+                    DoctorName = e.Doctor?.Name,
+                    Complaints = e.Complaints,
+                    Objective = e.Objective,
+                    Conclusion = e.Conclusion,
+                    Recommendations = e.Recommendations
+                }).ToList(),
+
+                // Backward compatibility
                 Encounters = patient.Encounters.Select(e => new EncounterDto
                 {
                     Id = e.Id,
@@ -94,33 +301,20 @@ namespace MedicalSystem.Data.Queries
                     Dose = pm.Dose,
                     Regimen = pm.Regimen,
                     Status = pm.Status
-                }).ToList(),
-
-                Allergies = patient.Allergies.Select(a => new AllergyDto
-                {
-                    Id = a.Id,
-                    Name = a.Name,
-                    Reaction = a.Reaction
-                }).ToList(),
-
-                MedicalProblems = patient.MedicalProblems.Select(mp => new MedicalProblemDto
-                {
-                    Id = mp.Id,
-                    Name = mp.Name,
-                    IsActive = mp.IsActive
-                }).ToList(),
-
-                VitalSigns = patient.VitalSigns.Select(vs => new VitalSignDto
-                {
-                    Id                    = vs.Id,
-                    RecordedAt            = vs.RecordedAt,
-                    Temperature           = vs.Temperature,
-                    BloodPressureSystolic  = vs.BloodPressureSystolic,
-                    BloodPressureDiastolic = vs.BloodPressureDiastolic,
-                    Pulse                 = vs.Pulse,
-                    SpO2                  = vs.SpO2,
-                    RespiratoryRate       = vs.RespiratoryRate
                 }).ToList()
+            };
+
+            return dto;
+        }
+
+        private static string GetStatusText(PatientStatus status)
+        {
+            return status switch
+            {
+                PatientStatus.Hospitalized => "Госпитализирован",
+                PatientStatus.Outpatient => "Амбулаторный",
+                PatientStatus.Discharged => "Выписан",
+                _ => status.ToString()
             };
         }
     }

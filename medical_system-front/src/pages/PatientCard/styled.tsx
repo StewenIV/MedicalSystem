@@ -1323,7 +1323,7 @@ export const StatusPill = styled.span<{ $status?: string }>`
   white-space: nowrap;
 
   ${({ $status }) => {
-    switch ($status) {
+    switch ($status?.toLowerCase()) {
       case 'hospitalized':
         return 'background: #dcfce7; color: #166534; border: 1px solid #bbf7d0;'
       case 'outpatient':

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
@@ -151,6 +152,134 @@ namespace MedicalSystem.App.Services
                     activeHistory.DischargedAt = DateTime.UtcNow;
                     await _occupancyHistoryStorage.UpdateAsync(activeHistory, token);
                 }
+            }
+        }
+        public Task<List<BedDto>> GetBedsByRoomAsync(Guid roomId, bool onlyFree = false, CancellationToken token = default)
+        {
+            return _bedQuery.GetBedsByRoomAsync(roomId, onlyFree, token);
+        }
+
+        public async Task<HospitalBed> AddBedAsync(Guid roomId, int bedNumber, BedStatus status = BedStatus.Free, CancellationToken token = default)
+        {
+            var bed = new HospitalBed
+            {
+                Id = Guid.NewGuid(),
+                RoomId = roomId,
+                BedNumber = bedNumber,
+                Status = status
+            };
+            await _bedStorage.AddAsync(bed, token);
+            return bed;
+        }
+
+        public async Task DeleteBedAsync(Guid bedId, CancellationToken token = default)
+        {
+            await _bedStorage.RemoveAsync(bedId, token);
+        }
+
+        public async Task FreeBedAsync(Guid bedId, FreeBedRequestDto request, CancellationToken token = default)
+        {
+            var bed = await _bedStorage.GetAsync(bedId, token);
+            if (bed != null && bed.PatientId.HasValue)
+            {
+                var patientId = bed.PatientId.Value;
+                bed.PatientId = null;
+                bed.AdmissionDate = null;
+                bed.Status = BedStatus.Free;
+                bed.BedNote = request.Notes;
+                await _bedStorage.UpdateAsync(bed, token);
+
+                var patient = await _patientStorage.GetAsync(patientId, token);
+                if (patient != null)
+                {
+                    patient.Status = PatientStatus.Discharged;
+                    await _patientStorage.UpdateAsync(patient, token);
+                }
+
+                var histories = await _occupancyHistoryStorage.GetAllAsync(token);
+                var activeHistory = histories.FirstOrDefault(h => h.BedId == bedId && h.PatientId == patientId && h.DischargedAt == null);
+                if (activeHistory != null)
+                {
+                    activeHistory.DischargedAt = request.Date;
+                    await _occupancyHistoryStorage.UpdateAsync(activeHistory, token);
+                }
+            }
+        }
+
+        public async Task UpdateBedNoteAsync(Guid bedId, string note, CancellationToken token = default)
+        {
+            var bed = await _bedStorage.GetAsync(bedId, token);
+            if (bed != null)
+            {
+                bed.BedNote = note;
+                await _bedStorage.UpdateAsync(bed, token);
+            }
+        }
+
+        public async Task AssignPatientToBedAsync(AssignPatientRequestDto request, CancellationToken token = default)
+        {
+            var bed = await _bedStorage.GetAsync(request.BedId, token);
+            if (bed != null && bed.PatientId == null)
+            {
+                bed.PatientId = request.PatientId;
+                bed.AdmissionDate = request.AdmissionDateTime;
+                bed.Status = BedStatus.Stable;
+                bed.BedNote = request.Notes;
+                await _bedStorage.UpdateAsync(bed, token);
+
+                var patient = await _patientStorage.GetAsync(request.PatientId, token);
+                if (patient != null)
+                {
+                    patient.DoctorId = request.DoctorId;
+                    patient.Status = PatientStatus.Hospitalized;
+                    await _patientStorage.UpdateAsync(patient, token);
+                }
+
+                var history = new BedOccupancyHistory
+                {
+                    Id = Guid.NewGuid(),
+                    BedId = request.BedId,
+                    PatientId = request.PatientId,
+                    AdmittedAt = request.AdmissionDateTime
+                };
+                await _occupancyHistoryStorage.AddAsync(history, token);
+            }
+        }
+
+        public async Task TransferPatientAsync(TransferBedRequestDto request, CancellationToken token = default)
+        {
+            var fromBed = await _bedStorage.GetAsync(request.FromBedId, token);
+            var toBed = await _bedStorage.GetAsync(request.ToBedId, token);
+
+            if (fromBed != null && toBed != null && fromBed.PatientId == request.PatientId && toBed.PatientId == null)
+            {
+                fromBed.PatientId = null;
+                fromBed.AdmissionDate = null;
+                fromBed.Status = BedStatus.Free;
+                await _bedStorage.UpdateAsync(fromBed, token);
+
+                toBed.PatientId = request.PatientId;
+                toBed.AdmissionDate = request.TransferDateTime;
+                toBed.Status = BedStatus.Stable;
+                toBed.BedNote = request.Notes;
+                await _bedStorage.UpdateAsync(toBed, token);
+
+                var histories = await _occupancyHistoryStorage.GetAllAsync(token);
+                var activeHistory = histories.FirstOrDefault(h => h.BedId == request.FromBedId && h.PatientId == request.PatientId && h.DischargedAt == null);
+                if (activeHistory != null)
+                {
+                    activeHistory.DischargedAt = request.TransferDateTime;
+                    await _occupancyHistoryStorage.UpdateAsync(activeHistory, token);
+                }
+
+                var newHistory = new BedOccupancyHistory
+                {
+                    Id = Guid.NewGuid(),
+                    BedId = request.ToBedId,
+                    PatientId = request.PatientId,
+                    AdmittedAt = request.TransferDateTime
+                };
+                await _occupancyHistoryStorage.AddAsync(newHistory, token);
             }
         }
     }

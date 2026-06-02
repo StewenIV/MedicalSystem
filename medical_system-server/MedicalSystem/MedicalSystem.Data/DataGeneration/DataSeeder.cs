@@ -17,19 +17,16 @@ namespace MedicalSystem.Data.DataGeneration
             try
             {
                 logger.LogInformation("Проверка и заполнение базы данных...");
-
-                // 1. Справочники
+                    
                 var departments = await GetOrCreateAsync(context, context.Departments, () => TestDataGenerator.GenerateDepartments(10));
                 var positions = await GetOrCreateAsync(context, context.Positions, () => TestDataGenerator.GeneratePositions(20));
                 var institutions = await GetOrCreateAsync(context, context.Institutions, () => TestDataGenerator.GenerateInstitutions(5));
-
-                // 2. Основные сущности
+                
                 var medicalStaff = await GetOrCreateAsync(context, context.MedicalStaff, () => TestDataGenerator.GenerateMedicalStaff(50, departments: departments, positions: positions));
                 var patients = await GetOrCreateAsync(context, context.Patients, () => TestDataGenerator.GeneratePatients(200, medicalStaff, departments, institutions));
                 var medicines = await GetOrCreateAsync(context, context.Medicines, () => TestDataGenerator.GenerateMedicines(100, medicalStaff));
                 var rooms = await GetOrCreateAsync(context, context.Rooms, () => TestDataGenerator.GenerateRooms(16, departments));
                 
-                // 3. Зависимые сущности
                 var hospitalBeds = await GetOrCreateAsync(context, context.HospitalBeds, () => TestDataGenerator.GenerateHospitalBeds(0, rooms, patients));
                 var appointments = await GetOrCreateAsync(context, context.Appointments, () => TestDataGenerator.GenerateAppointments(500, patients, medicalStaff));
                 var allergies = await GetOrCreateAsync(context, context.Allergies, () => TestDataGenerator.GenerateAllergies(150, patients));
@@ -50,8 +47,7 @@ namespace MedicalSystem.Data.DataGeneration
                 var medicineOperationLogs = await GetOrCreateAsync(context, context.MedicineOperationLogs, () => TestDataGenerator.GenerateMedicineOperationLogs(500, medicines, medicalStaff, patients, patientMedications));
                 
                 var bedOccupancyHistories = await GetOrCreateAsync(context, context.BedOccupancyHistories, () => TestDataGenerator.GenerateBedOccupancyHistories(hospitalBeds, patients));
-
-                // Сохраняем все изменения
+                
                 await context.SaveChangesAsync();
 
                 logger.LogInformation("Проверка и заполнение базы данных завершены.");
@@ -61,9 +57,7 @@ namespace MedicalSystem.Data.DataGeneration
                 logger.LogError(ex, "Произошла ошибка во время заполнения базы данных.");
             }
         }
-
-        // Вспомогательный метод: если в БД уже есть данные, возвращает их. 
-        // Иначе - генерирует новые, добавляет в контекст и возвращает сгенерированные.
+        
         private static async Task<List<T>> GetOrCreateAsync<T>(MedicalSystemDbContext context, DbSet<T> dbSet, Func<List<T>> generateFunc) where T : class
         {
             var existingData = await dbSet.ToListAsync();

@@ -11,5 +11,6 @@ namespace MedicalSystem.App.Contracts.Query
     {
         Task<PatientCardDto?> GetCardByIdAsync(Guid patientId, CancellationToken token);
         Task<IEnumerable<PatientLookupDto>> GetPatientsByStatusAsync(PatientStatus status, CancellationToken token);
+        Task<IEnumerable<PatientListDto>> GetAllPatientsAsync(CancellationToken token);
     }
 }

@@ -17,24 +17,52 @@ namespace MedicalSystem.API.Controllers
             _patientService = patientService;
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllPatients(CancellationToken token)
+        {
+            try
+            {
+                var patients = await _patientService.GetAllPatientsAsync(token);
+                return Ok(patients);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         [HttpGet("hospitalized")]
         public async Task<IActionResult> GetHospitalizedPatients(CancellationToken token)
         {
-            var patients = await _patientService.GetHospitalizedPatientsAsync(token);
-            return Ok(patients);
+            try
+            {
+                var patients = await _patientService.GetHospitalizedPatientsAsync(token);
+                return Ok(patients);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("{id}")]
         public async Task<IActionResult> GetPatientCardById(Guid id, CancellationToken token)
         {
-            var patientCard = await _patientService.GetPatientCardAsync(id, token);
-
-            if (patientCard == null)
+            try
             {
-                return NotFound();
-            }
+                var patientCard = await _patientService.GetPatientCardAsync(id, token);
 
-            return Ok(patientCard);
+                if (patientCard == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(patientCard);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

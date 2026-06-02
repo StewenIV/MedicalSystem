@@ -26,5 +26,10 @@ namespace MedicalSystem.App.Services
         {
             return await _patientQuery.GetPatientsByStatusAsync(PatientStatus.Hospitalized, token);
         }
+
+        public async Task<IEnumerable<PatientListDto>> GetAllPatientsAsync(CancellationToken token)
+        {
+            return await _patientQuery.GetAllPatientsAsync(token);
+        }
     }
 }

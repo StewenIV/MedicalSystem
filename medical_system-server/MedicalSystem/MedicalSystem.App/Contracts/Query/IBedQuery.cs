@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,5 +15,6 @@ namespace MedicalSystem.App.Contracts.Query
         Task<AlertsDto> GetAlertsAsync(CancellationToken token);
         Task<BedDto> GetBedByIdAsync(Guid bedId, CancellationToken token);
         Task<PatientDetailsDto> GetPatientDetailsAsync(Guid patientId, CancellationToken token);
+        Task<List<BedDto>> GetBedsByRoomAsync(Guid roomId, bool onlyFree = false, CancellationToken token = default);
     }
 }

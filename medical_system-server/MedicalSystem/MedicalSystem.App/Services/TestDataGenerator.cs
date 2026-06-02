@@ -73,7 +73,7 @@ namespace MedicalSystem.App.Services
                 .RuleFor(p => p.LastName, (f, p) => Truncate(f.Name.LastName((Bogus.DataSets.Name.Gender)p.Gender), 100))
                 .RuleFor(p => p.MiddleName, (f, p) => Truncate(f.Name.FirstName((Bogus.DataSets.Name.Gender)p.Gender) + "ович", 100))
                 .RuleFor(p => p.DateOfBirth, f => f.Date.Past(80, DateTime.Now.AddYears(-1)))
-                .RuleFor(p => p.MedcardNum, f => f.Random.Replace("???-###-???"))
+                .RuleFor(p => p.MedcardNum, f => f.Random.Replace("########"))
                 .RuleFor(p => p.HistoryNum, f => f.Random.Bool(0.7f) ? f.Random.Replace("##-####/##") : null)
                 .RuleFor(p => p.Status, f => f.PickRandom<PatientStatus>())
                 .RuleFor(p => p.MaritalStatus, f => Truncate(f.PickRandom(new[] { "женат/замужем", "холост/не замужем", "в разводе" }), 50))
@@ -263,19 +263,20 @@ namespace MedicalSystem.App.Services
             var faker = new Faker("ru");
             var departmentId = faker.PickRandom(departments).Id;
 
-            for (int floor = 1; floor <= 2; floor++)
+            for (int i = 0; i < count; i++)
             {
-                for (int roomNum = 1; roomNum <= 8; roomNum++)
+                int floor = (i / 8) + 1;
+                int roomNum = (i % 8) + 1;
+                rooms.Add(new Room
                 {
-                    rooms.Add(new Room
-                    {
-                        Id = Guid.NewGuid(),
-                        Floor = floor,
-                        RoomNumber = $"{floor}0{roomNum}",
-                        Gender = faker.PickRandom<RoomGender>(),
-                        DepartmentId = departmentId
-                    });
-                }
+                    Id = Guid.NewGuid(),
+                    Floor = floor,
+                    RoomNumber = $"{floor}0{roomNum}",
+                    Gender = faker.PickRandom<RoomGender>(),
+                    Type = faker.PickRandom<RoomType>(),
+                    Priority = faker.PickRandom<RoomPriority>(),
+                    DepartmentId = departmentId
+                });
             }
             return rooms;
         }
@@ -309,9 +310,6 @@ namespace MedicalSystem.App.Services
                     if (patientToAdmit != null)
                     {
                         availablePatients.Remove(patientToAdmit);
-                        // Admission: 30% today, 70% yesterday/before to show deltas
-                        var admissionDate = faker.Random.Bool(0.3f) ? DateTime.UtcNow : DateTime.UtcNow.AddDays(-faker.Random.Int(1, 3));
-                        
                         beds.Add(new HospitalBed
                         {
                             Id = Guid.NewGuid(),
@@ -319,8 +317,8 @@ namespace MedicalSystem.App.Services
                             BedNumber = bedNum,
                             Status = faker.PickRandom(occupiedStatuses),
                             PatientId = patientToAdmit.Id,
-                            BedNote = Truncate(faker.Lorem.Sentence(), 1000),
-                            AdmissionDate = admissionDate
+                            AdmissionDate = faker.Date.Past(10),
+                            BedNote = Truncate(faker.Lorem.Sentence(), 1000)
                         });
                     }
                     else

@@ -21,8 +21,15 @@ namespace MedicalSystem.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetVitals(Guid patientId, CancellationToken token)
         {
-            var vitals = await _vitalSignService.GetVitalSignsAsync(patientId, token);
-            return Ok(vitals);
+            try
+            {
+                var vitals = await _vitalSignService.GetVitalSignsAsync(patientId, token);
+                return Ok(vitals);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost]
@@ -33,7 +40,7 @@ namespace MedicalSystem.API.Controllers
                 await _vitalSignService.AddVitalSignAsync(patientId, request, token);
                 return Ok();
             }
-            catch (ArgumentException ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex.Message);
             }
@@ -42,15 +49,29 @@ namespace MedicalSystem.API.Controllers
         [HttpGet("warnings")]
         public async Task<IActionResult> GetWarnings(Guid patientId, CancellationToken token)
         {
-            var warnings = await _vitalSignService.GetWarningsAsync(patientId, token);
-            return Ok(warnings);
+            try
+            {
+                var warnings = await _vitalSignService.GetWarningsAsync(patientId, token);
+                return Ok(warnings);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpGet("trends")]
         public async Task<IActionResult> GetTrends(Guid patientId, CancellationToken token)
         {
-            var trends = await _vitalSignService.GetTrendsAsync(patientId, token);
-            return Ok(trends);
+            try
+            {
+                var trends = await _vitalSignService.GetTrendsAsync(patientId, token);
+                return Ok(trends);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

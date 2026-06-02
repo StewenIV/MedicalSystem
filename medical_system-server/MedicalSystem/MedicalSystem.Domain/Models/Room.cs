@@ -10,6 +10,8 @@ namespace MedicalSystem.Domain.Models
         public string RoomNumber { get; set; }
         public int Floor { get; set; }
         public RoomGender Gender { get; set; }
+        public RoomType Type { get; set; }
+        public RoomPriority Priority { get; set; }
         public Guid? DepartmentId { get; set; }
         
         public virtual Department Department { get; set; }

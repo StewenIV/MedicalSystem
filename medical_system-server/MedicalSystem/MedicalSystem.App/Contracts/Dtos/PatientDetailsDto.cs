@@ -6,12 +6,12 @@ namespace MedicalSystem.App.Contracts.Dtos
     public class PatientDetailsDto
     {
         public string DoctorNote { get; set; }
-        public List<PrescriptionDto> Prescriptions { get; set; } = new();
+        public List<BedPrescriptionDto> Prescriptions { get; set; } = new();
         public List<MedicationInStockDto> Meds { get; set; } = new();
         public List<ActionLogDto> Log { get; set; } = new();
     }
 
-    public class PrescriptionDto
+    public class BedPrescriptionDto
     {
         public Guid Id { get; set; }
         public string Name { get; set; }

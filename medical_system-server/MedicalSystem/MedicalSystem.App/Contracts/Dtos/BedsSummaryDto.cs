@@ -19,6 +19,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? PatientName { get; set; }
         public string? PatientLastName { get; set; }
         public string? PatientMiddleName { get; set; }
+        public string? PatientGender { get; set; }
         public int? PatientAge { get; set; }
         public string? Diagnosis { get; set; }
         public string? DoctorName { get; set; }

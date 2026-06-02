@@ -48,8 +48,10 @@ namespace MedicalSystem.Data.Queries
                         b.Patient.LastName,
                         b.Patient.MiddleName,
                         b.Patient.DateOfBirth,
+                        b.Patient.Gender,
                         Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
-                        DoctorName = b.Patient.Doctor.Name
+                        DoctorName = b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,
+                        Doctor = b.Patient.Doctor == null ? null : new { b.Patient.Doctor.Name, b.Patient.Doctor.Position }
                     },
                     b.AdmissionDate,
                     b.BedNote
@@ -67,10 +69,11 @@ namespace MedicalSystem.Data.Queries
                 PatientName = b.Patient?.FirstName,
                 PatientLastName = b.Patient?.LastName,
                 PatientMiddleName = b.Patient?.MiddleName,
-                // Безопасное вычисление возраста в C#
+                PatientGender = b.Patient?.Gender.ToString(),
                 PatientAge = b.Patient != null ? (int)((DateTime.UtcNow - b.Patient.DateOfBirth).TotalDays / 365.25) : (int?)null,
                 Diagnosis = b.Patient?.Diagnosis,
-                DoctorName = b.Patient?.DoctorName,
+                DoctorName = b.Patient?.Doctor?.Name ?? b.Patient?.DoctorName,
+                DoctorRole = b.Patient?.Doctor?.Position?.ToString(),
                 AdmissionDate = b.AdmissionDate,
                 BedNote = b.BedNote
             }).ToList();
@@ -210,8 +213,10 @@ namespace MedicalSystem.Data.Queries
                         b.Patient.LastName,
                         b.Patient.MiddleName,
                         b.Patient.DateOfBirth,
+                        b.Patient.Gender,
                         Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
-                        DoctorName = b.Patient.Doctor.Name
+                        DoctorName = b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,
+                        Doctor = b.Patient.Doctor == null ? null : new { b.Patient.Doctor.Name, b.Patient.Doctor.Position }
                     },
                     b.AdmissionDate,
                     b.BedNote
@@ -230,12 +235,66 @@ namespace MedicalSystem.Data.Queries
                 PatientName = rawBed.Patient?.FirstName,
                 PatientLastName = rawBed.Patient?.LastName,
                 PatientMiddleName = rawBed.Patient?.MiddleName,
+                PatientGender = rawBed.Patient?.Gender.ToString(),
                 PatientAge = rawBed.Patient != null ? (int)((DateTime.UtcNow - rawBed.Patient.DateOfBirth).TotalDays / 365.25) : (int?)null,
                 Diagnosis = rawBed.Patient?.Diagnosis,
-                DoctorName = rawBed.Patient?.DoctorName,
+                DoctorName = rawBed.Patient?.Doctor?.Name ?? rawBed.Patient?.DoctorName,
+                DoctorRole = rawBed.Patient?.Doctor?.Position?.ToString(),
                 AdmissionDate = rawBed.AdmissionDate,
                 BedNote = rawBed.BedNote
             };
+        }
+
+        public async Task<List<BedDto>> GetBedsByRoomAsync(Guid roomId, bool onlyFree = false, CancellationToken token = default)
+        {
+            var query = _context.HospitalBeds.AsNoTracking().Where(b => b.RoomId == roomId);
+            if (onlyFree)
+            {
+                query = query.Where(b => b.PatientId == null);
+            }
+
+            var rawBeds = await query
+                .Select(b => new
+                {
+                    b.Id,
+                    RoomNumber = b.Room.RoomNumber,
+                    b.BedNumber,
+                    b.Status,
+                    b.PatientId,
+                    Patient = b.Patient == null ? null : new
+                    {
+                        b.Patient.FirstName,
+                        b.Patient.LastName,
+                        b.Patient.MiddleName,
+                        b.Patient.DateOfBirth,
+                        b.Patient.Gender,
+                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
+                        DoctorName = b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,
+                        Doctor = b.Patient.Doctor == null ? null : new { b.Patient.Doctor.Name, b.Patient.Doctor.Position }
+                    },
+                    b.AdmissionDate,
+                    b.BedNote
+                })
+                .ToListAsync(token);
+
+            return rawBeds.Select(rawBed => new BedDto
+            {
+                Id = rawBed.Id,
+                RoomNumber = rawBed.RoomNumber,
+                BedNumber = rawBed.BedNumber,
+                Status = rawBed.Status.ToString().ToLower(),
+                PatientId = rawBed.PatientId,
+                PatientName = rawBed.Patient?.FirstName,
+                PatientLastName = rawBed.Patient?.LastName,
+                PatientMiddleName = rawBed.Patient?.MiddleName,
+                PatientGender = rawBed.Patient?.Gender.ToString(),
+                PatientAge = rawBed.Patient != null ? (int)((DateTime.UtcNow - rawBed.Patient.DateOfBirth).TotalDays / 365.25) : (int?)null,
+                Diagnosis = rawBed.Patient?.Diagnosis,
+                DoctorName = rawBed.Patient?.Doctor?.Name ?? rawBed.Patient?.DoctorName,
+                DoctorRole = rawBed.Patient?.Doctor?.Position?.ToString(),
+                AdmissionDate = rawBed.AdmissionDate,
+                BedNote = rawBed.BedNote
+            }).ToList();
         }
 
         public async Task<PatientDetailsDto> GetPatientDetailsAsync(Guid patientId, CancellationToken token)
@@ -251,7 +310,7 @@ namespace MedicalSystem.Data.Queries
                 .Where(p => p.PatientId == patientId)
                 .ToListAsync(token);
             
-            var prescriptions = dbPrescriptions.Select(p => new PrescriptionDto 
+            var prescriptions = dbPrescriptions.Select(p => new BedPrescriptionDto 
             { 
                 Id = p.Id, 
                 Name = p.Name, 
