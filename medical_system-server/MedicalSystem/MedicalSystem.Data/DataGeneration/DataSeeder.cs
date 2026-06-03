@@ -17,6 +17,10 @@ namespace MedicalSystem.Data.DataGeneration
             try
             {
                 logger.LogInformation("Проверка и заполнение базы данных...");
+                
+                await context.Database.ExecuteSqlRawAsync(
+                    "UPDATE \"Patients\" SET \"Gender\" = 'Мужской' WHERE \"Gender\" = 'Male'; " +
+                    "UPDATE \"Patients\" SET \"Gender\" = 'Женский' WHERE \"Gender\" = 'Female';");
                     
                 var departments = await GetOrCreateAsync(context, context.Departments, () => TestDataGenerator.GenerateDepartments(10));
                 var positions = await GetOrCreateAsync(context, context.Positions, () => TestDataGenerator.GeneratePositions(20));
@@ -32,6 +36,67 @@ namespace MedicalSystem.Data.DataGeneration
                 var allergies = await GetOrCreateAsync(context, context.Allergies, () => TestDataGenerator.GenerateAllergies(150, patients));
                 var medicalProblems = await GetOrCreateAsync(context, context.MedicalProblems, () => TestDataGenerator.GenerateMedicalProblems(300, patients));
                 var encounters = await GetOrCreateAsync(context, context.Encounters, () => TestDataGenerator.GenerateEncounters(400, patients, medicalStaff));
+                
+                // Backfill existing encounters with Russian clinical details if missing
+                var missingDetails = encounters.Where(e => string.IsNullOrWhiteSpace(e.Type) || string.IsNullOrWhiteSpace(e.Objective) || string.IsNullOrWhiteSpace(e.Recommendations)).ToList();
+                if (missingDetails.Any())
+                {
+                    var types = new[] { "Осмотр", "Консультация", "Процедура", "Операция", "Анализы", "Выписка" };
+                    var faker = new Bogus.Faker("ru");
+                    foreach (var enc in missingDetails)
+                    {
+                        if (string.IsNullOrWhiteSpace(enc.Type)) enc.Type = faker.PickRandom(types);
+                        if (string.IsNullOrWhiteSpace(enc.Complaints)) enc.Complaints = "Жалобы на " + faker.PickRandom("слабость и головную боль", "кашель и насморк", "боли в суставах", "дискомфорт в грудной клетке", "повышенную температуру");
+                        if (string.IsNullOrWhiteSpace(enc.Objective)) enc.Objective = "Состояние " + faker.PickRandom("удовлетворительное", "средней степени тяжести") + ". Кожные покровы чистые. Дыхание везикулярное.";
+                        if (string.IsNullOrWhiteSpace(enc.Conclusion)) enc.Conclusion = faker.PickRandom("Острый бронхит", "Артериальная гипертензия", "ОРВИ", "Остеохондроз", "ИБС");
+                        if (string.IsNullOrWhiteSpace(enc.Recommendations)) enc.Recommendations = faker.PickRandom("Режим амбулаторный, прием витаминов.", "Контроль АД, диета с ограничением соли.", "Постельный режим, обильное теплое питье.", "Наблюдение терапевта по месту жительства.");
+                    }
+                    context.UpdateRange(missingDetails);
+                }
+
+                // Ensure EVERY patient has at least one encounter
+                var patientsWithNoEncounters = patients.Where(p => !context.Encounters.Any(e => e.PatientId == p.Id)).ToList();
+                if (patientsWithNoEncounters.Any())
+                {
+                    var types = new[] { "Осмотр", "Консультация", "Процедура", "Операция", "Анализы", "Выписка" };
+                    var random = new Random(0);
+                    var complaintsList = new[] { "слабость и головную боль", "кашель и насморк", "боли в суставах", "дискомфорт в грудной клетке", "повышенную температуру" };
+                    var objectiveList = new[] { "удовлетворительное", "средней степени тяжести" };
+                    var conclusionList = new[] { "Острый бронхит", "Артериальная гипертензия", "ОРВИ", "Остеохондроз", "ИБС" };
+                    var recommendationsList = new[] { "Режим амбулаторный, прием витаминов.", "Контроль АД, диета с ограничением соли.", "Постельный режим, обильное теплое питье.", "Наблюдение терапевта по месту жительства." };
+
+                    var newEncounters = new List<Encounter>();
+                    foreach (var patient in patientsWithNoEncounters)
+                    {
+                        var numEncounters = random.Next(1, 3);
+                        for (int i = 0; i < numEncounters; i++)
+                        {
+                            var doctor = medicalStaff[random.Next(medicalStaff.Count)];
+                            var date = DateTime.Now.AddDays(-random.Next(1, 1000));
+                            var type = types[random.Next(types.Length)];
+                            var complaints = "Жалобы на " + complaintsList[random.Next(complaintsList.Length)];
+                            var objective = "Состояние " + objectiveList[random.Next(objectiveList.Length)] + ". Кожные покровы чистые. Дыхание везикулярное.";
+                            var conclusion = conclusionList[random.Next(conclusionList.Length)];
+                            var recommendations = recommendationsList[random.Next(recommendationsList.Length)];
+
+                            newEncounters.Add(new Encounter
+                            {
+                                Id = Guid.NewGuid(),
+                                PatientId = patient.Id,
+                                DoctorId = doctor.Id,
+                                DateTime = date,
+                                Type = type,
+                                Complaints = complaints,
+                                Objective = objective,
+                                Conclusion = conclusion,
+                                Recommendations = recommendations
+                            });
+                        }
+                    }
+                    await context.Encounters.AddRangeAsync(newEncounters);
+                    await context.SaveChangesAsync();
+                }
+
                 var patientMedications = await GetOrCreateAsync(context, context.PatientMedications, () => TestDataGenerator.GeneratePatientMedications(600, patients, medicines, medicalStaff));
                 var labResults = await GetOrCreateAsync(context, context.LabResults, () => TestDataGenerator.GenerateLabResults(1000, patients, medicalStaff));
                 var operations = await GetOrCreateAsync(context, context.Operations, () => TestDataGenerator.GenerateOperations(50, patients));

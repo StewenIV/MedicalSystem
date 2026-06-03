@@ -14,6 +14,7 @@ namespace MedicalSystem.App.Services
 
         private static Faker<PatientContacts> GetPatientContactsGenerator() =>
             new Faker<PatientContacts>("ru")
+                .RuleFor(c => c.Country, f => "Приднестровская Молдавская Республика")
                 .RuleFor(c => c.PhoneMobile, f => Truncate(f.Phone.PhoneNumber(), 20))
                 .RuleFor(c => c.Email, f => Truncate(f.Internet.Email(), 150))
                 .RuleFor(c => c.Address, f => Truncate(f.Address.FullAddress(), 300));
@@ -32,7 +33,7 @@ namespace MedicalSystem.App.Services
         private static Faker<PatientOther> GetPatientOtherGenerator() =>
             new Faker<PatientOther>("ru")
                 .RuleFor(o => o.Language, f => "Русский")
-                .RuleFor(o => o.Nationality, f => "Россиянин");
+                .RuleFor(o => o.Nationality, f => "Русский");
 
         public static List<Department> GenerateDepartments(int count) =>
             new Faker<Department>("ru").UseSeed(0)
@@ -152,14 +153,44 @@ namespace MedicalSystem.App.Services
         public static List<Encounter> GenerateEncounters(int count, List<Patient> patients, List<MedicalStaff> staff)
         {
             if (!patients.Any() || !staff.Any()) return new List<Encounter>();
-            return new Faker<Encounter>("ru").UseSeed(0)
-                .RuleFor(e => e.Id, f => f.Random.Guid())
-                .RuleFor(e => e.PatientId, f => f.PickRandom(patients).Id)
-                .RuleFor(e => e.DoctorId, f => f.PickRandom(staff).Id)
-                .RuleFor(e => e.DateTime, f => f.Date.Past(3))
-                .RuleFor(e => e.Complaints, f => Truncate(f.Lorem.Sentence(5), 1000))
-                .RuleFor(e => e.Conclusion, f => Truncate(f.Lorem.Sentence(10), 1000))
-                .Generate(count);
+            var types = new[] { "Осмотр", "Консультация", "Процедура", "Операция", "Анализы", "Выписка" };
+            var list = new List<Encounter>();
+            var random = new Random(0);
+            
+            var complaintsList = new[] { "слабость и головную боль", "кашель и насморк", "боли в суставах", "дискомфорт в грудной клетке", "повышенную температуру" };
+            var objectiveList = new[] { "удовлетворительное", "средней степени тяжести" };
+            var conclusionList = new[] { "Острый бронхит", "Артериальная гипертензия", "ОРВИ", "Остеохондроз", "ИБС" };
+            var recommendationsList = new[] { "Режим амбулаторный, прием витаминов.", "Контроль АД, диета с ограничением соли.", "Постельный режим, обильное теплое питье.", "Наблюдение терапевта по месту жительства." };
+
+            foreach (var patient in patients)
+            {
+                var numEncounters = random.Next(1, 4); // 1 to 3 encounters per patient
+                for (int i = 0; i < numEncounters; i++)
+                {
+                    var doctor = staff[random.Next(staff.Count)];
+                    var date = DateTime.Now.AddDays(-random.Next(1, 1000));
+                    var type = types[random.Next(types.Length)];
+                    var complaints = "Жалобы на " + complaintsList[random.Next(complaintsList.Length)];
+                    var objective = "Состояние " + objectiveList[random.Next(objectiveList.Length)] + ". Кожные покровы чистые. Дыхание везикулярное.";
+                    var conclusion = conclusionList[random.Next(conclusionList.Length)];
+                    var recommendations = recommendationsList[random.Next(recommendationsList.Length)];
+
+                    list.Add(new Encounter
+                    {
+                        Id = Guid.NewGuid(),
+                        PatientId = patient.Id,
+                        DoctorId = doctor.Id,
+                        DateTime = date,
+                        Type = type,
+                        Complaints = Truncate(complaints, 1000),
+                        Objective = Truncate(objective, 1000),
+                        Conclusion = Truncate(conclusion, 1000),
+                        Recommendations = Truncate(recommendations, 1000)
+                    });
+                }
+            }
+            
+            return list;
         }
 
         public static List<PatientMedication> GeneratePatientMedications(int count, List<Patient> patients, List<Medicine> medicines, List<MedicalStaff> staff)

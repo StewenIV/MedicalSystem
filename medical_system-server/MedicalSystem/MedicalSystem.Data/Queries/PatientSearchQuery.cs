@@ -29,7 +29,7 @@ namespace MedicalSystem.Data.Queries
                     (p.FirstName != null && EF.Functions.ILike(p.FirstName, $"%{query}%")) ||
                     (p.LastName != null && EF.Functions.ILike(p.LastName, $"%{query}%")) ||
                     (p.MiddleName != null && EF.Functions.ILike(p.MiddleName, $"%{query}%")) ||
-                    (p.HistoryNum != null && EF.Functions.ILike(p.HistoryNum, $"%{query}%")) ||
+                    (p.MedcardNum != null && EF.Functions.ILike(p.MedcardNum, $"%{query}%")) ||
                     (p.Contacts.PhoneMobile != null && p.Contacts.PhoneMobile.Contains(query)) ||
                     (p.Contacts.PhoneHome != null && p.Contacts.PhoneHome.Contains(query))
                 );
@@ -48,7 +48,7 @@ namespace MedicalSystem.Data.Queries
                     LastName = p.LastName,
                     MiddleName = p.MiddleName,
                     PhoneNumber = p.Contacts.PhoneMobile,
-                    NumberCard = p.HistoryNum,
+                    NumberCard = p.MedcardNum,
                     Gender = p.Gender,
                     Age = (int)((DateTime.UtcNow - p.DateOfBirth).TotalDays / 365.25)
                 })

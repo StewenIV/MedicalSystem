@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Services;
+using MedicalSystem.App.Contracts.Dtos;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedicalSystem.API.Controllers
@@ -58,6 +59,48 @@ namespace MedicalSystem.API.Controllers
                 }
 
                 return Ok(patientCard);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreatePatient([FromBody] PatientCardDto request, CancellationToken token)
+        {
+            try
+            {
+                var newPatient = await _patientService.AddPatientAsync(request, token);
+                return Ok(newPatient);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdatePatient(Guid id, [FromBody] PatientCardDto request, CancellationToken token)
+        {
+            try
+            {
+                await _patientService.UpdatePatientCardAsync(id, request, token);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletePatient(Guid id, CancellationToken token)
+        {
+            try
+            {
+                await _patientService.DeletePatientAsync(id, token);
+                return Ok();
             }
             catch (Exception ex)
             {

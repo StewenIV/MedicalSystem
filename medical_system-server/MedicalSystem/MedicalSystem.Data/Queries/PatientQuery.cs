@@ -53,7 +53,7 @@ namespace MedicalSystem.Data.Queries
                     MiddleName = p.MiddleName,
                     Age = (int)((DateTime.Now - p.DateOfBirth).TotalDays / 365.25),
                     DateOfBirth = p.DateOfBirth,
-                    Gender = p.Gender.ToString(),
+                    Gender = p.Gender == Gender.Male ? "Мужской" : "Женский",
                     Status = p.Status.ToString(),
                     StatusText = GetStatusText(p.Status),
                     MedcardNum = p.MedcardNum,
@@ -112,7 +112,7 @@ namespace MedicalSystem.Data.Queries
                 MiddleName = patient.MiddleName,
                 Age = (int)((DateTime.Now - patient.DateOfBirth).TotalDays / 365.25),
                 DateOfBirth = patient.DateOfBirth,
-                Gender = patient.Gender.ToString(),
+                Gender = patient.Gender == Gender.Male ? "Мужской" : "Женский",
                 Status = patient.Status.ToString(),
                 StatusText = GetStatusText(patient.Status),
                 MedcardNum = patient.MedcardNum,
@@ -125,7 +125,6 @@ namespace MedicalSystem.Data.Queries
                 RoomNumber = bed?.Room?.RoomNumber.ToString(),
                 BedNumber = bed?.BedNumber,
 
-                // Owned entities
                 Passport = new PassportInfoDto
                 {
                     SeriesNumber = patient.Passport?.SeriesNumber,
@@ -157,7 +156,6 @@ namespace MedicalSystem.Data.Queries
                     CauseOfDeath = patient.Other?.CauseOfDeath
                 },
 
-                // Vitals
                 Vitals = latestVitals != null ? new VitalsDto
                 {
                     Temp = latestVitals.Temperature.HasValue ? $"{latestVitals.Temperature} °C" : null,
@@ -169,7 +167,6 @@ namespace MedicalSystem.Data.Queries
                     Spo2 = latestVitals.SpO2.HasValue ? $"{latestVitals.SpO2}%" : null
                 } : null,
 
-                // Relatives
                 Relatives = patient.PatientRelatives.Select(r => new RelativeDto
                 {
                     Id = r.Id,
@@ -178,7 +175,6 @@ namespace MedicalSystem.Data.Queries
                     Phone = r.Phone
                 }).ToList(),
 
-                // Allergies
                 Allergies = patient.Allergies.Select(a => new AllergyDto
                 {
                     Id = a.Id,
@@ -188,7 +184,6 @@ namespace MedicalSystem.Data.Queries
                     Comment = a.Comment
                 }).ToList(),
 
-                // Current medications
                 CurrentMeds = patient.PatientMedications.Select(pm => new MedicationDto
                 {
                     Id = pm.Id,
@@ -198,7 +193,6 @@ namespace MedicalSystem.Data.Queries
                     Regimen = pm.Regimen
                 }).ToList(),
 
-                // Operations
                 Operations = patient.Operations.Select(o => new OperationDto
                 {
                     Id = o.Id,
@@ -211,7 +205,6 @@ namespace MedicalSystem.Data.Queries
                     Result = o.Result
                 }).ToList(),
 
-                // Medical problems
                 MedicalProblems = patient.MedicalProblems.Select(mp => new MedicalProblemDto
                 {
                     Id = mp.Id,
@@ -224,7 +217,6 @@ namespace MedicalSystem.Data.Queries
                     IsActive = mp.IsActive
                 }).ToList(),
 
-                // Prescriptions
                 Prescriptions = patient.Prescriptions.Select(pr => new PrescriptionDto
                 {
                     Id = pr.Id,
@@ -239,7 +231,6 @@ namespace MedicalSystem.Data.Queries
                     Comment = pr.Comment
                 }).ToList(),
 
-                // Lab results
                 Labs = patient.LabResults.Select(l => new LabDto
                 {
                     Id = l.Id,
@@ -250,7 +241,6 @@ namespace MedicalSystem.Data.Queries
                     StatusText = l.StatusText
                 }).ToList(),
 
-                // Vaccines
                 Vaccines = patient.Vaccines.Select(v => new VaccineDto
                 {
                     Id = v.Id,
@@ -262,7 +252,6 @@ namespace MedicalSystem.Data.Queries
                     Series = v.Series
                 }).ToList(),
 
-                // Documents
                 Documents = patient.PatientDocuments.Select(d => new DocumentDto
                 {
                     Id = d.Id,
@@ -271,7 +260,7 @@ namespace MedicalSystem.Data.Queries
                     FilePath = d.FilePath
                 }).ToList(),
 
-                // History (encounters mapped to history)
+       
                 History = patient.Encounters.Select(e => new HistoryEntryDto
                 {
                     Id = e.Id,
@@ -282,9 +271,58 @@ namespace MedicalSystem.Data.Queries
                     Objective = e.Objective,
                     Conclusion = e.Conclusion,
                     Recommendations = e.Recommendations
-                }).ToList(),
+                })
+                .Concat(patient.Operations.Select(op => new HistoryEntryDto
+                {
+                    Id = op.Id,
+                    DateTime = op.Date ?? DateTime.MinValue,
+                    Type = "Операция",
+                    DoctorName = null,
+                    Complaints = op.Diagnosis,
+                    Objective = op.Description,
+                    Conclusion = op.Name,
+                    Recommendations = (string.IsNullOrEmpty(op.Complications) ? "" : "Осложнения: " + op.Complications + ". ") +
+                                      (string.IsNullOrEmpty(op.Implants) ? "" : "Импланты: " + op.Implants + ". ") +
+                                      (string.IsNullOrEmpty(op.Result) ? "" : "Результат: " + op.Result)
+                }))
+                .Concat(patient.Vaccines.Select(v => new HistoryEntryDto
+                {
+                    Id = v.Id,
+                    DateTime = v.Date ?? DateTime.MinValue,
+                    Type = "Вакцинация",
+                    DoctorName = null,
+                    Complaints = v.Disease,
+                    Objective = "Вакцина: " + v.Name,
+                    Conclusion = "Вакцинация от " + v.Disease,
+                    Recommendations = "Производитель: " + v.Manufacturer + ", Серия: " + v.Series + ", Срок: " + v.Validity
+                }))
+                .Concat(patient.LabResults.Select(lab => new HistoryEntryDto
+                {
+                    Id = lab.Id,
+                    DateTime = lab.Date ?? DateTime.MinValue,
+                    Type = "Анализы",
+                    DoctorName = lab.Doctor?.Name,
+                    Complaints = lab.Reason,
+                    Objective = "Статус: " + lab.StatusText,
+                    Conclusion = lab.Type,
+                    Recommendations = null
+                }))
+                .Concat(patient.Prescriptions.Select(pr => new HistoryEntryDto
+                {
+                    Id = pr.Id,
+                    DateTime = pr.DateStart ?? DateTime.MinValue,
+                    Type = "Назначение",
+                    DoctorName = pr.Doctor?.Name,
+                    Complaints = pr.Comment,
+                    Objective = pr.Dose + " (" + pr.Regimen + ")",
+                    Conclusion = "Назначено лекарство: " + pr.Drug,
+                    Recommendations = "Путь: " + pr.Route + ", Форма: " + pr.Form + ", Период: " + 
+                                      (pr.DateStart.HasValue ? pr.DateStart.Value.ToString("dd.MM.yyyy") : "") + " - " + 
+                                      (pr.DateEnd.HasValue ? pr.DateEnd.Value.ToString("dd.MM.yyyy") : "")
+                }))
+                .OrderByDescending(h => h.DateTime)
+                .ToList(),
 
-                // Backward compatibility
                 Encounters = patient.Encounters.Select(e => new EncounterDto
                 {
                     Id = e.Id,

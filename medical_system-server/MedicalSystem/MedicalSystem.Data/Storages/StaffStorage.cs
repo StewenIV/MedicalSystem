@@ -56,7 +56,6 @@ namespace MedicalSystem.Data.Storages
             var staff = await _context.MedicalStaff.Include(s => s.Shifts).FirstOrDefaultAsync(s => s.Id == staffId, token);
             if (staff != null)
             {
-                // This is a simple implementation. A more robust one would handle conflicts.
                 staff.Shifts = shifts.ToList();
                 await _context.SaveChangesAsync(token);
             }

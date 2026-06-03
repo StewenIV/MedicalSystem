@@ -43,7 +43,6 @@ namespace MedicalSystem.App.Services
             
             if (prescription != null && prescription.PatientId == patientId)
             {
-                // Only change if the status is actually changing
                 if (prescription.IsDone != isDone)
                 {
                     prescription.IsDone = isDone;
@@ -83,13 +82,11 @@ namespace MedicalSystem.App.Services
             var bed = await _bedStorage.GetAsync(bedId, token);
             if (bed != null && bed.PatientId == null)
             {
-                // 1. Занимаем койку
                 bed.PatientId = request.PatientId;
                 bed.AdmissionDate = request.AdmissionDate;
                 bed.Status = BedStatus.Stable;
                 await _bedStorage.UpdateAsync(bed, token);
-
-                // 2. Обновляем статус пациента и назначаем врача
+                
                 var patient = await _patientStorage.GetAsync(request.PatientId, token);
                 if (patient != null)
                 {
@@ -97,8 +94,7 @@ namespace MedicalSystem.App.Services
                     patient.Status = PatientStatus.Hospitalized;
                     await _patientStorage.UpdateAsync(patient, token);
                 }
-
-                // 3. Создаем новую запись о диагнозе в MedicalProblems
+                
                 if (!string.IsNullOrWhiteSpace(request.Diagnosis))
                 {
                     var newProblem = new MedicalProblem
@@ -107,13 +103,12 @@ namespace MedicalSystem.App.Services
                         PatientId = request.PatientId,
                         Name = request.Diagnosis,
                         IsActive = true,
-                        DiseaseStatus = "Острое", // Или другой статус по умолчанию
+                        DiseaseStatus = "Острое", 
                         DiagnosisDate = request.AdmissionDate
                     };
                     await _medicalProblemStorage.AddAsync(newProblem, token);
                 }
-
-                // 4. Добавляем запись в историю
+                
                 var history = new BedOccupancyHistory
                 {
                     Id = Guid.NewGuid(),

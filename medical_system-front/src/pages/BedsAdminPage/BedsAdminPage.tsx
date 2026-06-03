@@ -228,7 +228,6 @@ interface SelectOption {
 
 const PAGE_SIZE = 5
 
-
 const PRIORITY_LABELS: Record<number, string> = {
   1: 'Низкий',
   2: 'Средний',
@@ -402,20 +401,18 @@ const selectComponents = {
 
 const formatBedShortLabel = (bedNumber?: number | string) => `К${bedNumber || '...'}`
 
-const formatBedTextLabel = (bedNumber?: number) =>
-  bedNumber ? `Койка ${bedNumber}` : 'Койка'
+const formatBedTextLabel = (bedNumber?: number) => (bedNumber ? `Койка ${bedNumber}` : 'Койка')
 
 const formatPatientFullName = (patient: SearchPatientDto | null) =>
-  patient
-    ? [patient.lastName, patient.firstName, patient.middleName].filter(Boolean).join(' ')
-    : ''
+  patient ? [patient.lastName, patient.firstName, patient.middleName].filter(Boolean).join(' ') : ''
 
 const formatPatientAge = (age?: number) =>
   typeof age === 'number' ? `${age} лет` : 'Возраст не указан'
 
 const formatPatientGender = (gender?: string | number) => {
   if (gender === 'Male' || gender === 'Мужская' || gender === 0 || gender === '0') return 'Мужской'
-  if (gender === 'Female' || gender === 'Женская' || gender === 1 || gender === '1') return 'Женский'
+  if (gender === 'Female' || gender === 'Женская' || gender === 1 || gender === '1')
+    return 'Женский'
   return gender ? String(gender) : 'Пол не указан'
 }
 
@@ -472,13 +469,19 @@ export function WardAdmin() {
           name: formatBedTextLabel(b.bedNumber),
           bedNumber: b.bedNumber,
           status: b.patientId ? 'Занято' : 'Свободно',
-          location: { floor: details.floor, room: details.number, bedNumber: b.bedNumber, bedId: b.id },
+          location: {
+            floor: details.floor,
+            room: details.number,
+            bedNumber: b.bedNumber,
+            bedId: b.id
+          },
           patientId: b.patientId,
-          patientName: [b.patientLastName, b.patientName, b.patientMiddleName]
-            .filter(Boolean)
-            .join(' ') || undefined,
+          patientName:
+            [b.patientLastName, b.patientName, b.patientMiddleName].filter(Boolean).join(' ') ||
+            undefined,
           patientAge: b.patientAge,
-          patientGender: (b as typeof b & { patientGender?: string; gender?: string }).patientGender ||
+          patientGender:
+            (b as typeof b & { patientGender?: string; gender?: string }).patientGender ||
             (b as typeof b & { patientGender?: string; gender?: string }).gender,
           diagnosis: b.diagnosis,
           doctorName: b.doctorName,
@@ -548,7 +551,9 @@ export function WardAdmin() {
   const [patientSearchQuery, setPatientSearchQuery] = useState<string>('')
   const [patientSearchResults, setPatientSearchResults] = useState<SearchPatientDto[]>([])
   const [patientSearchLoading, setPatientSearchLoading] = useState<boolean>(false)
-  const [selectedPatientForAssign, setSelectedPatientForAssign] = useState<SearchPatientDto | null>(null)
+  const [selectedPatientForAssign, setSelectedPatientForAssign] = useState<SearchPatientDto | null>(
+    null
+  )
 
   const floorFilterOptions = useMemo<SelectOption[]>(
     () => [
@@ -654,11 +659,12 @@ export function WardAdmin() {
             number: b.bedNumber,
             roomNumber: b.roomNumber,
             isFree: b.status === 'free',
-            patientName: [b.patientLastName, b.patientName, b.patientMiddleName]
-              .filter(Boolean)
-              .join(' ') || undefined,
+            patientName:
+              [b.patientLastName, b.patientName, b.patientMiddleName].filter(Boolean).join(' ') ||
+              undefined,
             patientAge: b.patientAge,
-            patientGender: (b as typeof b & { patientGender?: string; gender?: string }).patientGender ||
+            patientGender:
+              (b as typeof b & { patientGender?: string; gender?: string }).patientGender ||
               (b as typeof b & { patientGender?: string; gender?: string }).gender
           }))
           if (showOnlyFree) {
@@ -677,7 +683,7 @@ export function WardAdmin() {
     if (!assignBedData) return
 
     const query = patientSearchQuery.trim()
-    
+
     if (query.length > 0 && query.length < 2) {
       setPatientSearchResults([])
       return
@@ -896,7 +902,7 @@ export function WardAdmin() {
   }
 
   const handleOpenAssignModal = (bed: BedEntry, room: Room) => {
-      if (!bed.id || bed.id.startsWith('new-')) {
+    if (!bed.id || bed.id.startsWith('new-')) {
       toast.warning('Сначала сохраните палату, чтобы назначить пациента на новую койку.')
       return
     }
@@ -1333,54 +1339,62 @@ export function WardAdmin() {
                 Добавьте новое койко-место через кнопку выше.
               </EmptyBedsState>
             ) : (
-              [...editorBeds].sort((a, b) => {
-                if (a.status === 'Занято' && b.status === 'Свободно') return -1
-                if (a.status === 'Свободно' && b.status === 'Занято') return 1
-                return (a.bedNumber ?? Number.MAX_SAFE_INTEGER) - (b.bedNumber ?? Number.MAX_SAFE_INTEGER)
-              }).map((bed) => (
-                <BedItem key={bed.id} $extra={bed.status === 'Свободно'}>
-                  <BedTag>{formatBedShortLabel(bed.bedNumber)}</BedTag>
-                  <BedInfo>
-                    <BedName>
-                      {bed.bedNumber ? formatBedTextLabel(bed.bedNumber) : 'Новая койка'}
-                    </BedName>
-                    {bed.status === 'Занято' ? (
-                      <>
-                        <BedId>
-                          {bed.patientName || 'Нет данных'}{' '}
-                          {bed.patientAge ? `(${bed.patientAge} лет)` : ''}
+              [...editorBeds]
+                .sort((a, b) => {
+                  if (a.status === 'Занято' && b.status === 'Свободно') return -1
+                  if (a.status === 'Свободно' && b.status === 'Занято') return 1
+                  return (
+                    (a.bedNumber ?? Number.MAX_SAFE_INTEGER) -
+                    (b.bedNumber ?? Number.MAX_SAFE_INTEGER)
+                  )
+                })
+                .map((bed) => (
+                  <BedItem key={bed.id} $extra={bed.status === 'Свободно'}>
+                    <BedTag>{formatBedShortLabel(bed.bedNumber)}</BedTag>
+                    <BedInfo>
+                      <BedName>
+                        {bed.bedNumber ? formatBedTextLabel(bed.bedNumber) : 'Новая койка'}
+                      </BedName>
+                      {bed.status === 'Занято' ? (
+                        <>
+                          <BedId>
+                            {bed.patientName || 'Нет данных'}{' '}
+                            {bed.patientAge ? `(${bed.patientAge} лет)` : ''}
+                          </BedId>
+                          <BedId>Пол: {formatPatientGender(bed.patientGender)}</BedId>
+                        </>
+                      ) : (
+                        <BedId
+                          onClick={() => handleOpenAssignModal(bed, selectedRoom!)}
+                          style={{ cursor: 'pointer', color: '#2563EB' }}
+                        >
+                          {bed.status === 'Свободно' && 'Назначить пациента'}
                         </BedId>
-                        <BedId>Пол: {formatPatientGender(bed.patientGender)}</BedId>
-                      </>
-                    ) : (
-                      <BedId onClick = {() => handleOpenAssignModal(bed, selectedRoom!)}  style={{ cursor: "pointer", color: "#2563EB" }}>
-                         {bed.status === "Свободно" && "Назначить пациента"}
-                      </BedId>
+                      )}
+                    </BedInfo>
+                    <BedStatus>{bed.status}</BedStatus>
+                    {bed.status === 'Свободно' && (
+                      <ActionIconBtn
+                        $userplus={true}
+                        title="Назначить пациента"
+                        onClick={() => {
+                          handleOpenAssignModal(bed, selectedRoom!)
+                        }}
+                      >
+                        <UserPlus size={13} />
+                      </ActionIconBtn>
                     )}
-                  </BedInfo>
-                  <BedStatus>{bed.status}</BedStatus>
-                  {bed.status === 'Свободно' && (
                     <ActionIconBtn
-                      $userplus={true}
-                      title="Назначить пациента"
-                      onClick={() => {
-                        handleOpenAssignModal(bed, selectedRoom!)
-                      }}
+                      title="Переместить пациента"
+                      onClick={() => handleOpenTransferFromBed(bed)}
                     >
-                      <UserPlus size={13} />
+                      <ArrowRight size={13} />
                     </ActionIconBtn>
-                  )}
-                  <ActionIconBtn
-                    title="Переместить пациента"
-                    onClick={() => handleOpenTransferFromBed(bed)}
-                  >
-                    <ArrowRight size={13} />
-                  </ActionIconBtn>
-                  <BedDeleteBtn onClick={() => removeBed(bed.id)}>
-                    <Trash2 size={13} />
-                  </BedDeleteBtn>
-                </BedItem>
-              ))
+                    <BedDeleteBtn onClick={() => removeBed(bed.id)}>
+                      <Trash2 size={13} />
+                    </BedDeleteBtn>
+                  </BedItem>
+                ))
             )}
           </BedsList>
 
@@ -1712,7 +1726,8 @@ export function WardAdmin() {
                     <ModalTitle>Назначить пациента на койку</ModalTitle>
                   </ModalRow>
                   <ModalSubtitle>
-                    Заполните данные для госпитализации в палату {assignBedData.room}, Койка К{assignBedData.bedNumber}
+                    Заполните данные для госпитализации в палату {assignBedData.room}, Койка К
+                    {assignBedData.bedNumber}
                   </ModalSubtitle>
                 </ModalHeaderText>
                 <CloseBtn onClick={handleCloseAssignModal} aria-label="Закрыть">
@@ -1748,33 +1763,42 @@ export function WardAdmin() {
                         }
                       }}
                       filterOption={() => true}
-                      options={patientSearchResults.map(p => ({
+                      options={patientSearchResults.map((p) => ({
                         value: p.id,
                         label: `${p.numberCard ?? 'Без номера'} | ${p.firstName} ${p.lastName} ${p.middleName} (Возраст: ${p.age} | Пол: ${formatPatientGender(p.gender)}) ${p.phoneNumber ?? ''}`,
                         data: p
                       }))}
-                      value={selectedPatientForAssign ? {
-                        value: selectedPatientForAssign.id,
-                        label: `${selectedPatientForAssign.firstName} ${selectedPatientForAssign.lastName} (Возраст: ${selectedPatientForAssign.age} | Пол: ${formatPatientGender(selectedPatientForAssign.gender)})`,
-                        data: selectedPatientForAssign
-                      } : null}
+                      value={
+                        selectedPatientForAssign
+                          ? {
+                              value: selectedPatientForAssign.id,
+                              label: `${selectedPatientForAssign.firstName} ${selectedPatientForAssign.lastName} (Возраст: ${selectedPatientForAssign.age} | Пол: ${formatPatientGender(selectedPatientForAssign.gender)})`,
+                              data: selectedPatientForAssign
+                            }
+                          : null
+                      }
                       onChange={(option: any) => {
                         setSelectedPatientForAssign(option?.data || null)
                       }}
-                      noOptionsMessage={() => patientSearchQuery ? "Ничего не найдено" : "Введите текст для поиска..."}
+                      noOptionsMessage={() =>
+                        patientSearchQuery ? 'Ничего не найдено' : 'Введите текст для поиска...'
+                      }
                     />
                   </div>
-                  
+
                   {selectedPatientForAssign && (
-                    <div style={{
-                      marginTop: '12px',
-                      padding: '12px',
-                      backgroundColor: '#ecfdf5',
-                      borderRadius: '6px',
-                      border: '1px solid #86efac',
-                      fontSize: '13px'
-                    }}>
-                      ✓ Выбран пациент: {selectedPatientForAssign.firstName} {selectedPatientForAssign.lastName}
+                    <div
+                      style={{
+                        marginTop: '12px',
+                        padding: '12px',
+                        backgroundColor: '#ecfdf5',
+                        borderRadius: '6px',
+                        border: '1px solid #86efac',
+                        fontSize: '13px'
+                      }}
+                    >
+                      ✓ Выбран пациент: {selectedPatientForAssign.firstName}{' '}
+                      {selectedPatientForAssign.lastName}
                     </div>
                   )}
                 </Section>
@@ -1813,7 +1837,9 @@ export function WardAdmin() {
                           }}
                           value={doctorOptions.find((o) => o.value === assignDoctor) ?? null}
                           onChange={(option) => setAssignDoctor(option?.value ?? '')}
-                          noOptionsMessage={() => doctorSearchQuery ? "Врачи не найдены" : "Введите имя врача..."}
+                          noOptionsMessage={() =>
+                            doctorSearchQuery ? 'Врачи не найдены' : 'Введите имя врача...'
+                          }
                         />
                       </div>
                     </DetailsField>
@@ -1850,13 +1876,22 @@ export function WardAdmin() {
                   <div>
                     <LocationText>
                       <MapPin size={16} />
-                      {assignBedData.floor} этаж, палата {assignBedData.room}, К{assignBedData.bedNumber}
+                      {assignBedData.floor} этаж, палата {assignBedData.room}, К
+                      {assignBedData.bedNumber}
                     </LocationText>
                     {selectedPatientForAssign && (
                       <div style={{ marginTop: '12px', fontSize: '13px', color: '#64748b' }}>
-                        <div><strong>Пациент:</strong> {selectedPatientForAssign.firstName} {selectedPatientForAssign.lastName}</div>
-                        <div><strong>Возраст:</strong> {selectedPatientForAssign.age} лет</div>
-                        <div><strong>Пол:</strong> {formatPatientGender(selectedPatientForAssign.gender)}</div>
+                        <div>
+                          <strong>Пациент:</strong> {selectedPatientForAssign.firstName}{' '}
+                          {selectedPatientForAssign.lastName}
+                        </div>
+                        <div>
+                          <strong>Возраст:</strong> {selectedPatientForAssign.age} лет
+                        </div>
+                        <div>
+                          <strong>Пол:</strong>{' '}
+                          {formatPatientGender(selectedPatientForAssign.gender)}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1871,9 +1906,19 @@ export function WardAdmin() {
                         styles={selectStyles}
                         components={selectComponents}
                         isSearchable={false}
-                        options={[1, 2, 3, 4, 5].map(level => ({ value: level.toString(), label: `${level} - ${PRIORITY_LABELS[level]}` }))}
-                        value={{ value: assignBedData.priority.toString(), label: `${assignBedData.priority} - ${PRIORITY_LABELS[assignBedData.priority]}` }}
-                        onChange={(option: any) => setAssignBedData(prev => prev ? { ...prev, priority: parseInt(option.value) } : null)}
+                        options={[1, 2, 3, 4, 5].map((level) => ({
+                          value: level.toString(),
+                          label: `${level} - ${PRIORITY_LABELS[level]}`
+                        }))}
+                        value={{
+                          value: assignBedData.priority.toString(),
+                          label: `${assignBedData.priority} - ${PRIORITY_LABELS[assignBedData.priority]}`
+                        }}
+                        onChange={(option: any) =>
+                          setAssignBedData((prev) =>
+                            prev ? { ...prev, priority: parseInt(option.value) } : null
+                          )
+                        }
                       />
                     </div>
                   </div>

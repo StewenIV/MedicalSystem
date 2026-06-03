@@ -5,13 +5,12 @@ namespace MedicalSystem.App.Validators
 {
     public class FreeBedRequestDtoValidator : AbstractValidator<FreeBedRequestDto>
     {
-        // Допустимые причины освобождения койки
         private static readonly string[] ValidReasons =
         {
-            "discharge",    // Выписка
-            "transfer",     // Перевод
-            "death",        // Смерть пациента
-            "other"         // Иное
+            "discharge",    
+            "transfer",     
+            "death",       
+            "other"        
         };
 
         public FreeBedRequestDtoValidator()

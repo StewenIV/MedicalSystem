@@ -1,7 +1,6 @@
 import styled, { css, keyframes } from 'styled-components'
 import { AppButton } from 'components/Button'
 
-
 const FONT_STACK = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
 
 const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
@@ -394,7 +393,8 @@ export const SectionCard = styled.div<{ $span?: number }>`
   }
 
   /* ── Адаптивный font-size для списков и параграфов внутри карточек ── */
-  ul, ol {
+  ul,
+  ol {
     margin: 0;
     color: #1e293b;
 
@@ -410,8 +410,6 @@ export const SectionCard = styled.div<{ $span?: number }>`
     }
   }
 `
-
-
 
 export const OpenSheetBtn = styled(AppButton)`
   width: 100%;
@@ -536,13 +534,12 @@ export const CardSubtitle = styled.p`
     }
   }
 
-   @media (max-width: 768px) {
+  @media (max-width: 768px) {
     padding-left: 0;
     font-size: 12px;
     line-height: 1.45;
   }
 `
-
 
 export const GridRow = styled.div<{ $cols?: number }>`
   display: grid;
@@ -893,66 +890,66 @@ export const SearchCard = styled.div`
 
 export const SearchCardHeader = styled.div`
   padding: 20px 24px 18px;
-    border-bottom: 1px solid rgba(238, 242, 247, 0.9);
-    background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
-    position: relative;
-    overflow: hidden;
-  
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 12px;
-      bottom: 12px;
-      width: 3px;
-      border-radius: 0 3px 3px 0;
-      background: ${GRADIENT_ACCENT};
-      box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
-      transition:
-        box-shadow 0.25s ease,
-        width 0.2s ease;
-    }
-  
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: ${GRADIENT_SHIMMER};
-      background-size: 200% 100%;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      pointer-events: none;
-    }
-  
-    &:hover::before {
-      width: 4px;
-      box-shadow: 2px 0 14px rgba(37, 99, 235, 0.35);
-    }
-  
-    &:hover::after {
-      opacity: 1;
-      animation: ${shimmer} 1.4s ease infinite;
-    }
-  
-    @media (max-width: 768px) {
-      padding: 16px 18px 14px;
-    }
-  
-    @media (max-width: 480px) {
-      padding: 14px;
-    }
+  border-bottom: 1px solid rgba(238, 242, 247, 0.9);
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    bottom: 12px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: ${GRADIENT_ACCENT};
+    box-shadow: 2px 0 8px rgba(37, 99, 235, 0.25);
+    transition:
+      box-shadow 0.25s ease,
+      width 0.2s ease;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: ${GRADIENT_SHIMMER};
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  &:hover::before {
+    width: 4px;
+    box-shadow: 2px 0 14px rgba(37, 99, 235, 0.35);
+  }
+
+  &:hover::after {
+    opacity: 1;
+    animation: ${shimmer} 1.4s ease infinite;
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px 18px 14px;
+  }
+
+  @media (max-width: 480px) {
+    padding: 14px;
+  }
 `
 
 export const SearchCardTitle = styled.h2`
   font-family: ${FONT_STACK};
-    font-size: 28px;
-    font-weight: 800;
-    margin: 0;
-    letter-spacing: -0.04em;
-    line-height: 1.15;
-    min-width: 0;
-  
-    ${gradientText(`
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+  min-width: 0;
+
+  ${gradientText(`
       linear-gradient(
         135deg,
         #0f172a  0%,
@@ -961,73 +958,73 @@ export const SearchCardTitle = styled.h2`
         #2563eb 100%
       )
     `)}
-  
-    filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
-  
-    transition:
-      filter 0.25s ease,
-      letter-spacing 0.25s ease;
-  
-    &:hover {
-      filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
-      letter-spacing: -0.035em;
-    }
-  
-    @media (max-width: 1024px) {
-      font-size: 24px;
-    }
-  
-    @media (max-width: 768px) {
-      font-size: 22px;
-      line-height: 1.2;
-    }
-  
-    @media (max-width: 480px) {
-      font-size: 19px;
-    }
+
+  filter: drop-shadow(0 1px 2px rgba(37, 99, 235, 0.18));
+
+  transition:
+    filter 0.25s ease,
+    letter-spacing 0.25s ease;
+
+  &:hover {
+    filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.28));
+    letter-spacing: -0.035em;
+  }
+
+  @media (max-width: 1024px) {
+    font-size: 24px;
+  }
+
+  @media (max-width: 768px) {
+    font-size: 22px;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 480px) {
+    font-size: 19px;
+  }
 `
 
 export const SearchCardSubtitle = styled.p`
-   font-family: ${FONT_STACK};
-      margin: 6px 0 0;
-      padding-left: 10px;
-      font-size: 13px;
-      font-weight: 400;
-      color: #94a3b8;
-      letter-spacing: 0.015em;
-      line-height: 1.55;
-      transition: color 0.2s ease;
-    
-      &::before {
-        content: '';
-        display: inline-block;
-        width: 4px;
-        height: 4px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #93c5fd, #818cf8);
-        vertical-align: middle;
-        margin-right: 8px;
-        margin-bottom: 2px;
-        opacity: 0.7;
-        transition:
-          opacity 0.2s ease,
-          transform 0.2s ease;
-      }
-    
-      ${SearchCardHeader}:hover & {
-        color: #64748b;
-    
-        &::before {
-          opacity: 1;
-          transform: scale(1.3);
-        }
-      }
-    
-       @media (max-width: 768px) {
-        padding-left: 0;
-        font-size: 12px;
-        line-height: 1.45;
-      }
+  font-family: ${FONT_STACK};
+  margin: 6px 0 0;
+  padding-left: 10px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #94a3b8;
+  letter-spacing: 0.015em;
+  line-height: 1.55;
+  transition: color 0.2s ease;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #93c5fd, #818cf8);
+    vertical-align: middle;
+    margin-right: 8px;
+    margin-bottom: 2px;
+    opacity: 0.7;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  ${SearchCardHeader}:hover & {
+    color: #64748b;
+
+    &::before {
+      opacity: 1;
+      transform: scale(1.3);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding-left: 0;
+    font-size: 12px;
+    line-height: 1.45;
+  }
 `
 
 export const SearchFilterBar = styled.div`
@@ -1083,7 +1080,9 @@ export const SearchFilterSelect = styled.select`
   padding-right: 42px;
   cursor: pointer;
   appearance: none;
-  background: #ffffff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 14px center;
+  background: #ffffff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E")
+    no-repeat right 14px center;
 `
 
 export const SearchResetBtn = styled.button`
@@ -1101,12 +1100,44 @@ export const SearchResetBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease;
 
   &:hover {
     border-color: #2563eb;
     background: #f0f4ff;
     color: #1e40af;
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+  }
+`
+
+export const SearchAddBtn = styled.button`
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%);
+  color: #ffffff;
+  font-family: ${FONT_STACK};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2);
+  transition: all 0.2s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(29, 78, 216, 0.35);
   }
 
   @media (max-width: 600px) {
@@ -1126,7 +1157,13 @@ export const SearchTableWrap = styled.div`
   border-radius: 18px;
   background:
     linear-gradient(#ffffff, #ffffff) padding-box,
-    linear-gradient(135deg, rgba(147, 197, 253, 0.7), rgba(221, 214, 254, 0.65), rgba(226, 232, 240, 0.9)) border-box;
+    linear-gradient(
+        135deg,
+        rgba(147, 197, 253, 0.7),
+        rgba(221, 214, 254, 0.65),
+        rgba(226, 232, 240, 0.9)
+      )
+      border-box;
   box-shadow:
     0 16px 36px rgba(15, 23, 42, 0.08),
     0 4px 12px rgba(37, 99, 235, 0.08),
@@ -1187,7 +1224,9 @@ export const SearchTableWrap = styled.div`
     );
     opacity: 0;
     z-index: 3;
-    transition: opacity 0.16s ease-out, transform 0.24s ease;
+    transition:
+      opacity 0.16s ease-out,
+      transform 0.24s ease;
     transform: translateX(8px);
   }
 
@@ -1208,7 +1247,6 @@ export const SearchTableWrap = styled.div`
       border-radius: 0 13px 13px 0;
     }
   }
-
 `
 
 export const SearchTableViewport = styled.div`
@@ -1218,9 +1256,20 @@ export const SearchTableViewport = styled.div`
   -webkit-overflow-scrolling: touch;
   border-radius: inherit;
 
-  &::-webkit-scrollbar { height: 6px; }
-  &::-webkit-scrollbar-track { background: rgba(241, 245, 249, 0.8); border-radius: 999px; }
-  &::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 999px; &:hover { background: #93c5fd; } }
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: rgba(241, 245, 249, 0.8);
+    border-radius: 999px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #bfdbfe;
+    border-radius: 999px;
+    &:hover {
+      background: #93c5fd;
+    }
+  }
 `
 
 export const SearchTable = styled.table`
@@ -1254,7 +1303,9 @@ export const SearchTh = styled.th`
 
 export const SearchTr = styled.tr`
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.15s ease;
+  transition:
+    background-color 0.15s ease,
+    transform 0.15s ease;
 
   &:not(:last-child) td {
     border-bottom: 1px solid #eef2f7;
@@ -1384,7 +1435,8 @@ export const SearchPageBtn = styled.button<{ $active?: boolean }>`
 
   &:hover:not(:disabled) {
     border-color: #1e40af;
-    background: ${(p) => (p.$active ? 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)' : '#eff6ff')};
+    background: ${(p) =>
+      p.$active ? 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)' : '#eff6ff'};
     color: ${(p) => (p.$active ? '#ffffff' : '#1e40af')};
     transform: translateY(-1px);
   }
@@ -1430,4 +1482,17 @@ export const SearchResultsCount = styled.div`
   strong {
     color: #1e40af;
   }
+`
+
+export const SearchPageSizeSelect = styled.select`
+  height: 34px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 13px;
+  font-family: ${FONT_STACK};
+  color: #334155;
+  cursor: pointer;
+  outline: none;
 `

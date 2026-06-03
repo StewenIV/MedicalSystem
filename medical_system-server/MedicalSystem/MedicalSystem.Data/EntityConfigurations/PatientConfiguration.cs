@@ -28,8 +28,8 @@ namespace MedicalSystem.Data.EntityConfigurations
             builder.Property(p => p.Gender)
                 .IsRequired()
                 .HasConversion(
-                    v => v.ToString(),
-                    v => (Gender)Enum.Parse(typeof(Gender), v))
+                    v => v == Gender.Male ? "Мужской" : "Женский",
+                    v => v == "Мужской" ? Gender.Male : Gender.Female)
                 .HasMaxLength(50);
 
             builder.Property(p => p.DateOfBirth)

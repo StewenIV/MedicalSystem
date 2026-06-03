@@ -84,7 +84,7 @@ namespace MedicalSystem.Data.Queries
                         PatientName = b.Patient != null ? b.Patient.FirstName : null,
                         PatientLastName = b.Patient != null ? b.Patient.LastName : null,
                         PatientMiddleName = b.Patient != null ? b.Patient.MiddleName : null,
-                        PatientGender = b.Patient != null ? b.Patient.Gender.ToString() : null,
+                        PatientGender = b.Patient != null ? (b.Patient.Gender == Gender.Male ? "Мужской" : "Женский") : null,
                         PatientAge = b.Patient != null ? (int)((DateTime.UtcNow - b.Patient.DateOfBirth).TotalDays / 365.25) : null,
                         Diagnosis = b.Patient != null ? b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault() : null,
                         DoctorName = b.Patient != null && b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,

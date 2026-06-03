@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { mockPatients, Patient } from 'data/mockData'
 import { SavedInspection } from 'pages/WardRound/types'
-// ─── Состояние контекста ──────────────────────────────────────────
+import { PatientCardDto } from 'api/patientsApi'
+
 interface PatientDataState {
   patients: Patient[]
-  inspections: Record<string, SavedInspection[]>  // patientId → inspections
-  drafts: Record<string, any> // key → draft form state
+  inspections: Record<string, SavedInspection[]>  
+  drafts: Record<string, any> 
 }
 interface PatientDataActions {
   saveInspection: (patientId: string, inspection: SavedInspection) => void
@@ -17,11 +18,14 @@ interface PatientDataActions {
   getInspections: (patientId: string) => SavedInspection[]
   saveDraft: (key: string, draft: any) => void
   getDraft: (key: string) => any
+  addPatient: (dto: Partial<PatientCardDto>) => Promise<PatientCardDto>
+  updatePatient: (id: string, dto: PatientCardDto) => Promise<void>
+  deletePatient: (id: string) => Promise<void>
 }
 type PatientDataContextValue = PatientDataState & PatientDataActions
-// ─── Контекст ─────────────────────────────────────────────────────
+
 const PatientDataContext = createContext<PatientDataContextValue | null>(null)
-// ─── Провайдер ────────────────────────────────────────────────────
+
 export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<any[]>([])
   const [inspections, setInspections] = useState<Record<string, SavedInspection[]>>({})
@@ -90,6 +94,45 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const getInspections = useCallback((patientId: string) => {
     return inspections[patientId] ?? []
   }, [inspections])
+
+  const addPatient = useCallback(async (dto: Partial<PatientCardDto>) => {
+    const { addPatient: apiAddPatient } = await import('../api/patientsApi')
+    const newPatient = await apiAddPatient(dto)
+    const mapped = {
+      ...newPatient,
+      doctor: newPatient.doctorName,
+      department: newPatient.departmentName,
+      statusText: newPatient.statusText || 'Амбулаторный',
+      activeProblems: newPatient.medicalProblems?.map(m => m.name) || []
+    }
+    setPatients(prev => [...prev, mapped])
+    return newPatient
+  }, [])
+
+  const updatePatient = useCallback(async (id: string, dto: PatientCardDto) => {
+    const { updatePatientCard } = await import('../api/patientsApi')
+    await updatePatientCard(id, dto)
+    setPatients(prev =>
+      prev.map(p =>
+        p.id === id
+          ? {
+              ...dto,
+              doctor: dto.doctorName,
+              department: dto.departmentName,
+              statusText: dto.statusText || 'Госпитализирован',
+              activeProblems: dto.medicalProblems?.map(m => m.name) || []
+            }
+          : p
+      )
+    )
+  }, [])
+
+  const deletePatient = useCallback(async (id: string) => {
+    const { deletePatient: apiDeletePatient } = await import('../api/patientsApi')
+    await apiDeletePatient(id)
+    setPatients(prev => prev.filter(p => p.id !== id))
+  }, [])
+
   return (
     <PatientDataContext.Provider value={{
       patients,
@@ -104,6 +147,9 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       drafts,
       saveDraft,
       getDraft,
+      addPatient,
+      updatePatient,
+      deletePatient
     }}>
       {children}
     </PatientDataContext.Provider>

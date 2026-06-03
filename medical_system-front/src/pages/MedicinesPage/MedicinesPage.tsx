@@ -998,7 +998,6 @@ const MedicinesPage: React.FC = () => {
           </Table>
         </TableScrollWrapper>
 
-        {/* ── Pagination ── */}
         <PaginationBar>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <PaginationInfo>

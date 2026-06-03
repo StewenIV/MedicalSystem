@@ -116,7 +116,7 @@ import {
 
 function useCounter(target: number, duration = 1000) {
   const [value, setValue] = useState(0)
-  const raf = useRef<number | null>(null) //id тек аним
+  const raf = useRef<number | null>(null) 
 
   const animate = (start: number, end: number, dur: number) => {
     if (raf.current) cancelAnimationFrame(raf.current)

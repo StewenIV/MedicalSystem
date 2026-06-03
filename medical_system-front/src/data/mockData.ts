@@ -32,7 +32,7 @@ export interface Patient {
   lastName: string
   middleName: string
   dateOfBirth: string
-  /** @computed EXTRACT(YEAR FROM AGE(dateOfBirth)) */
+ 
   age: number
   allergies: any[]
   documents: any[]
@@ -40,7 +40,7 @@ export interface Patient {
   medcardNum: string
   historyNum?: string
   status: string
-  /** @computed маппинг из status */
+
   statusText: string
   doctor: string
   department: string

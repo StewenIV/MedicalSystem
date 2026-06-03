@@ -184,3 +184,23 @@ export const fetchAllPatients = (): Promise<PatientCardDto[]> => {
 export const fetchPatientVitals = (id: string): Promise<any[]> => {
   return apiFetch<any[]>(`/api/patients/${id}/vitals`);
 }
+
+export const updatePatientCard = (id: string, dto: PatientCardDto): Promise<void> => {
+  return apiFetch<void>(`/api/patients/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(dto)
+  });
+}
+
+export const addPatient = (dto: Partial<PatientCardDto>): Promise<PatientCardDto> => {
+  return apiFetch<PatientCardDto>(`/api/patients`, {
+    method: 'POST',
+    body: JSON.stringify(dto)
+  });
+}
+
+export const deletePatient = (id: string): Promise<void> => {
+  return apiFetch<void>(`/api/patients/${id}`, {
+    method: 'DELETE'
+  });
+}

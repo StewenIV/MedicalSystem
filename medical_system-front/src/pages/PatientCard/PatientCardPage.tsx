@@ -63,8 +63,9 @@ import {
   ReferenceArea
 } from 'recharts'
 import colors from 'consts/colors'
+import { toast } from 'react-toastify'
+import { showApiError } from 'utils/showApiError'
 
-// no mock imports needed
 import { usePatientData } from 'context/PatientDataContext'
 import {
   PatientCardContainer,
@@ -103,6 +104,7 @@ import {
   SearchFilterInput,
   SearchFilterSelect,
   SearchResetBtn,
+  SearchAddBtn,
   SearchTableWrap,
   SearchTableViewport,
   SearchTable,
@@ -121,6 +123,7 @@ import {
   SearchPageBtn,
   SearchEmptyState,
   SearchResultsCount,
+  SearchPageSizeSelect,
   CardHeader,
   CardTitle,
   CardSubtitle,
@@ -210,7 +213,6 @@ const VITAL_RULES = {
   respiratoryRate: { label: 'Частота дыхания', min: 5, max: 60 }
 }
 
-
 const getPulseSegments = (pulse: number) => {
   const min = NORMAL_RANGES.pulse.min
   const max = NORMAL_RANGES.pulse.max
@@ -264,12 +266,12 @@ const buildChartData = (signs: any[]) =>
   })
 
 const CustomTempDot = (props: any) => {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload } = props
 
   if (props.dataKey === 'temperature') {
     const abnormal =
       payload.temperature > NORMAL_RANGES.temperature.max ||
-      payload.temperature < NORMAL_RANGES.temperature.min;
+      payload.temperature < NORMAL_RANGES.temperature.min
 
     return (
       <g>
@@ -281,13 +283,11 @@ const CustomTempDot = (props: any) => {
         )}
         <circle cx={cx} cy={cy} r={abnormal ? 6 : 4} fill={abnormal ? '#ef4444' : '#f97316'} />
       </g>
-    );
+    )
   }
 
   if (props.dataKey === 'spo2') {
-    const abnormal =
-      payload.spo2 > NORMAL_RANGES.spo2.max ||
-      payload.spo2 < NORMAL_RANGES.spo2.min;
+    const abnormal = payload.spo2 > NORMAL_RANGES.spo2.max || payload.spo2 < NORMAL_RANGES.spo2.min
 
     return (
       <g>
@@ -307,13 +307,13 @@ const CustomTempDot = (props: any) => {
           strokeWidth={2}
         />
       </g>
-    );
+    )
   }
 
   if (props.dataKey === 'respiratoryRate') {
     const abnormal =
       payload.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ||
-      payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min;
+      payload.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
 
     return (
       <g>
@@ -332,11 +332,11 @@ const CustomTempDot = (props: any) => {
           strokeWidth={2}
         />
       </g>
-    );
+    )
   }
 
-  return null;
-};
+  return null
+}
 
 const CustomTempActiveDot = (props: any) => {
   const { cx, cy, payload } = props
@@ -434,13 +434,44 @@ const VACCINE_SELECT_OPTIONS: SelectOption[] = VACCINE_OPTIONS.map((v) => ({
   label: v.label
 }))
 
-// PAGE_SIZE removed
 const getPatientRoom = (patient: any): string => {
   return patient.roomNumber ? `Палата ${patient.roomNumber}` : '—'
 }
 
 const getInitials = (firstName: string, lastName: string) => {
   return `${lastName?.[0] || ''}${firstName?.[0] || ''}`.toUpperCase()
+}
+
+const formatDateHuman = (dateStr?: string) => {
+  if (!dateStr) return '—'
+
+  try {
+    const d = new Date(dateStr)
+
+    if (isNaN(d.getTime())) return dateStr
+
+    return d.toLocaleDateString('ru-RU')
+  } catch {
+    return dateStr
+  }
+}
+
+const formatDateHumanWithTime = (dateStr?: string) => {
+  if (!dateStr) return '—'
+  try {
+    const d = new Date(dateStr)
+    if (isNaN(d.getTime())) return dateStr
+
+    return d.toLocaleString('ru-RU', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return dateStr
+  }
 }
 
 const getUniqueDoctors = (patientsList: any[]): SelectOption[] => {
@@ -456,13 +487,14 @@ const STATUS_OPTIONS: SelectOption[] = [
   { value: 'discharged', label: 'Выписан' }
 ]
 const GENDER_OPTIONS: SelectOption[] = [
-  { value: 'Male', label: 'Мужской' },
-  { value: 'Female', label: 'Женский' }
+  { value: 'Мужской', label: 'Мужской' },
+  { value: 'Женский', label: 'Женский' }
 ]
 
 interface PatientSearchPanelProps {
   onSelectPatient: (id: string) => void
   onDoubleClickPatient?: (patient: any) => void
+  onAddPatientClick?: () => void
   cardRef?: React.MutableRefObject<HTMLDivElement | null>
   initialQuery?: string
 }
@@ -470,6 +502,7 @@ interface PatientSearchPanelProps {
 const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   onSelectPatient,
   onDoubleClickPatient,
+  onAddPatientClick,
   cardRef,
   initialQuery = ''
 }) => {
@@ -513,7 +546,6 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
 
   useEffect(() => {
     return () => {
-      // Очищаем таймер при размонтировании компонента
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current)
       }
@@ -530,7 +562,8 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
         q &&
         !fullName.includes(q) &&
         !p.id.toLowerCase().includes(q) &&
-        !p.medcardNum?.toLowerCase().includes(q)
+        !p.medcardNum?.toLowerCase().includes(q) &&
+        !p.historyNum?.toLowerCase().includes(q)
       )
         return false
       if (doctor && p.doctor !== doctor.value) return false
@@ -606,25 +639,13 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
     }
   }
 
-  const renderPageBtns = () => {
-    const btns = []
-    for (let i = 1; i <= totalPages; i++) {
-      btns.push(
-        <SearchPageBtn key={i} $active={i === safePage} onClick={() => handlePageChange(i)}>
-          {i}
-        </SearchPageBtn>
-      )
-    }
-    return btns
-  }
-
   return (
     <SearchPageWrapper>
       <SearchCard>
         <SearchCardHeader>
           <SearchCardTitle>Поиск пациентов</SearchCardTitle>
           <SearchCardSubtitle>
-            Найдите пациента по ФИО, ID, номеру карты, врачу или палате
+            Найдите пациента по ФИО, номеру карты, истории болезни, врачу или палате
           </SearchCardSubtitle>
         </SearchCardHeader>
 
@@ -652,7 +673,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                 setQuery(e.target.value)
                 setPage(1)
               }}
-              placeholder="ФИО, ID или номер карты..."
+              placeholder="ФИО, номер карты или история болезни..."
               style={{ paddingLeft: 36 }}
             />
           </div>
@@ -711,6 +732,13 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
             <RotateCcw size={13} />
             Сбросить
           </SearchResetBtn>
+
+          {onAddPatientClick && (
+            <SearchAddBtn onClick={onAddPatientClick} type="button">
+              <Plus size={13} />
+              Добавить
+            </SearchAddBtn>
+          )}
         </SearchFilterBar>
 
         {filtered.length > 0 && (
@@ -774,7 +802,18 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                         </PatientNameCell>
                       </SearchTdBold>
                       <SearchTd>
-                        {patient.age} лет, {(patient.gender as any) === 'Male' || (patient.gender as any) === '0' || (patient.gender as any) === 0 || (patient.gender as any) === 'Мужской' ? 'М' : (patient.gender as any) === 'Female' || (patient.gender as any) === '1' || (patient.gender as any) === 1 || (patient.gender as any) === 'Женский' ? 'Ж' : patient.gender}
+                        {patient.age} лет,{' '}
+                        {(patient.gender as any) === 'Male' ||
+                        (patient.gender as any) === '0' ||
+                        (patient.gender as any) === 0 ||
+                        (patient.gender as any) === 'Мужской'
+                          ? 'М'
+                          : (patient.gender as any) === 'Female' ||
+                              (patient.gender as any) === '1' ||
+                              (patient.gender as any) === 1 ||
+                              (patient.gender as any) === 'Женский'
+                            ? 'Ж'
+                            : patient.gender}
                       </SearchTd>
                       <SearchTd>{patient.doctor}</SearchTd>
                       <SearchTdMuted>{getPatientRoom(patient)}</SearchTdMuted>
@@ -792,34 +831,66 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
 
         {totalPages >= 1 && (
           <SearchPaginationRow>
-            <SearchPaginationInfo>
-              <select 
-                value={pageSize} 
-                onChange={(e) => {
-                  setPageSize(Number(e.target.value))
-                  setPage(1)
-                }}
-                style={{ marginRight: 12, padding: '4px', borderRadius: 4, border: '1px solid #cbd5e1', outline: 'none', background: '#fff', fontSize: 13 }}
-              >
-                <option value={5}>5 / стр</option>
-                <option value={8}>8 / стр</option>
-                <option value={15}>15 / стр</option>
-                <option value={50}>50 / стр</option>
-              </select>
-              Страница {safePage} из {totalPages} · Записей {filtered.length}
-            </SearchPaginationInfo>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <SearchPaginationInfo>
+                Показано {filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1}–
+                {Math.min(safePage * pageSize, filtered.length)} из {filtered.length}
+              </SearchPaginationInfo>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>По</span>
+                <SearchPageSizeSelect
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setPage(1)
+                  }}
+                >
+                  {[5, 8, 15, 50].map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </SearchPageSizeSelect>
+              </div>
+            </div>
             <SearchPaginationBtns>
+              <SearchPageBtn onClick={() => handlePageChange(1)} disabled={safePage === 1}>
+                <ChevronLeft size={14} />
+                <ChevronLeft size={14} />
+              </SearchPageBtn>
               <SearchPageBtn
                 onClick={() => handlePageChange(safePage - 1)}
                 disabled={safePage === 1}
               >
                 <ChevronLeft size={14} />
               </SearchPageBtn>
-              {renderPageBtns()}
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let p = i + 1
+                if (totalPages > 5) {
+                  const start = Math.max(1, Math.min(safePage - 2, totalPages - 4))
+                  p = start + i
+                }
+                return (
+                  <SearchPageBtn
+                    key={p}
+                    $active={p === safePage}
+                    onClick={() => handlePageChange(p)}
+                  >
+                    {p}
+                  </SearchPageBtn>
+                )
+              })}
               <SearchPageBtn
                 onClick={() => handlePageChange(safePage + 1)}
                 disabled={safePage === totalPages}
               >
+                <ChevronRight size={14} />
+              </SearchPageBtn>
+              <SearchPageBtn
+                onClick={() => handlePageChange(totalPages)}
+                disabled={safePage === totalPages}
+              >
+                <ChevronRight size={14} />
                 <ChevronRight size={14} />
               </SearchPageBtn>
             </SearchPaginationBtns>
@@ -829,7 +900,6 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
     </SearchPageWrapper>
   )
 }
-
 
 interface PatientCardPageProps {
   patientId?: string
@@ -858,47 +928,54 @@ enum TabsEnum {
   Documents = 'Документы'
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFromPreview, onNavigateToTemperatureSheet, onNavigateToWardRound }) => {
-  const { patients } = usePatientData()
-  
+const PatientCard: React.FC<PatientCardProps> = ({
+  patientId,
+  onSelectPatientFromPreview,
+  onNavigateToTemperatureSheet,
+  onNavigateToWardRound
+}) => {
+  const { patients, updatePatient, deletePatient } = usePatientData()
+
+  const [localPatient, setLocalPatient] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<string>(TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
 
-  const [localPatient, setLocalPatient] = useState<any>(null)
-
-  useEffect(() => {
+  const loadPatientDetails = useCallback(() => {
     if (patientId) {
       import('../../api/patientsApi').then(({ fetchPatientCard, fetchPatientVitals }) => {
-        Promise.all([
-          fetchPatientCard(patientId),
-          fetchPatientVitals(patientId).catch(() => [])
-        ]).then(([dto, vitalsData]) => {
-          setLocalPatient({
-            ...dto,
-            doctor: dto.doctorName,
-            department: dto.departmentName,
-            activeProblems: dto.medicalProblems?.map((m: any) => m.name) || [],
-            contacts: dto.contacts || {},
-            passport: dto.passport || {},
-            work: dto.work || {},
-            other: dto.other || {},
-            vitals: dto.vitals || {},
-            vitalsHistory: vitalsData,
-            currentMeds: dto.currentMeds || [],
-            history: dto.history || [],
-            vaccines: dto.vaccines || [],
-            operations: dto.operations || [],
-            documents: dto.documents || [],
-            labs: dto.labs || [],
-            allergies: dto.allergies || [],
-            relatives: dto.relatives || []
+        Promise.all([fetchPatientCard(patientId), fetchPatientVitals(patientId).catch(() => [])])
+          .then(([dto, vitalsData]) => {
+            setLocalPatient({
+              ...dto,
+              doctor: dto.doctorName,
+              department: dto.departmentName,
+              activeProblems: dto.medicalProblems?.map((m: any) => m.name) || [],
+              contacts: dto.contacts || {},
+              passport: dto.passport || {},
+              work: dto.work || {},
+              other: dto.other || {},
+              vitals: dto.vitals || {},
+              vitalsHistory: vitalsData,
+              currentMeds: dto.currentMeds || [],
+              history: dto.history || [],
+              vaccines: dto.vaccines || [],
+              operations: dto.operations || [],
+              documents: dto.documents || [],
+              labs: dto.labs || [],
+              allergies: dto.allergies || [],
+              relatives: dto.relatives || []
+            })
           })
-        }).catch(console.error)
+          .catch(console.error)
       })
     } else {
       setLocalPatient(null)
     }
   }, [patientId])
+
+  useEffect(() => {
+    loadPatientDetails()
+  }, [loadPatientDetails])
 
   const [modalConfig, setModalConfig] = useState<{ isOpen: boolean; type: string; data: any }>({
     isOpen: false,
@@ -909,14 +986,27 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
 
   const openModal = (type: string, data: any = null) => {
     setModalConfig({ isOpen: true, type, data })
-    setFormData(data || {})
+    let initialData = data ? { ...data } : {}
+    if (type === 'EDIT_NESTED_contacts') {
+      if (!initialData.country) {
+        initialData.country = 'Приднестровская Молдавская Республика'
+      }
+    } else if (type === 'EDIT_NESTED_other') {
+      if (!initialData.language) {
+        initialData.language = 'Русский'
+      }
+      if (!initialData.nationality) {
+        initialData.nationality = 'Русский'
+      }
+    }
+    setFormData(initialData)
   }
 
   const handleBack = () => {
     if (onNavigateToTemperatureSheet) {
       window.scrollTo({
         top: 0
-      });
+      })
       onNavigateToTemperatureSheet(localPatient?.id || patientId || '')
     }
   }
@@ -926,10 +1016,23 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     setFormData({})
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!localPatient) return
-    let updatedData = { ...localPatient }
     const { type, data } = modalConfig
+
+    if (type === 'DELETE_PATIENT') {
+      try {
+        await deletePatient(localPatient.id)
+        toast.success('Карта пациента успешно удалена')
+        closeModal()
+        onSelectPatientFromPreview?.('')
+      } catch (err) {
+        showApiError(err, 'Ошибка при удалении пациента')
+      }
+      return
+    }
+
+    let updatedData = { ...localPatient }
 
     if (type === 'EDIT_BASIC') {
       Object.assign(updatedData, formData)
@@ -951,8 +1054,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
       updatedData[listName] = [...(updatedData[listName] || []), formData.value]
     }
 
-    setLocalPatient(updatedData)
-    closeModal()
+    try {
+      updatedData.lastUpdated = new Date().toISOString()
+      await updatePatient(localPatient.id, updatedData)
+      loadPatientDetails()
+      toast.success('Данные пациента успешно сохранены')
+      closeModal()
+    } catch (err) {
+      showApiError(err, 'Ошибка при сохранении изменений')
+    }
   }
 
   const handleQuickAction = (actionType: string, data?: any) => {
@@ -981,11 +1091,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
 
   const DOCTOR_OPTIONS = useMemo(() => {
     const docs = new Set<string>()
-    patients.forEach(p => {
+    patients.forEach((p) => {
       if (p.doctor) docs.add(p.doctor)
-      p.history?.forEach(h => { if (h.doctor) docs.add(h.doctor) })
+      p.history?.forEach((h) => {
+        if (h.doctor) docs.add(h.doctor)
+      })
     })
-    return Array.from(docs).map(d => ({ value: d, label: d }))
+    return Array.from(docs).map((d) => ({ value: d, label: d }))
   }, [])
 
   const SELECT_FIELDS: Record<string, { options: SelectOption[]; placeholder: string }> = {
@@ -1004,11 +1116,17 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     const digits = val.replace(/\D/g, '')
     if (!val || digits.length === 0) return
     if (!digits.startsWith('373')) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Допускаются только молдавские номера (+373)' })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Допускаются только молдавские номера (+373)'
+      })
       return
     }
     if (digits.length !== 11) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Неверный формат: +373 XX XXX XXX (8 цифр после кода)' })
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Неверный формат: +373 XX XXX XXX (8 цифр после кода)'
+      })
     }
   })
 
@@ -1017,9 +1135,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
   const validatePhoneWithZod = (fieldName: string, val: string) => {
     const result = phoneSchema.safeParse(val)
     if (!result.success) {
-      setPhoneErrors(p => ({ ...p, [fieldName]: result.error.issues[0]?.message || 'Ошибка валидации' }))
+      setPhoneErrors((p) => ({
+        ...p,
+        [fieldName]: result.error.issues[0]?.message || 'Ошибка валидации'
+      }))
     } else {
-      setPhoneErrors(p => ({ ...p, [fieldName]: '' }))
+      setPhoneErrors((p) => ({ ...p, [fieldName]: '' }))
     }
   }
 
@@ -1101,8 +1222,18 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     category: 'Тип записи'
   }
 
-  type ModalField = { name: string; label: string; type?: string }
+  type ModalField = {
+    name: string
+    label: string
+    type?: string
+    options?: string[]
+    optional?: boolean
+  }
   const modalDefs: Record<string, { title: string; fields?: ModalField[]; text?: string }> = {
+    DELETE_PATIENT: {
+      title: 'Удалить карту пациента',
+      text: 'Вы действительно хотите удалить медицинскую карту этого пациента? Все связанные с ним данные будут полностью удалены.'
+    },
     EDIT_BASIC: {
       title: 'Основные данные',
       fields: [
@@ -1110,7 +1241,13 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
         { name: 'firstName', label: 'Имя' },
         { name: 'middleName', label: 'Отчество' },
         { name: 'dateOfBirth', label: 'Дата рождения', type: 'date' },
-        { name: 'gender', label: 'Пол' }
+        { name: 'gender', label: 'Пол', type: 'select', options: ['Мужской', 'Женский'] },
+        {
+          name: 'maritalStatus',
+          label: 'Семейное положение',
+          type: 'select',
+          options: ['Холост/Не замужем', 'Женат/Замужем', 'В разводе', 'Вдовец/Вдова']
+        }
       ]
     },
     EDIT_NESTED_passport: {
@@ -1154,11 +1291,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     EDIT_NESTED_vitals: {
       title: 'Внести показатели',
       fields: [
-        { name: 'temp', label: 'Температура (°C)' },
-        { name: 'bp', label: 'АД (мм рт. ст.)' },
-        { name: 'hr', label: 'ЧСС (уд/мин)' },
-        { name: 'resp', label: 'Частота дыхания' },
-        { name: 'spo2', label: 'SpO2 (%)' },
+        { name: 'temp', label: 'Температура (°C)', type: 'number' },
+        { name: 'bp', label: 'АД (мм рт. ст.)', type: 'text' },
+        { name: 'hr', label: 'ЧСС (уд/мин)', type: 'number' },
+        { name: 'resp', label: 'Частота дыхания', type: 'number' },
+        { name: 'spo2', label: 'SpO2 (%)', type: 'number' }
       ]
     },
     ADD_LIST_relatives: {
@@ -1181,19 +1318,67 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     ADD_LIST_allergies: {
       title: 'Добавить аллергию',
       fields: [
-        { name: 'name', label: 'Вещество' },
-        { name: 'reaction', label: 'Реакция' },
+        {
+          name: 'name',
+          label: 'Вещество',
+          type: 'select',
+          options: [
+            'Пенициллин',
+            'Ампициллин',
+            'Цефалоспорины',
+            'Лидокаин',
+            'Новокаин',
+            'Йод',
+            'Пыльца',
+            'Домашняя пыль',
+            'Шерсть животных',
+            'Арахис',
+            'Цитрусовые',
+            'Латекс',
+            'Другое'
+          ]
+        },
+        {
+          name: 'reaction',
+          label: 'Реакция',
+          type: 'select',
+          options: ['Крапивница', 'Анафилактический шок', 'Зуд', 'Отек Квинке', 'Сыпь', 'Другое']
+        },
         { name: 'date', label: 'Дата', type: 'date' },
-        { name: 'comment', label: 'Комментарий' }
+        { name: 'comment', label: 'Комментарий', type: 'textarea' }
       ]
     },
     EDIT_LIST_allergies: {
       title: 'Редактировать аллергию',
       fields: [
-        { name: 'name', label: 'Вещество' },
-        { name: 'reaction', label: 'Реакция' },
+        {
+          name: 'name',
+          label: 'Вещество',
+          type: 'select',
+          options: [
+            'Пенициллин',
+            'Ампициллин',
+            'Цефалоспорины',
+            'Лидокаин',
+            'Новокаин',
+            'Йод',
+            'Пыльца',
+            'Домашняя пыль',
+            'Шерсть животных',
+            'Арахис',
+            'Цитрусовые',
+            'Латекс',
+            'Другое'
+          ]
+        },
+        {
+          name: 'reaction',
+          label: 'Реакция',
+          type: 'select',
+          options: ['Крапивница', 'Анафилактический шок', 'Зуд', 'Отек Квинке', 'Сыпь', 'Другое']
+        },
         { name: 'date', label: 'Дата', type: 'date' },
-        { name: 'comment', label: 'Комментарий' }
+        { name: 'comment', label: 'Комментарий', type: 'textarea' }
       ]
     },
     DELETE_LIST_allergies: { title: 'Удалить аллергию', text: 'Удалить эту запись?' },
@@ -1323,19 +1508,73 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
   }
 
   const renderField = (f: ModalField) => {
-    const sel = SELECT_FIELDS[f.name]
-    if (sel) {
+    const isOptional = f.optional || f.name === 'causeOfDeath'
+    const labelText = f.label || FIELD_LABELS[f.name] || f.name
+    const labelNode = (
+      <Label>
+        {labelText}
+        {isOptional && (
+          <span
+            style={{
+              fontStyle: 'italic',
+              color: '#94a3b8',
+              fontSize: '12px',
+              fontWeight: 'normal',
+              marginLeft: '6px'
+            }}
+          >
+            (необязательно)
+          </span>
+        )}
+      </Label>
+    )
+
+    let val = formData[f.name] || ''
+    if (f.type === 'date' && val && typeof val === 'string') {
+      val = val.substring(0, 10)
+    }
+
+    if (f.name === 'name' && modalConfig.type.includes('vaccine')) {
+      return (
+        <FormGroup key={f.name}>
+          {labelNode}
+          <CreatableSelect
+            options={VACCINE_SELECT_OPTIONS}
+            styles={selectStyles}
+            components={selectComponents}
+            placeholder="Выберите вакцину..."
+            isClearable
+            formatCreateLabel={(v) => `Ввести вручную: "${v}"`}
+            value={formData[f.name] ? { value: formData[f.name], label: formData[f.name] } : null}
+            onChange={(opt: any) => {
+              const found = VACCINE_OPTIONS.find((v) => v.label === opt?.value)
+              setFormData((p: any) => ({
+                ...p,
+                name: opt?.value || '',
+                disease: found?.disease || p.disease,
+                validity: found?.validity || p.validity
+              }))
+            }}
+          />
+        </FormGroup>
+      )
+    }
+
+    if (f.type === 'select' || f.options || SELECT_FIELDS[f.name]) {
+      const sel = SELECT_FIELDS[f.name]
+      const opts = f.options ? f.options.map((o) => ({ value: o, label: o })) : sel?.options || []
       const currentVal = formData[f.name]
-      const selectValue = sel.options.find((o) => o.value === currentVal) ||
+      const selectValue =
+        opts.find((o: any) => o.value === currentVal) ||
         (currentVal ? { value: currentVal, label: currentVal } : null)
       return (
         <FormGroup key={f.name}>
-          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          {labelNode}
           <CreatableSelect
-            options={sel.options}
+            options={opts}
             styles={selectStyles}
             components={selectComponents}
-            placeholder={sel.placeholder}
+            placeholder={sel?.placeholder || `Выберите или введите ${labelText.toLowerCase()}...`}
             isClearable
             formatCreateLabel={(inputValue) => `Ввести вручную: "${inputValue}"`}
             value={selectValue}
@@ -1344,13 +1583,14 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
         </FormGroup>
       )
     }
+
     if (PHONE_FIELDS.has(f.name)) {
       const phoneErr = phoneErrors[f.name]
       const rawVal: string = formData[f.name] || ''
 
       return (
         <FormGroup key={f.name}>
-          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          {labelNode}
           <PatternFormat
             format="+373 (##) ###-###"
             mask="_"
@@ -1365,7 +1605,16 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
             style={phoneErr ? { borderColor: '#ef4444' } : {}}
           />
           {phoneErr && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, color: '#ef4444', fontSize: 12 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 4,
+                color: '#ef4444',
+                fontSize: 12
+              }}
+            >
               <AlertCircle size={13} />
               {phoneErr}
             </div>
@@ -1373,10 +1622,11 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
         </FormGroup>
       )
     }
-    if (TEXTAREA_FIELDS.has(f.name)) {
+
+    if (TEXTAREA_FIELDS.has(f.name) || f.type === 'textarea') {
       return (
         <FormGroup key={f.name}>
-          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+          {labelNode}
           <textarea
             value={formData[f.name] || ''}
             onChange={(e) => setFormData((p: any) => ({ ...p, [f.name]: e.target.value }))}
@@ -1394,39 +1644,52 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
         </FormGroup>
       )
     }
-    if (f.name === 'name' && modalConfig.type.includes('vaccine')) {
+
+    if (f.type === 'number') {
+      const isTemp = f.name === 'temp'
       return (
         <FormGroup key={f.name}>
-          <Label>{FIELD_LABELS[f.name] || f.label}</Label>
-          <CreatableSelect
-            options={VACCINE_SELECT_OPTIONS}
-            styles={selectStyles}
-            components={selectComponents}
-            placeholder="Выберите вакцину..."
-            isClearable
-            formatCreateLabel={(val) => `Ввести вручную: "${val}"`}
-            value={formData[f.name] ? { value: formData[f.name], label: formData[f.name] } : null}
-            onChange={(opt: any) => {
-              const found = VACCINE_OPTIONS.find((v) => v.label === opt?.value)
-              setFormData((p: any) => ({
-                ...p,
-                name: opt?.value || '',
-                disease: found?.disease || p.disease,
-                validity: found?.validity || p.validity
-              }))
+          {labelNode}
+          <Input
+            value={val}
+            onChange={(e) => {
+              const raw = e.target.value
+              setFormData((p: any) => ({ ...p, [f.name]: raw }))
             }}
+            type="number"
+            step={isTemp ? '0.1' : '1'}
+            placeholder={`${labelText}...`}
           />
         </FormGroup>
       )
     }
+
+    if (f.name === 'bp') {
+      return (
+        <FormGroup key={f.name}>
+          {labelNode}
+          <Input
+            value={val}
+            onChange={(e) => {
+              const raw = e.target.value
+              const filtered = raw.replace(/[^0-9/]/g, '')
+              setFormData((p: any) => ({ ...p, [f.name]: filtered }))
+            }}
+            type="text"
+            placeholder="120/80"
+          />
+        </FormGroup>
+      )
+    }
+
     return (
       <FormGroup key={f.name}>
-        <Label>{FIELD_LABELS[f.name] || f.label}</Label>
+        {labelNode}
         <Input
-          value={formData[f.name] || ''}
+          value={val}
           onChange={(e) => setFormData((p: any) => ({ ...p, [f.name]: e.target.value }))}
           type={f.type || (EMAIL_FIELDS.has(f.name) ? 'email' : 'text')}
-          placeholder={`${FIELD_LABELS[f.name] || f.label}...`}
+          placeholder={`${labelText}...`}
         />
       </FormGroup>
     )
@@ -1502,14 +1765,20 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                           {p.lastName} {p.firstName} {p.middleName}
                         </div>
                         <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
-                          {p.dateOfBirth} · {p.age} лет · {p.gender}
+                          {formatDateHuman(p.dateOfBirth)} · {p.age} лет · {p.gender}
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                        gap: 10
+                      }}
+                    >
                       {[
-                        ['ID', p.id],
                         ['Медкарта', p.medcardNum],
+                        ['История болезни', p.historyNum || '—'],
                         ['Врач', p.doctor],
                         ['Палата', getPatientRoom(p)],
                         ['Статус', p.statusText],
@@ -1650,6 +1919,18 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
     )
   }
 
+  function pluralize(count: number, forms: [string, string, string]) {
+    const rule = new Intl.PluralRules('ru-RU').select(count)
+
+    switch (rule) {
+      case 'one':
+        return forms[0]
+      case 'few':
+        return forms[1]
+      default:
+        return forms[2]
+    }
+  }
   const getStatusColor = (statusText?: string) => {
     if (!statusText) return { bg: '#f1f5f9', text: '#475569' }
     const text = statusText.toLowerCase()
@@ -1679,7 +1960,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
               <InfoItem style={{ marginTop: 8 }}>
                 <span className="label">Возраст / Пол</span>
                 <span className="value">
-                  {localPatient.age} лет, {localPatient.gender}
+                  {localPatient.age} {pluralize(localPatient.age, ['год', 'года', 'лет'])},{' '}
+                  {localPatient.gender}
                 </span>
               </InfoItem>
               <InfoItem style={{ marginTop: 8 }}>
@@ -1743,10 +2025,34 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       gap: 8
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 auto', minWidth: 0 }}>
-                      <AlertCircle size={16} color={getStatusColor(lab.statusText).text} style={{ flexShrink: 0 }} />
-                      <span style={{ fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{lab.type}</span>
-                      <span style={{ color: '#64748b', fontSize: 12, flexShrink: 0 }}>({lab.date})</span>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        flex: '1 1 auto',
+                        minWidth: 0
+                      }}
+                    >
+                      <AlertCircle
+                        size={16}
+                        color={getStatusColor(lab.statusText).text}
+                        style={{ flexShrink: 0 }}
+                      />
+                      <span
+                        style={{
+                          fontWeight: 600,
+                          fontSize: 13,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis'
+                        }}
+                      >
+                        {lab.type}
+                      </span>
+                      <span style={{ color: '#64748b', fontSize: 12, flexShrink: 0 }}>
+                        ({lab.date})
+                      </span>
                     </div>
                     <span
                       style={{
@@ -1780,7 +2086,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       firstName: localPatient.firstName,
                       middleName: localPatient.middleName,
                       dateOfBirth: localPatient.dateOfBirth,
-                      gender: localPatient.gender
+                      gender: localPatient.gender,
+                      maritalStatus: localPatient.maritalStatus
                     })
                   }
                 >
@@ -1796,7 +2103,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Дата рождения</span>
-                  <span className="value">{localPatient.dateOfBirth}</span>
+                  <span className="value">{formatDateHuman(localPatient.dateOfBirth)}</span>
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Пол</span>
@@ -1849,7 +2156,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                 <InfoItem>
                   <span className="label">Страна</span>
                   <span className="value">
-                    {localPatient.contacts?.country || 'Республика Беларусь'}
+                    {localPatient.contacts?.country || 'Приднестровская Молдавская Республика'}
                   </span>
                 </InfoItem>
                 <InfoItem>
@@ -1952,12 +2259,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         </td>
                       </tr>
                     )) || (
-                        <tr>
-                          <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                            Нет данных
-                          </td>
-                        </tr>
-                      )}
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Нет данных
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </Table>
               </TableWrapper>
@@ -2033,12 +2340,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         </td>
                       </tr>
                     )) || (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                            Аллергии не зафиксированы
-                          </td>
-                        </tr>
-                      )}
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Аллергии не зафиксированы
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </Table>
               </TableWrapper>
@@ -2086,12 +2393,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         </td>
                       </tr>
                     )) || (
-                        <tr>
-                          <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                            Нет текущих лекарств
-                          </td>
-                        </tr>
-                      )}
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                          Нет текущих лекарств
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </Table>
               </TableWrapper>
@@ -2284,12 +2591,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       </td>
                     </tr>
                   )) || (
-                      <tr>
-                        <td colSpan={10} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Нет данных
-                        </td>
-                      </tr>
-                    )}
+                    <tr>
+                      <td colSpan={10} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                        Нет данных
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -2350,12 +2657,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       </td>
                     </tr>
                   )) || (
-                      <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Нет данных
-                        </td>
-                      </tr>
-                    )}
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                        Нет данных
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -2368,17 +2675,17 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
         const previous = patientSigns[patientSigns.length - 2]
 
         const TREND_META: {
-          field: string;
-          label: string;
-          goodDir: 'up' | 'down' | 'stable' | 'any';
+          field: string
+          label: string
+          goodDir: 'up' | 'down' | 'stable' | 'any'
         }[] = [
-            { field: 'temperature', label: 'Темп.', goodDir: 'any' },
-            { field: 'pulse', label: 'Пульс', goodDir: 'any' },
-            { field: 'bloodPressureSystolic', label: 'АД с.', goodDir: 'any' },
-            { field: 'bloodPressureDiastolic', label: 'АД д.', goodDir: 'any' },
-            { field: 'respiratoryRate', label: 'ЧД', goodDir: 'any' },
-            { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
-          ]
+          { field: 'temperature', label: 'Темп.', goodDir: 'any' },
+          { field: 'pulse', label: 'Пульс', goodDir: 'any' },
+          { field: 'bloodPressureSystolic', label: 'АД с.', goodDir: 'any' },
+          { field: 'bloodPressureDiastolic', label: 'АД д.', goodDir: 'any' },
+          { field: 'respiratoryRate', label: 'ЧД', goodDir: 'any' },
+          { field: 'spo2', label: 'SpO₂ (%)', goodDir: 'up' }
+        ]
 
         const getTrend = (field: string): 'up' | 'down' | 'stable' => {
           if (!latest || !previous) return 'stable'
@@ -2423,8 +2730,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
             label: 'ЧД',
             value: localPatient.vitals?.resp || (latest ? `${latest.respiratoryRate} д/мин` : '—'),
             range: `${NORMAL_RANGES.respiratoryRate.min}–${NORMAL_RANGES.respiratoryRate.max}`
-          },
+          }
         ]
+
         return (
           <ContentArea>
             <SectionCard>
@@ -2474,8 +2782,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: "10px", display: 'flex', justifyContent: 'center' }}>
-                <OpenSheetBtn onClick={() => { handleBack() }}>
+              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'center' }}>
+                <OpenSheetBtn
+                  onClick={() => {
+                    handleBack()
+                  }}
+                >
                   <FileLineChart size={20} />
                   <span>Открыть температурный лист</span>
                 </OpenSheetBtn>
@@ -2486,7 +2798,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                 <SectionCard style={{ padding: 0 }}>
                   <CardHeader>
                     <CardTitle>Температура, Пульс, АД</CardTitle>
-                    <CardSubtitle>График изменения температуры и жизненно важных функций</CardSubtitle>
+                    <CardSubtitle>
+                      График изменения температуры и жизненно важных функций
+                    </CardSubtitle>
                   </CardHeader>
                   {patientSigns.length >= 2 && (
                     <div
@@ -2519,13 +2833,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                           (currentValue < range.min || currentValue > range.max)
 
                         const isGood =
-                          !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable')
+                          !isOutOfRange &&
+                          (goodDir === 'any' || dir === goodDir || dir === 'stable')
 
                         const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626'
                         const bgColor = isGood ? '#16a34a14' : '#dc262614'
                         const borderColor = isGood ? '#16a34a33' : '#dc262633'
 
-                        const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : MinusIcon
+                        const Icon =
+                          dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : MinusIcon
                         return (
                           <div
                             key={meta.field}
@@ -2640,7 +2956,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                             if (bpsLow) bpAlerts.push('↓ сист.')
                             if (bpdHigh) bpAlerts.push('↑ диаст.')
                             if (bpdLow) bpAlerts.push('↓ диаст.')
-                            const bpAlertText = bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
+                            const bpAlertText =
+                              bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
                             const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
 
                             const pulseRangeValue = row.pulseRange ?? 0
@@ -2875,7 +3192,9 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                 <SectionCard style={{ padding: 0 }}>
                   <CardHeader>
                     <CardTitle>SpO2 и Частота дыхания</CardTitle>
-                    <CardSubtitle>График изменения насыщения кислородом и частоты дыхания</CardSubtitle>
+                    <CardSubtitle>
+                      График изменения насыщения кислородом и частоты дыхания
+                    </CardSubtitle>
                   </CardHeader>
                   {patientSigns.length >= 2 && (
                     <div
@@ -2904,13 +3223,15 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                           (currentValue < range.min || currentValue > range.max)
 
                         const isGood =
-                          !isOutOfRange && (goodDir === 'any' || dir === goodDir || dir === 'stable')
+                          !isOutOfRange &&
+                          (goodDir === 'any' || dir === goodDir || dir === 'stable')
 
                         const color = dir === 'stable' ? '#94a3b8' : isGood ? '#16a34a' : '#dc2626'
                         const bgColor = isGood ? '#16a34a14' : '#dc262614'
                         const borderColor = isGood ? '#16a34a33' : '#dc262633'
 
-                        const Icon = dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : MinusIcon
+                        const Icon =
+                          dir === 'up' ? TrendingUp : dir === 'down' ? TrendingDown : MinusIcon
                         return (
                           <div
                             key={meta.field}
@@ -3018,7 +3339,10 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                         <YAxis
                           yAxisId="resp"
                           orientation="right"
-                          domain={[VITAL_RULES.respiratoryRate.min, VITAL_RULES.respiratoryRate.max]}
+                          domain={[
+                            VITAL_RULES.respiratoryRate.min,
+                            VITAL_RULES.respiratoryRate.max
+                          ]}
                           width={52}
                           tickCount={8}
                           label={{
@@ -3159,16 +3483,23 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
       }
 
       case 'История': {
-        const VISIT_TYPE_CONFIG: Record<string, { color: string; bg: string; icon: React.ReactNode }> = {
-          'Осмотр': { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
-          'Консультация': { color: '#7c3aed', bg: '#ede9fe', icon: <User size={18} /> },
-          'Процедура': { color: '#059669', bg: '#d1fae5', icon: <Syringe size={18} /> },
-          'Операция': { color: '#dc2626', bg: '#fee2e2', icon: <Clipboard size={18} /> },
-          'Анализы': { color: '#d97706', bg: '#fef3c7', icon: <TestTube size={18} /> },
-          'Выписка': { color: '#0891b2', bg: '#cffafe', icon: <FileText size={18} /> },
+        const VISIT_TYPE_CONFIG: Record<
+          string,
+          { color: string; bg: string; icon: React.ReactNode }
+        > = {
+          Осмотр: { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
+          Консультация: { color: '#7c3aed', bg: '#ede9fe', icon: <User size={18} /> },
+          Процедура: { color: '#059669', bg: '#d1fae5', icon: <Syringe size={18} /> },
+          Операция: { color: '#dc2626', bg: '#fee2e2', icon: <Clipboard size={18} /> },
+          Анализы: { color: '#d97706', bg: '#fef3c7', icon: <TestTube size={18} /> },
+          Выписка: { color: '#0891b2', bg: '#cffafe', icon: <FileText size={18} /> }
         }
         const getVisitConfig = (type: string) =>
-          VISIT_TYPE_CONFIG[type] || { color: '#64748b', bg: '#f1f5f9', icon: <Calendar size={18} /> }
+          VISIT_TYPE_CONFIG[type] || {
+            color: '#64748b',
+            bg: '#f1f5f9',
+            icon: <Calendar size={18} />
+          }
 
         const history = localPatient.history || []
         return (
@@ -3188,11 +3519,17 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
               </div>
             ) : (
               <div style={{ position: 'relative', paddingLeft: 4 }}>
-                <div style={{
-                  position: 'absolute', left: 30, top: 0, bottom: 0, width: 2,
-                  background: 'linear-gradient(to bottom, #dbeafe, #e0e7ff, #f1f5f9)',
-                  borderRadius: 2
-                }} />
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: 30,
+                    top: 0,
+                    bottom: 0,
+                    width: 2,
+                    background: 'linear-gradient(to bottom, #dbeafe, #e0e7ff, #f1f5f9)',
+                    borderRadius: 2
+                  }}
+                />
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                   {history.map((h: any, i: number) => {
@@ -3200,20 +3537,42 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                     const isExpanded = expandedHistory === i
                     return (
                       <div key={i} style={{ display: 'flex', gap: 0, position: 'relative' }}>
-                        <div style={{
-                          flexShrink: 0, width: 62, display: 'flex', flexDirection: 'column',
-                          alignItems: 'center', paddingTop: 20, zIndex: 1
-                        }}>
-                          <div style={{
-                            width: 40, height: 40, borderRadius: '50%',
-                            background: cfg.bg, border: `2px solid ${cfg.color}`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: cfg.color, boxShadow: `0 2px 8px ${cfg.color}30`
-                          }}>
+                        <div
+                          style={{
+                            flexShrink: 0,
+                            width: 62,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            paddingTop: 20,
+                            zIndex: 1
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 40,
+                              height: 40,
+                              borderRadius: '50%',
+                              background: cfg.bg,
+                              border: `2px solid ${cfg.color}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: cfg.color,
+                              boxShadow: `0 2px 8px ${cfg.color}30`
+                            }}
+                          >
                             {cfg.icon}
                           </div>
                           {i < history.length - 1 && (
-                            <div style={{ width: 2, flex: 1, minHeight: 20, background: 'transparent' }} />
+                            <div
+                              style={{
+                                width: 2,
+                                flex: 1,
+                                minHeight: 20,
+                                background: 'transparent'
+                              }}
+                            />
                           )}
                         </div>
 
@@ -3223,28 +3582,65 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                             style={{
                               background: isExpanded ? '#f8faff' : '#ffffff',
                               border: `1px solid ${isExpanded ? cfg.color + '50' : '#e5e7eb'}`,
-                              borderRadius: 14, padding: '14px 18px',
-                              cursor: 'pointer', transition: 'all 0.2s ease',
-                              boxShadow: isExpanded ? `0 4px 16px ${cfg.color}15` : '0 1px 4px rgba(0,0,0,0.04)'
+                              borderRadius: 14,
+                              padding: '14px 18px',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s ease',
+                              boxShadow: isExpanded
+                                ? `0 4px 16px ${cfg.color}15`
+                                : '0 1px 4px rgba(0,0,0,0.04)'
                             }}
                           >
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'flex-start',
+                                gap: 12,
+                                flexWrap: 'wrap'
+                              }}
+                            >
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                  <span style={{
-                                    display: 'inline-flex', alignItems: 'center', gap: 4,
-                                    padding: '2px 10px', borderRadius: 20,
-                                    background: cfg.bg, color: cfg.color,
-                                    fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em'
-                                  }}>
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                    flexWrap: 'wrap'
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: '2px 10px',
+                                      borderRadius: 20,
+                                      background: cfg.bg,
+                                      color: cfg.color,
+                                      fontSize: 11,
+                                      fontWeight: 700,
+                                      textTransform: 'uppercase',
+                                      letterSpacing: '0.04em'
+                                    }}
+                                  >
                                     {h.type || 'Запись'}
                                   </span>
                                   <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                                    <Calendar size={12} style={{ display: 'inline', marginRight: 3 }} />
+                                    <Calendar
+                                      size={12}
+                                      style={{ display: 'inline', marginRight: 3 }}
+                                    />
                                     {h.dateTime}
                                   </span>
                                 </div>
-                                <div style={{ fontWeight: 600, color: '#1e293b', marginTop: 6, fontSize: 14 }}>
+                                <div
+                                  style={{
+                                    fontWeight: 600,
+                                    color: '#1e293b',
+                                    marginTop: 6,
+                                    fontSize: 14
+                                  }}
+                                >
                                   {h.conclusion || 'Заключение не указано'}
                                 </div>
                                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
@@ -3252,49 +3648,107 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                                   {h.doctor || 'Врач не указан'}
                                 </div>
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                              <div
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 8,
+                                  flexShrink: 0
+                                }}
+                              >
                                 <ActionButton
                                   $variant="ghost"
-                                  onClick={(e: React.MouseEvent) => { e.stopPropagation(); openModal('VIEW_HISTORY', h) }}
+                                  onClick={(e: React.MouseEvent) => {
+                                    e.stopPropagation()
+                                    openModal('VIEW_HISTORY', h)
+                                  }}
                                   title="Просмотр"
                                 >
                                   <Eye size={14} />
                                 </ActionButton>
-                                <div style={{
-                                  color: isExpanded ? cfg.color : '#94a3b8',
-                                  transition: 'transform 0.2s ease',
-                                  transform: isExpanded ? 'rotate(180deg)' : 'none'
-                                }}>
+                                <div
+                                  style={{
+                                    color: isExpanded ? cfg.color : '#94a3b8',
+                                    transition: 'transform 0.2s ease',
+                                    transform: isExpanded ? 'rotate(180deg)' : 'none'
+                                  }}
+                                >
                                   <ChevronDown size={18} />
                                 </div>
                               </div>
                             </div>
 
                             {isExpanded && (
-                              <div style={{
-                                marginTop: 16, paddingTop: 16,
-                                borderTop: `1px solid ${cfg.color}25`,
-                                display: 'grid', gap: 12
-                              }}>
+                              <div
+                                style={{
+                                  marginTop: 16,
+                                  paddingTop: 16,
+                                  borderTop: `1px solid ${cfg.color}25`,
+                                  display: 'grid',
+                                  gap: 12
+                                }}
+                              >
                                 {[
-                                  { label: 'Жалобы', value: h.complaints, icon: <AlertCircle size={14} color="#f97316" /> },
-                                  { label: 'Объективные данные', value: h.objective, icon: <Stethoscope size={14} color="#2563eb" /> },
-                                  { label: 'Заключение', value: h.conclusion, icon: <FileText size={14} color="#059669" /> },
-                                  { label: 'Назначения / Рекомендации', value: h.recommendations, icon: <Pill size={14} color="#7c3aed" /> },
-                                ].map(item => item.value ? (
-                                  <div key={item.label} style={{
-                                    display: 'flex', gap: 10, alignItems: 'flex-start',
-                                    background: '#f8fafc', borderRadius: 10, padding: '10px 14px'
-                                  }}>
-                                    <div style={{ marginTop: 1, flexShrink: 0 }}>{item.icon}</div>
-                                    <div>
-                                      <div style={{ fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 3 }}>
-                                        {item.label}
+                                  {
+                                    label: 'Жалобы',
+                                    value: h.complaints,
+                                    icon: <AlertCircle size={14} color="#f97316" />
+                                  },
+                                  {
+                                    label: 'Объективные данные',
+                                    value: h.objective,
+                                    icon: <Stethoscope size={14} color="#2563eb" />
+                                  },
+                                  {
+                                    label: 'Заключение',
+                                    value: h.conclusion,
+                                    icon: <FileText size={14} color="#059669" />
+                                  },
+                                  {
+                                    label: 'Назначения / Рекомендации',
+                                    value: h.recommendations,
+                                    icon: <Pill size={14} color="#7c3aed" />
+                                  }
+                                ].map((item) =>
+                                  item.value ? (
+                                    <div
+                                      key={item.label}
+                                      style={{
+                                        display: 'flex',
+                                        gap: 10,
+                                        alignItems: 'flex-start',
+                                        background: '#f8fafc',
+                                        borderRadius: 10,
+                                        padding: '10px 14px'
+                                      }}
+                                    >
+                                      <div style={{ marginTop: 1, flexShrink: 0 }}>{item.icon}</div>
+                                      <div>
+                                        <div
+                                          style={{
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            color: '#64748b',
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '0.04em',
+                                            marginBottom: 3
+                                          }}
+                                        >
+                                          {item.label}
+                                        </div>
+                                        <div
+                                          style={{
+                                            fontSize: 14,
+                                            color: '#1e293b',
+                                            lineHeight: 1.5
+                                          }}
+                                        >
+                                          {item.value}
+                                        </div>
                                       </div>
-                                      <div style={{ fontSize: 14, color: '#1e293b', lineHeight: 1.5 }}>{item.value}</div>
                                     </div>
-                                  </div>
-                                ) : null)}
+                                  ) : null
+                                )}
                               </div>
                             )}
                           </div>
@@ -3340,12 +3794,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       <td>{v.series}</td>
                     </tr>
                   )) || (
-                      <tr>
-                        <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Нет данных
-                        </td>
-                      </tr>
-                    )}
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                        Нет данных
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -3393,12 +3847,12 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
                       </td>
                     </tr>
                   )) || (
-                      <tr>
-                        <td colSpan={3} style={{ textAlign: 'center', color: '#94a3b8' }}>
-                          Нет документов
-                        </td>
-                      </tr>
-                    )}
+                    <tr>
+                      <td colSpan={3} style={{ textAlign: 'center', color: '#94a3b8' }}>
+                        Нет документов
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </Table>
             </TableWrapper>
@@ -3430,7 +3884,8 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
             </PatientName>
             <Demographics>
               <span>
-                Дата рождения: {localPatient.dateOfBirth} ({localPatient.age} лет)
+                Дата рождения: {formatDateHuman(localPatient.dateOfBirth)} ({localPatient.age}{' '}
+                {pluralize(localPatient.age, ['год', 'года', 'лет'])})
               </span>
               <span>•</span>
               <span>Пол: {localPatient.gender}</span>
@@ -3444,10 +3899,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
               <InfoItem>
                 <span className="label">История болезни</span>
                 <span className="value">{localPatient.historyNum}</span>
-              </InfoItem>
-              <InfoItem>
-                <span className="label">ID Пациента</span>
-                <span className="value">{localPatient.id}</span>
               </InfoItem>
               <InfoItem>
                 <span className="label">Статус</span>
@@ -3473,47 +3924,88 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
               <InfoItem>
                 <span className="label">Обновлено</span>
                 <span className="value" style={{ color: '#64748b' }}>
-                  {localPatient.lastUpdated || new Date().toLocaleDateString('ru-RU')}
+                  {formatDateHumanWithTime(localPatient.lastUpdated) ||
+                    new Date().toLocaleDateString('ru-RU')}
                 </span>
               </InfoItem>
             </HeaderInfoGrid>
           </HeaderMain>
-          {onNavigateToWardRound && localPatient && (
-            <div style={{ marginLeft: 'auto', flexShrink: 0 }}>
+          {localPatient && (
+            <div
+              style={{
+                marginLeft: 'auto',
+                flexShrink: 0,
+                display: 'flex',
+                gap: 10,
+                alignItems: 'center'
+              }}
+            >
               <button
-                id="btn-ward-round"
-                onClick={() => onNavigateToWardRound(localPatient.id)}
+                onClick={() => openModal('DELETE_PATIENT')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: 8,
                   padding: '10px 20px',
                   borderRadius: 10,
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
-                  color: 'white',
+                  border: '1px solid #ef4444',
+                  background: '#ffffff',
+                  color: '#ef4444',
                   fontSize: 14,
                   fontWeight: 700,
                   cursor: 'pointer',
                   fontFamily: 'Inter, system-ui, sans-serif',
-                  boxShadow: '0 4px 14px rgba(29,78,216,0.35)',
                   transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap',
+                  whiteSpace: 'nowrap'
                 }}
                 onMouseEnter={(e) => {
                   const b = e.currentTarget as HTMLButtonElement
-                  b.style.transform = 'translateY(-1px)'
-                  b.style.boxShadow = '0 6px 20px rgba(29,78,216,0.45)'
+                  b.style.background = '#fef2f2'
                 }}
                 onMouseLeave={(e) => {
                   const b = e.currentTarget as HTMLButtonElement
-                  b.style.transform = 'translateY(0)'
-                  b.style.boxShadow = '0 4px 14px rgba(29,78,216,0.35)'
+                  b.style.background = '#ffffff'
                 }}
               >
-                <Stethoscope size={16} />
-                Провести осмотр
+                <Trash2 size={16} />
+                Удалить пациента
               </button>
+              {onNavigateToWardRound && (
+                <button
+                  id="btn-ward-round"
+                  onClick={() => onNavigateToWardRound(localPatient.id)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
+                    color: 'white',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    boxShadow: '0 4px 14px rgba(29,78,216,0.35)',
+                    transition: 'all 0.2s ease',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement
+                    b.style.transform = 'translateY(-1px)'
+                    b.style.boxShadow = '0 6px 20px rgba(29,78,216,0.45)'
+                  }}
+                  onMouseLeave={(e) => {
+                    const b = e.currentTarget as HTMLButtonElement
+                    b.style.transform = 'translateY(0)'
+                    b.style.boxShadow = '0 4px 14px rgba(29,78,216,0.35)'
+                  }}
+                >
+                  <Stethoscope size={16} />
+                  Провести осмотр
+                </button>
+              )}
             </div>
           )}
         </PatientHeader>
@@ -3534,7 +4026,6 @@ const PatientCard: React.FC<PatientCardProps> = ({ patientId, onSelectPatientFro
   )
 }
 
-
 const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   patientId: externalPatientId,
   initialSearchQuery = '',
@@ -3542,8 +4033,19 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   onNavigateToTemperatureSheet,
   onNavigateToWardRound
 }) => {
+  const { addPatient } = usePatientData()
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(externalPatientId)
   const [previewPatient, setPreviewPatient] = useState<any | null>(null)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [addFormData, setAddFormData] = useState({
+    lastName: '',
+    firstName: '',
+    middleName: '',
+    dateOfBirth: '',
+    gender: 'Мужской',
+    medcardNum: '',
+    historyNum: ''
+  })
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -3554,20 +4056,17 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
     setSelectedPatientId(id)
     externalOnSelect?.(id)
     setTimeout(() => {
-      const element = cardRef.current;
+      const element = cardRef.current
 
-      if (!element) return;
+      if (!element) return
 
-      const y =
-        element.getBoundingClientRect().top +
-        window.pageYOffset -
-        20;
+      const y = element.getBoundingClientRect().top + window.pageYOffset - 20
 
       window.scrollTo({
         top: y,
-        behavior: 'smooth',
-      });
-    }, 150);
+        behavior: 'smooth'
+      })
+    }, 150)
   }
 
   const handleBackToSearch = () => {
@@ -3576,6 +4075,43 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
       setSelectedPatientId(undefined)
       externalOnSelect?.('')
     }, 150)
+  }
+  function pluralize(count: number, forms: [string, string, string]) {
+    const rule = new Intl.PluralRules('ru-RU').select(count)
+
+    switch (rule) {
+      case 'one':
+        return forms[0]
+      case 'few':
+        return forms[1]
+      default:
+        return forms[2]
+    }
+  }
+
+  const handleAddPatientSubmit = async () => {
+    if (!addFormData.lastName.trim() || !addFormData.firstName.trim() || !addFormData.dateOfBirth) {
+      toast.warning('Заполните все обязательные поля (Фамилия, Имя, Дата рождения)')
+      return
+    }
+
+    try {
+      const newPatient = await addPatient(addFormData)
+      toast.success('Пациент успешно добавлен')
+      setIsAddModalOpen(false)
+      setAddFormData({
+        lastName: '',
+        firstName: '',
+        middleName: '',
+        dateOfBirth: '',
+        gender: 'Мужской',
+        medcardNum: '',
+        historyNum: ''
+      })
+      handleSelectPatient(newPatient.id)
+    } catch (err) {
+      showApiError(err, 'Ошибка при добавлении пациента')
+    }
   }
 
   return (
@@ -3587,6 +4123,7 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
       <PatientSearchPanel
         onSelectPatient={handleSelectPatient}
         onDoubleClickPatient={(p) => setPreviewPatient(p)}
+        onAddPatientClick={() => setIsAddModalOpen(true)}
         cardRef={cardRef}
         initialQuery={initialSearchQuery}
       />
@@ -3672,15 +4209,22 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
                         {p.lastName} {p.firstName} {p.middleName}
                       </div>
                       <div style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
-                        {p.dateOfBirth} · {p.age} лет · {p.gender}
+                        {formatDateHuman(p.dateOfBirth)} · {p.age}{' '}
+                        {pluralize(p.age, ['год', 'года', 'лет'])} · {p.gender}
                       </div>
                     </div>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                      gap: 10
+                    }}
+                  >
                     {(
                       [
-                        ['ID', p.id],
                         ['Медкарта', p.medcardNum],
+                        ['История болезни', p.historyNum || '—'],
                         ['Врач', p.doctor],
                         ['Палата', getPatientRoom(p)],
                         ['Статус', p.statusText],
@@ -3726,6 +4270,107 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
             document.body
           )
         })()}
+
+      {isAddModalOpen &&
+        createPortal(
+          <ModalOverlay onClick={() => setIsAddModalOpen(false)}>
+            <ModalContent onClick={(e) => e.stopPropagation()} style={{ maxWidth: 520 }}>
+              <ModalHeader>
+                <h2>Добавить пациента</h2>
+                <CloseButton onClick={() => setIsAddModalOpen(false)}>
+                  <X size={20} />
+                </CloseButton>
+              </ModalHeader>
+              <ModalBody>
+                <div style={{ display: 'grid', gap: 12 }}>
+                  <FormGroup>
+                    <Label>Фамилия *</Label>
+                    <Input
+                      value={addFormData.lastName}
+                      onChange={(e) => setAddFormData((p) => ({ ...p, lastName: e.target.value }))}
+                      placeholder="Фамилия..."
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Имя *</Label>
+                    <Input
+                      value={addFormData.firstName}
+                      onChange={(e) => setAddFormData((p) => ({ ...p, firstName: e.target.value }))}
+                      placeholder="Имя..."
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Отчество</Label>
+                    <Input
+                      value={addFormData.middleName}
+                      onChange={(e) =>
+                        setAddFormData((p) => ({ ...p, middleName: e.target.value }))
+                      }
+                      placeholder="Отчество..."
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Дата рождения *</Label>
+                    <Input
+                      type="date"
+                      value={addFormData.dateOfBirth}
+                      onChange={(e) =>
+                        setAddFormData((p) => ({ ...p, dateOfBirth: e.target.value }))
+                      }
+                      required
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Пол</Label>
+                    <Select
+                      options={GENDER_OPTIONS}
+                      styles={selectStyles}
+                      components={selectComponents}
+                      value={
+                        GENDER_OPTIONS.find((o) => o.value === addFormData.gender) ||
+                        GENDER_OPTIONS[0]
+                      }
+                      onChange={(opt: any) =>
+                        setAddFormData((p) => ({ ...p, gender: opt?.value || 'Мужской' }))
+                      }
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>Номер медкарты (необязательно)</Label>
+                    <Input
+                      value={addFormData.medcardNum}
+                      onChange={(e) =>
+                        setAddFormData((p) => ({ ...p, medcardNum: e.target.value }))
+                      }
+                      placeholder="Оставьте пустым для автогенерации..."
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>История болезни (необязательно)</Label>
+                    <Input
+                      value={addFormData.historyNum}
+                      onChange={(e) =>
+                        setAddFormData((p) => ({ ...p, historyNum: e.target.value }))
+                      }
+                      placeholder="История болезни..."
+                    />
+                  </FormGroup>
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <ActionButton $variant="ghost" onClick={() => setIsAddModalOpen(false)}>
+                  Отмена
+                </ActionButton>
+                <ActionButton $variant="primary" onClick={handleAddPatientSubmit}>
+                  Добавить
+                </ActionButton>
+              </ModalFooter>
+            </ModalContent>
+          </ModalOverlay>,
+          document.body
+        )}
     </div>
   )
 }

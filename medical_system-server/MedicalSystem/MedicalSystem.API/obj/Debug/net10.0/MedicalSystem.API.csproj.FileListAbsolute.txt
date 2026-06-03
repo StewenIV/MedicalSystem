@@ -12,6 +12,9 @@ D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\MedicalSystem.Domain.dll
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Scalar.AspNetCore.dll
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Bogus.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\FluentValidation.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\FluentValidation.AspNetCore.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\FluentValidation.DependencyInjectionExtensions.dll
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\EntityFramework.SqlServer.dll
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\EntityFramework.dll
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Humanizer.dll
@@ -148,6 +151,3 @@ D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\obj\Debug\net10.0\MedicalS.898A9B7B.Up2Date
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\obj\Debug\net10.0\MedicalSystem.API.genruntimeconfig.cache
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\obj\Debug\net10.0\ref\MedicalSystem.API.dll
-D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\FluentValidation.dll
-D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\FluentValidation.AspNetCore.dll
-D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\FluentValidation.DependencyInjectionExtensions.dll

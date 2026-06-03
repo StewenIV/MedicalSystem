@@ -56,7 +56,7 @@ namespace MedicalSystem.Data.Storages
             if (bed != null)
             {
                 bed.PatientId = patientId;
-                bed.Status = Domain.Enums.BedStatus.Attention; // Or some default status
+                bed.Status = Domain.Enums.BedStatus.Attention;
                 await UpdateAsync(bed, token);
             }
         }

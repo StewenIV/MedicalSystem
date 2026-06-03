@@ -69,8 +69,6 @@ namespace MedicalSystem.Data.Storages
             var encounter = await GetAsync(encounterId, token);
             if (encounter != null)
             {
-                // Assuming completing an encounter means setting a conclusion or similar
-                // For now, just updating the entity to show the concept
                 await UpdateAsync(encounter, token);
             }
         }
