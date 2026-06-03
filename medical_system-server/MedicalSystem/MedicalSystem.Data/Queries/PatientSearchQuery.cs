@@ -25,12 +25,11 @@ namespace MedicalSystem.Data.Queries
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                var lowerQuery = query.ToLower();
                 dbQuery = dbQuery.Where(p =>
-                    (p.FirstName != null && p.FirstName.ToLower().Contains(lowerQuery)) ||
-                    (p.LastName != null && p.LastName.ToLower().Contains(lowerQuery)) ||
-                    (p.MiddleName != null && p.MiddleName.ToLower().Contains(lowerQuery)) ||
-                    (p.HistoryNum != null && p.HistoryNum.ToLower().Contains(lowerQuery)) ||
+                    (p.FirstName != null && EF.Functions.ILike(p.FirstName, $"%{query}%")) ||
+                    (p.LastName != null && EF.Functions.ILike(p.LastName, $"%{query}%")) ||
+                    (p.MiddleName != null && EF.Functions.ILike(p.MiddleName, $"%{query}%")) ||
+                    (p.HistoryNum != null && EF.Functions.ILike(p.HistoryNum, $"%{query}%")) ||
                     (p.Contacts.PhoneMobile != null && p.Contacts.PhoneMobile.Contains(query)) ||
                     (p.Contacts.PhoneHome != null && p.Contacts.PhoneHome.Contains(query))
                 );
@@ -48,6 +47,8 @@ namespace MedicalSystem.Data.Queries
                     FirstName = p.FirstName,
                     LastName = p.LastName,
                     MiddleName = p.MiddleName,
+                    PhoneNumber = p.Contacts.PhoneMobile,
+                    NumberCard = p.HistoryNum,
                     Gender = p.Gender,
                     Age = (int)((DateTime.UtcNow - p.DateOfBirth).TotalDays / 365.25)
                 })
@@ -67,8 +68,7 @@ namespace MedicalSystem.Data.Queries
 
             if (!string.IsNullOrWhiteSpace(query))
             {
-                var lowerQuery = query.ToLower();
-                dbQuery = dbQuery.Where(d => d.Name != null && d.Name.ToLower().Contains(lowerQuery));
+                dbQuery = dbQuery.Where(d => d.Name != null && EF.Functions.ILike(d.Name, $"%{query}%"));
             }
 
             if (departmentId.HasValue)
@@ -78,6 +78,7 @@ namespace MedicalSystem.Data.Queries
 
             return await dbQuery
                 .OrderBy(d => d.Name)
+                .Take(20)
                 .Select(d => new DoctorSelectItemDto
                 {
                     Id = d.Id,

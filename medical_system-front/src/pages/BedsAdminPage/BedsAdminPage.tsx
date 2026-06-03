@@ -29,6 +29,7 @@ import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-
 
 import colors from 'consts/colors'
 import { toast } from 'react-toastify'
+import { showApiError } from 'utils/showApiError'
 import {
   fetchAdminRooms,
   fetchAdminRoomById,
@@ -227,7 +228,6 @@ interface SelectOption {
 
 const PAGE_SIZE = 5
 
-// REMOVED static doctorOptions
 
 const PRIORITY_LABELS: Record<number, string> = {
   1: 'Низкий',
@@ -365,6 +365,10 @@ const selectStyles: StylesConfig<SelectOption, false> = {
     padding: '6px',
     pointerEvents: state.selectProps.isDisabled ? 'none' : 'auto'
   }),
+  menuPortal: (base) => ({
+    ...base,
+    zIndex: 9999
+  }),
   option: (base, state) => ({
     ...base,
     borderRadius: '7px',
@@ -416,10 +420,10 @@ const formatPatientGender = (gender?: string | number) => {
 }
 
 const getPatientPrimaryPhone = (patient: SearchPatientDto) =>
-  patient.phoneMobile || patient.phone || patient.phoneHome
+  patient.phoneNumber || patient.phone || patient.phoneHome
 
 const getPatientRecordNumber = (patient: SearchPatientDto) =>
-  patient.historyNumber || patient.medicalRecordNumber
+  patient.numberCard || patient.medicalRecordNumber
 
 export function WardAdmin() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -448,7 +452,7 @@ export function WardAdmin() {
 
       return mapped
     } catch (e: any) {
-      toast.error(e.message || 'Ошибка при загрузке палат')
+      showApiError(e, 'Ошибка при загрузке палат')
       return []
     }
   }
@@ -482,7 +486,7 @@ export function WardAdmin() {
         }))
       )
     } catch (e: any) {
-      toast.error(e.message || 'Ошибка загрузки деталей палаты')
+      showApiError(e, 'Ошибка загрузки деталей палаты')
     }
   }
 
@@ -537,6 +541,8 @@ export function WardAdmin() {
   const [assignDate, setAssignDate] = useState<string>('')
   const [assignDoctor, setAssignDoctor] = useState<string>('')
   const [doctorOptions, setDoctorOptions] = useState<SelectOption[]>([])
+  const [doctorSearchQuery, setDoctorSearchQuery] = useState<string>('')
+  const [doctorSearchLoading, setDoctorSearchLoading] = useState<boolean>(false)
   const [assignNotes, setAssignNotes] = useState<string>('')
   const [assignNotify, setAssignNotify] = useState<boolean>(true)
   const [patientSearchQuery, setPatientSearchQuery] = useState<string>('')
@@ -671,27 +677,76 @@ export function WardAdmin() {
     if (!assignBedData) return
 
     const query = patientSearchQuery.trim()
-    let isCancelled = false
+    
+    if (query.length > 0 && query.length < 2) {
+      setPatientSearchResults([])
+      return
+    }
+
+    if (query.length === 0) {
+      setPatientSearchResults([])
+      return
+    }
+
+    const abortController = new AbortController()
+
     const timeoutId = window.setTimeout(() => {
       setPatientSearchLoading(true)
-      searchPatients(query)
+      searchPatients(query, abortController.signal)
         .then((results) => {
-          if (!isCancelled) setPatientSearchResults(results)
+          if (!abortController.signal.aborted) setPatientSearchResults(results)
         })
         .catch((err) => {
+          if (err.name === 'AbortError') return
           console.error('Error searching patients:', err)
-          if (!isCancelled) setPatientSearchResults([])
+          if (!abortController.signal.aborted) setPatientSearchResults([])
         })
         .finally(() => {
-          if (!isCancelled) setPatientSearchLoading(false)
+          if (!abortController.signal.aborted) setPatientSearchLoading(false)
         })
-    }, query ? 250 : 0)
+    }, 400)
 
     return () => {
-      isCancelled = true
+      abortController.abort()
       window.clearTimeout(timeoutId)
     }
   }, [patientSearchQuery, assignBedData])
+
+  useEffect(() => {
+    if (!assignBedData) return
+
+    const query = doctorSearchQuery.trim()
+
+    const abortController = new AbortController()
+
+    const timeoutId = window.setTimeout(() => {
+      setDoctorSearchLoading(true)
+      searchDoctors(query, abortController.signal)
+        .then((docs) => {
+          if (!abortController.signal.aborted) {
+            setDoctorOptions(
+              docs.map((d) => ({
+                value: d.id,
+                label: [d.fullName, d.position, d.department].filter(Boolean).join(' - ')
+              }))
+            )
+          }
+        })
+        .catch((err) => {
+          if (err.name === 'AbortError') return
+          console.error('Error searching doctors:', err)
+          if (!abortController.signal.aborted) setDoctorOptions([])
+        })
+        .finally(() => {
+          if (!abortController.signal.aborted) setDoctorSearchLoading(false)
+        })
+    }, 400)
+
+    return () => {
+      abortController.abort()
+      window.clearTimeout(timeoutId)
+    }
+  }, [doctorSearchQuery, assignBedData])
 
   const addBed = () => {
     const nextId = `new-${Date.now()}`
@@ -733,7 +788,7 @@ export function WardAdmin() {
       await loadRoomsFromServer()
       await loadRoomData(roomId)
     } catch (e: any) {
-      toast.error(e.message || 'Ошибка сохранения палаты')
+      showApiError(e, 'Ошибка сохранения палаты')
     }
   }
 
@@ -763,7 +818,7 @@ export function WardAdmin() {
         }
       }
     } catch (e: any) {
-      toast.error(e.message || 'Ошибка при удалении палаты')
+      showApiError(e, 'Ошибка при удалении палаты')
     }
   }
 
@@ -841,6 +896,11 @@ export function WardAdmin() {
   }
 
   const handleOpenAssignModal = (bed: BedEntry, room: Room) => {
+      if (!bed.id || bed.id.startsWith('new-')) {
+      toast.warning('Сначала сохраните палату, чтобы назначить пациента на новую койку.')
+      return
+    }
+
     setAssignBedData({
       floor: room.floor,
       roomId: room.id,
@@ -854,6 +914,7 @@ export function WardAdmin() {
     setAssignDate(now.toISOString().slice(0, 16))
     setAssignDoctor('')
     setDoctorOptions([])
+    setDoctorSearchQuery('')
     setAssignNotes('')
     setAssignNotify(true)
     setPatientSearchQuery('')
@@ -866,6 +927,7 @@ export function WardAdmin() {
   const handleCloseAssignModal = () => {
     setAssignBedData(null)
     setPatientSearchQuery('')
+    setDoctorSearchQuery('')
     setPatientSearchResults([])
     setSelectedPatientForAssign(null)
   }
@@ -879,12 +941,11 @@ export function WardAdmin() {
       await assignPatient({
         bedId: assignBedData.bedId,
         patientId: selectedPatientForAssign.id,
-        diagnosis: assignNotes,
+        notes: assignNotes,
         doctorId: assignDoctor || undefined,
-        admissionDate: assignDate ? new Date(assignDate).toISOString() : undefined
+        admissionDateTime: assignDate ? new Date(assignDate).toISOString() : undefined
       })
 
-      // Update room priority if it was changed
       await updateRoomPriority(assignBedData.roomId, assignBedData.priority)
 
       toast.success('Пациент успешно назначен на койку!')
@@ -892,7 +953,7 @@ export function WardAdmin() {
       await loadRoomsFromServer()
       if (selectedId) await loadRoomData(selectedId)
     } catch (e: any) {
-      toast.error(e.message || 'Ошибка назначения пациента')
+      showApiError(e, 'Ошибка назначения пациента')
     }
   }
 
@@ -925,7 +986,7 @@ export function WardAdmin() {
       if (roomIdToReload) await loadRoomData(roomIdToReload)
     } catch (e: any) {
       console.error('Transfer submit - error:', e)
-      toast.error(e.message || 'Ошибка при перемещении пациента')
+      showApiError(e, 'Ошибка при перемещении пациента')
     }
   }
 
@@ -1292,9 +1353,8 @@ export function WardAdmin() {
                         <BedId>Пол: {formatPatientGender(bed.patientGender)}</BedId>
                       </>
                     ) : (
-                      <BedId>
-                        {bed.location?.floor} этаж, палата {bed.location?.room},{' '}
-                        {formatBedTextLabel(bed.bedNumber)}
+                      <BedId onClick = {() => handleOpenAssignModal(bed, selectedRoom!)}  style={{ cursor: "pointer", color: "#2563EB" }}>
+                         {bed.status === "Свободно" && "Назначить пациента"}
                       </BedId>
                     )}
                   </BedInfo>
@@ -1470,6 +1530,8 @@ export function WardAdmin() {
                         <div style={{ minWidth: 0 }}>
                           <Select
                             inputId="transfer-floor-select"
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
                             options={transferFloorOptions}
                             styles={selectStyles}
                             components={selectComponents}
@@ -1493,6 +1555,8 @@ export function WardAdmin() {
                         <div style={{ minWidth: 0 }}>
                           <Select
                             inputId="transfer-room-select"
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
                             options={transferRoomOptions}
                             styles={selectStyles}
                             components={selectComponents}
@@ -1584,6 +1648,8 @@ export function WardAdmin() {
                         <div style={{ minWidth: 0 }}>
                           <Select
                             inputId="transfer-reason-select"
+                            menuPortalTarget={document.body}
+                            menuPosition="fixed"
                             options={transferReasonOptions}
                             styles={selectStyles}
                             components={selectComponents}
@@ -1681,9 +1747,10 @@ export function WardAdmin() {
                           setPatientSearchQuery(val)
                         }
                       }}
+                      filterOption={() => true}
                       options={patientSearchResults.map(p => ({
                         value: p.id,
-                        label: `${p.firstName} ${p.lastName} (Возраст: ${p.age} | Пол: ${formatPatientGender(p.gender)})`,
+                        label: `${p.numberCard ?? 'Без номера'} | ${p.firstName} ${p.lastName} ${p.middleName} (Возраст: ${p.age} | Пол: ${formatPatientGender(p.gender)}) ${p.phoneNumber ?? ''}`,
                         data: p
                       }))}
                       value={selectedPatientForAssign ? {
@@ -1730,13 +1797,23 @@ export function WardAdmin() {
                       <div style={{ minWidth: 0 }}>
                         <Select
                           inputId="assign-doctor-select"
+                          menuPortalTarget={document.body}
+                          menuPosition="fixed"
                           options={doctorOptions}
                           styles={selectStyles}
                           components={selectComponents}
                           placeholder="Выберите врача..."
+                          isLoading={doctorSearchLoading}
                           isSearchable={true}
+                          filterOption={() => true}
+                          onInputChange={(val, meta) => {
+                            if (meta.action === 'input-change') {
+                              setDoctorSearchQuery(val)
+                            }
+                          }}
                           value={doctorOptions.find((o) => o.value === assignDoctor) ?? null}
                           onChange={(option) => setAssignDoctor(option?.value ?? '')}
+                          noOptionsMessage={() => doctorSearchQuery ? "Врачи не найдены" : "Введите имя врача..."}
                         />
                       </div>
                     </DetailsField>
@@ -1768,7 +1845,7 @@ export function WardAdmin() {
                 </Section>
               </ModalContent>
 
-              <ModalFooter style={{ justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <ModalFooter style={{ justifyContent: 'space-between' }}>
                 <FooterLeftInfo>
                   <div>
                     <LocationText>
@@ -1783,11 +1860,14 @@ export function WardAdmin() {
                       </div>
                     )}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <label style={{ fontSize: '13px', color: '#64748b' }}>Приоритет:</label>
                     <div style={{ minWidth: '200px' }}>
                       <Select
                         inputId="assign-priority-select"
+                        menuPortalTarget={document.body}
+                        menuPosition="fixed"
+                        menuPlacement="auto"
                         styles={selectStyles}
                         components={selectComponents}
                         isSearchable={false}

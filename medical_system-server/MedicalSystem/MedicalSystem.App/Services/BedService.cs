@@ -161,15 +161,20 @@ namespace MedicalSystem.App.Services
 
         public async Task<HospitalBed> AddBedAsync(Guid roomId, int bedNumber, BedStatus status = BedStatus.Free, CancellationToken token = default)
         {
-            var bed = new HospitalBed
+            var existingBed = _bedStorage.Get(roomId);
+            if (existingBed is not null)
             {
-                Id = Guid.NewGuid(),
-                RoomId = roomId,
-                BedNumber = bedNumber,
-                Status = status
-            };
-            await _bedStorage.AddAsync(bed, token);
-            return bed;
+                var bed = new HospitalBed
+                {
+                    Id = Guid.NewGuid(),
+                    RoomId = roomId,
+                    BedNumber = bedNumber,
+                    Status = status
+                };
+                await _bedStorage.AddAsync(bed, token);
+                return bed;
+            }
+            return null;
         }
 
         public async Task DeleteBedAsync(Guid bedId, CancellationToken token = default)

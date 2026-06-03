@@ -1837,7 +1837,7 @@ export const ModalFooter = styled.div`
   border-top: 1px solid rgba(226, 232, 240, 0.8);
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   gap: 12px;
   flex-shrink: 0;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.02);
@@ -2004,6 +2004,7 @@ export const FooterLeftInfo = styled.div`
 export const FooterRightActions = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
 
   @media (max-width: 640px) {

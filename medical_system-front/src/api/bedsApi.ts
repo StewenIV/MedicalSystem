@@ -12,11 +12,28 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
       if (errorText) {
         try {
           const errorData = JSON.parse(errorText)
-          if (errorData.message) errorMsg = errorData.message
-          else if (errorData.detail) errorMsg = errorData.detail
-          else if (errorData.title) errorMsg = errorData.title
-          else if (typeof errorData === 'string') errorMsg = errorData
-          else errorMsg = errorText
+
+          // Формат FluentValidation: { message: "...", errors: ["...", "..."] }
+          if (Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+            errorMsg = errorData.errors.join('\n')
+          } else if (errorData.message) {
+            errorMsg = errorData.message
+          } else if (errorData.detail) {
+            errorMsg = errorData.detail
+          } else if (errorData.title) {
+            // ASP.NET validation problem details: { title, errors: { field: ["msg"] } }
+            const problemErrors = errorData.errors
+            if (problemErrors && typeof problemErrors === 'object') {
+              const msgs = Object.values(problemErrors).flat() as string[]
+              errorMsg = msgs.length > 0 ? msgs.join('\n') : errorData.title
+            } else {
+              errorMsg = errorData.title
+            }
+          } else if (typeof errorData === 'string') {
+            errorMsg = errorData
+          } else {
+            errorMsg = errorText
+          }
         } catch {
           errorMsg = errorText
         }
@@ -30,6 +47,7 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   if (!text) return {} as T
   return JSON.parse(text) as T
 }
+
 
 export interface BedDto {
   id: string

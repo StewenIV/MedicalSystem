@@ -42,10 +42,10 @@ export interface SearchPatientDto {
   gender: string | number
   age: number
   dateOfBirth?: string
-  phoneMobile?: string
+  phoneNumber?: string
   phone?: string
   phoneHome?: string
-  historyNumber?: string
+  numberCard?: string
   medicalRecordNumber?: string
 }
 
@@ -158,11 +158,11 @@ export const updateBedNote = (bedId: string, note: string): Promise<void> => {
   })
 }
 
-export const searchPatients = (query: string): Promise<SearchPatientDto[]> => {
-  return apiFetch<{ items: SearchPatientDto[] }>(`/api/search/patients?query=${encodeURIComponent(query)}`)
+export const searchPatients = (query: string, signal?: AbortSignal): Promise<SearchPatientDto[]> => {
+  return apiFetch<{ items: SearchPatientDto[] }>(`/api/search/patients?query=${encodeURIComponent(query)}`, { signal })
     .then(res => res.items || [])
 }
 
-export const searchDoctors = (query: string): Promise<DoctorSelectItemDto[]> => {
-  return apiFetch<DoctorSelectItemDto[]>(`/api/search/doctors?query=${encodeURIComponent(query)}`)
+export const searchDoctors = (query: string, signal?: AbortSignal): Promise<DoctorSelectItemDto[]> => {
+  return apiFetch<DoctorSelectItemDto[]>(`/api/search/doctors?query=${encodeURIComponent(query)}`, { signal })
 }

@@ -1,6 +1,9 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
 using MedicalSystem.App.Contracts.Query;
 using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.App.Services;
+using MedicalSystem.App.Validators;
 using MedicalSystem.Data.DataGeneration;
 using MedicalSystem.Data.DbContext;
 using MedicalSystem.Data.Queries;
@@ -43,7 +46,34 @@ builder.Services.AddScoped<WardStatisticsService>();
 builder.Services.AddScoped<SearchService>();
 
 
-builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+builder.Services.AddControllers()
+    .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
+    .AddFluentValidation(fv =>
+    {
+        fv.RegisterValidatorsFromAssemblyContaining<AssignPatientRequestDtoValidator>();
+        fv.DisableDataAnnotationsValidation = true;
+    });
+
+// При ошибке валидации формируем читаемый ответ 400
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(e => e.Value?.Errors.Count > 0)
+            .SelectMany(e => e.Value!.Errors.Select(err =>
+                string.IsNullOrWhiteSpace(err.ErrorMessage) ? err.Exception?.Message ?? "Ошибка валидации" : err.ErrorMessage))
+            .ToList();
+
+        var result = new
+        {
+            message = "Ошибка валидации данных.",
+            errors
+        };
+
+        return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(result);
+    };
+});
 
 
 builder.Services.AddOpenApi();

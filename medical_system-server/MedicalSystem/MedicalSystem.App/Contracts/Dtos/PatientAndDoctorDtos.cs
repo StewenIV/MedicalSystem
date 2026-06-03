@@ -28,6 +28,8 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string LastName { get; set; }
         public string? MiddleName { get; set; }
         public Gender Gender { get; set; }
+        public string PhoneNumber { get; set; }
+        public string NumberCard { get; set; }
         public int Age { get; set; }
     }
 

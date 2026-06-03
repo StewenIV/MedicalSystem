@@ -30,12 +30,12 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
         [HttpPost]
-        public async Task<IActionResult> AddBed([FromBody] AddBedRequest request, CancellationToken token)
+        public async Task<IActionResult> AddBed([FromBody] AddBedRequestDto request, CancellationToken token)
         {
             try
             {
@@ -44,7 +44,7 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
@@ -58,7 +58,7 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
@@ -72,7 +72,7 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
@@ -86,7 +86,7 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
@@ -100,7 +100,7 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
 
@@ -114,15 +114,8 @@ namespace MedicalSystem.API.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
             }
         }
-    }
-
-    public class AddBedRequest
-    {
-        public Guid RoomId { get; set; }
-        public int BedNumber { get; set; }
-        public BedStatus Status { get; set; } = BedStatus.Free;
     }
 }
