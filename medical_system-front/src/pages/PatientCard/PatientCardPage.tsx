@@ -248,13 +248,57 @@ const getBloodPressureSegments = (systolic: number, diastolic: number) => {
   }
 }
 
-const buildChartData = (signs: any[]) =>
-  signs.map((v) => {
-    const ps = getPulseSegments(v.pulse)
-    const bp = getBloodPressureSegments(v.bloodPressureSystolic, v.bloodPressureDiastolic)
+const formatChartDate = (iso: string) => {
+  if (!iso) return '—'
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return iso
+    return d.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return iso
+  }
+}
+
+const buildChartData = (signs: any[]) => {
+  const sorted = [...signs].sort((a, b) => {
+    const da = new Date(a.recordedAt || a.date || 0).getTime()
+    const db = new Date(b.recordedAt || b.date || 0).getTime()
+    return da - db
+  })
+  
+  return sorted.map((v) => {
+    const pulse = v.pulse !== undefined && v.pulse !== null ? Number(v.pulse) : (v.hr ? Number(v.hr) : undefined)
+    const temperature = v.temperature !== undefined && v.temperature !== null ? Number(v.temperature) : (v.temp ? Number(v.temp) : undefined)
+    const respiratoryRate = v.respiratoryRate !== undefined && v.respiratoryRate !== null ? Number(v.respiratoryRate) : (v.resp ? Number(v.resp) : undefined)
+    const spo2 = v.spO2 !== undefined && v.spO2 !== null ? Number(v.spO2) : (v.spo2 !== undefined && v.spo2 !== null ? Number(v.spo2) : undefined)
+    
+    let bps = v.bloodPressureSystolic !== undefined && v.bloodPressureSystolic !== null ? Number(v.bloodPressureSystolic) : undefined
+    let bpd = v.bloodPressureDiastolic !== undefined && v.bloodPressureDiastolic !== null ? Number(v.bloodPressureDiastolic) : undefined
+    if (v.bp && typeof v.bp === 'string') {
+      const parts = v.bp.split('/')
+      if (parts.length === 2) {
+        bps = Number(parts[0])
+        bpd = Number(parts[1])
+      }
+    }
+
+    const ps = getPulseSegments(pulse || 0)
+    const bp = getBloodPressureSegments(bps || 0, bpd || 0)
+    
     return {
       ...v,
-      name: v.date,
+      temperature,
+      pulse,
+      respiratoryRate,
+      spo2,
+      bloodPressureSystolic: bps,
+      bloodPressureDiastolic: bpd,
+      name: formatChartDate(v.recordedAt || v.date),
       pulseBase: 0,
       pulseRange: ps.pulseRange,
       pulseUpper: ps.pulseUpper,
@@ -264,6 +308,7 @@ const buildChartData = (signs: any[]) =>
       bpHigh: bp.bpHigh
     }
   })
+}
 
 const CustomTempDot = (props: any) => {
   const { cx, cy, payload } = props
@@ -638,6 +683,18 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
       lastClickedPatientRef.current = null
     }
   }
+  function pluralize(count: number, forms: [string, string, string]) {
+    const rule = new Intl.PluralRules('ru-RU').select(count)
+
+    switch (rule) {
+      case 'one':
+        return forms[0]
+      case 'few':
+        return forms[1]
+      default:
+        return forms[2]
+    }
+  }
 
   return (
     <SearchPageWrapper>
@@ -802,7 +859,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                         </PatientNameCell>
                       </SearchTdBold>
                       <SearchTd>
-                        {patient.age} лет,{' '}
+                        {patient.age} {pluralize(patient.age, ['год', 'года', 'лет'])},{' '}
                         {(patient.gender as any) === 'Male' ||
                         (patient.gender as any) === '0' ||
                         (patient.gender as any) === 0 ||
@@ -945,6 +1002,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
       import('../../api/patientsApi').then(({ fetchPatientCard, fetchPatientVitals }) => {
         Promise.all([fetchPatientCard(patientId), fetchPatientVitals(patientId).catch(() => [])])
           .then(([dto, vitalsData]) => {
+            const sortedVitals = [...vitalsData].sort((a, b) => {
+              const da = new Date(a.recordedAt || a.date || 0).getTime()
+              const db = new Date(b.recordedAt || b.date || 0).getTime()
+              return da - db
+            })
             setLocalPatient({
               ...dto,
               doctor: dto.doctorName,
@@ -955,7 +1017,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
               work: dto.work || {},
               other: dto.other || {},
               vitals: dto.vitals || {},
-              vitalsHistory: vitalsData,
+              vitalsHistory: sortedVitals,
               currentMeds: dto.currentMeds || [],
               history: dto.history || [],
               vaccines: dto.vaccines || [],
@@ -1032,10 +1094,47 @@ const PatientCard: React.FC<PatientCardProps> = ({
       return
     }
 
+    if (type === 'EDIT_NESTED_vitals') {
+      try {
+        let bps: number | null = null
+        let bpd: number | null = null
+        if (formData.bp && typeof formData.bp === 'string') {
+          const parts = formData.bp.split('/')
+          if (parts.length === 2) {
+            bps = parseInt(parts[0], 10) || null
+            bpd = parseInt(parts[1], 10) || null
+          }
+        }
+
+        const { postVitalSign } = await import('../../api/vitalSignsApi')
+        await postVitalSign(localPatient.id, {
+          temperature: formData.temp != null && formData.temp !== '' ? parseFloat(String(formData.temp).replace(',', '.')) : null,
+          bloodPressureSystolic: bps,
+          bloodPressureDiastolic: bpd,
+          pulse: formData.hr != null && formData.hr !== '' ? parseInt(String(formData.hr), 10) : null,
+          spO2: formData.spo2 != null && formData.spo2 !== '' ? parseInt(String(formData.spo2), 10) : null,
+          respiratoryRate: formData.resp != null && formData.resp !== '' ? parseInt(String(formData.resp), 10) : null
+        })
+
+        toast.success('Показатели успешно внесены в историю')
+        closeModal()
+        loadPatientDetails()
+      } catch (err) {
+        showApiError(err, 'Ошибка при сохранении показателей')
+      }
+      return
+    }
+
     let updatedData = { ...localPatient }
 
     if (type === 'EDIT_BASIC') {
       Object.assign(updatedData, formData)
+      if (formData.status) {
+        const foundOption = STATUS_OPTIONS.find((o) => o.value === formData.status)
+        if (foundOption) {
+          updatedData.statusText = foundOption.label
+        }
+      }
     } else if (type.startsWith('EDIT_NESTED_')) {
       const section = type.replace('EDIT_NESTED_', '')
       updatedData[section] = { ...(updatedData[section] || {}), ...formData }
@@ -1109,6 +1208,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     diseaseStatus: { options: DISEASE_STATUS_OPTIONS, placeholder: 'Статус заболевания...' },
     severity: { options: SEVERITY_OPTIONS, placeholder: 'Степень тяжести...' },
     gender: { options: GENDER_OPTIONS, placeholder: 'Пол...' },
+    status: { options: STATUS_OPTIONS, placeholder: 'Статус...' },
     doctor: { options: DOCTOR_OPTIONS, placeholder: 'Выберите врача...' }
   }
 
@@ -1228,6 +1328,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
     type?: string
     options?: string[]
     optional?: boolean
+    min?: number
+    max?: number
+    step?: number
   }
   const modalDefs: Record<string, { title: string; fields?: ModalField[]; text?: string }> = {
     DELETE_PATIENT: {
@@ -1247,6 +1350,12 @@ const PatientCard: React.FC<PatientCardProps> = ({
           label: 'Семейное положение',
           type: 'select',
           options: ['Холост/Не замужем', 'Женат/Замужем', 'В разводе', 'Вдовец/Вдова']
+        },
+        {
+          name: 'status',
+          label: 'Статус',
+          type: 'select',
+          options: ['hospitalized', 'outpatient', 'discharged']
         }
       ]
     },
@@ -1291,11 +1400,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
     EDIT_NESTED_vitals: {
       title: 'Внести показатели',
       fields: [
-        { name: 'temp', label: 'Температура (°C)', type: 'number' },
+        { name: 'temp', label: 'Температура (°C)', type: 'number', min: 35.0, max: 42.0, step: 0.1 },
         { name: 'bp', label: 'АД (мм рт. ст.)', type: 'text' },
-        { name: 'hr', label: 'ЧСС (уд/мин)', type: 'number' },
-        { name: 'resp', label: 'Частота дыхания', type: 'number' },
-        { name: 'spo2', label: 'SpO2 (%)', type: 'number' }
+        { name: 'hr', label: 'ЧСС (уд/мин)', type: 'number', min: 40, max: 200, step: 1 },
+        { name: 'resp', label: 'Частота дыхания', type: 'number', min: 10, max: 40, step: 1 },
+        { name: 'spo2', label: 'SpO2 (%)', type: 'number', min: 70, max: 100, step: 1 }
       ]
     },
     ADD_LIST_relatives: {
@@ -1646,38 +1755,164 @@ const PatientCard: React.FC<PatientCardProps> = ({
     }
 
     if (f.type === 'number') {
-      const isTemp = f.name === 'temp'
+      const step = f.step ?? (f.name === 'temp' ? 0.1 : 1)
+      const min = f.min ?? undefined
+      const max = f.max ?? undefined
+
+      const handleNumberChange = (increment: number) => {
+        let current = parseFloat(val) || (min ?? 0)
+        current += increment * step
+        if (min !== undefined && current < min) current = min
+        if (max !== undefined && current > max) current = max
+        // fix floating point issues
+        current = parseFloat(current.toFixed(step < 1 ? 1 : 0))
+        setFormData((p: any) => ({ ...p, [f.name]: String(current) }))
+      }
+
       return (
         <FormGroup key={f.name}>
           {labelNode}
-          <Input
-            value={val}
-            onChange={(e) => {
-              const raw = e.target.value
-              setFormData((p: any) => ({ ...p, [f.name]: raw }))
-            }}
-            type="number"
-            step={isTemp ? '0.1' : '1'}
-            placeholder={`${labelText}...`}
-          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ActionButton 
+              $variant="ghost" 
+              onClick={() => handleNumberChange(-1)} 
+              type="button"
+              style={{ width: '40px', height: '40px', padding: 0 }}
+            >
+              <MinusIcon size={16} />
+            </ActionButton>
+            <Input
+              value={val}
+              onChange={(e) => {
+                let raw = e.target.value
+                if (raw === '') {
+                   setFormData((p: any) => ({ ...p, [f.name]: '' }))
+                   return
+                }
+                let num = parseFloat(raw)
+                if (!isNaN(num)) {
+                  if (min !== undefined && num < min) num = min
+                  if (max !== undefined && num > max) num = max
+                  setFormData((p: any) => ({ ...p, [f.name]: String(num) }))
+                } else {
+                  setFormData((p: any) => ({ ...p, [f.name]: raw }))
+                }
+              }}
+              type="number"
+              step={step}
+              min={min}
+              max={max}
+              placeholder={`${labelText}...`}
+              style={{ flex: 1, textAlign: 'center' }}
+            />
+            <ActionButton 
+              $variant="ghost" 
+              onClick={() => handleNumberChange(1)} 
+              type="button"
+              style={{ width: '40px', height: '40px', padding: 0 }}
+            >
+              <Plus size={16} />
+            </ActionButton>
+          </div>
         </FormGroup>
       )
     }
 
     if (f.name === 'bp') {
+      const [sysStr, diaStr] = val.split('/')
+      const sys = parseInt(sysStr, 10) || ''
+      const dia = parseInt(diaStr, 10) || ''
+
+      const updateBp = (newSys: string | number, newDia: string | number) => {
+        setFormData((p: any) => ({ ...p, [f.name]: `${newSys}/${newDia}` }))
+      }
+
+      const handleSysChange = (increment: number) => {
+        let current = typeof sys === 'number' ? sys : 120
+        current += increment
+        if (current < 40) current = 40
+        if (current > 250) current = 250
+        updateBp(current, dia)
+      }
+
+      const handleDiaChange = (increment: number) => {
+        let current = typeof dia === 'number' ? dia : 80
+        current += increment
+        if (current < 20) current = 20
+        if (current > 150) current = 150
+        updateBp(sys, current)
+      }
+
       return (
         <FormGroup key={f.name}>
           {labelNode}
-          <Input
-            value={val}
-            onChange={(e) => {
-              const raw = e.target.value
-              const filtered = raw.replace(/[^0-9/]/g, '')
-              setFormData((p: any) => ({ ...p, [f.name]: filtered }))
-            }}
-            type="text"
-            placeholder="120/80"
-          />
+          <div style={{ display: 'flex', gap: '16px' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Систолическое</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ActionButton 
+                  $variant="ghost" 
+                  onClick={() => handleSysChange(-1)} 
+                  type="button"
+                  style={{ width: '40px', height: '40px', padding: 0 }}
+                >
+                  <MinusIcon size={16} />
+                </ActionButton>
+                <Input
+                  value={sys}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    if (raw === '') updateBp('', dia)
+                    else updateBp(parseInt(raw, 10) || 120, dia)
+                  }}
+                  type="number"
+                  placeholder="120"
+                  style={{ flex: 1, textAlign: 'center' }}
+                />
+                <ActionButton 
+                  $variant="ghost" 
+                  onClick={() => handleSysChange(1)} 
+                  type="button"
+                  style={{ width: '40px', height: '40px', padding: 0 }}
+                >
+                  <Plus size={16} />
+                </ActionButton>
+              </div>
+            </div>
+
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b' }}>Диастолическое</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ActionButton 
+                  $variant="ghost" 
+                  onClick={() => handleDiaChange(-1)} 
+                  type="button"
+                  style={{ width: '40px', height: '40px', padding: 0 }}
+                >
+                  <MinusIcon size={16} />
+                </ActionButton>
+                <Input
+                  value={dia}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    if (raw === '') updateBp(sys, '')
+                    else updateBp(sys, parseInt(raw, 10) || 80)
+                  }}
+                  type="number"
+                  placeholder="80"
+                  style={{ flex: 1, textAlign: 'center' }}
+                />
+                <ActionButton 
+                  $variant="ghost" 
+                  onClick={() => handleDiaChange(1)} 
+                  type="button"
+                  style={{ width: '40px', height: '40px', padding: 0 }}
+                >
+                  <Plus size={16} />
+                </ActionButton>
+              </div>
+            </div>
+          </div>
         </FormGroup>
       )
     }
@@ -2051,7 +2286,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         {lab.type}
                       </span>
                       <span style={{ color: '#64748b', fontSize: 12, flexShrink: 0 }}>
-                        ({lab.date})
+                        ( {formatDateHuman(lab.date)})
                       </span>
                     </div>
                     <span
@@ -2138,7 +2373,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Дата выдачи</span>
-                  <span className="value">{localPatient.passport?.dateIssued || 'Не указано'}</span>
+                  <span className="value">{formatDateHuman(localPatient.passport?.dateIssued) || 'Не указано'}</span>
                 </InfoItem>
               </HeaderInfoGrid>
             </SectionCard>
@@ -2212,7 +2447,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Дата смерти</span>
-                  <span className="value">{localPatient.other?.dateOfDeath || '—'}</span>
+                  <span className="value">{formatDateHuman(localPatient.other?.dateOfDeath) || '—'}</span>
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Причина смерти</span>
@@ -2322,7 +2557,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       <tr key={i}>
                         <td>{alg.name}</td>
                         <td>{alg.reaction}</td>
-                        <td>{alg.date}</td>
+                        <td>{formatDateHuman(alg.date)}</td>
                         <td>{alg.comment || '—'}</td>
                         <td>
                           <ActionButton
@@ -2430,7 +2665,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                             <td>
                               <strong>{typeof op === 'string' ? op : op.name}</strong>
                             </td>
-                            <td>{typeof op === 'object' ? op.date || '—' : '—'}</td>
+                            <td>{typeof op === 'object' ? formatDateHuman(op.date) || '—' : '—'}</td>
                             <td>{typeof op === 'object' ? op.diagnosis || '—' : '—'}</td>
                             <td>{typeof op === 'object' ? op.result || '—' : '—'}</td>
                             <td>{typeof op === 'object' ? op.complications || 'Нет' : '—'}</td>
@@ -2495,7 +2730,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           </td>
                           <td>{typeof prob === 'object' ? prob.diseaseStatus || '—' : '—'}</td>
                           <td>{typeof prob === 'object' ? prob.severity || '—' : '—'}</td>
-                          <td>{typeof prob === 'object' ? prob.diagnosisDate || '—' : '—'}</td>
+                          <td>{typeof prob === 'object' ? formatDateHuman(prob.diagnosisDate) || '—' : '—'}</td>
                           <td>{typeof prob === 'object' ? prob.complications || 'Нет' : '—'}</td>
                           <td>
                             <ActionButton
@@ -2557,8 +2792,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 <tbody>
                   {localPatient.prescriptions?.map((pr: any, i: number) => (
                     <tr key={i}>
-                      <td>{pr.dateStart || '01.10.2023'}</td>
-                      <td>{pr.dateEnd || '10.10.2023'}</td>
+                      <td>{formatDateHuman(pr.dateStart) || '01.10.2023'}</td>
+                      <td>{formatDateHuman(pr.dateEnd) || '10.10.2023'}</td>
                       <td>
                         <strong>{pr.drug}</strong>
                       </td>
@@ -2626,7 +2861,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 <tbody>
                   {localPatient.labs?.map((lab: any, i: number) => (
                     <tr key={i}>
-                      <td>{lab.date}</td>
+                      <td>{formatDateHuman(lab.date)}</td>
                       <td>{lab.type}</td>
                       <td>{lab.reason || '—'}</td>
                       <td>{lab.doctor}</td>
@@ -2924,32 +3159,32 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                 text
                               )
 
-                            const tempHigh = row.temperature > NORMAL_RANGES.temperature.max
-                            const tempLow = row.temperature < NORMAL_RANGES.temperature.min
+                            const tempHigh = row.temperature != null && row.temperature > NORMAL_RANGES.temperature.max
+                            const tempLow = row.temperature != null && row.temperature < NORMAL_RANGES.temperature.min
                             const tempAlert = tempHigh
                               ? '⚠ ↑ выше нормы'
                               : tempLow
                                 ? '⚠ ↓ ниже нормы'
                                 : ''
-                            const tempValue = `${row.temperature.toFixed(1)} °C`
+                            const tempValue = row.temperature != null ? `${Number(row.temperature).toFixed(1)} °C` : '—'
 
-                            const pulseHigh = row.pulse > NORMAL_RANGES.pulse.max
-                            const pulseLow = row.pulse < NORMAL_RANGES.pulse.min
+                            const pulseHigh = row.pulse != null && row.pulse > NORMAL_RANGES.pulse.max
+                            const pulseLow = row.pulse != null && row.pulse < NORMAL_RANGES.pulse.min
                             const pulseAlert = pulseHigh
                               ? '↑ выше нормы'
                               : pulseLow
                                 ? '↓ ниже нормы'
                                 : ''
-                            const pulseValue = `${row.pulse} уд/мин`
+                            const pulseValue = row.pulse != null ? `${row.pulse} уд/мин` : '—'
 
                             const bpsHigh =
-                              row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
+                              row.bloodPressureSystolic != null && row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
                             const bpsLow =
-                              row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
+                              row.bloodPressureSystolic != null && row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
                             const bpdHigh =
-                              row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
+                              row.bloodPressureDiastolic != null && row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
                             const bpdLow =
-                              row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
+                              row.bloodPressureDiastolic != null && row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
 
                             const bpAlerts: string[] = []
                             if (bpsHigh) bpAlerts.push('↑ сист.')
@@ -2958,7 +3193,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                             if (bpdLow) bpAlerts.push('↓ диаст.')
                             const bpAlertText =
                               bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
-                            const bpValue = `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
+                            const bpValue = row.bloodPressureSystolic != null && row.bloodPressureDiastolic != null
+                                ? `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
+                                : '—'
 
                             const pulseRangeValue = row.pulseRange ?? 0
                             const bpNormalValue = row.bpNormal ?? 0
@@ -2986,6 +3223,10 @@ const PatientCard: React.FC<PatientCardProps> = ({
                             }
 
                             if (dataKey === 'bpNormal') {
+                              const val = typeof value === 'number' ? value : Number(value)
+                              if (!Number.isFinite(val) || val <= 0) {
+                                return null
+                              }
                               return [formatAlert(bpValue, bpAlertText), 'АД']
                             }
 
@@ -3288,25 +3529,25 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                 text
                               )
 
-                            const spo2High = row.spo2 > NORMAL_RANGES.spo2.max
-                            const spo2Low = row.spo2 < NORMAL_RANGES.spo2.min
+                            const spo2High = row.spo2 != null && row.spo2 > NORMAL_RANGES.spo2.max
+                            const spo2Low = row.spo2 != null && row.spo2 < NORMAL_RANGES.spo2.min
                             const spo2Alert = spo2High
                               ? '⚠ ↑ выше нормы'
                               : spo2Low
                                 ? '⚠ ↓ ниже нормы'
                                 : ''
-                            const spo2Value = `${row.spo2.toFixed(1)} %`
+                            const spo2Value = row.spo2 != null ? `${Number(row.spo2).toFixed(1)} %` : '—'
 
                             const respiratoryRateHigh =
-                              row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
+                              row.respiratoryRate != null && row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
                             const respiratoryRateLow =
-                              row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+                              row.respiratoryRate != null && row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
                             const respiratoryRateAlert = respiratoryRateHigh
                               ? '⚠ ↑ выше нормы'
                               : respiratoryRateLow
                                 ? '⚠ ↓ ниже нормы'
                                 : ''
-                            const respiratoryRateValue = `${row.respiratoryRate} дых/мин`
+                            const respiratoryRateValue = row.respiratoryRate != null ? `${row.respiratoryRate} дых/мин` : '—'
 
                             if (dataKey === 'spo2') {
                               return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)']
@@ -3630,7 +3871,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                       size={12}
                                       style={{ display: 'inline', marginRight: 3 }}
                                     />
-                                    {h.dateTime}
+                                    {formatDateHumanWithTime(h.dateTime)}
                                   </span>
                                 </div>
                                 <div
@@ -3788,7 +4029,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                     <tr key={i}>
                       <td>{v.name}</td>
                       <td>{v.disease}</td>
-                      <td>{v.date}</td>
+                      <td>{formatDateHuman(v.date)}</td>
                       <td>{v.validity || 'Бессрочно'}</td>
                       <td>{v.manufacturer}</td>
                       <td>{v.series}</td>
@@ -3830,7 +4071,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         <FileText size={16} style={{ verticalAlign: 'middle', marginRight: 8 }} />{' '}
                         {d.name}
                       </td>
-                      <td>{d.date}</td>
+                      <td>{formatDateHuman(d.date)}</td>
                       <td>
                         <ActionButton
                           $variant="ghost"
@@ -4044,7 +4285,8 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
     dateOfBirth: '',
     gender: 'Мужской',
     medcardNum: '',
-    historyNum: ''
+    historyNum: '',
+    status: 'hospitalized'
   })
   const cardRef = useRef<HTMLDivElement>(null)
 
@@ -4106,7 +4348,8 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
         dateOfBirth: '',
         gender: 'Мужской',
         medcardNum: '',
-        historyNum: ''
+        historyNum: '',
+        status: 'hospitalized'
       })
       handleSelectPatient(newPatient.id)
     } catch (err) {

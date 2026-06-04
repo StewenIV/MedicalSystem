@@ -210,8 +210,21 @@ const getBloodPressureSegments = (systolic: number, diastolic: number) => {
   return { bpBase: start, bpLow: below, bpNormal: normal, bpHigh: above }
 }
 
-const formatChartDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
+const formatChartDate = (iso: string) => {
+  if (!iso) return '—'
+  try {
+    const d = new Date(iso)
+    if (isNaN(d.getTime())) return iso
+    return d.toLocaleString('ru-RU', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  } catch {
+    return iso
+  }
+}
 
 const CustomTempDot = (props: any) => {
   const { cx, cy, payload } = props
@@ -349,7 +362,10 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
         fetchWarnings(pid),
         fetchTrends(pid),
       ])
-      setVitals([...vitalsData].reverse().map(mapServerVital))
+      const sorted = [...vitalsData]
+        .map(mapServerVital)
+        .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
+      setVitals(sorted)
       setServerWarnings(warningsData)
       setServerTrends(trendsData)
     } catch (err: any) {
@@ -421,7 +437,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
     [vitals]
   )
 
-  /** Данные для второго графика (SpO₂, ЧД) */
+
   const spoRespiratoryRate = useMemo(() =>
     vitals.map(item => ({
       name:           formatChartDate(item.recordedAt),
@@ -738,26 +754,40 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                       formatter={(value, name, entry) => {
                         const row = entry.payload as any
                         const dataKey = entry.dataKey as string
-                        const formatAlert = (text: string, alertText?: string) =>
+                        const formatAlert = (text: string | React.ReactNode, alertText?: string) =>
                           alertText ? <span style={{ color: '#dc2626', fontWeight: 600 }}>{text} ({alertText})</span> : text
 
-                        const tempAlert = row.temperature > NORMAL_RANGES.temperature.max ? '⚠ ↑ выше нормы' : row.temperature < NORMAL_RANGES.temperature.min ? '⚠ ↓ ниже нормы' : ''
-                        const pulseAlert = row.pulse > NORMAL_RANGES.pulse.max ? '↑ выше нормы' : row.pulse < NORMAL_RANGES.pulse.min ? '↓ ниже нормы' : ''
+                        const tempAlert = row.temperature != null && row.temperature > NORMAL_RANGES.temperature.max
+                          ? '⚠ ↑ выше нормы'
+                          : row.temperature != null && row.temperature < NORMAL_RANGES.temperature.min
+                            ? '⚠ ↓ ниже нормы'
+                            : ''
+                        const pulseAlert = row.pulse != null && row.pulse > NORMAL_RANGES.pulse.max
+                          ? '↑ выше нормы'
+                          : row.pulse != null && row.pulse < NORMAL_RANGES.pulse.min
+                            ? '↓ ниже нормы'
+                            : ''
                         const bpAlerts: string[] = []
-                        if (row.bloodPressureSystolic  > NORMAL_RANGES.bloodPressureSystolic.max)  bpAlerts.push('↑ сист.')
-                        if (row.bloodPressureSystolic  < NORMAL_RANGES.bloodPressureSystolic.min)  bpAlerts.push('↓ сист.')
-                        if (row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max) bpAlerts.push('↑ диаст.')
-                        if (row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min) bpAlerts.push('↓ диаст.')
+                        if (row.bloodPressureSystolic != null && row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max) bpAlerts.push('↑ сист.')
+                        if (row.bloodPressureSystolic != null && row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min) bpAlerts.push('↓ сист.')
+                        if (row.bloodPressureDiastolic != null && row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max) bpAlerts.push('↑ диаст.')
+                        if (row.bloodPressureDiastolic != null && row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min) bpAlerts.push('↓ диаст.')
 
-                        if (dataKey === 'temperature') return [formatAlert(`${row.temperature.toFixed(1)} °C`, tempAlert), 'Температура']
+                        if (dataKey === 'temperature') {
+                          return [formatAlert(row.temperature != null ? `${row.temperature.toFixed(1)} °C` : '—', tempAlert), 'Температура']
+                        }
                         if (dataKey === 'pulseBase' || dataKey === 'bpBase') return null
                         if (dataKey === 'pulseRange' || dataKey === 'pulseUpper') {
                           const seg = typeof value === 'number' ? value : Number(value)
                           if (!Number.isFinite(seg) || seg <= 0) return null
                           if (dataKey === 'pulseUpper' && row.pulseRange > 0) return null
-                          return [formatAlert(`${row.pulse} уд/мин`, pulseAlert), 'Пульс']
+                          return [formatAlert(row.pulse != null ? `${row.pulse} уд/мин` : '—', pulseAlert), 'Пульс']
                         }
-                        if (dataKey === 'bpNormal') return [formatAlert(`${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`, bpAlerts.length ? `⚠ ${bpAlerts.join(', ')}` : ''), 'АД']
+                        if (dataKey === 'bpNormal') {
+                          const val = typeof value === 'number' ? value : Number(value)
+                          if (!Number.isFinite(val) || val <= 0) return null
+                          return [formatAlert(`${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`, bpAlerts.length ? `⚠ ${bpAlerts.join(', ')}` : ''), 'АД']
+                        }
                         if (dataKey === 'bpLow' || dataKey === 'bpHigh') {
                           if (row.bpNormal !== 0) return null
                           return [formatAlert(`${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`, bpAlerts.length ? `⚠ ${bpAlerts.join(', ')}` : ''), 'АД']
@@ -838,12 +868,22 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                         alert ? <span style={{ color: '#dc2626', fontWeight: 600 }}>{text} ({alert})</span> : text
 
                       if (dataKey === 'spo2') {
-                        const a = row.spo2 > NORMAL_RANGES.spo2.max ? '⚠ ↑ выше нормы' : row.spo2 < NORMAL_RANGES.spo2.min ? '⚠ ↓ ниже нормы' : ''
-                        return [formatAlert(`${row.spo2.toFixed(1)} %`, a), 'SpO₂ (%)']
+                        const a = row.spo2 != null && row.spo2 > NORMAL_RANGES.spo2.max
+                          ? '⚠ ↑ выше нормы'
+                          : row.spo2 != null && row.spo2 < NORMAL_RANGES.spo2.min
+                            ? '⚠ ↓ ниже нормы'
+                            : ''
+                        const valText = row.spo2 != null ? `${Number(row.spo2).toFixed(1)} %` : '—'
+                        return [formatAlert(valText, a), 'SpO₂ (%)']
                       }
                       if (dataKey === 'respiratoryRate') {
-                        const a = row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max ? '⚠ ↑ выше нормы' : row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min ? '⚠ ↓ ниже нормы' : ''
-                        return [formatAlert(`${row.respiratoryRate} дых/мин`, a), 'Частота дыхания']
+                        const a = row.respiratoryRate != null && row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
+                          ? '⚠ ↑ выше нормы'
+                          : row.respiratoryRate != null && row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+                            ? '⚠ ↓ ниже нормы'
+                            : ''
+                        const valText = row.respiratoryRate != null ? `${row.respiratoryRate} дых/мин` : '—'
+                        return [formatAlert(valText, a), 'Частота дыхания']
                       }
                       return [value, name]
                     }}

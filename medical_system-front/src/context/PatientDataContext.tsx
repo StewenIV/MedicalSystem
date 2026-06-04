@@ -26,6 +26,26 @@ type PatientDataContextValue = PatientDataState & PatientDataActions
 
 const PatientDataContext = createContext<PatientDataContextValue | null>(null)
 
+const cleanEmptyDates = (obj: any): any => {
+  if (!obj || typeof obj !== 'object') return obj
+  if (Array.isArray(obj)) return obj.map(cleanEmptyDates)
+
+  const newObj: any = {}
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const val = obj[key]
+      if (typeof val === 'string' && (val === 'дд.мм.гггг' || val === '' || val === '__.__.____')) {
+        if (val === 'дд.мм.гггг' || val === '__.__.____' || key.toLowerCase().includes('date')) {
+          newObj[key] = null
+          continue
+        }
+      }
+      newObj[key] = typeof val === 'object' ? cleanEmptyDates(val) : val
+    }
+  }
+  return newObj
+}
+
 export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<any[]>([])
   const [inspections, setInspections] = useState<Record<string, SavedInspection[]>>({})
@@ -97,7 +117,8 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const addPatient = useCallback(async (dto: Partial<PatientCardDto>) => {
     const { addPatient: apiAddPatient } = await import('../api/patientsApi')
-    const newPatient = await apiAddPatient(dto)
+    const cleanedDto = cleanEmptyDates(dto)
+    const newPatient = await apiAddPatient(cleanedDto)
     const mapped = {
       ...newPatient,
       doctor: newPatient.doctorName,
@@ -111,7 +132,8 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
 
   const updatePatient = useCallback(async (id: string, dto: PatientCardDto) => {
     const { updatePatientCard } = await import('../api/patientsApi')
-    await updatePatientCard(id, dto)
+    const cleanedDto = cleanEmptyDates(dto)
+    await updatePatientCard(id, cleanedDto)
     setPatients(prev =>
       prev.map(p =>
         p.id === id
