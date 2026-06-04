@@ -360,7 +360,6 @@ export const SectionCard = styled.div<{ $span?: number }>`
     font-size: 13px;
   }
 
-  /* ── Заголовок карточки: title + кнопки всегда на одной строке ── */
   > h3 {
     margin: 0;
     font-size: 18px;
@@ -392,7 +391,6 @@ export const SectionCard = styled.div<{ $span?: number }>`
     }
   }
 
-  /* ── Адаптивный font-size для списков и параграфов внутри карточек ── */
   ul,
   ol {
     margin: 0;
@@ -816,7 +814,6 @@ export const ModalFooter = styled.div`
   border-radius: 0 0 24px 24px;
 `
 
-// Form Components
 export const FormGroup = styled.div`
   display: flex;
   flex-direction: column;
@@ -1230,7 +1227,6 @@ export const SearchTableWrap = styled.div`
     transform: translateX(8px);
   }
 
-  /* Скрываем когда доскроллили до конца */
   &.is-scrollable::after {
     opacity: var(--scroll-hint-opacity);
     transform: translateX(0);

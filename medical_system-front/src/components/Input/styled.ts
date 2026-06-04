@@ -67,7 +67,6 @@ export const StyledInput = styled.input<{
     return '12px'
   }};
 
-  /* Скрываем нативные стрелочки полностью */
   &[type='number'] {
     -moz-appearance: textfield;
   }

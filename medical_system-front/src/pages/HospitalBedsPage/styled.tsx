@@ -85,7 +85,6 @@ export const Container = styled.div`
   animation: ${subtleFadeUp} 0.35s ease both;
 `
 
-// ─── Cards ────────────────────────────────────────────────────────────────────
 
 export const StyledCard = styled.div`
   background: #ffffff;
@@ -296,7 +295,6 @@ export const CardContent = styled.div`
   padding: 24px;
 `
 
-// ─── Stats grid ───────────────────────────────────────────────────────────────
 
 export const InfoGrid = styled.div`
 display: grid;
@@ -396,7 +394,6 @@ export const ProgressFill = styled.div<{ $pct: number }>`
   transition: transform 0.05s linear;
 `
 
-// ─── Section header ───────────────────────────────────────────────────────────
 
 export const SectionHeaderInner = styled.div`
   display: flex;
@@ -442,7 +439,6 @@ export const FloorContent = styled.div`
   gap: 20px;
 `
 
-// ─── Floor stats bar ──────────────────────────────────────────────────────────
 
 export const FloorStatsBar = styled.div`
   display: grid;
@@ -549,7 +545,6 @@ export const ManageBtn = styled.button`
   }
 `
 
-// ─── Alerts ───────────────────────────────────────────────────────────────────
 
 export const AlertsSection = styled.div`
   display: flex;
@@ -777,7 +772,6 @@ export const BedChip = styled.div<{ $s: 'free' | 'stable' | 'attention' | 'urgen
   }
 `
 
-// ─── Detail panel ─────────────────────────────────────────────────────────────
 
 export const DetailPanel = styled.div`
   background: #fff;
@@ -921,7 +915,6 @@ export const SectionDivider = styled.div`
   gap: 6px;
 `
 
-// ─── Prescription list ────────────────────────────────────────────────────────
 
 export const RxItem = styled.div<{ $done?: boolean }>`
   display: flex;
@@ -974,7 +967,6 @@ export const RxTime = styled.div`
   font-variant-numeric: tabular-nums;
 `
 
-// ─── Meds & Log (sidebar) ─────────────────────────────────────────────────────
 
 export const MedsGrid = styled.div`
   display: grid;
@@ -1030,7 +1022,6 @@ export const LogMeta = styled.div`
   gap: 10px;
 `
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
 
 export const Overlay = styled.div`
   position: absolute;
@@ -1058,26 +1049,20 @@ export const Modal = styled.div`
   transform: translateY(-50%);
   margin: 0 auto;
 
-  /* 1. Увеличиваем общую ширину области скролла, чтобы было место для маневра */
   &::-webkit-scrollbar {
     width: 15px; 
   }
 
-  /* 2. Дорожка остается прозрачной */
   &::-webkit-scrollbar-track {
     background: transparent;
     margin: 12px 0;
   }
 
-  /* 3. Магия смещения ползунка */
   &::-webkit-scrollbar-thumb {
     background-color: #cbd5e1;
-    /* Это свойство заставляет фон не заходить под border */
     background-clip: padding-box; 
     
-    /* Делаем прозрачную рамку справа — она и создаст визуальный отступ от края */
     border: 4px solid transparent; 
-    /* Можно добавить небольшой отступ и слева, чтобы отделить от контента */
     border-radius: 10px;
   }
 

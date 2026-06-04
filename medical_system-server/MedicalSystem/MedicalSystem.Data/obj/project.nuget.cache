@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "kQB8qbqcNqI=",
+  "dgSpecHash": "/FWWEgeF/qU=",
   "success": true,
   "projectFilePath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data\\MedicalSystem.Data.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\amaca\\.nuget\\packages\\bcrypt.net-next\\4.0.3\\bcrypt.net-next.4.0.3.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\bogus\\35.6.5\\bogus.35.6.5.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\entityframework\\6.6.0-preview1-final\\entityframework.6.6.0-preview1-final.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",

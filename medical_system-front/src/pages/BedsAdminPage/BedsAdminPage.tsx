@@ -1522,7 +1522,6 @@ export function WardAdmin() {
                   </LocationRow>
                 </Section>
 
-                {/* Location selection */}
                 <Section>
                   <SelectionCard>
                     <SelectionTopRow>
@@ -1538,7 +1537,6 @@ export function WardAdmin() {
                     </SelectionTopRow>
 
                     <SelectsGrid>
-                      {/* Floor */}
                       <SelectField>
                         <SelectLabel>Этаж</SelectLabel>
                         <div style={{ minWidth: 0 }}>
@@ -1563,7 +1561,6 @@ export function WardAdmin() {
                         </div>
                       </SelectField>
 
-                      {/* Room */}
                       <SelectField>
                         <SelectLabel>Палата</SelectLabel>
                         <div style={{ minWidth: 0 }}>
@@ -1587,7 +1584,6 @@ export function WardAdmin() {
                       </SelectField>
                     </SelectsGrid>
 
-                    {/* Available beds */}
                     {transferRoom && (
                       <BedsSection>
                         <BedsLabel>Доступные койки</BedsLabel>
@@ -1695,7 +1691,6 @@ export function WardAdmin() {
                 </Section>
               </ModalContent>
 
-              {/* ── Footer ── */}
               <ModalFooter>
                 <CancelBtn type="button" onClick={handleCloseTransferModal}>
                   Отмена

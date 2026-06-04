@@ -1,11 +1,9 @@
 import styled, { css } from 'styled-components'
 import colors from 'consts/colors'
 
-// ─── Font stack ───────────────────────────────────────────────────────────────
 
 const FONT = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
 
-// ─── Page shell ───────────────────────────────────────────────────────────────
 
 export const HomePageContainer = styled.div`
   min-height: 100vh;
@@ -15,7 +13,6 @@ export const HomePageContainer = styled.div`
   flex-direction: column;
 `
 
-// ─── Header ───────────────────────────────────────────────────────────────────
 
 export const Header = styled.header`
   background: white;
@@ -83,7 +80,6 @@ justify-content: flex-end;
   }
 `
 
-// ─── Logo block ───────────────────────────────────────────────────────────────
 
 export const LogoBox = styled.div`
   width: 42px;
@@ -111,13 +107,11 @@ export const LogoTitle = styled.span`
   letter-spacing: -0.035em;
   line-height: 1.15;
 
-  /* Двухцветный градиент: чёрный → насыщенный синий */
   background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 60%, #60a5fa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 
-  /* Объём без text-shadow (несовместим с gradient-text) */
   filter: drop-shadow(0 1px 1px rgba(15, 23, 42, 0.1));
 `
 
@@ -130,7 +124,6 @@ export const LogoSubtitle = styled.span`
   text-transform: uppercase;
 `
 
-// ─── Header date / clock ──────────────────────────────────────────────────────
 
 export const DateLabel = styled.div`
    display: flex;
@@ -157,7 +150,6 @@ export const DateLabel = styled.div`
   }
 `
 
-// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 export const ContentLayout = styled.div`
   display: flex;
@@ -181,7 +173,6 @@ export const SidebarNav = styled.nav`
   gap: 2px;
 `
 
-/* Заголовок группы в сайдбаре — опциональный */
 export const SidebarGroupLabel = styled.div`
   font-family: ${FONT};
   font-size: 10px;
@@ -211,13 +202,11 @@ export const NavButton = styled.button<{ $active?: boolean }>`
     background 0.15s,
     color 0.15s;
 
-  /* Иконка чуть приглушена в неактивном состоянии */
   svg {
     opacity: ${({ $active }) => ($active ? 1 : 0.55)};
     transition: opacity 0.15s;
   }
 
-  /* Акцентная полоска слева у активного пункта */
   position: relative;
   &::before {
     content: '';
@@ -240,7 +229,6 @@ export const NavButton = styled.button<{ $active?: boolean }>`
   }
 `
 
-// ─── Main content ─────────────────────────────────────────────────────────────
 
 export const Main = styled.main`
   flex: 1;
@@ -253,7 +241,6 @@ export const Main = styled.main`
   box-sizing: border-box;
 `
 
-// ─── Section heading inside Main ─────────────────────────────────────────────
 
 export const SectionTitle = styled.h2`
   font-family: ${FONT};
@@ -272,7 +259,6 @@ export const SectionSubtitle = styled.p`
   font-weight: 400;
 `
 
-// ─── Cards ────────────────────────────────────────────────────────────────────
 
 export const Card = styled.div`
   background: white;
@@ -313,7 +299,6 @@ export const Column = styled.div`
   gap: 24px;
 `
 
-// ─── Appointment row ──────────────────────────────────────────────────────────
 
 export const AppointmentRow = styled.div<{ $clickable?: boolean }>`
   padding: 14px 16px;
@@ -339,7 +324,6 @@ export const AppointmentRow = styled.div<{ $clickable?: boolean }>`
   }
 `
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
 
 export const StatusBadge = styled.span<{
   status: 'Ожидается' | 'На приеме' | 'Завершено' | 'Свободно'
@@ -357,7 +341,6 @@ export const StatusBadge = styled.span<{
   ${({ status }) => status === 'Свободно' && `background:#f9fafb; color:#9ca3af;`}
 `
 
-// ─── Icon button ──────────────────────────────────────────────────────────────
 
 export const IconButton = styled.button`
     position: relative;

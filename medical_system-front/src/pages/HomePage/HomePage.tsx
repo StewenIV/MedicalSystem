@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useSelector } from 'react-redux'
 import { Helmet } from 'react-helmet'
 
 import {
@@ -72,6 +73,8 @@ import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
 import MedicinesPage from 'pages/MedicinesPage'
 import { WardRoundPage, WardRoundsHub, PrimaryInspectionPage } from 'pages/WardRound'
 import { PatientDataProvider } from 'context/PatientDataContext'
+import { selectDisplayName, selectUserRole } from 'features/App/selectors'
+import { UserRole } from 'features/App/types'
 
 interface DoctorDashboardProps {
   onNavigate?: (screen: string, patientId?: string) => void
@@ -84,6 +87,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   onLogout = () => {},
   userRole = 'nurse'
 }) => {
+  const displayName = useSelector(selectDisplayName)
+  const reduxRole = useSelector(selectUserRole)
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [headerSearchQuery, setHeaderSearchQuery] = useState('')
@@ -228,10 +233,19 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
 
                   <AccountInfo>
                     <AccountText>
-                      <AccountName>Иванова Иван Иванович</AccountName>
-                      <AccountRole>Медицинская сестра</AccountRole>
+                      <AccountName>{displayName || 'Пользователь'}</AccountName>
+                      <AccountRole>
+                        {reduxRole === 'Doctor' ? 'Врач'
+                          : reduxRole === 'Nurse' ? 'Медицинская сестра'
+                          : reduxRole === 'HeadNurse' ? 'Старшая медицинская сестра'
+                          : reduxRole === 'ChiefDoctor' ? 'Главный врач'
+                          : reduxRole === 'LaboratoryEmployee' ? 'Лаборатория'
+                          : 'Сотрудник'}
+                      </AccountRole>
                     </AccountText>
-                    <AccountAvatar>ИИ</AccountAvatar>
+                    <AccountAvatar>
+                      {(displayName || 'П').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase()}
+                    </AccountAvatar>
                   </AccountInfo>
 
                   <IconButton onClick={onLogout}>

@@ -20,7 +20,6 @@ export const StyledBackButton = styled.button`
   color: ${colors.secondColorText};
   font-size: 14px;
 
-  /* тени и глубина */
   box-shadow:
     0 4px 12px rgba(0, 0, 0, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);

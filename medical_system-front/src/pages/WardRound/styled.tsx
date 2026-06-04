@@ -2,7 +2,6 @@ import styled, { css, keyframes } from 'styled-components'
 
 const FONT = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`
 
-// ─── Анимации ─────────────────────────────────────────────────────────────────
 
 const fadeIn = keyframes`
   from { opacity: 0; transform: translateY(8px); }
@@ -14,7 +13,6 @@ const pulse = keyframes`
   50%       { opacity: 0.6; }
 `
 
-// ─── Корневой контейнер ───────────────────────────────────────────────────────
 
 export const WardRoundRoot = styled.div`
   display: flex;
@@ -26,7 +24,6 @@ export const WardRoundRoot = styled.div`
   animation: ${fadeIn} 0.25s ease;
 `
 
-// ─── Фиксированная панель пациента ───────────────────────────────────────────
 
 export const PatientHeader = styled.div`
   background: white;
@@ -212,7 +209,6 @@ export const HeaderBtn = styled.button<{ variant?: 'primary' | 'ghost' | 'danger
   }
 `
 
-// ─── Тело страницы ────────────────────────────────────────────────────────────
 
 export const PageBody = styled.div`
   display: flex;
@@ -225,7 +221,6 @@ export const PageBody = styled.div`
   }
 `
 
-// ─── Левая навигация ──────────────────────────────────────────────────────────
 
 export const LeftNav = styled.nav`
   width: 220px;
@@ -291,7 +286,6 @@ export const NavItem = styled.button<{ $active?: boolean; $done?: boolean }>`
   }
 `
 
-// ─── Центральная форма ────────────────────────────────────────────────────────
 
 export const CenterForm = styled.div`
   flex: 1;
@@ -305,7 +299,6 @@ export const CenterForm = styled.div`
   }
 `
 
-// ─── Правая панель ────────────────────────────────────────────────────────────
 
 export const RightPanel = styled.aside`
   width: 280px;
@@ -327,7 +320,6 @@ export const RightPanel = styled.aside`
   }
 `
 
-// ─── Блок формы ───────────────────────────────────────────────────────────────
 
 export const FormBlock = styled.div`
   background: white;
@@ -387,7 +379,6 @@ export const FormBlockBody = styled.div`
   }
 `
 
-// ─── Карточка параметра ───────────────────────────────────────────────────────
 
 export const ParamCard = styled.div`
   border: 1px solid #f1f5f9;
@@ -410,7 +401,6 @@ export const ParamCard = styled.div`
   }
 `
 
-// ─── Pill-toggle (переключатель) ──────────────────────────────────────────────
 
 export const PillGroup = styled.div`
   display: flex;
@@ -473,7 +463,6 @@ export const Pill = styled.button<{ $active?: boolean; $color?: 'blue' | 'green'
   }}
 `
 
-// ─── Чекбокс-кнопка (жалобы) ─────────────────────────────────────────────────
 
 export const CheckBtn = styled.button<{ $checked?: boolean }>`
   display: flex;
@@ -509,7 +498,6 @@ export const CheckBtn = styled.button<{ $checked?: boolean }>`
   }
 `
 
-// ─── Поле ввода ───────────────────────────────────────────────────────────────
 
 export const FormInput = styled.input`
   width: 100%;
@@ -582,7 +570,6 @@ export const FormField = styled.div`
   gap: 4px;
 `
 
-// ─── Текст-пример (автогенерация жалоб) ──────────────────────────────────────
 
 export const AutoText = styled.div`
   padding: 10px 12px;
@@ -605,7 +592,6 @@ export const AutoText = styled.div`
   }
 `
 
-// ─── Витальный индикатор (температура / SpO2 / пр.) ──────────────────────────
 
 export const VitalCard = styled.div`
   display: flex;
@@ -633,7 +619,6 @@ export const VitalUnit = styled.span`
   margin-left: 3px;
 `
 
-// ─── Таблица назначений ───────────────────────────────────────────────────────
 
 export const PrescTable = styled.table`
   width: 100%;
@@ -684,7 +669,6 @@ export const ActionPill = styled.button<{ $active?: boolean; $color?: string }>`
   transition: all 0.12s;
 `
 
-// ─── Процедуры ────────────────────────────────────────────────────────────────
 
 export const ProcedureRow = styled.div<{ $status: string }>`
   display: flex;
@@ -729,7 +713,6 @@ export const ProcedureRow = styled.div<{ $status: string }>`
   }
 `
 
-// ─── Лабораторный анализ (из карточки) ───────────────────────────────────────
 
 export const LabResultCard = styled.div<{ $criticality?: 'green' | 'yellow' | 'red' }>`
   display: flex;
@@ -785,7 +768,6 @@ export const LabResultCard = styled.div<{ $criticality?: 'green' | 'yellow' | 'r
   }
 `
 
-// ─── Мед. назначение (быстрый просмотр) ──────────────────────────────────────
 
 export const MedBadge = styled.div`
   display: flex;
@@ -808,7 +790,6 @@ export const MedBadge = styled.div`
   }
 `
 
-// ─── Заключение ───────────────────────────────────────────────────────────────
 
 export const ConclusionBox = styled.div`
   position: relative;
@@ -837,7 +818,6 @@ export const AutoGenBtn = styled.button`
   }
 `
 
-// ─── Нижняя панель действий ───────────────────────────────────────────────────
 
 export const BottomBar = styled.div`
   background: white;
@@ -909,7 +889,6 @@ export const BottomBtn = styled.button<{ variant?: 'primary' | 'success' | 'ghos
   }
 `
 
-// ─── Правая панель: виджет ────────────────────────────────────────────────────
 
 export const RightWidget = styled.div`
   border: 1px solid #f1f5f9;
@@ -951,7 +930,6 @@ export const HistoryEntry = styled.div`
   }
 `
 
-// ─── Быстрое действие (правая панель) ────────────────────────────────────────
 
 export const QuickAction = styled.button`
   width: 100%;
@@ -979,7 +957,6 @@ export const QuickAction = styled.button`
   svg { opacity: 0.6; flex-shrink: 0; }
 `
 
-// ─── Toast-уведомление ────────────────────────────────────────────────────────
 
 export const ToastOverlay = styled.div`
   position: fixed;
@@ -1011,7 +988,6 @@ export const Toast = styled.div<{ $type?: 'success' | 'info' | 'error' }>`
   }};
 `
 
-// ─── Модальное окно ───────────────────────────────────────────────────────────
 
 export const ModalOverlay = styled.div`
   position: fixed;
@@ -1076,7 +1052,6 @@ export const DynamicsBtn = styled.button<{ $active?: boolean; $color?: 'green' |
   }}
 `
 
-// ─── Мини-спарклайн температуры ───────────────────────────────────────────────
 
 export const TempSparkline = styled.div`
   display: flex;
@@ -1093,7 +1068,6 @@ export const SparkBar = styled.div<{ $height: number; $highlight?: boolean }>`
   transition: height 0.3s;
 `
 
-// ─── Divider ──────────────────────────────────────────────────────────────────
 
 export const Divider = styled.div`
   height: 1px;
@@ -1101,7 +1075,6 @@ export const Divider = styled.div`
   margin: 12px 0;
 `
 
-// ─── Секция (заголовок внутри блока) ─────────────────────────────────────────
 
 export const SubSection = styled.div`
   font-size: 11px;

@@ -309,7 +309,7 @@ export const InfoBox = styled.div`
   border: 1px solid #bfdbfe;
   border-radius: 12px;
   display: flex;
-  align-items: flex-start; /* Иконка всегда вверху слева */
+  align-items: flex-start; 
   gap: 12px;
 
   svg {
@@ -446,7 +446,6 @@ export const OtpInput = styled.input`
     color: #d1d5db;
   }
 
-  /* Скрыть стрелки для number input */
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;

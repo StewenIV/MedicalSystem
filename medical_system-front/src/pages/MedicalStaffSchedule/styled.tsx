@@ -49,7 +49,6 @@ const overlayIn = keyframes`
   to   { opacity: 1; }
 `
 
-// ─── Color tokens ────────────────────────────────────────────────────────────────
 const FONT = `'DM Sans', 'Inter', system-ui, sans-serif`
 const GRADIENT_ACCENT = 'linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)'
 const GRADIENT_BUTTON = 'linear-gradient(135deg, #1e40af 0%, #6d28d9 100%)'
@@ -68,7 +67,6 @@ export const PageContainer = styled.div`
   box-sizing: border-box;
   padding-bottom: 40px;
 
-  /* Mobile/Desktop switch */
   .desktop-table {
     display: block;
   }
@@ -293,7 +291,6 @@ export const NavigationButton = styled.button`
   }
 `
 
-// ─── Toolbar ─────────────────────────────────────────────────────────────────────
 export const Toolbar = styled.div`
   display: flex;
   gap: 16px;
@@ -464,7 +461,6 @@ export const StatSub = styled.div`
   margin-top: 2px;
 `
 
-// ─── Premium table container ────────────────────────────────────────────────────
 export const TableWrapper = styled.div`
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(24px);
@@ -480,7 +476,6 @@ export const TableWrapper = styled.div`
   position: relative;
   overflow: hidden;
 
-  /* Right fade scroll hint */
   &::after {
     content: '';
     position: absolute;
@@ -488,7 +483,7 @@ export const TableWrapper = styled.div`
     width: 60px;
     background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.95) 100%);
     pointer-events: none;
-    z-index: 5; /* below sticky name column z-index */
+    z-index: 5; 
     border-radius: 0 24px 24px 0;
   }
 `

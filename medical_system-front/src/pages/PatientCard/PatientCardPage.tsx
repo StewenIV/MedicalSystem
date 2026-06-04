@@ -1764,7 +1764,6 @@ const PatientCard: React.FC<PatientCardProps> = ({
         current += increment * step
         if (min !== undefined && current < min) current = min
         if (max !== undefined && current > max) current = max
-        // fix floating point issues
         current = parseFloat(current.toFixed(step < 1 ? 1 : 0))
         setFormData((p: any) => ({ ...p, [f.name]: String(current) }))
       }

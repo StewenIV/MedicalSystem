@@ -2,7 +2,6 @@ import { createGlobalStyle } from 'styled-components'
 
 export const GlobalStyles = createGlobalStyle`
   :root {
-    /* Только переменные, которых нет в index.css */
     --font-size: 16px;
     --input-background: #f3f3f5;
     --switch-background: #cbced4;

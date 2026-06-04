@@ -3,12 +3,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedicalSystem.API.Controllers
 {
     [ApiController]
     [Route("api/ward-statistics")]
+    [Authorize(Roles = "Doctor,Nurse,HeadNurse,ChiefDoctor")]
     public class WardStatisticsController : ControllerBase
     {
         private readonly WardStatisticsService _wardStatisticsService;

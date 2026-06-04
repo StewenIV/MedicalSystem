@@ -1156,7 +1156,6 @@ export const ModalShell = styled.div`
   }
 `
 
-// ─── Header ───────────────────────────────────────────────────────────────────
 
 export const ModalHeader = styled.div`
   padding: 24px 28px;
@@ -1185,7 +1184,7 @@ export const ModalHeader = styled.div`
 `
 
 export const ModalInfoPatient = styled.div`
-  padding: 16px 20px 16px 24px; /* добавили место слева */
+  padding: 16px 20px 16px 24px; 
   background: #ffffff;
   border: 1px solid rgba(191, 219, 254, 0.6);
   border-radius: 16px;
@@ -1198,7 +1197,7 @@ export const ModalInfoPatient = styled.div`
   &::before {
     content: '';
     position: absolute;
-    left: 0px; /* сдвинули внутрь */
+    left: 0px; 
     top: 8px;
     bottom: 0px;
     width: 4px;
@@ -1323,7 +1322,6 @@ export const ModalSubtitle = styled.p`
   }
 `
 
-// ─── Scrollable content ───────────────────────────────────────────────────────
 
 export const ModalContent = styled.div`
   flex: 1;
@@ -1472,7 +1470,6 @@ export const ArrowCircle = styled.div`
   }
 `
 
-// ─── Selection section ────────────────────────────────────────────────────────
 
 export const SelectionCard = styled.div`
   background: #ffffff;
@@ -1598,7 +1595,6 @@ export const StyledSelect = styled.select`
   }
 `
 
-// ─── Beds grid ────────────────────────────────────────────────────────────────
 
 export const BedsSection = styled.div`
   padding-top: 16px;
@@ -1711,7 +1707,6 @@ export const NoBedsBanner = styled.div`
   font-weight: 500;
 `
 
-// ─── Transfer details section ─────────────────────────────────────────────────
 
 export const DetailsCard = styled.div`
   background: #ffffff;
@@ -1829,7 +1824,6 @@ export const StyledTextarea = styled.textarea`
   }
 `
 
-// ─── Footer ───────────────────────────────────────────────────────────────────
 
 export const ModalFooter = styled.div`
   padding: 16px 24px;

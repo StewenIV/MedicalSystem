@@ -30,7 +30,6 @@ import {
   StartTimeDisplay,
 } from './styled'
 
-// ─── Styled helpers ───────────────────────────────────────────────
 
 const FONT = `'SF Pro Display', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif`
 
@@ -297,7 +296,6 @@ const s = {
   },
 }
 
-// ─── Навигационные секции ─────────────────────────────────────────
 
 const NAV_SECTIONS = [
   { id: 'info', label: 'Информация об осмотре', icon: Calendar },
@@ -310,7 +308,6 @@ const NAV_SECTIONS = [
   { id: 'examplan', label: 'План обследования', icon: FlaskConical },
 ]
 
-// ─── Хелперы ─────────────────────────────────────────────────────
 
 function PillBtn({ active, color, onClick, children }: {
   active: boolean; color?: string; onClick: () => void; children: React.ReactNode
@@ -360,14 +357,12 @@ function FieldInput({ label, value, onChange, placeholder, type = 'text' }: {
   )
 }
 
-// ─── Генерация итогового текста ───────────────────────────────────
 
 function generatePrimaryText(form: PrimaryFormState): string {
   const parts: string[] = []
   const inspType = form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр'
   parts.push(`${inspType} лечащего врача от ${form.inspectionDate}. Время: ${form.inspectionTime}.`)
 
-  // Жалобы
   const activeComplaints = form.complaints.filter(c => c !== 'none')
   if (form.complaints.includes('none') || activeComplaints.length === 0) {
     parts.push('Жалоб не предъявляет.')
@@ -387,7 +382,6 @@ function generatePrimaryText(form: PrimaryFormState): string {
     if (form.complaintsNote) parts.push(form.complaintsNote)
   }
 
-  // Anamnesis morbi
   if (form.illnessStartDate) {
     parts.push(`Заболел ${form.illnessStartDate}.`)
   }
@@ -395,7 +389,6 @@ function generatePrimaryText(form: PrimaryFormState): string {
     parts.push(`Госпитализирован: ${form.hospitalizationReason}.`)
   }
 
-  // Anamnesis vitae
   const infections: string[] = []
   if (form.tbStatus === 'denies') infections.push('туберкулёз отрицает')
   if (form.hivStatus === 'negative') infections.push('ВИЧ отрицательный')
@@ -409,7 +402,6 @@ function generatePrimaryText(form: PrimaryFormState): string {
     parts.push(`Аллергия: ${allNames}.`)
   }
 
-  // Объективно
   parts.push('Объективно:')
   const condMap: Record<GeneralCondition, string> = {
     satisfactory: 'удовлетворительное',
@@ -492,14 +484,12 @@ function generatePrimaryText(form: PrimaryFormState): string {
     parts.push(`Стул ${st[form.stool] ?? form.stool}.`)
   }
 
-  // Диагноз
   if (form.primaryDiagnosis) {
     parts.push(`\nКлинический диагноз:\nОсновной: ${form.primaryDiagnosis}.`)
     if (form.complicationsDiagnosis) parts.push(`Осложнения: ${form.complicationsDiagnosis}.`)
     if (form.concomitantDiagnosis) parts.push(`Сопутствующий: ${form.concomitantDiagnosis}.`)
   }
 
-  // Назначения
   const activeMeds = form.prescriptions.filter(p => p.action !== 'cancel')
   if (activeMeds.length > 0) {
     parts.push('\nНазначения:')
@@ -508,7 +498,6 @@ function generatePrimaryText(form: PrimaryFormState): string {
     })
   }
 
-  // Анализы
   const checked = form.labTests.filter(t => t.checked)
   if (checked.length > 0) {
     const labs = checked.filter(t => t.category === 'lab').map(t => t.name)
@@ -520,7 +509,6 @@ function generatePrimaryText(form: PrimaryFormState): string {
   return parts.join('\n')
 }
 
-// ─── Пропсы ───────────────────────────────────────────────────────
 
 interface PrimaryInspectionPageProps {
   patientId: string
@@ -528,9 +516,6 @@ interface PrimaryInspectionPageProps {
   onNavigateToTemperatureSheet?: (id: string) => void
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ГЛАВНЫЙ КОМПОНЕНТ
-// ═══════════════════════════════════════════════════════════════════
 
 const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   patientId,
@@ -554,7 +539,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   const [referralNote, setReferralNote] = useState('')
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  // Toast auto-close
   useEffect(() => {
     if (!toastMsg) return
     const t = setTimeout(() => setToastMsg(null), 3000)
@@ -574,7 +558,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     sectionRefs.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // ─── Жалобы ───────────────────────────────────────────────────
 
   const toggleComplaint = (k: ComplaintKey) => {
     setForm(prev => {
@@ -592,7 +575,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     setForm(prev => ({ ...prev, complaintParams: { ...prev.complaintParams, [key]: val } }))
   }
 
-  // ─── Назначения ───────────────────────────────────────────────
 
   const addPresc = () => {
     if (!newPresc.drug) return showToast('Укажите название препарата', 'error')
@@ -618,7 +600,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.filter(p => p.id !== id) }))
   }
 
-  // ─── Сохранение ───────────────────────────────────────────────
 
   const handleSaveDraft = () => {
     setField('status', 'draft')
@@ -631,10 +612,8 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     setField('generatedText', text)
     setField('status', 'completed')
     
-    // Очистить черновик
     saveDraft(`${patientId}-primary`, null)
 
-    // Сохранить в контекст
     const insp: SavedInspection = {
       id: `insp-${Date.now()}`,
       type: 'primary',
@@ -651,7 +630,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
 
     saveInspection(patientId, insp)
 
-    // Обновить витальные
     if (form.hr || form.bpRightSys || form.spo2 || form.rr) {
       updatePatientVitals(patientId, {
         hr: form.hr || undefined,
@@ -661,12 +639,10 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
       })
     }
 
-    // Обновить диагноз
     if (form.primaryDiagnosis) {
       updatePatientDiagnosis(patientId, form.primaryDiagnosis)
     }
 
-    // Обновить мед. назначения
     const activeMeds = form.prescriptions
       .filter(p => p.action !== 'cancel')
       .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }))
@@ -716,7 +692,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           return t
         }).join(', ')}.` + (form.complaintsNote ? ` ${form.complaintsNote}` : '')
 
-    // Extract objective string by removing complaints, anamnesis, diagnosis, and plan
     const splitText = text.split('\n\n')
     const objectiveParts = splitText.filter(p => {
       const lower = p.toLowerCase()
@@ -728,12 +703,11 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
       return p.trim().length > 0 && p !== form.complaintsNote
     })
 
-    // Запись в историю
     addHistoryEntry(patientId, {
       dateTime: `${form.inspectionDate} ${form.inspectionTime}`,
       type: form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр',
       doctor: form.doctor,
-      conclusion: text, // Полное заключение
+      conclusion: text, 
       complaints: complaintsText,
       objective: objectiveParts.join('\n\n'),
       recommendations: getPrescriptionsDiffPrimary(patient?.currentMeds || [], form.prescriptions),
@@ -749,7 +723,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     setShowReferralModal(true)
   }
 
-  // ─── Блок заполненности ───────────────────────────────────────
 
   const blockDone: Record<string, boolean> = {
     info: !!form.inspectionDate,
@@ -770,11 +743,9 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     )
   }
 
-  // ─── РЕНДЕР ───────────────────────────────────────────────────
 
   return (
     <div style={s.root}>
-      {/* ── Хедер ── */}
       <PatientHeader>
         <HeaderBtn variant="ghost" onClick={onClose}>
           <ChevronLeft size={15} /> Обходы
@@ -806,9 +777,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         </HeaderRight>
       </PatientHeader>
 
-      {/* ── Тело ── */}
       <div style={s.body}>
-        {/* Левая навигация */}
         <nav style={s.nav}>
           {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
             <button
@@ -827,10 +796,8 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           ))}
         </nav>
 
-        {/* Форма */}
         <div style={s.centerForm}>
 
-          {/* ════ БЛОК 1: ИНФОРМАЦИЯ ════ */}
           <div ref={el => { sectionRefs.current['info'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><Calendar size={16} /></div>
@@ -866,7 +833,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 2: ЖАЛОБЫ ════ */}
           <div ref={el => { sectionRefs.current['complaints'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><PenLine size={16} /></div>
@@ -881,7 +847,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 ))}
               </div>
 
-              {/* Зависимые параметры */}
               {form.complaints.includes('fever') && (
                 <div style={{ marginTop: 12, padding: '12px 14px', background: '#fff7ed', borderRadius: 8, border: '1px solid #fed7aa' }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: '#9a3412', marginBottom: 8 }}>Повышение температуры — параметры</div>
@@ -943,7 +908,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 3: ANAMNESIS MORBI ════ */}
           <div ref={el => { sectionRefs.current['anamnesis-morbi'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><FileText size={16} /></div>
@@ -1025,14 +989,12 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 4: ANAMNESIS VITAE ════ */}
           <div ref={el => { sectionRefs.current['anamnesis-vitae'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><User size={16} /></div>
               <div style={s.blockTitle}>Anamnesis vitae</div>
             </div>
             <div style={s.blockBody}>
-              {/* Инфекционный анамнез */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Инфекционный анамнез</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
@@ -1057,7 +1019,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </div>
               </div>
 
-              {/* Аллергии */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Аллергологический анамнез</div>
                 <div style={s.pillGroup}>
@@ -1083,7 +1044,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 )}
               </div>
 
-              {/* Операции */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Операции</div>
                 <CheckBtnComp checked={form.operationsStatus === 'none'} onClick={() => setField('operationsStatus', 'none')}>Отсутствуют</CheckBtnComp>
@@ -1117,7 +1077,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 )}
               </div>
 
-              {/* Сопутствующие заболевания */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Сопутствующие заболевания</div>
                 {form.comorbidities.length > 0 ? (
@@ -1151,7 +1110,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </button>
               </div>
 
-              {/* Вредные привычки */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Вредные привычки</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
@@ -1179,14 +1137,12 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 5: ОБЪЕКТИВНЫЙ СТАТУС ════ */}
           <div ref={el => { sectionRefs.current['objective'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><Stethoscope size={16} /></div>
               <div style={s.blockTitle}>Объективный статус</div>
             </div>
             <div style={s.blockBody}>
-              {/* Общее */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Общее состояние</div>
                 <div style={s.pillGroup}>
@@ -1220,7 +1176,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </div>
               </div>
 
-              {/* Кожа */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Кожа и слизистые</div>
                 <div style={s.row}>
@@ -1279,7 +1234,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </div>
               </div>
 
-              {/* Дыхательная система */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Дыхательная система</div>
                 <div style={s.row}>
@@ -1341,7 +1295,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </div>
               </div>
 
-              {/* Сердечно-сосудистая */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Сердечно-сосудистая система</div>
                 <div style={s.row3}>
@@ -1401,7 +1354,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </div>
               </div>
 
-              {/* ЖКТ */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>ЖКТ</div>
                 <div style={s.subsection}>Язык</div>
@@ -1457,7 +1409,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 </div>
               </div>
 
-              {/* Мочевыделение */}
               <div style={s.paramCard}>
                 <div style={s.paramLabel}>Мочевыделительная система</div>
                 <div style={s.subsection}>Симптом поколачивания</div>
@@ -1488,7 +1439,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 6: ДИАГНОЗ ════ */}
           <div ref={el => { sectionRefs.current['diagnosis'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><ClipboardList size={16} /></div>
@@ -1510,7 +1460,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 7: НАЗНАЧЕНИЯ ════ */}
           <div ref={el => { sectionRefs.current['prescriptions'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><PillIcon size={16} /></div>
@@ -1568,7 +1517,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* ════ БЛОК 8: ПЛАН ОБСЛЕДОВАНИЯ ════ */}
           <div ref={el => { sectionRefs.current['examplan'] = el }} style={s.block}>
             <div style={s.blockHeader}>
               <div style={s.blockIcon}><FlaskConical size={16} /></div>
@@ -1600,7 +1548,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
           </div>
 
-          {/* Итоговая запись */}
           {showGenText && form.generatedText && (
             <div style={{ ...s.block, border: '2px solid #22c55e' }}>
               <div style={{ ...s.blockHeader, background: '#f0fdf4' }}>
@@ -1635,7 +1582,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         </div>
       </div>
 
-      {/* ── Модал: Добавить назначение ── */}
       {showPrescModal && (
         <div style={s.modal} onClick={() => setShowPrescModal(false)}>
           <div style={s.modalBox} onClick={e => e.stopPropagation()}>
@@ -1644,13 +1590,11 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               <button onClick={() => setShowPrescModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
             </div>
 
-            {/* Препарат */}
             <div style={{ marginBottom: 12 }}>
               <label style={s.label}>Препарат *</label>
               <input style={s.input} placeholder="Цефтриаксон" value={newPresc.drug ?? ''} onChange={e => setNewPresc(p => ({ ...p, drug: e.target.value }))} />
             </div>
 
-            {/* Форма / Доза / Единицы */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={s.label}>Форма</label>
@@ -1686,7 +1630,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               </div>
             </div>
 
-            {/* Путь введения / Кратность / Длительность */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={s.label}>Путь введения</label>
@@ -1743,7 +1686,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         </div>
       )}
 
-      {/* ── Модал: Направление ── */}
       {showReferralModal && (
         <div style={s.modal} onClick={() => setShowReferralModal(false)}>
           <div style={s.modalBox} onClick={e => e.stopPropagation()}>
@@ -1789,7 +1731,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         </div>
       )}
 
-      {/* Toast */}
       {toastMsg && (
         <div style={s.toast(toastMsg.type)}>
           {toastMsg.type === 'success' ? <Check size={18} /> : toastMsg.type === 'error' ? <AlertTriangle size={18} /> : null}

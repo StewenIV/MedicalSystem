@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import {
   Search,
   ClipboardList,
@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   RotateCcw,
   SlidersHorizontal,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 import { usePatientData } from 'context/PatientDataContext'
 
@@ -40,6 +42,11 @@ import {
   PatientNameCell,
   StatusPill,
   SearchEmptyState,
+  SearchPaginationRow,
+  SearchPaginationInfo,
+  SearchPageSizeSelect,
+  SearchPaginationBtns,
+  SearchPageBtn,
 } from 'pages/PatientCard/styled'
 
 import {
@@ -90,7 +97,6 @@ export const ActionButton = styled.button<{ $variant?: 'primary' | 'ghost' }>`
 `
 
 
-// ─── Пропсы ───────────────────────────────────────────────────────
 
 interface WardRoundsHubProps {
   onStartPrimary: (patientId: string) => void
@@ -100,14 +106,12 @@ interface WardRoundsHubProps {
 
 type FilterType = 'all' | 'today' | 'inspected' | 'waiting'
 
-// ─── Вспомогательные функции ──────────────────────────────────────
 
 const getInitials = (firstName?: string, lastName?: string) => {
   if (!firstName && !lastName) return 'П'
   return `${lastName?.[0] || ''}${firstName?.[0] || ''}`.toUpperCase()
 }
 
-// ─── Компонент ────────────────────────────────────────────────────
 
 const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
   onStartPrimary,
@@ -117,11 +121,16 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
   const { patients, getInspections } = usePatientData()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState<FilterType>('all')
+  const [pageSize, setPageSize] = useState(8)
+  const [page, setPage] = useState(1)
+
+  useEffect(() => {
+    setPage(1)
+  }, [query, filter])
 
   const today = new Date().toLocaleDateString('ru-RU')
   const todayISO = new Date().toISOString().split('T')[0]
 
-  // Показываем только госпитализированных
   const inpatients = useMemo(() => {
     return patients.filter(p =>
       p.status === 'inpatient' ||
@@ -134,7 +143,6 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
     return insp.some(i => i.date === todayISO)
   }
 
-  // Фильтрация
   const filtered = useMemo(() => {
     let list = inpatients
 
@@ -151,8 +159,19 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
     if (filter === 'waiting') list = list.filter(p => !getIsInspectedToday(p.id))
 
     return list
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inpatients, query, filter, todayISO])
+
+  const totalPages = Math.ceil(filtered.length / pageSize)
+  const safePage = Math.max(1, Math.min(page, totalPages || 1))
+
+  const paginatedPatients = useMemo(() => {
+    const start = (safePage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, safePage, pageSize])
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+  }
 
   const inspectedToday = inpatients.filter(p => getIsInspectedToday(p.id)).length
   const criticalCount = inpatients.filter(p => p.status === 'critical').length
@@ -289,7 +308,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  filtered.map(p => {
+                  paginatedPatients.map(p => {
                     const inspToday = getInspections(p.id).filter(i => i.date === today)
                     const isInspected = inspToday.length > 0
                     const lastInsp = inspToday[inspToday.length - 1]
@@ -379,6 +398,73 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
             </SearchTable>
           </SearchTableViewport>
         </SearchTableWrap>
+        {totalPages >= 1 && (
+          <SearchPaginationRow>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <SearchPaginationInfo>
+                Показано {filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1}–
+                {Math.min(safePage * pageSize, filtered.length)} из {filtered.length}
+              </SearchPaginationInfo>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12, color: '#94a3b8' }}>По</span>
+                <SearchPageSizeSelect
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value))
+                    setPage(1)
+                  }}
+                >
+                  {[5, 8, 15, 50].map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </SearchPageSizeSelect>
+              </div>
+            </div>
+            <SearchPaginationBtns>
+              <SearchPageBtn onClick={() => handlePageChange(1)} disabled={safePage === 1}>
+                <ChevronLeft size={14} />
+                <ChevronLeft size={14} />
+              </SearchPageBtn>
+              <SearchPageBtn
+                onClick={() => handlePageChange(safePage - 1)}
+                disabled={safePage === 1}
+              >
+                <ChevronLeft size={14} />
+              </SearchPageBtn>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                let p = i + 1
+                if (totalPages > 5) {
+                  const start = Math.max(1, Math.min(safePage - 2, totalPages - 4))
+                  p = start + i
+                }
+                return (
+                  <SearchPageBtn
+                    key={p}
+                    $active={p === safePage}
+                    onClick={() => handlePageChange(p)}
+                  >
+                    {p}
+                  </SearchPageBtn>
+                )
+              })}
+              <SearchPageBtn
+                onClick={() => handlePageChange(safePage + 1)}
+                disabled={safePage === totalPages}
+              >
+                <ChevronRight size={14} />
+              </SearchPageBtn>
+              <SearchPageBtn
+                onClick={() => handlePageChange(totalPages)}
+                disabled={safePage === totalPages}
+              >
+                <ChevronRight size={14} />
+                <ChevronRight size={14} />
+              </SearchPageBtn>
+            </SearchPaginationBtns>
+          </SearchPaginationRow>
+        )}
       </SearchCard>
     </SearchPageWrapper>
   )

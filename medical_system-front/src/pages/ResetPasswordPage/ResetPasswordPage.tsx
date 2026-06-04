@@ -175,7 +175,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     }
   }
 
-  // Handle verifying code
   const handleVerifyCode = async () => {
     setError('')
     setTouched({ ...touched, code: true })
@@ -187,10 +186,8 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     setIsLoading(true)
 
     try {
-      // Simulate API call
       await new Promise((resolve, reject) => {
         setTimeout(() => {
-          // Check if code matches (for demo purposes, accept "578202")
           if (code === '578202') {
             resolve(true)
           } else {
@@ -217,7 +214,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     setIsLoading(true)
 
     try {
-      // Simulate API call
       await new Promise((resolve, reject) => {
         setTimeout(() => {
           Math.random() > 0.1
@@ -289,7 +285,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
        setOtpValues(newOtpValues)
        setCode(newOtpValues.join(''))
      } else if (index > 0) {
-       // если пусто — переходим назад и очищаем
        const newOtpValues = [...otpValues]
        newOtpValues[index - 1] = ''
        setOtpValues(newOtpValues)
@@ -375,7 +370,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
             </>
           )}
 
-          {/*Ввод Email*/}
           {step === 'email' && (
             <form
               onSubmit={(e) => {
@@ -456,7 +450,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
             </form>
           )}
 
-          {/* Ввод кода подтверждения */}
           {step === 'code' && (
             <form
               onSubmit={(e) => {
@@ -557,7 +550,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
             </form>
           )}
 
-          {/* Новый пароль */}
           {step === 'password' && (
             <form
               onSubmit={(e) => {
@@ -697,7 +689,6 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
             </form>
           )}
 
-          {/*Успешно*/}
           {step === 'success' && (
             <SuccessMessage>
               <div className="icon-wrapper">

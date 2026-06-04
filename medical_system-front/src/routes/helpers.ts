@@ -1,16 +1,22 @@
-import WelcomeScreen from 'pages/WelcomeScreen'
-
 export const pathsPublic: { [k: string]: string } = {
   auth: '/auth',
   registration: '/registration',
   welcome: '/welcome',
   resetPassword: '/reset-password',
-  home: '/home',
-  temperatureSheet: '/temperature-sheet',
-  medicalStaffSchedule: '/medical-staff-schedule'
 }
 
-export const pathsPrivate: { [k: string]: string } = {}
+export const pathsPrivate: { [k: string]: string } = {
+  home: '/home',
+  temperatureSheet: '/temperature-sheet',
+  medicalStaffSchedule: '/medical-staff-schedule',
+  patientCard: '/patient-card',
+  hospitalBeds: '/hospital-beds',
+  wardRound: '/ward-round',
+  bedsAdmin: '/beds-admin',
+  medicines: '/medicines',
+  laboratory: '/laboratory',
+  patientCabinet: '/patient-cabinet',
+}
 
 export const paths: { [k: string]: string } = Object.assign({}, pathsPublic, pathsPrivate)
 

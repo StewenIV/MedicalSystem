@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Generic;
 using MedicalSystem.Domain.Models;
+using BC = BCrypt.Net.BCrypt;
 
 namespace MedicalSystem.Data.DataGeneration
 {
@@ -115,6 +116,8 @@ namespace MedicalSystem.Data.DataGeneration
                 
                 await context.SaveChangesAsync();
 
+                await SeedUsersAsync(context, logger);
+
                 logger.LogInformation("Проверка и заполнение базы данных завершены.");
             }
             catch (Exception ex)
@@ -137,6 +140,39 @@ namespace MedicalSystem.Data.DataGeneration
                 await dbSet.AddRangeAsync(newData);
             }
             return newData;
+        }
+
+        private static async Task SeedUsersAsync(MedicalSystemDbContext context, ILogger logger)
+        {
+            var testUsers = new[]
+            {
+                new { Login = "doctor1",    Password = "Password123!", Role = "Doctor",            DisplayName = "Иванов Иван Иванович" },
+                new { Login = "nurse1",     Password = "Password123!", Role = "Nurse",             DisplayName = "Петрова Анна Сергеевна" },
+                new { Login = "head_nurse1",Password = "Password123!", Role = "HeadNurse",         DisplayName = "Смирнова Ольга Николаевна" },
+                new { Login = "chief1",     Password = "Password123!", Role = "ChiefDoctor",       DisplayName = "Козлов Дмитрий Александрович" },
+                new { Login = "lab1",       Password = "Password123!", Role = "LaboratoryEmployee",DisplayName = "Лабораторный сотрудник" },
+                new { Login = "patient1",   Password = "Password123!", Role = "Patient",           DisplayName = "Пациент Тестовый" },
+            };
+
+            foreach (var u in testUsers)
+            {
+                var exists = await context.Users.AnyAsync(x => x.Login == u.Login);
+                if (!exists)
+                {
+                    context.Users.Add(new User
+                    {
+                        Id = Guid.NewGuid(),
+                        Login = u.Login,
+                        PasswordHash = BC.HashPassword(u.Password),
+                        Role = u.Role,
+                        DisplayName = u.DisplayName,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                    logger.LogInformation("Создан тестовый пользователь: {Login} [{Role}]", u.Login, u.Role);
+                }
+            }
+
+            await context.SaveChangesAsync();
         }
     }
 }

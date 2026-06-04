@@ -1,15 +1,18 @@
+
 export type UserRole =
-  | 'admin'
-  | 'chief_doctor'
-  | 'doctor'
-  | 'head_nurse'
-  | 'nurse'
-  | 'patient'
-  | 'laboratory'
+  | 'Doctor'
+  | 'Nurse'
+  | 'HeadNurse'
+  | 'ChiefDoctor'
+  | 'LaboratoryEmployee'
+  | 'Patient'
   | null
 
 export interface I_AppStore {
   isLogged: boolean
   isAppLoading: boolean
   userRole: UserRole
+  userId: string | null
+  userLogin: string | null
+  displayName: string | null
 }

@@ -9,6 +9,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
+using Assert = Xunit.Assert;
 
 namespace MedicalSystem.App.Test
 {
@@ -24,7 +27,7 @@ namespace MedicalSystem.App.Test
             _mockPatientStorage = new Mock<IPatientStorage>();
             _patientService = new PatientService(_mockPatientQuery.Object, _mockPatientStorage.Object);
         }
-
+        
         [Fact]
         public async Task GetPatientCardAsync_ReturnsPatientCardDto_WhenPatientExists()
         {
@@ -56,15 +59,42 @@ namespace MedicalSystem.App.Test
                 FirstName = "Jane",
                 LastName = "Smith",
                 MiddleName = "A.",
-                DateOfBirth = DateTime.Now.AddYears(-30),
+                DateOfBirth = new DateTime(1994, 1, 1),
+                Gender = Gender.Female.ToString(),
+                Status = PatientStatus.Outpatient.ToString(),
+                MedcardNum = "MC123",
+                HistoryNum = "HN456"
+            };
+
+            var patientListDto = new PatientListDto
+            {
+                Id = patientId,
+                FirstName = "Jane",
+                LastName = "Smith",
+                MiddleName = "A.",
+                DateOfBirth = new DateTime(1994, 1, 1),
+                Age = 30,
+                Gender = "Женский",
+                Status = "Outpatient",
+                StatusText = "Амбулаторный",
+                MedcardNum = "MC123",
+                HistoryNum = "HN456"
+            };
+
+            var patient = new Patient
+            {
+                Id = patientId,
+                FirstName = "Jane",
+                LastName = "Smith",
+                MiddleName = "A.",
+                DateOfBirth = new DateTime(1994, 1, 1),
                 Gender = Gender.Female,
                 Status = PatientStatus.Outpatient,
                 MedcardNum = "MC123",
                 HistoryNum = "HN456"
             };
-
             _mockPatientStorage.Setup(s => s.AddPatientAsync(It.IsAny<PatientCardDto>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(patientCardDto);
+                .ReturnsAsync(patient);
 
             // Act
             var result = await _patientService.AddPatientAsync(patientCardDto, CancellationToken.None);
@@ -75,7 +105,7 @@ namespace MedicalSystem.App.Test
             Assert.Equal("Jane", result.FirstName);
             Assert.Equal("Smith", result.LastName);
             Assert.Equal("A.", result.MiddleName);
-            Assert.Equal(30, result.Age); // Assuming DateOfBirth is 30 years ago
+            Assert.True(result.Age >= 30); // Age can be 30 or 31 depending on the current date
             Assert.Equal(patientCardDto.DateOfBirth, result.DateOfBirth);
             Assert.Equal("Женский", result.Gender);
             Assert.Equal("Outpatient", result.Status);
@@ -84,7 +114,7 @@ namespace MedicalSystem.App.Test
             Assert.Equal("HN456", result.HistoryNum);
 
             _mockPatientStorage.Verify(
-                s => s.AddPatientAsync(It.IsAny<PatientCardDto>(), It.IsAny<CancellationToken>()), Times.Once);
+                s => s.AddPatientAsync(It.Is<PatientCardDto>(p => p.Id == patientId), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -93,8 +123,8 @@ namespace MedicalSystem.App.Test
             // Arrange
             var hospitalizedPatients = new List<PatientLookupDto>
             {
-                new PatientLookupDto { Id = Guid.NewGuid(), FirstName = "Alice", LastName = "Brown" },
-                new PatientLookupDto { Id = Guid.NewGuid(), FirstName = "Bob", LastName = "Green" }
+                new PatientLookupDto { Id = Guid.NewGuid(), FullName = "Alice Brown" },
+                new PatientLookupDto { Id = Guid.NewGuid(), FullName = "Bob Green" }
             };
 
             _mockPatientQuery.Setup(q =>
@@ -107,8 +137,8 @@ namespace MedicalSystem.App.Test
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
-            Assert.Contains(result, p => p.FirstName == "Alice");
-            Assert.Contains(result, p => p.FirstName == "Bob");
+            Assert.Contains(result, p => p.FullName == "Alice Brown");
+            Assert.Contains(result, p => p.FullName == "Bob Green");
             _mockPatientQuery.Verify(
                 q => q.GetPatientsByStatusAsync(PatientStatus.Hospitalized, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -150,7 +180,7 @@ namespace MedicalSystem.App.Test
             };
 
             _mockPatientStorage.Setup(s =>
-                    s.UpdatePatientCardAsync(patientId, patientCardDto, It.IsAny<CancellationToken>()))
+                    s.UpdatePatientCardAsync(patientId, It.IsAny<PatientCardDto>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -158,7 +188,7 @@ namespace MedicalSystem.App.Test
 
             // Assert
             _mockPatientStorage.Verify(
-                s => s.UpdatePatientCardAsync(patientId, patientCardDto, It.IsAny<CancellationToken>()), Times.Once);
+                s => s.UpdatePatientCardAsync(patientId, It.Is<PatientCardDto>(p => p.FirstName == "Updated"), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

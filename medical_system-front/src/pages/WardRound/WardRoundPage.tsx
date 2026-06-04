@@ -28,7 +28,6 @@ import {
   StartTimeDisplay,
 } from './styled'
 
-// ─── Inline styles ────────────────────────────────────────────────
 
 const FONT = `'SF Pro Display', 'Inter', -apple-system, sans-serif`
 
@@ -89,12 +88,10 @@ const sub: React.CSSProperties = {
   paddingBottom: 4, borderBottom: '1px solid #f1f5f9',
 }
 
-// ─── Генерация текста ─────────────────────────────────────────────
 
 function generateDailyText(form: DailyRoundFormState, patientName: string): string {
   const parts: string[] = []
 
-  // Форматирование даты из ISO в RU
   const dateRu = form.inspectionDate
     ? new Date(form.inspectionDate).toLocaleDateString('ru-RU')
     : form.inspectionDate
@@ -182,7 +179,6 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
   return parts.join(' ')
 }
 
-// ─── Пропсы ───────────────────────────────────────────────────────
 
 interface DailyRoundPageProps {
   patientId: string
@@ -190,9 +186,6 @@ interface DailyRoundPageProps {
   onNavigateToTemperatureSheet?: (id: string) => void
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// КОМПОНЕНТ
-// ═══════════════════════════════════════════════════════════════════
 
 const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onNavigateToTemperatureSheet }) => {
   const { getPatient, saveInspection, updatePatientVitals, addHistoryEntry, saveDraft, getDraft } = usePatientData()
@@ -243,7 +236,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
     setField('generatedText', text)
     setField('status', 'completed')
     
-    // Очистить черновик
     saveDraft(`${patientId}-daily`, null)
 
     const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
@@ -315,7 +307,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           return t
         }).join(', ')}.` + (form.complaintsNote ? ` ${form.complaintsNote}` : '')
 
-    // Extract objective string by removing complaints, date, and treatment/plan
     const splitText = text.split('.')
     const objectiveParts = splitText.filter(p => {
       const lower = p.toLowerCase()
@@ -330,7 +321,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
       dateTime: `${form.inspectionDate} ${form.inspectionTime}`,
       type: 'Ежедневный осмотр',
       doctor: form.doctor,
-      conclusion: text, // Полное заключение
+      conclusion: text, 
       complaints: complaintsText,
       objective: objectiveParts.join('. ') + '.',
       recommendations: getPrescriptionsDiff(patient.currentMeds || [], form.prescriptions, form.treatmentDecision || 'keep'),
@@ -365,14 +356,13 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
     vitals: !!form.temperature || !!form.hr || !!form.bpSys || !!form.rr || !!form.spo2,
     complaints: form.complaints.length > 0,
     objective: !!form.generalCondition,
-    diagnosis: true, // В ежедневном диагноз только для чтения
+    diagnosis: true, 
     prescriptions: form.prescriptions.length > 0,
     recommendations: !!form.controlStudies || !!form.nextInspection || form.treatmentDecision !== undefined,
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 84px)', background: '#f3f4f6', fontFamily: FONT }}>
-      {/* ── Хедер ── */}
       <PatientHeader>
         <HeaderBtn variant="ghost" onClick={onClose}>
           <ChevronLeft size={15} /> Обходы
@@ -407,9 +397,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
         </HeaderRight>
       </PatientHeader>
 
-      {/* Тело */}
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {/* Левая навигация */}
         <nav style={{ width: 220, flexShrink: 0, background: 'white', borderRight: '1px solid #e5e7eb', overflowY: 'auto', padding: '12px 0' }}>
           {[
             { id: 'info', label: 'Информация', icon: Clock },
@@ -432,10 +420,8 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           ))}
         </nav>
 
-        {/* Форма */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', scrollBehavior: 'smooth' }}>
           <div style={{ maxWidth: 900, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Дата / время */}
             <div id="daily-info" style={block}>
           <div style={blockHeader}><Clock size={15} /> Информация об осмотре</div>
           <div style={{ ...blockBody, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
@@ -454,7 +440,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-            {/* Показатели */}
             <div id="daily-vitals" style={block}>
           <div style={blockHeader}>
             <Activity size={15} /> Показатели
@@ -491,7 +476,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 )
               })}
 
-              {/* АД — два поля */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 12px 10px', border: '1.5px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <Activity size={16} color="#8b5cf6" />
@@ -508,7 +492,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-            {/* Жалобы */}
             <div id="daily-complaints" style={block}>
           <div style={blockHeader}><FileText size={15} /> Жалобы</div>
           <div style={blockBody}>
@@ -535,13 +518,11 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-            {/* Объективно */}
             <div id="daily-objective" style={block}>
           <div style={blockHeader}><Activity size={15} /> Объективно</div>
           <div style={blockBody}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
 
-              {/* Общее состояние */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Общее состояние</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
@@ -551,7 +532,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 </div>
               </div>
 
-              {/* Кожа */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Кожа</div>
                 <div style={sub}>Цвет</div>
@@ -574,7 +554,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 </div>
               </div>
 
-              {/* Грудная клетка */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Грудная клетка</div>
                 <div style={sub}>Форма</div>
@@ -591,7 +570,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 </div>
               </div>
 
-              {/* Дыхание */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Дыхание</div>
                 <div style={pillGroup}>
@@ -608,7 +586,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Доп. данные..." value={form.respiratoryNote} onChange={e => setField('respiratoryNote', e.target.value)} />
               </div>
 
-              {/* Сердце */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Сердце</div>
                 <div style={pillGroup}>
@@ -624,7 +601,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Комментарий..." value={form.heartNote} onChange={e => setField('heartNote', e.target.value)} />
               </div>
 
-              {/* Язык */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Язык</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
@@ -634,7 +610,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 </div>
               </div>
 
-              {/* Живот */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Живот</div>
                 <div style={pillGroup}>
@@ -645,7 +620,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Комментарий..." value={form.abdomenNote} onChange={e => setField('abdomenNote', e.target.value)} />
               </div>
 
-              {/* Стул */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Стул</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
@@ -655,7 +629,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                 </div>
               </div>
 
-              {/* Мочеиспускание */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Мочеиспускание</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
@@ -668,7 +641,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-        {/* Динамика */}
         <div id="daily-diagnosis" style={block}>
           <div style={blockHeader}><TrendingUp size={15} /> Динамика</div>
           <div style={blockBody}>
@@ -694,7 +666,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-        {/* Лечение */}
         <div id="daily-prescriptions" style={block}>
           <div style={blockHeader}>Лечение</div>
           <div style={blockBody}>
@@ -727,7 +698,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-        {/* План */}
         <div id="daily-plan" style={block}>
           <div style={blockHeader}>План</div>
           <div style={{ ...blockBody, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -742,7 +712,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           </div>
         </div>
 
-        {/* Результат */}
         {showResult && form.generatedText ? (
           <div style={{ ...block, border: '2px solid #22c55e' }}>
             <div style={{ ...blockHeader, background: '#f0fdf4', color: '#059669' }}>
@@ -775,7 +744,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
         </div>
       </div>
 
-      {/* Модал назначения */}
       {showPrescModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={() => setShowPrescModal(false)}>
           <div style={{ background: 'white', borderRadius: 16, padding: 28, maxWidth: 540, width: '100%', boxShadow: '0 24px 80px rgba(0,0,0,0.3)' }} onClick={e => e.stopPropagation()}>
@@ -833,7 +801,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
         </div>
       )}
 
-      {/* Toast */}
       {toastMsg && (
         <div style={{ position: 'fixed', bottom: 32, right: 32, zIndex: 9999, padding: '12px 20px', borderRadius: 10, background: toastMsg.type === 'success' ? '#059669' : toastMsg.type === 'error' ? '#dc2626' : '#1d4ed8', color: 'white', fontSize: 14, fontWeight: 600, boxShadow: '0 8px 28px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: 10, fontFamily: FONT }}>
           {toastMsg.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}

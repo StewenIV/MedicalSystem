@@ -1,10 +1,24 @@
 const BASE_URL = process.env.REACT_APP_API_URL ?? ''
+const TOKEN_KEY = 'token'
 
 export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = localStorage.getItem(TOKEN_KEY)
+
   const res = await fetch(`${BASE_URL}${url}`, {
-    headers: { 'Content-Type': 'application/json', ...init?.headers },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers
+    },
     ...init,
   })
+
+  if (res.status === 401) {
+    localStorage.removeItem(TOKEN_KEY)
+    window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+    throw new Error('Сессия истекла. Войдите снова.')
+  }
+
   if (!res.ok) {
     let errorMsg = `Ошибка сервера (${res.status})`
     try {
@@ -13,7 +27,6 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
         try {
           const errorData = JSON.parse(errorText)
 
-          // Формат FluentValidation: { message: "...", errors: ["...", "..."] }
           if (Array.isArray(errorData.errors) && errorData.errors.length > 0) {
             errorMsg = errorData.errors.join('\n')
           } else if (errorData.message) {
@@ -21,7 +34,6 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
           } else if (errorData.detail) {
             errorMsg = errorData.detail
           } else if (errorData.title) {
-            // ASP.NET validation problem details: { title, errors: { field: ["msg"] } }
             const problemErrors = errorData.errors
             if (problemErrors && typeof problemErrors === 'object') {
               const msgs = Object.values(problemErrors).flat() as string[]
@@ -39,7 +51,6 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
         }
       }
     } catch {
-      // fallback to default error message if reading text fails
     }
     throw new Error(errorMsg)
   }

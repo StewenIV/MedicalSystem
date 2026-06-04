@@ -1,10 +1,6 @@
-// ═══════════════════════════════════════════════════════════════════
-// ОБЩИЕ ТИПЫ
-// ═══════════════════════════════════════════════════════════════════
 
 export type InspectionType = 'primary' | 'repeated' | 'daily'
 
-// ─── Жалобы (расширенные) ─────────────────────────────────────────
 
 export type ComplaintKey =
   | 'none'
@@ -35,7 +31,6 @@ export const COMPLAINT_LABELS: Record<ComplaintKey, string> = {
   other: 'Другое',
 }
 
-// Дополнительные параметры жалоб
 export interface ComplaintParams {
   fever?: { maxTemp: string }
   dyspnea_exertion?: { severity: 'mild' | 'moderate' | 'severe' }
@@ -45,7 +40,6 @@ export interface ComplaintParams {
   chest_pain?: { character: string; location: string }
 }
 
-// ─── Объективный статус ───────────────────────────────────────────
 
 export type GeneralCondition = 'satisfactory' | 'moderate' | 'severe' | 'critical'
 export type Consciousness = 'clear' | 'drowsy' | 'confused' | 'absent'
@@ -89,7 +83,6 @@ export type UrinationState = 'free_painless' | 'difficult' | 'painful' | 'freque
 
 export type DynamicsState = 'improvement' | 'no_change' | 'deterioration'
 
-// ─── Назначение (для первичного осмотра) ─────────────────────────
 
 export type PrescriptionAction = 'keep' | 'adjust' | 'cancel' | 'new'
 
@@ -97,9 +90,9 @@ export interface RoundPrescription {
   id: string
   drug: string
   dose: string
-  unit: string     // мг, мл, ЕД, г
-  route: string    // в/в, в/м, перорально и т.д.
-  frequency: string // 1р/д, 2р/д и т.д.
+  unit: string     
+  route: string    
+  frequency: string 
   form: string
   regimen: string
   comment?: string
@@ -108,7 +101,6 @@ export interface RoundPrescription {
   adjustedRegimen?: string
 }
 
-// ─── Лабораторный тест ────────────────────────────────────────────
 
 export interface LabTestCheck {
   id: string
@@ -117,7 +109,6 @@ export interface LabTestCheck {
   checked: boolean
 }
 
-// ─── Процедура ────────────────────────────────────────────────────
 
 export type ProcedureStatus = 'done' | 'pending' | 'cancelled'
 
@@ -128,12 +119,8 @@ export interface Procedure {
   status: ProcedureStatus
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ПЕРВИЧНЫЙ ОСМОТР — полное состояние формы
-// ═══════════════════════════════════════════════════════════════════
 
 export interface PrimaryFormState {
-  // Мета
   inspectionDate: string
   inspectionTime: string
   doctor: string
@@ -142,12 +129,10 @@ export interface PrimaryFormState {
   inspectionType: 'primary' | 'repeated'
   status: 'draft' | 'completed'
 
-  // Блок 2 — Жалобы
   complaints: ComplaintKey[]
   complaintParams: ComplaintParams
   complaintsNote: string
 
-  // Блок 3 — Anamnesis morbi
   illnessStartDate: string
   illnessCauses: ('cold' | 'infection' | 'contact' | 'unknown')[]
   preTreatment: ('outpatient' | 'inpatient')[]
@@ -156,26 +141,20 @@ export interface PrimaryFormState {
   hospitalizationReason: string
   hospitalizationDate: string
 
-  // Блок 4 — Anamnesis vitae
-  // Инфекционный анамнез
   tbStatus: 'denies' | 'confirms' | null
   tbContact: 'yes' | 'no' | null
   hivStatus: 'negative' | 'positive' | null
   hepatitisStatus: 'negative' | 'positive' | null
   stdStatus: 'denies' | 'has' | null
 
-  // Аллергии
   allergyStatus: 'none' | 'has'
   allergies: { id: string; name: string; reaction: string }[]
 
-  // Операции
   operationsStatus: 'none' | 'has'
   operations: { id: string; date: string; name: string; comment: string }[]
 
-  // Сопутствующие заболевания
   comorbidities: { id: string; diagnosis: string; activity: string }[]
 
-  // Вредные привычки
   badHabitsStatus: 'none' | 'has'
   smoking: boolean
   smokingYears: string
@@ -183,13 +162,11 @@ export interface PrimaryFormState {
   alcoholDetails: string
 
 
-  // Блок 5 — Объективный статус
   generalCondition: GeneralCondition | null
   consciousness: Consciousness | null
   constitution: Constitution | null
   nutrition: Nutrition | null
 
-  // Кожа
   skinColor: SkinColor | null
   skinTemp: SkinTemp | null
   skinMoisture: SkinMoisture | null
@@ -200,7 +177,6 @@ export interface PrimaryFormState {
   edemaLocation: string
   lymphNodes: 'not_palpable' | 'enlarged' | null
 
-  // Дыхательная система
   breathingNose: BreathingNose | null
   rr: string
   spo2: string
@@ -212,7 +188,6 @@ export interface PrimaryFormState {
   ralesLocation: string
   respiratoryComment: string
 
-  // Сердечно-сосудистая
   hr: string
   pulse: string
   bpRightSys: string
@@ -224,49 +199,38 @@ export interface PrimaryFormState {
   heartMurmurs: HeartMurmurs | null
   cardiovascularComment: string
 
-  // ЖКТ
   tongueState: TongueState | null
   abdomenState: AbdomenState | null
   abdomenPain: AbdomenPain | null
   liverState: LiverState | null
-  liverSize: string  // в см
+  liverSize: string  
   spleenState: SpleenState | null
   peritoneum: PeritoneumState | null
   gktComment: string
 
-  // Мочевыделение
   kidneyPercussion: KidneyPercussion | null
   urination: UrinationState | null
   stool: StoolState | null
   urologyComment: string
 
-  // Блок 6 — Диагноз
   primaryDiagnosis: string
   complicationsDiagnosis: string
   concomitantDiagnosis: string
 
-  // Блок 7 — Назначения
   prescriptions: RoundPrescription[]
 
-  // Блок 8 — План обследования
   labTests: LabTestCheck[]
 
-  // Итоговый текст
   generatedText: string
 }
 
-// ═══════════════════════════════════════════════════════════════════
-// ЕЖЕДНЕВНЫЙ ОСМОТР — упрощённое состояние
-// ═══════════════════════════════════════════════════════════════════
 
 export interface DailyRoundFormState {
-  // Мета
   inspectionDate: string
   inspectionTime: string
   doctor: string
   status: 'draft' | 'completed'
 
-  // Показатели
   temperature: string
   hr: string
   bpSys: string
@@ -274,18 +238,14 @@ export interface DailyRoundFormState {
   rr: string
   spo2: string
 
-  // Жалобы
   complaints: ComplaintKey[]
   complaintParams: ComplaintParams
   complaintsNote: string
 
-  // Объективно — короткие значения
   generalCondition: GeneralCondition | null
-  // Кожа (pill-выбор)
   skinColor: SkinColor | null
   skinTemp: SkinTemp | null
   skinMoisture: SkinMoisture | null
-  // Грудная клетка (pill-выбор)
   chestForm: ChestForm | null
   chestSymmetry: ChestSymmetry | null
   breathingType: BreathingType | null
@@ -300,23 +260,18 @@ export interface DailyRoundFormState {
   stool: StoolState | null
   urination: UrinationState | null
 
-  // Динамика
   dynamics: DynamicsState | null
   dynamicsComment: string
 
-  // Лечение
   treatmentDecision: 'keep' | 'modify'
   prescriptions: RoundPrescription[]
 
-  // План
   controlStudies: string
   nextInspection: string
 
-  // Итоговый текст
   generatedText: string
 }
 
-// ─── Запись осмотра (сохраняется в patient.inspections) ───────────
 
 export interface SavedInspection {
   id: string

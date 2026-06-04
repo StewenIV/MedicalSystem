@@ -5,12 +5,14 @@ using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Services;
 using MedicalSystem.Domain.Enums;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedicalSystem.API.Controllers
 {
     [ApiController]
     [Route("api/beds-admin")]
+    [Authorize(Roles = "ChiefDoctor,HeadNurse")]
     public class BedsAdminController : ControllerBase
     {
         private readonly BedService _bedService;

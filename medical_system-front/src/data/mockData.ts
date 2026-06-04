@@ -1,27 +1,14 @@
-// ─── Назначение (единый формат — объединяет бывшие currentMeds + prescriptions) ───
 export interface PatientMedication {
-  /** Название препарата */
   name: string
-  /** Доза, напр. «10 мг» */
   dose?: string
-  /** Лекарственная форма */
   form?: string
-  /** Режим приёма, напр. «утром» */
   regimen?: string
-  // — поля из бывшего prescriptions[] —
-  /** ID препарата из аптечного справочника (FK→medicines) */
   medicineId?: string
-  /** Путь введения */
   route?: string
-  /** Комментарий */
   comment?: string
-  /** Назначающий врач */
   doctor?: string
-  /** Дата начала */
   dateStart?: string
-  /** Дата окончания */
   dateEnd?: string
-  /** Статус назначения */
   status?: 'active' | 'completed' | 'cancelled'
 }
 
@@ -80,7 +67,6 @@ export interface Patient {
     organization?: string
     address?: string
   }
-  /** @computed SELECT name FROM patient_diagnoses WHERE is_active=true */
   activeProblems: string[]
   labs: {
     type?: string
@@ -89,9 +75,7 @@ export interface Patient {
     doctor?: string
     reason?: string
   }[]
-  /** Единый список назначений (бывшие currentMeds + prescriptions) */
   medications: PatientMedication[]
-  /** @deprecated Используйте medications. Оставлено для совместимости с WardRound. */
   currentMeds: PatientMedication[]
   operations: {
     name?: string
@@ -150,35 +134,21 @@ export interface VitalSign {
   respiratoryRate: number
 }
 
-/**
- * Койка в палате.
- * Поля patientName/patientLastName/patientMiddleName/patientAge/diagnosis/doctorName/doctorRole
- * являются денормализованными кэшами для быстрого отображения.
- * @migration JOIN с таблицей patients при переносе на PostgreSQL.
- */
 export interface HospitalBed {
   id: string
   roomNumber: string
   bedNumber: number
   patientId?: string
-  /** @denormalized кэш patients.firstName */
   patientName?: string
-  /** @denormalized кэш patients.lastName */
   patientLastName?: string
-  /** @denormalized кэш patients.middleName */
   patientMiddleName?: string
-  /** @denormalized кэш EXTRACT(YEAR FROM AGE(patients.dateOfBirth)) */
   patientAge?: number
-  /** @denormalized краткий диагноз — заменить JOIN с patient_diagnoses */
   diagnosis?: string
   status: 'stable' | 'attention' | 'urgent' | 'free'
-  /** @denormalized кэш staff.name */
   doctorName?: string
-  /** @denormalized кэш positions.name */
   doctorRole?: string
   attentionNote?: string
   admissionDate?: string
-  /** Пометка дежурного врача медсестре (бывший PatientDetail.doctorNote) */
   bedNote?: string
 }
 
@@ -189,7 +159,7 @@ export interface Shift {
 }
 
 export interface MonthSchedule {
-  month: number  // 0-based (0=Jan, 3=Apr, 4=May, 5=Jun)
+  month: number  
   year: number
   shifts: Shift[]
 }
@@ -199,8 +169,8 @@ export interface MedicalStaffMember {
   name: string
   position: string
   department: string
-  schedule: Shift[]              // legacy (kept for compatibility, used as default month)
-  monthlySchedules?: MonthSchedule[]  // multi-month schedules
+  schedule: Shift[]              
+  monthlySchedules?: MonthSchedule[]  
 }
 
 export type NotificationType = 'lab-result' | 'appointment-reminder'
@@ -464,7 +434,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P003 ───────────────────────────────────────────────────────────────────
   {
     id: 'P003',
     firstName: 'Алексей',
@@ -599,7 +568,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P004 ───────────────────────────────────────────────────────────────────
   {
     id: 'P004',
     firstName: 'Екатерина',
@@ -694,7 +662,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P005 ───────────────────────────────────────────────────────────────────
   {
     id: 'P005',
     firstName: 'Николай',
@@ -829,7 +796,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P006 ───────────────────────────────────────────────────────────────────
   {
     id: 'P006',
     firstName: 'Светлана',
@@ -939,7 +905,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P007 ───────────────────────────────────────────────────────────────────
   {
     id: 'P007',
     firstName: 'Павел',
@@ -1042,7 +1007,6 @@ export const mockPatients: Patient[] = [
     vaccines: []
   },
 
-  // ─── P008 ───────────────────────────────────────────────────────────────────
   {
     id: 'P008',
     firstName: 'Людмила',
@@ -1159,7 +1123,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P009 ───────────────────────────────────────────────────────────────────
   {
     id: 'P009',
     firstName: 'Артем',
@@ -1276,7 +1239,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P010 ───────────────────────────────────────────────────────────────────
   {
     id: 'P010',
     firstName: 'Наталья',
@@ -1372,7 +1334,6 @@ export const mockPatients: Patient[] = [
     vaccines: []
   },
 
-  // ─── P011 ───────────────────────────────────────────────────────────────────
   {
     id: 'P011',
     firstName: 'Георгий',
@@ -1522,7 +1483,6 @@ export const mockPatients: Patient[] = [
     ]
   },
 
-  // ─── P012 ───────────────────────────────────────────────────────────────────
   {
     id: 'P012',
     firstName: 'Анастасия',
@@ -1613,7 +1573,6 @@ export const mockPatients: Patient[] = [
     vaccines: []
   },
 
-  // ─── P013 ───────────────────────────────────────────────────────────────────
   {
     id: 'P013',
     firstName: 'Роман',
@@ -1738,7 +1697,6 @@ export const mockPatients: Patient[] = [
   }
 ]
 
-// ─── Appointments ────────────────────────────────────────────────────────────
 
 export const mockTodayAppointments: Appointment[] = [
   {
@@ -1980,7 +1938,6 @@ export const roomsConfig: Record<string, { gender: 'male' | 'female' | 'free' }>
 }
 
 export const mockHospitalBeds: HospitalBed[] = [
-  // Мужская палата 101
   {
     id: 'B101_1',
     roomNumber: '101',
@@ -2020,7 +1977,6 @@ export const mockHospitalBeds: HospitalBed[] = [
     diagnosis: 'Ишемическая болезнь сердца',
     status: 'attention'
   },
-  // Женская палата 102
   {
     id: 'B102_1',
     roomNumber: '102',
@@ -2060,7 +2016,6 @@ export const mockHospitalBeds: HospitalBed[] = [
     diagnosis: 'Тонзиллит',
     status: 'stable'
   },
-  // Мужская палата 103
   {
     id: 'B103_1',
     roomNumber: '103',
@@ -2100,7 +2055,6 @@ export const mockHospitalBeds: HospitalBed[] = [
     diagnosis: 'ХОБЛ',
     status: 'attention'
   },
-  // Мужская палата 201
   {
     id: 'B201_1',
     roomNumber: '201',
@@ -2115,7 +2069,6 @@ export const mockHospitalBeds: HospitalBed[] = [
     status: 'stable'
   },
   { id: 'B201_2', roomNumber: '201', bedNumber: 2, status: 'free' },
-  // Женская палата 202
   {
     id: 'B202_1',
     roomNumber: '202',
@@ -3150,7 +3103,6 @@ export function computeMedicineStatus(currentBalance: number, minBalance: number
   return 'norm'
 }
 
-// ─── Хелперы для работы с пациентами ────────────────────────────
 
 export function getPatientById(id: string): Patient | undefined {
   return mockPatients.find((p) => p.id === id)
@@ -3160,22 +3112,12 @@ export function getPatientFullName(patient: Patient): string {
   return `${patient.lastName} ${patient.firstName} ${patient.middleName}`
 }
 
-/**
- * Возвращает последние витальные показатели пациента из mockPathientVitalSigns.
- * Заменяет устаревший Patient.vitals (строки с единицами).
- * @migration SELECT * FROM vital_signs WHERE patient_id=? ORDER BY recorded_at DESC LIMIT 1
- */
 export function getPatientLatestVitals(patientId: string): VitalSign | null {
   const signs = mockPathientVitalSigns[patientId]
   if (!signs || signs.length === 0) return null
-  // Берём последнюю запись (наибольшая дата)
   return [...signs].sort((a, b) => b.date.localeCompare(a.date))[0]
 }
 
-/**
- * Форматирует витальные показатели в строковые значения для форм (совместимость с WardRound).
- * @deprecated Используйте числовые поля VitalSign напрямую. Эта функция — переходный слой.
- */
 export function formatVitalsForForm(patientId: string): {
   temp: string; bp: string; hr: string; spo2: string; resp: string
 } {

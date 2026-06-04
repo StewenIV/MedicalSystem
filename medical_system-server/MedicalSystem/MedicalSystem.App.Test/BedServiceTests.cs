@@ -48,10 +48,13 @@ namespace MedicalSystem.App.Test
             string status = "Free";
             var expectedSummary = new BedsSummaryDto
             {
-                TotalBeds = 10,
-                OccupiedBeds = 5,
-                FreeBeds = 5,
-                BedsByStatus = new Dictionary<string, int> { { "Free", 5 }, { "Occupied", 5 } }
+                Beds = new List<BedDto>(),
+                Stats = new BedStatsDto
+                {
+                    Total = 10,
+                    Occupied = 5,
+                    Free = 5
+                }
             };
 
             _mockBedQuery.Setup(q => q.GetBedsSummaryAsync(floor, status, It.IsAny<CancellationToken>()))
@@ -62,9 +65,9 @@ namespace MedicalSystem.App.Test
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(expectedSummary.TotalBeds, result.TotalBeds);
-            Assert.Equal(expectedSummary.OccupiedBeds, result.OccupiedBeds);
-            Assert.Equal(expectedSummary.FreeBeds, result.FreeBeds);
+            Assert.Equal(expectedSummary.Stats.Total, result.Stats.Total);
+            Assert.Equal(expectedSummary.Stats.Occupied, result.Stats.Occupied);
+            Assert.Equal(expectedSummary.Stats.Free, result.Stats.Free);
             _mockBedQuery.Verify(q => q.GetBedsSummaryAsync(floor, status, It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -80,12 +83,14 @@ namespace MedicalSystem.App.Test
                     new RoomWithBedsDto
                     {
                         Id = Guid.NewGuid(),
-                        RoomNumber = "101",
+                        Name = "101",
                         Floor = 1,
-                        Beds = new List<BedDto>
+                        Gender = "Male",
+                        Urgency = "Normal",
+                        Beds = new List<BedInRoomDto>
                         {
-                            new BedDto { Id = Guid.NewGuid(), BedNumber = 1, Status = "Free" },
-                            new BedDto { Id = Guid.NewGuid(), BedNumber = 2, Status = "Occupied" }
+                            new BedInRoomDto { Id = Guid.NewGuid(), BedNumber = 1, Status = "Free" },
+                            new BedInRoomDto { Id = Guid.NewGuid(), BedNumber = 2, Status = "Occupied" }
                         }
                     }
                 }
@@ -100,7 +105,7 @@ namespace MedicalSystem.App.Test
             // Assert
             Assert.NotNull(result);
             Assert.Single(result.Rooms);
-            Assert.Equal("101", result.Rooms[0].RoomNumber);
+            Assert.Equal("101", result.Rooms[0].Name);
             Assert.Equal(2, result.Rooms[0].Beds.Count);
             _mockBedQuery.Verify(q => q.GetRoomsWithBedsAsync(floor, It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -111,10 +116,10 @@ namespace MedicalSystem.App.Test
             // Arrange
             var expectedRoomConfig = new RoomConfigDto
             {
-                Rooms = new List<RoomDto>
+                Rooms = new Dictionary<string, GenderConfig>
                 {
-                    new RoomDto { Id = Guid.NewGuid(), RoomNumber = "201", Floor = 2 },
-                    new RoomDto { Id = Guid.NewGuid(), RoomNumber = "202", Floor = 2 }
+                    { "201", new GenderConfig { Gender = "Male" } },
+                    { "202", new GenderConfig { Gender = "Female" } }
                 }
             };
 
@@ -127,7 +132,7 @@ namespace MedicalSystem.App.Test
             // Assert
             Assert.NotNull(result);
             Assert.Equal(2, result.Rooms.Count);
-            Assert.Equal("201", result.Rooms[0].RoomNumber);
+            Assert.True(result.Rooms.ContainsKey("201"));
             _mockBedQuery.Verify(q => q.GetRoomConfigAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -161,10 +166,13 @@ namespace MedicalSystem.App.Test
             // Arrange
             var expectedAlerts = new AlertsDto
             {
-                Alerts = new List<AlertDto>
+                Urgent = new List<AlertBedDto>
                 {
-                    new AlertDto { Id = Guid.NewGuid(), Message = "Bed 101 needs cleaning", Type = "Cleaning" },
-                    new AlertDto { Id = Guid.NewGuid(), Message = "Patient in Bed 102 needs attention", Type = "PatientCare" }
+                    new AlertBedDto { Id = Guid.NewGuid(), RoomNumber = "101", PatientId = Guid.NewGuid(), PatientName = "John", PatientLastName = "Doe" }
+                },
+                Attention = new List<AlertBedDto>
+                {
+                    new AlertBedDto { Id = Guid.NewGuid(), RoomNumber = "102", PatientId = Guid.NewGuid(), PatientName = "Jane", PatientLastName = "Smith" }
                 }
             };
 
@@ -176,9 +184,10 @@ namespace MedicalSystem.App.Test
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(2, result.Alerts.Count);
-            Assert.Equal("Bed 101 needs cleaning", result.Alerts[0].Message);
-            Assert.Equal("Patient in Bed 102 needs attention", result.Alerts[1].Message);
+            Assert.Single(result.Urgent);
+            Assert.Single(result.Attention);
+            Assert.Equal("101", result.Urgent[0].RoomNumber);
+            Assert.Equal("102", result.Attention[0].RoomNumber);
             _mockBedQuery.Verify(q => q.GetAlertsAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -210,11 +219,19 @@ namespace MedicalSystem.App.Test
             var patientId = Guid.NewGuid();
             var expectedPatientDetails = new PatientDetailsDto
             {
-                Id = patientId,
-                FirstName = "Test",
-                LastName = "Patient",
-                BedNumber = 10,
-                RoomNumber = "405"
+                DoctorNote = "Requires rest",
+                Prescriptions = new List<BedPrescriptionDto>
+                {
+                    new BedPrescriptionDto { Id = Guid.NewGuid(), Name = "Aspirin", Dose = "100mg", Time = "Morning", Done = false }
+                },
+                Meds = new List<MedicationInStockDto>
+                {
+                    new MedicationInStockDto { Name = "Aspirin", Qty = "10 tablets" }
+                },
+                Log = new List<ActionLogDto>
+                {
+                    new ActionLogDto { Who = "Nurse", Action = "Checkup", Time = "08:00", Amount = "1" }
+                }
             };
             _mockBedQuery.Setup(q => q.GetPatientDetailsAsync(patientId, It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedPatientDetails);
@@ -224,11 +241,13 @@ namespace MedicalSystem.App.Test
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(patientId, result.Id);
-            Assert.Equal("Test", result.FirstName);
-            Assert.Equal("Patient", result.LastName);
-            Assert.Equal(10, result.BedNumber);
-            Assert.Equal("405", result.RoomNumber);
+            Assert.Equal("Requires rest", result.DoctorNote);
+            Assert.Single(result.Prescriptions);
+            Assert.Equal("Aspirin", result.Prescriptions[0].Name);
+            Assert.Single(result.Meds);
+            Assert.Equal("Aspirin", result.Meds[0].Name);
+            Assert.Single(result.Log);
+            Assert.Equal("Nurse", result.Log[0].Who);
             _mockBedQuery.Verify(q => q.GetPatientDetailsAsync(patientId, It.IsAny<CancellationToken>()), Times.Once);
         }
     }

@@ -275,7 +275,6 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
   const [details, setDetails] = useState<PatientDetailDto | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
 
-  // Загрузка деталей пациента при смене койки
   useEffect(() => {
     setDetails(null)
     setCompletedPrescriptions(new Set())
@@ -323,7 +322,6 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
       }
       return newSet
     })
-    // Отправка на сервер
     if (bed.patientId) {
       togglePrescription(bed.patientId, idStr, newDone)
         .then(() => {
@@ -331,7 +329,6 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
         })
         .catch((err) => {
           toast.error(err.message || 'Ошибка при обновлении назначения')
-          // Откат при ошибке
           setCompletedPrescriptions((prev) => {
             const newSet = new Set(prev)
             if (newDone) newSet.delete(idStr)
@@ -475,7 +472,6 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
   const [details, setDetails] = useState<PatientDetailDto | null>(null)
   const [detailsLoading, setDetailsLoading] = useState(false)
 
-  // Загрузка деталей пациента при открытии модала
   useEffect(() => {
     setDetails(null)
     setCompletedPrescriptions(new Set())
@@ -513,7 +509,6 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
     if (bed.patientId) {
       togglePrescription(bed.patientId, idStr, newDone)
         .then(() => {
-          // Refetch patient details to update medicine balances dynamically
           fetchPatientDetails(bed.patientId!).then(setDetails).catch(console.error)
         })
         .catch((err) => {
@@ -682,7 +677,6 @@ const [triggers, setTriggers] = useState({
   const [selectedWard, setSelectedWard] = useState<string | null>(null)
   const [modalBedId, setModalBedId] = useState<string | null>(null)
 
-  // ── Данные с сервера ──────────────────────────────────────────────────────
   const [allBeds, setAllBeds] = useState<BedDto[]>([])
   const [floors, setFloors] = useState<number[]>([])
   const [roomsConfig, setRoomsConfig] = useState<RoomsConfigDto>({})
@@ -691,7 +685,6 @@ const [triggers, setTriggers] = useState({
   const [stats, setStats] = useState<BedStatsDto | null>(null)
   const [pageLoading, setPageLoading] = useState(true)
 
-  // ── Начальная загрузка ─────────────────────────────────────────────────────
   useEffect(() => {
     setPageLoading(true)
     Promise.all([
@@ -988,7 +981,6 @@ const [triggers, setTriggers] = useState({
           </FloorContent>
         </SectionCard>
 
-        {/* Full patient modal */}
         {modalBed && <PatientModal bed={modalBed} onClose={() => setModalBedId(null)} />}
       </PageWrapper>
     </>

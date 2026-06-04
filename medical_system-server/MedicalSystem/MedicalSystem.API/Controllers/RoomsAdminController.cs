@@ -4,12 +4,14 @@ using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace MedicalSystem.API.Controllers
 {
     [ApiController]
     [Route("api/rooms-admin")]
+    [Authorize(Roles = "ChiefDoctor,HeadNurse")]
     public class RoomsAdminController : ControllerBase
     {
         private readonly RoomService _roomService;

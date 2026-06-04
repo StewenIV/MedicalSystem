@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.App.Contracts.Dtos;
 
 namespace MedicalSystem.App.Contracts.Storage
 {
@@ -13,8 +14,8 @@ namespace MedicalSystem.App.Contracts.Storage
         Task DischargeAsync(Guid patientId, CancellationToken token);
         void Transfer(Guid patientId, Guid departmentId);
         Task TransferAsync(Guid patientId, Guid departmentId, CancellationToken token);
-        Task UpdatePatientCardAsync(Guid patientId, MedicalSystem.App.Contracts.Dtos.PatientCardDto dto, CancellationToken token);
-        Task<Patient> AddPatientAsync(MedicalSystem.App.Contracts.Dtos.PatientCardDto dto, CancellationToken token);
+        Task UpdatePatientCardAsync(Guid patientId, PatientCardDto dto, CancellationToken token);
+        Task<Patient> AddPatientAsync(PatientCardDto dto, CancellationToken token);
         Task DeletePatientAsync(Guid patientId, CancellationToken token);
     }
 }

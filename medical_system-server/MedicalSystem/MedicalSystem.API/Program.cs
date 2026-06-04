@@ -1,5 +1,6 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using MedicalSystem.API.Services;
 using MedicalSystem.App.Contracts.Query;
 using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.App.Services;
@@ -8,8 +9,11 @@ using MedicalSystem.Data.DataGeneration;
 using MedicalSystem.Data.DbContext;
 using MedicalSystem.Data.Queries;
 using MedicalSystem.Data.Storages;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
+using System.Text;
 using System.Text.Json.Serialization;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
@@ -46,6 +50,36 @@ builder.Services.AddScoped<WardStatisticsService>();
 builder.Services.AddScoped<SearchService>();
 
 
+builder.Services.AddScoped<AuthService>();
+
+
+var jwtKey = builder.Configuration["Jwt:Key"]!;
+var jwtIssuer = builder.Configuration["Jwt:Issuer"]!;
+var jwtAudience = builder.Configuration["Jwt:Audience"]!;
+
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ClockSkew = TimeSpan.Zero
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+
 builder.Services.AddControllers()
     .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
     .AddFluentValidation(fv =>
@@ -54,7 +88,6 @@ builder.Services.AddControllers()
         fv.DisableDataAnnotationsValidation = true;
     });
 
-// При ошибке валидации формируем читаемый ответ 400
 builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>
@@ -62,7 +95,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
         var errors = context.ModelState
             .Where(e => e.Value?.Errors.Count > 0)
             .SelectMany(e => e.Value!.Errors.Select(err =>
-                string.IsNullOrWhiteSpace(err.ErrorMessage) ? err.Exception?.Message ?? "Ошибка валидации" : err.ErrorMessage))
+                string.IsNullOrWhiteSpace(err.ErrorMessage)
+                    ? err.Exception?.Message ?? "Ошибка валидации"
+                    : err.ErrorMessage))
             .ToList();
 
         var result = new
@@ -73,6 +108,21 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 
         return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(result);
     };
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",
+                "https://localhost:3000",
+                "http://localhost:3001"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
 });
 
 
@@ -95,11 +145,11 @@ using (var scope = app.Services.CreateScope())
     try
 
     {
-        await context.Database.MigrateAsync();
+        // await context.Database.MigrateAsync();
 
         await DataSeeder.SeedAsync(context, logger);
     }
-
+    
     catch (Exception ex)
 
     {
@@ -125,6 +175,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

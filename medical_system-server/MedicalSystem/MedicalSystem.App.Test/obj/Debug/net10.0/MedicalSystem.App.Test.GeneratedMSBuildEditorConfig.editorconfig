@@ -1,4 +1,6 @@
 is_global = true
+build_property.MSBuildProjectFullPath = D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.App.Test\MedicalSystem.App.Test.csproj
+build_property.XunitTestProjectAOT = false
 build_property.TargetFramework = net10.0
 build_property.TargetFrameworkIdentifier = .NETCoreApp
 build_property.TargetFrameworkVersion = v10.0

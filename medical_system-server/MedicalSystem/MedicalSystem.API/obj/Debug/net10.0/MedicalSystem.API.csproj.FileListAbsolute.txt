@@ -151,3 +151,12 @@ D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\obj\Debug\net10.0\MedicalS.898A9B7B.Up2Date
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\obj\Debug\net10.0\MedicalSystem.API.genruntimeconfig.cache
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\obj\Debug\net10.0\ref\MedicalSystem.API.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\BCrypt.Net-Next.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.API\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll

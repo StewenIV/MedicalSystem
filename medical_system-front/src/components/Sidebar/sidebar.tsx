@@ -1,10 +1,10 @@
 import { useMemo } from 'react'
+import { useSelector } from 'react-redux'
 import {
   LayoutDashboard,
   Users,
   Thermometer,
   Calendar,
-  FileText,
   BarChart3,
   Settings,
   FileUser,
@@ -12,7 +12,8 @@ import {
   Building2,
   Clock,
   Pill,
-  ClipboardList
+  ClipboardList,
+  FlaskConical
 } from 'lucide-react'
 
 import {
@@ -29,29 +30,97 @@ import {
 } from '@/components/ui/sidebar'
 import { LogoBox, LogoTextBlock, LogoTitle, LogoSubtitle } from '@/pages/HomePage/styled'
 import { cn } from '@/lib/utils'
+import { selectUserRole } from 'features/App/selectors'
+import { UserRole } from 'features/App/types'
 
 interface AppSidebarProps {
   activeSection: string
   onSectionChange: (section: string) => void
 }
 
+interface NavItem {
+  key: string
+  label: string
+  icon: React.ElementType
+  roles: UserRole[] 
+}
+
+const ALL_NAV_ITEMS: NavItem[] = [
+  {
+    key: 'dashboard',
+    label: 'Дашборд',
+    icon: LayoutDashboard,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'patients',
+    label: 'Пациенты',
+    icon: Users,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'temperature-sheet',
+    label: 'Температурный лист',
+    icon: Thermometer,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'HospitalWorkplace',
+    label: 'Стационар',
+    icon: Calendar,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'ward-round',
+    label: 'Обходы',
+    icon: ClipboardList,
+    roles: ['Doctor', 'ChiefDoctor']
+  },
+  {
+    key: 'beds-admin',
+    label: 'Администрирование стационара',
+    icon: Building2,
+    roles: ['ChiefDoctor']
+  },
+  {
+    key: 'patient-card',
+    label: 'Карточка пациента',
+    icon: FileUser,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'medical-staff-schedule',
+    label: 'График работы медперсонала',
+    icon: Clock,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'medicines',
+    label: 'Учёт медикаментов',
+    icon: Pill,
+    roles: ['Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'reports',
+    label: 'Отчёты',
+    icon: BarChart3,
+    roles: ['ChiefDoctor']
+  },
+  {
+    key: 'settings',
+    label: 'Управление',
+    icon: Settings,
+    roles: ['ChiefDoctor']
+  }
+]
+
 export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) {
-  const navItems = useMemo(
-    () => [
-      { key: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
-      { key: 'patients', label: 'Пациенты', icon: Users },
-      { key: 'temperature-sheet', label: 'Температурный лист', icon: Thermometer },
-      { key: 'HospitalWorkplace', label: 'Стационар', icon: Calendar },
-      { key: 'ward-round', label: 'Обходы', icon: ClipboardList },
-      { key: 'beds-admin', label: 'Администрирование стационара', icon: Building2 },
-      { key: 'patient-card', label: 'Карточка пациента', icon: FileUser },
-      { key: 'medical-staff-schedule', label: 'График работы медперсонала', icon: Clock },
-      { key: 'medicines', label: 'Учёт медикаментов', icon: Pill },
-      { key: 'reports', label: 'Отчёты', icon: BarChart3 },
-      { key: 'settings', label: 'Управление', icon: Settings }
-    ],
-    []
-  )
+  const userRole = useSelector(selectUserRole)
+
+  const navItems = useMemo(() => {
+    if (!userRole) return []
+    return ALL_NAV_ITEMS.filter(item => item.roles.includes(userRole))
+  }, [userRole])
 
   return (
     <Sidebar>

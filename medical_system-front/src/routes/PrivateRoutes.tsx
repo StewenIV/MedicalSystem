@@ -1,14 +1,30 @@
 import { lazy } from 'react'
 import { Route, Navigate, Routes, useLocation, useNavigate } from 'react-router-dom'
 import { checkPathMatch, paths } from './helpers'
-import { setIsLogged, setUserRole } from 'features/App/reducer'
-import { selectUserRole } from 'features/App/selectors'
+import { setIsLogged } from 'features/App/reducer'
+import { selectUserRole, selectDisplayName } from 'features/App/selectors'
 import { useAppDispatch } from 'store'
 import { useSelector } from 'react-redux'
+import { authApi } from 'api/authApi'
+import { UserRole } from 'features/App/types'
 
 const HomePage = lazy(() => import('pages/HomePage/index'))
-const TemperaturePage = lazy(() => import('pages/TemperatureSheet/index'))
-const MedicalStaffSchedulePage = lazy(() => import('pages/MedicalStaffSchedule/index'))
+const LaboratoryPage = lazy(() => import('pages/LaboratoryPage'))
+const PatientCabinetPage = lazy(() => import('pages/PatientCabinetPage'))
+
+
+const toComponentRole = (role: UserRole): 'doctor' | 'nurse' | 'patient' | null => {
+  if (!role) return null
+  const map: Record<string, 'doctor' | 'nurse' | 'patient'> = {
+    Doctor: 'doctor',
+    HeadNurse: 'nurse',
+    Nurse: 'nurse',
+    ChiefDoctor: 'doctor',
+    LaboratoryEmployee: 'patient',
+    Patient: 'patient'
+  }
+  return map[role] ?? null
+}
 
 const PrivateRoutes: React.FC = () => {
   const location = useLocation()
@@ -26,15 +42,28 @@ const PrivateRoutes: React.FC = () => {
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await authApi.logout()
     dispatch(setIsLogged(false))
-    dispatch(setUserRole(null))
     navigate(paths.auth)
   }
 
-  const convertUserRole = (role: string | null): 'doctor' | 'nurse' | 'patient' | null => {
-    if (!role) return null
-    return role.replace(/_/g, '-') as any
+  const componentRole = toComponentRole(userRole)
+
+  if (userRole === 'Patient') {
+    return (
+      <Routes>
+        <Route path="*" element={<PatientCabinetPage />} />
+      </Routes>
+    )
+  }
+
+  if (userRole === 'LaboratoryEmployee') {
+    return (
+      <Routes>
+        <Route path="*" element={<LaboratoryPage />} />
+      </Routes>
+    )
   }
 
   return (
@@ -45,23 +74,7 @@ const PrivateRoutes: React.FC = () => {
           <HomePage
             onNavigate={handleNavigate}
             onLogout={handleLogout}
-            userRole={convertUserRole(userRole)}
-          />
-        }
-      />
-      <Route
-        path={paths.temperatureSheet}
-        element={
-          <TemperaturePage onNavigate={(screen) => {}} onLogout={() => {}} userRole={'nurse'} />
-        }
-      />
-      <Route
-        path={paths.medicalStaffSchedule}
-        element={
-          <MedicalStaffSchedulePage
-            onNavigate={(screen) => {}}
-            onLogout={() => {}}
-            userRole={'doctor'}
+            userRole={componentRole}
           />
         }
       />

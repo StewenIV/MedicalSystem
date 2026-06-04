@@ -574,13 +574,11 @@ const MedicinesPage: React.FC = () => {
     })
   }
 
-  // ── Delete ──
   const handleDelete = () => {
     if (!selectedMedicine) return
     if (selectedMedicine.operationLog.length === 0) {
       setMedicines((prev) => prev.filter((m) => m.id !== selectedMedicine.id))
     } else {
-      // Soft delete – archive
       setMedicines((prev) =>
         prev.map((m) => (m.id === selectedMedicine.id ? { ...m, isArchived: true } : m))
       )
@@ -589,7 +587,6 @@ const MedicinesPage: React.FC = () => {
     closeDrawer()
   }
 
-  // ── History filtering ──
   const filteredHistory = useMemo(() => {
     if (!selectedMedicine) return []
     const sorted = [...selectedMedicine.operationLog].sort((a, b) => b.date.localeCompare(a.date))
@@ -614,7 +611,6 @@ const MedicinesPage: React.FC = () => {
     historyPage * historyPageSize
   )
 
-  // ── Patient search ──
   const filteredPatients = useMemo(() => {
     if (!writeoffForm.patientQuery.trim()) return []
     const q = writeoffForm.patientQuery.toLowerCase()
@@ -627,7 +623,6 @@ const MedicinesPage: React.FC = () => {
       .slice(0, 6)
   }, [writeoffForm.patientQuery])
 
-  // ── PDF export ──
   const handleHistoryExport = async () => {
     if (!historyExportRef.current) return
     setIsExporting(true)
@@ -652,7 +647,6 @@ const MedicinesPage: React.FC = () => {
     }
   }
 
-  // ─── Open edit modal ──
   const openEditModal = () => {
     if (!selectedMedicine) return
     setEditForm({
@@ -666,7 +660,6 @@ const MedicinesPage: React.FC = () => {
     setShowEditModal(true)
   }
 
-  // ─── Status icon ──
   const StatusIcon = ({ status }: { status: MedicineStatus }) => {
     if (status === 'empty') return <AlertCircle size={11} />
     if (status === 'low') return <AlertTriangle size={11} />
@@ -679,10 +672,8 @@ const MedicinesPage: React.FC = () => {
     return <RefreshCw size={11} />
   }
 
-  // ─── Render ─────────────────────────────────────────────────────────────────
   return (
     <PageContainer>
-      {/* ── Header ── */}
       <Header>
         <HeaderLeft>
           <HeaderTitle>Учёт медикаментов</HeaderTitle>
@@ -692,7 +683,6 @@ const MedicinesPage: React.FC = () => {
         </HeaderLeft>
       </Header>
 
-      {/* ── Stats ── */}
       <StatsGrid>
         <StatCard $color="#2563eb">
           <StatIcon $bg="#eff6ff" $color="#2563eb">
@@ -728,7 +718,6 @@ const MedicinesPage: React.FC = () => {
         </StatCard>
       </StatsGrid>
 
-      {/* ── Control bar ── */}
       <ControlBar>
         <ControlLeft>
           <SearchWrapper>
@@ -873,7 +862,6 @@ const MedicinesPage: React.FC = () => {
         </ControlRight>
       </ControlBar>
 
-      {/* ── Table ── */}
       <TableWrapper>
         <TableScrollWrapper>
           <Table>
@@ -1052,12 +1040,10 @@ const MedicinesPage: React.FC = () => {
         </PaginationBar>
       </TableWrapper>
 
-      {/* ══ DRAWER ══ */}
       {selectedMedicine && (
         <>
           <DrawerOverlay onClick={closeDrawer} />
           <DrawerPanel onClick={(e) => e.stopPropagation()}>
-            {/* Header */}
             <DrawerHeader>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <DrawerTitle>{selectedMedicine.name}</DrawerTitle>
@@ -1076,7 +1062,6 @@ const MedicinesPage: React.FC = () => {
               </DrawerCloseBtn>
             </DrawerHeader>
 
-            {/* Tab bar */}
             <TabBar>
               <TabBtn $active={drawerTab === 'overview'} onClick={() => setDrawerTab('overview')}>
                 <Info size={14} /> Обзор
@@ -1107,10 +1092,8 @@ const MedicinesPage: React.FC = () => {
             </TabBar>
 
             <DrawerContent>
-              {/* ── Tab: Overview ── */}
               {drawerTab === 'overview' && (
                 <>
-                  {/* Warnings */}
                   {selectedMedicine.status === 'empty' && (
                     <WarningAlert $level="error">
                       <AlertCircle size={18} />
@@ -1252,7 +1235,6 @@ const MedicinesPage: React.FC = () => {
                 </>
               )}
 
-              {/* ── Tab: Receipt ── */}
               {drawerTab === 'receipt' && (
                 <>
                   <AutoFillInfo>
@@ -1357,7 +1339,6 @@ const MedicinesPage: React.FC = () => {
                 </>
               )}
 
-              {/* ── Tab: Writeoff ── */}
               {drawerTab === 'writeoff' && (
                 <>
                   <AutoFillInfo>
@@ -1560,7 +1541,6 @@ const MedicinesPage: React.FC = () => {
                 </>
               )}
 
-              {/* ── Tab: History ── */}
               {drawerTab === 'history' && (
                 <>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1601,7 +1581,6 @@ const MedicinesPage: React.FC = () => {
                     </ExportButton>
                   </div>
 
-                  {/* PDF export ref */}
                   <div ref={historyExportRef}>
                     <HistoryTable>
                       <thead>
@@ -1736,7 +1715,6 @@ const MedicinesPage: React.FC = () => {
         </>
       )}
 
-      {/* ══ MODAL: Add Medicine ══ */}
       {showAddModal && (
         <ModalOverlay onClick={() => setShowAddModal(false)}>
           <Modal onClick={(e) => e.stopPropagation()}>
@@ -1844,7 +1822,6 @@ const MedicinesPage: React.FC = () => {
         </ModalOverlay>
       )}
 
-      {/* ══ MODAL: Edit Medicine ══ */}
       {showEditModal && selectedMedicine && (
         <ModalOverlay onClick={() => setShowEditModal(false)}>
           <Modal onClick={(e) => e.stopPropagation()}>
@@ -1949,7 +1926,6 @@ const MedicinesPage: React.FC = () => {
         </ModalOverlay>
       )}
 
-      {/* ══ MODAL: Confirm Delete ══ */}
       {showDeleteConfirm && selectedMedicine && (
         <ModalOverlay onClick={() => setShowDeleteConfirm(false)}>
           <Modal onClick={(e) => e.stopPropagation()}>

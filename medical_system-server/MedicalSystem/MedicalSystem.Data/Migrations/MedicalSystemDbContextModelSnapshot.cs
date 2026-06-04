@@ -974,6 +974,43 @@ namespace MedicalSystem.Data.Migrations
                     b.ToTable("Shifts", (string)null);
                 });
 
+            modelBuilder.Entity("MedicalSystem.Domain.Models.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone");
+
+                    b.Property<string>("DisplayName")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Login")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("MedicalStaffId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MedicalStaffId");
+
+                    b.ToTable("Users");
+                });
+
             modelBuilder.Entity("MedicalSystem.Domain.Models.Vaccine", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1514,6 +1551,15 @@ namespace MedicalSystem.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Staff");
+                });
+
+            modelBuilder.Entity("MedicalSystem.Domain.Models.User", b =>
+                {
+                    b.HasOne("MedicalSystem.Domain.Models.MedicalStaff", "MedicalStaff")
+                        .WithMany()
+                        .HasForeignKey("MedicalStaffId");
+
+                    b.Navigation("MedicalStaff");
                 });
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.Vaccine", b =>

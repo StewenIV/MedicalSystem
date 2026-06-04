@@ -62,31 +62,19 @@
               "target": "Package",
               "version": "[4.20.72, )"
             },
-            "NUnit": {
-              "target": "Package",
-              "version": "[4.3.2, )"
-            },
-            "NUnit.Analyzers": {
-              "target": "Package",
-              "version": "[4.7.0, )"
-            },
-            "NUnit3TestAdapter": {
-              "target": "Package",
-              "version": "[5.0.0, )"
-            },
             "coverlet.collector": {
               "target": "Package",
               "version": "[6.0.4, )"
-            },
-            "xunit": {
-              "target": "Package",
-              "version": "[2.9.3, )"
             },
             "xunit.runner.visualstudio": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
               "version": "[4.0.0-pre.4, )"
+            },
+            "xunit.v3": {
+              "target": "Package",
+              "version": "[4.0.0-pre.128, )"
             },
             "xunit.v3.assert": {
               "target": "Package",

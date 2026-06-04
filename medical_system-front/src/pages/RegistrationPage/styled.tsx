@@ -93,7 +93,7 @@ export const SubmitButton = styled(AppButton)`
     outline: none;
     box-shadow:
       0 0 0 2px #ffffff,
-      0 0 0 4px #3b82f6; /* Эффект кольца (ring-offset + ring) */
+      0 0 0 4px #3b82f6; 
   }
 `
 export const Divider = styled.div`

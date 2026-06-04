@@ -268,7 +268,6 @@ const CustomTempActiveDot = (props: any) => {
   return <circle cx={cx} cy={cy} r={7} fill={abnormal ? '#ef4444' : '#f97316'} />
 }
 
-// ─── Select ───────────────────────────────────────────────────────────────────
 
 interface PatientOption { value: string; label: string }
 
@@ -315,16 +314,13 @@ interface NurseWorkplaceProps {
   patientId?: string
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
-  // ── Server data ──────────────────────────────────────────────────────────────
   const [vitals,    setVitals]    = useState<LocalVitalSign[]>([])
   const [serverWarnings, setServerWarnings] = useState<ServerWarningDto[]>([])
   const [serverTrends,   setServerTrends]   = useState<ServerTrendDto[]>([])
   const [patients,  setPatients]  = useState<ServerPatientDto[]>([])
 
-  // ── UI state ─────────────────────────────────────────────────────────────────
   const [selectedPatientId, setSelectedPatientId] = useState<string>(patientId || '')
   const [loading, setLoading] = useState(false)
   const [saving,  setSaving]  = useState(false)
@@ -452,7 +448,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
     label: p.fullName + (p.roomAndBed ? ` (${p.roomAndBed})` : ''),
   }))
 
-  // ── Обработчики формы ─────────────────────────────────────────────────────────
   const validateField = (field: VitalSignField, raw: string): string => {
     const r = vitalFieldSchemas[field].safeParse(raw)
     return r.success ? '' : (r.error.issues[0]?.message ?? '')
@@ -507,7 +502,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
     }
   }
 
-  // ─── Render ──────────────────────────────────────────────────────────────────
   return (
     <Content>
       <Container>
@@ -552,7 +546,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
       </Container>
 
       <TwoColumnGrid>
-        {/* ── Левая колонка: форма ввода ── */}
         <div>
           <Card>
             <CardHeader>
@@ -583,7 +576,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                 </OpenSheetBtn>
               )}
 
-              {/* Загрузка */}
               {loading && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#64748b' }}>
                   <Loader2 size={16} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
@@ -606,14 +598,13 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                 </div>
               )}
 
-              {/* Всё в норме */}
+      
               {!loading && selectedPatientId && warnings.length === 0 && latestVitals && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', fontSize: '13px', fontWeight: 500, color: '#16a34a' }}>
                   ✓ Все последние показатели в норме
                 </div>
               )}
 
-              {/* Поля ввода */}
               <div>
                 <FieldLabelIcon>
                   <Thermometer size={16} color="#ea580c" />
@@ -707,7 +698,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
             </CardHeader>
 
             <CardBody $noPadding>
-              {/* Тренды (верхняя строка) */}
               {serverTrends.length >= 2 && (
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
                   <span style={{ fontSize: '11px', color: '#94a3b8', alignSelf: 'center' }}>Динамика:</span>
@@ -730,7 +720,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                 </div>
               )}
 
-              {/* Пустое состояние */}
               {!loading && chartData.length === 0 && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 180, color: '#94a3b8', fontSize: '14px' }}>
                   {selectedPatientId ? 'Нет данных для отображения' : 'Выберите пациента'}
@@ -824,7 +813,6 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
             </CardBody>
           </Card>
 
-          {/* График 2: SpO₂ и Частота дыхания */}
           <Card>
             {serverTrends.length >= 2 && (
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>

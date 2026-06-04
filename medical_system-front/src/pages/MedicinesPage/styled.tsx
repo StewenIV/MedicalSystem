@@ -43,7 +43,6 @@ const gradientText = (gradient: string) => `
   background-clip: text;
 `
 
-// ─── Page container ──────────────────────────────────────────────────────────
 export const PageContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -57,7 +56,6 @@ export const PageContainer = styled.div`
   padding-bottom: 48px;
 `
 
-// ─── Header ──────────────────────────────────────────────────────────────────
 export const Header = styled.div`
   display: flex;
   justify-content: space-between;
@@ -144,7 +142,6 @@ export const HeaderSubtitle = styled.p`
   }
 `
 
-// ─── Stats grid ──────────────────────────────────────────────────────────────
 export const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
@@ -214,7 +211,6 @@ export const StatSub = styled.div`
   margin-top: 2px;
 `
 
-// ─── Control bar ─────────────────────────────────────────────────────────────
 export const ControlBar = styled.div`
   display: flex;
   gap: 12px;
@@ -434,7 +430,6 @@ export const ExportButton = styled.button<{ disabled?: boolean }>`
   }
 `
 
-// ─── Table wrapper ────────────────────────────────────────────────────────────
 export const TableWrapper = styled.div`
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(24px);
@@ -545,7 +540,6 @@ export const Tr = styled.tr<{ $status?: 'norm' | 'low' | 'empty' }>`
   }
 `
 
-// ─── Drug name cell ───────────────────────────────────────────────────────────
 export const DrugName = styled.div`
   font-weight: 700;
   font-size: 13.5px;
@@ -561,7 +555,6 @@ export const DrugCategory = styled.div`
   margin-top: 2px;
 `
 
-// ─── Balance bar ─────────────────────────────────────────────────────────────
 export const BalanceCell = styled.div`
   display: flex;
   flex-direction: column;
@@ -606,7 +599,6 @@ export const BalanceFill = styled.div<{ $pct: number; $status: 'norm' | 'low' | 
   transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 `
 
-// ─── Status badge ─────────────────────────────────────────────────────────────
 export const StatusBadge = styled.span<{ $status: 'norm' | 'low' | 'empty' }>`
   display: inline-flex;
   align-items: center;
@@ -636,7 +628,6 @@ export const StatusBadge = styled.span<{ $status: 'norm' | 'low' | 'empty' }>`
   }}
 `
 
-// ─── Operation badge ─────────────────────────────────────────────────────────
 export const OperationBadge = styled.span<{ $type: 'receipt' | 'writeoff' | 'adjustment' }>`
   display: inline-flex;
   align-items: center;
@@ -663,7 +654,6 @@ export const OperationBadge = styled.span<{ $type: 'receipt' | 'writeoff' | 'adj
   }}
 `
 
-// ─── Date cell ────────────────────────────────────────────────────────────────
 export const DateCell = styled.span`
   font-size: 12.5px;
   color: #64748b;
@@ -675,7 +665,6 @@ export const NullCell = styled.span`
   color: #cbd5e1;
 `
 
-// ─── Pagination ──────────────────────────────────────────────────────────────
 export const PaginationBar = styled.div`
   display: flex;
   align-items: center;
@@ -734,7 +723,6 @@ export const PageSizeSelect = styled.select`
   outline: none;
 `
 
-// ─── No data state ────────────────────────────────────────────────────────────
 export const NoData = styled.div`
   display: flex;
   flex-direction: column;
@@ -748,7 +736,6 @@ export const NoData = styled.div`
   text-align: center;
 `
 
-// ─── Drawer ──────────────────────────────────────────────────────────────────
 export const DrawerOverlay = styled.div`
   position: fixed;
   inset: 0;
@@ -816,7 +803,6 @@ export const DrawerCloseBtn = styled.button`
   &:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 `
 
-// ─── Tab bar ─────────────────────────────────────────────────────────────────
 export const TabBar = styled.div`
   display: flex;
   border-bottom: 1px solid #f1f5f9;
@@ -874,7 +860,6 @@ export const DrawerContent = styled.div`
   }
 `
 
-// ─── Overview tab components ──────────────────────────────────────────────────
 export const OverviewSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -1016,7 +1001,6 @@ export const DeleteBtn = styled.button`
   &:hover { border-color: #ef4444; background: #fee2e2; color: #b91c1c; }
 `
 
-// ─── Form components ──────────────────────────────────────────────────────────
 export const FormGrid = styled.div<{ $cols?: number }>`
   display: grid;
   grid-template-columns: repeat(${({ $cols }) => $cols || 1}, 1fr);
@@ -1156,7 +1140,6 @@ export const CancelButton = styled.button`
   &:hover { border-color: #94a3b8; color: #334155; background: #f8fafc; }
 `
 
-// ─── Patient search ───────────────────────────────────────────────────────────
 export const PatientSearchWrapper = styled.div`
   position: relative;
 `
@@ -1196,7 +1179,6 @@ export const PatientOptionInfo = styled.div`
   margin-top: 2px;
 `
 
-// ─── History table ────────────────────────────────────────────────────────────
 export const HistorySearch = styled.div`
   display: flex;
   gap: 8px;
@@ -1258,7 +1240,6 @@ export const HistoryPagination = styled.div`
   gap: 8px;
 `
 
-// ─── Modal overlay ────────────────────────────────────────────────────────────
 export const ModalOverlay = styled.div`
   position: fixed;
   inset: 0;
