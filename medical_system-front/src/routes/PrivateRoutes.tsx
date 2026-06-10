@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import { Route, Navigate, Routes, useLocation, useNavigate } from 'react-router-dom'
-import { checkPathMatch, paths } from './helpers'
+import { checkPathMatch, paths, pathsPrivate } from './helpers'
 import { setIsLogged } from 'features/App/reducer'
 import { selectUserRole, selectDisplayName } from 'features/App/selectors'
 import { useAppDispatch } from 'store'
@@ -9,9 +9,6 @@ import { authApi } from 'api/authApi'
 import { UserRole } from 'features/App/types'
 
 const HomePage = lazy(() => import('pages/HomePage/index'))
-const LaboratoryPage = lazy(() => import('pages/LaboratoryPage'))
-const PatientCabinetPage = lazy(() => import('pages/PatientCabinetPage'))
-
 
 const toComponentRole = (role: UserRole): 'doctor' | 'nurse' | 'patient' | null => {
   if (!role) return null
@@ -32,7 +29,7 @@ const PrivateRoutes: React.FC = () => {
   const dispatch = useAppDispatch()
   const userRole = useSelector(selectUserRole)
 
-  const isMatch = checkPathMatch(location.pathname, paths)
+  const isMatch = checkPathMatch(location.pathname, pathsPrivate)
 
   const handleNavigate = (screen: string, patientId?: string) => {
     if (patientId) {
@@ -50,21 +47,6 @@ const PrivateRoutes: React.FC = () => {
 
   const componentRole = toComponentRole(userRole)
 
-  if (userRole === 'Patient') {
-    return (
-      <Routes>
-        <Route path="*" element={<PatientCabinetPage />} />
-      </Routes>
-    )
-  }
-
-  if (userRole === 'LaboratoryEmployee') {
-    return (
-      <Routes>
-        <Route path="*" element={<LaboratoryPage />} />
-      </Routes>
-    )
-  }
 
   return (
     <Routes>

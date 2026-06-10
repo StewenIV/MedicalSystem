@@ -91,5 +91,34 @@ namespace MedicalSystem.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        /// <summary>
+        /// POST /api/auth/register-patient — саморегистрация пациента (публичный эндпоинт).
+        /// </summary>
+        [HttpPost("register-patient")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientRequestDto dto, CancellationToken token)
+        {
+            try
+            {
+                var user = await _authService.RegisterPatientAsync(dto, token);
+                return Ok(new
+                {
+                    user.Id,
+                    user.Login,
+                    user.Role,
+                    user.DisplayName
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
+

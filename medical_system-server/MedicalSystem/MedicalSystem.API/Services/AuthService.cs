@@ -8,6 +8,8 @@ using System.Threading.Tasks;
 using MedicalSystem.API.DTOs.Auth;
 using MedicalSystem.Data.DbContext;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
+using MedicalSystem.Domain.Models.Owned;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
@@ -78,6 +80,67 @@ namespace MedicalSystem.API.Services
             await _context.SaveChangesAsync(token);
             return user;
         }
+
+        /// <summary>
+        /// Регистрирует нового пациента (общедоступно).
+        /// </summary>
+        public async Task<User> RegisterPatientAsync(RegisterPatientRequestDto dto, CancellationToken token = default)
+        {
+            var existing = await _context.Users
+                .AnyAsync(u => u.Login == dto.Email, token);
+
+            if (existing)
+                throw new InvalidOperationException($"Пользователь с email '{dto.Email}' уже зарегистрирован.");
+
+            var userId = Guid.NewGuid();
+            var displayName = $"{dto.LastName} {dto.FirstName} {dto.MiddleName}".Trim();
+
+            var user = new User
+            {
+                Id = userId,
+                Login = dto.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Role = "Patient",
+                DisplayName = displayName,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var patient = new Patient
+            {
+                Id = userId,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                MiddleName = dto.MiddleName,
+                Gender = Gender.Male,
+                DateOfBirth = dto.DateOfBirth,
+                MedcardNum = new Random().Next(10000000, 99999999).ToString(),
+                Status = PatientStatus.Outpatient,
+                LastUpdated = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Contacts = new PatientContacts
+                {
+                    Email = dto.Email,
+                    PhoneMobile = dto.Phone
+                }
+            };
+
+            using var transaction = await _context.Database.BeginTransactionAsync(token);
+            try
+            {
+                _context.Users.Add(user);
+                _context.Patients.Add(patient);
+                await _context.SaveChangesAsync(token);
+                await transaction.CommitAsync(token);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(token);
+                throw;
+            }
+
+            return user;
+        }
+
 
         private string GenerateToken(User user)
         {

@@ -1,6 +1,6 @@
 import { lazy } from 'react'
 import { Route, Navigate, Routes, useLocation } from 'react-router-dom'
-import { checkPathMatch, paths } from './helpers'
+import { checkPathMatch, paths, pathsPublic } from './helpers'
 
 const WelcomeScreen = lazy(() => import('pages/WelcomeScreen'))
 const AuthPage = lazy(() => import('pages/AuthPage'))
@@ -10,7 +10,7 @@ const ResetPasswordPage = lazy(() => import('pages/ResetPasswordPage'))
 const PublicRoutes: React.FC = () => {
   const location = useLocation()
 
-  const isMatch = checkPathMatch(location.pathname, paths)
+  const isMatch = checkPathMatch(location.pathname, pathsPublic)
 
   return (
     <Routes>

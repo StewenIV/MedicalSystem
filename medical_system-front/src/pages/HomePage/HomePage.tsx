@@ -73,6 +73,8 @@ import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
 import MedicinesPage from 'pages/MedicinesPage'
 import { WardRoundPage, WardRoundsHub, PrimaryInspectionPage } from 'pages/WardRound'
 import { PatientDataProvider } from 'context/PatientDataContext'
+import LaboratoryPage from 'pages/LaboratoryPage'
+import PatientCabinetPage from 'pages/PatientCabinetPage'
 import { selectDisplayName, selectUserRole } from 'features/App/selectors'
 import { UserRole } from 'features/App/types'
 
@@ -93,7 +95,19 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const [searchQuery, setSearchQuery] = useState('')
   const [headerSearchQuery, setHeaderSearchQuery] = useState('')
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
-  const [activeSection, setActiveSection] = useState<string>('dashboard')
+  const [activeSection, setActiveSection] = useState<string>(() => {
+    if (reduxRole === 'Patient') return 'patient-cabinet'
+    if (reduxRole === 'LaboratoryEmployee') return 'laboratory'
+    return 'dashboard'
+  })
+
+  React.useEffect(() => {
+    if (reduxRole === 'Patient') {
+      setActiveSection('patient-cabinet')
+    } else if (reduxRole === 'LaboratoryEmployee') {
+      setActiveSection('laboratory')
+    }
+  }, [reduxRole])
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
   const [wardRoundPatientId, setWardRoundPatientId] = useState<string | undefined>()
   const [wardRoundType, setWardRoundType] = useState<'hub' | 'primary' | 'daily'>('hub')
@@ -191,32 +205,36 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                   <SidebarTrigger className="rounded-lg" />
                 </Flex>
 
-                <SearchWrapper $open={searchOpen}>
-                  <Input
-                    type="search"
-                    placeholder="Поиск пациента..."
-                    icon={<Search size={16} />}
-                    value={headerSearchQuery}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setHeaderSearchQuery(e.target.value)
-                    }
-                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                      if (e.key === 'Enter') handleHeaderSearch()
-                    }}
-                  />
-                </SearchWrapper>
+                {reduxRole !== 'Patient' && reduxRole !== 'LaboratoryEmployee' && (
+                  <>
+                    <SearchWrapper $open={searchOpen}>
+                      <Input
+                        type="search"
+                        placeholder="Поиск пациента..."
+                        icon={<Search size={16} />}
+                        value={headerSearchQuery}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setHeaderSearchQuery(e.target.value)
+                        }
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (e.key === 'Enter') handleHeaderSearch()
+                        }}
+                      />
+                    </SearchWrapper>
 
-                <SearchIconButton
-                  onClick={() => {
-                    if (searchOpen && headerSearchQuery.trim()) {
-                      handleHeaderSearch()
-                    } else {
-                      setSearchOpen((prev) => !prev)
-                    }
-                  }}
-                >
-                  <Search size={18} />
-                </SearchIconButton>
+                    <SearchIconButton
+                      onClick={() => {
+                        if (searchOpen && headerSearchQuery.trim()) {
+                          handleHeaderSearch()
+                        } else {
+                          setSearchOpen((prev) => !prev)
+                        }
+                      }}
+                    >
+                      <Search size={18} />
+                    </SearchIconButton>
+                  </>
+                )}
 
                 <FlexRight>
                   <DateLabel>
@@ -224,10 +242,12 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                     <span>{formatDate()}</span>
                   </DateLabel>
 
-                  <IconButton onClick={() => setNotificationsOpen(true)}>
-                    <Bell size={20} />
-                    {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
-                  </IconButton>
+                  {reduxRole !== 'Patient' && reduxRole !== 'LaboratoryEmployee' && (
+                    <IconButton onClick={() => setNotificationsOpen(true)}>
+                      <Bell size={20} />
+                      {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
+                    </IconButton>
+                  )}
 
                   <Separator />
 
@@ -240,6 +260,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                           : reduxRole === 'HeadNurse' ? 'Старшая медицинская сестра'
                           : reduxRole === 'ChiefDoctor' ? 'Главный врач'
                           : reduxRole === 'LaboratoryEmployee' ? 'Лаборатория'
+                          : reduxRole === 'Patient' ? 'Пациент'
                           : 'Сотрудник'}
                       </AccountRole>
                     </AccountText>
@@ -379,6 +400,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
               {activeSection === 'settings' && (
                 <SectionTitle style={{ marginTop: 24 }}>Управление</SectionTitle>
               )}
+              {activeSection === 'patient-cabinet' && <PatientCabinetPage />}
+              {activeSection === 'laboratory' && <LaboratoryPage />}
             </Main>
           </SidebarInset>
 

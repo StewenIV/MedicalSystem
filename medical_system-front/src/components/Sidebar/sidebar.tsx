@@ -13,7 +13,8 @@ import {
   Clock,
   Pill,
   ClipboardList,
-  FlaskConical
+  FlaskConical,
+  UserCircle
 } from 'lucide-react'
 
 import {
@@ -111,6 +112,18 @@ const ALL_NAV_ITEMS: NavItem[] = [
     label: 'Управление',
     icon: Settings,
     roles: ['ChiefDoctor']
+  },
+  {
+    key: 'patient-cabinet',
+    label: 'Личный кабинет',
+    icon: UserCircle,
+    roles: ['Patient']
+  },
+  {
+    key: 'laboratory',
+    label: 'Лаборатория',
+    icon: FlaskConical,
+    roles: ['LaboratoryEmployee']
   }
 ]
 
@@ -138,7 +151,13 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
         </LogoBox>
         <LogoTextBlock>
           <LogoTitle>Пульмонология</LogoTitle>
-          <LogoSubtitle>Панель врача</LogoSubtitle>
+          <LogoSubtitle>
+            {userRole === 'Doctor' || userRole === 'ChiefDoctor' ? 'Панель врача'
+              : userRole === 'Nurse' || userRole === 'HeadNurse' ? 'Панель медсестры'
+              : userRole === 'LaboratoryEmployee' ? 'Панель лаборатории'
+              : userRole === 'Patient' ? 'Кабинет пациента'
+              : 'Медсистема'}
+          </LogoSubtitle>
         </LogoTextBlock>
       </SidebarHeader>
 

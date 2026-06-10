@@ -30,6 +30,8 @@ import {
 import { PatternFormat } from 'react-number-format'
 import { paths } from 'routes/helpers'
 import { BackButton } from 'components/Button'
+import { authApi } from 'api/authApi'
+
 
 const RegistrationPage: React.FC = () => {
   const navigate = useNavigate()
@@ -45,8 +47,9 @@ const RegistrationPage: React.FC = () => {
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors: Record<string, string> = {}
 
@@ -67,8 +70,27 @@ const RegistrationPage: React.FC = () => {
       return
     }
 
-    toast.success('Регистрация прошла успешно!')
-    navigate(paths.auth)
+    setErrors({})
+    setIsSubmitting(true)
+
+    try {
+      await authApi.registerPatient({
+        lastName: formData.lastName,
+        firstName: formData.firstName,
+        middleName: formData.middleName || undefined,
+        email: formData.email,
+        password: formData.password,
+        dateOfBirth: formData.dateOfBirth,
+        phone: formData.phone
+      })
+
+      toast.success('Регистрация прошла успешно!')
+      navigate(paths.auth)
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка регистрации пациента')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
   return (
     <>
@@ -231,7 +253,9 @@ const RegistrationPage: React.FC = () => {
               </Field>
             </Grid>
 
-            <SubmitButton type="submit">Зарегистрироваться</SubmitButton>
+            <SubmitButton type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
+            </SubmitButton>
           </Form>
 
           <Divider>или</Divider>

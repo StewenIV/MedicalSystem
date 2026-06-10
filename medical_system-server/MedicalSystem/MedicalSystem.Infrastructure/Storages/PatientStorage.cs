@@ -171,10 +171,74 @@ namespace MedicalSystem.Infrastructure.Storages
                     foreach (var d in dto.Allergies)
                         _context.Allergies.Add(new Allergy { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Reaction = d.Reaction, Date = d.Date, Comment = d.Comment });
 
-                await _context.PatientMedications.Where(m => m.PatientId == patientId).ExecuteDeleteAsync(token);
-                if (dto.CurrentMeds != null)
-                    foreach (var d in dto.CurrentMeds)
-                        _context.PatientMedications.Add(new PatientMedication { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Dose = d.Dose, Form = d.Form, Regimen = d.Regimen });
+                // For PatientMedications, do a differential update instead of ExecuteDeleteAsync to avoid violating foreign key constraints for active prescriptions.
+                var existingMeds = await _context.PatientMedications
+                    .Where(m => m.PatientId == patientId)
+                    .ToListAsync(token);
+
+                var incomingMeds = dto.CurrentMeds ?? new List<MedicalSystem.App.Contracts.Dtos.MedicationDto>();
+
+                // 1. Identify items to delete
+                var incomingIds = incomingMeds.Select(m => m.Id).Where(id => id != Guid.Empty).ToHashSet();
+                var medsToDelete = existingMeds.Where(m => !incomingIds.Contains(m.Id)).ToList();
+                
+                if (medsToDelete.Any())
+                {
+                    var deleteIds = medsToDelete.Select(m => m.Id).ToList();
+                    
+                    // Null out the references in BedPrescriptions
+                    await _context.BedPrescriptions
+                        .Where(bp => bp.PatientMedicationId != null && deleteIds.Contains(bp.PatientMedicationId.Value))
+                        .ExecuteUpdateAsync(s => s.SetProperty(bp => bp.PatientMedicationId, (Guid?)null), token);
+                        
+                    // Null out the references in MedicineOperationLogs
+                    await _context.MedicineOperationLogs
+                        .Where(l => l.PrescriptionId != null && deleteIds.Contains(l.PrescriptionId.Value))
+                        .ExecuteUpdateAsync(s => s.SetProperty(l => l.PrescriptionId, (Guid?)null), token);
+
+                    _context.PatientMedications.RemoveRange(medsToDelete);
+                }
+
+                // 2. Add or Update
+                foreach (var d in incomingMeds)
+                {
+                    if (d.Id != Guid.Empty)
+                    {
+                        var existing = existingMeds.FirstOrDefault(m => m.Id == d.Id);
+                        if (existing != null)
+                        {
+                            existing.Name = d.Name;
+                            existing.Dose = d.Dose;
+                            existing.Form = d.Form;
+                            existing.Regimen = d.Regimen;
+                            _context.PatientMedications.Update(existing);
+                        }
+                        else
+                        {
+                            _context.PatientMedications.Add(new PatientMedication
+                            {
+                                Id = d.Id,
+                                PatientId = patientId,
+                                Name = d.Name,
+                                Dose = d.Dose,
+                                Form = d.Form,
+                                Regimen = d.Regimen
+                            });
+                        }
+                    }
+                    else
+                    {
+                        _context.PatientMedications.Add(new PatientMedication
+                        {
+                            Id = Guid.NewGuid(),
+                            PatientId = patientId,
+                            Name = d.Name,
+                            Dose = d.Dose,
+                            Form = d.Form,
+                            Regimen = d.Regimen
+                        });
+                    }
+                }
 
                 await _context.Operations.Where(o => o.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Operations != null)
