@@ -133,7 +133,8 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
 
   const inpatients = useMemo(() => {
     return patients.filter(p =>
-      p.status === 'inpatient' ||
+      p.status === 'Hospitalized' ||
+      p.status === 'Outpatient' ||
       p.statusText?.toLowerCase().includes('госпитализ')
     )
   }, [patients])
@@ -309,7 +310,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                   </tr>
                 ) : (
                   paginatedPatients.map(p => {
-                    const inspToday = getInspections(p.id).filter(i => i.date === today)
+                    const inspToday = getInspections(p.id).filter(i => i.date === todayISO)
                     const isInspected = inspToday.length > 0
                     const lastInsp = inspToday[inspToday.length - 1]
                     const admDate = p.history?.[0]?.dateTime?.split(' ')[0] ?? p.lastUpdated ?? '—'

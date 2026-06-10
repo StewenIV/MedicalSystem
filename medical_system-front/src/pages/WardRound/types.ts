@@ -291,4 +291,8 @@ export interface SavedInspection {
   prescriptions?: RoundPrescription[]
   labTests?: LabTestCheck[]
   generatedText: string
+  complaints?: string
+  objective?: string
+  recommendations?: string
+  formData?: string
 }

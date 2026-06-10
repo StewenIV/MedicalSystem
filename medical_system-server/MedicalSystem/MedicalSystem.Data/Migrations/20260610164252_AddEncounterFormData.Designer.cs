@@ -3,6 +3,7 @@ using System;
 using MedicalSystem.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MedicalSystem.Data.Migrations
 {
     [DbContext(typeof(MedicalSystemDbContext))]
-    partial class MedicalSystemDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260610164252_AddEncounterFormData")]
+    partial class AddEncounterFormData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,10 +226,12 @@ namespace MedicalSystem.Data.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Complaints")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("Conclusion")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<DateTime>("DateTime")
                         .HasColumnType("timestamp without time zone");
@@ -238,13 +243,15 @@ namespace MedicalSystem.Data.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Objective")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Recommendations")
-                        .HasColumnType("text");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("Type")
                         .HasMaxLength(100)

@@ -95,13 +95,16 @@ export interface Patient {
     complications?: string
   }[]
   history: {
+    id?: string
     dateTime?: string
     type?: string
     doctor?: string
+    doctorName?: string
     conclusion?: string
     complaints?: string
     objective?: string
     recommendations?: string
+    formData?: string
   }[]
   vaccines: {
     name?: string

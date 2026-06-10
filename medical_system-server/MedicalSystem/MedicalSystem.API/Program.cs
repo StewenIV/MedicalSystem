@@ -41,6 +41,7 @@ builder.Services.AddScoped<IBedOccupancyHistoryStorage, BedOccupancyHistoryStora
 builder.Services.AddScoped<IPrescriptionStorage, PrescriptionStorage>();
 builder.Services.AddScoped<IPatientStorage, PatientStorage>();
 builder.Services.AddScoped<IMedicalProblemStorage, MedicalProblemStorage>();
+builder.Services.AddScoped<IEncounterStorage, EncounterStorage>();
 
 builder.Services.AddScoped<VitalSignService>();
 builder.Services.AddScoped<PatientService>();
@@ -48,6 +49,7 @@ builder.Services.AddScoped<BedService>();
 builder.Services.AddScoped<RoomService>();
 builder.Services.AddScoped<WardStatisticsService>();
 builder.Services.AddScoped<SearchService>();
+builder.Services.AddScoped<EncounterService>();
 
 
 builder.Services.AddScoped<AuthService>();
@@ -148,6 +150,7 @@ using (var scope = app.Services.CreateScope())
         // await context.Database.MigrateAsync();
 
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"BedActionLogs\" ADD COLUMN IF NOT EXISTS \"PerformedByName\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Encounters\" ADD COLUMN IF NOT EXISTS \"FormData\" text NULL;"); } catch { }
 
         await DataSeeder.SeedAsync(context, logger);
     }

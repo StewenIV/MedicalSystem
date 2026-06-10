@@ -7,6 +7,8 @@ namespace MedicalSystem.App.Contracts.Storage
 {
     public interface IEncounterStorage : IStorage<Encounter>
     {
+        Task<Encounter> CreateEncounterWithUserAsync(Encounter encounter, Guid? userId, CancellationToken token);
+        Task<IReadOnlyCollection<Encounter>> GetPatientEncountersAsync(Guid patientId, CancellationToken token);
         void AddPrimaryInspection(Guid patientId, Encounter encounter);
         Task AddPrimaryInspectionAsync(Guid patientId, Encounter encounter, CancellationToken token);
         void AddDailyRound(Guid patientId, Encounter encounter);

@@ -3,7 +3,7 @@ import {
   Clock, Save, X, Check, Sparkles, ChevronLeft,
   Thermometer, Heart, Wind, Droplets, Activity,
   AlertTriangle, TrendingUp, TrendingDown, Minus,
-  FileText, Plus, Trash2,
+  FileText, Plus, Trash2, History, BookOpen, Info,
 } from 'lucide-react'
 import {
   DailyRoundFormState,
@@ -15,6 +15,8 @@ import {
 } from './types'
 import { getInitialDailyState } from './mockRoundData'
 import { usePatientData } from 'context/PatientDataContext'
+import { useSelector } from 'react-redux'
+import { selectDisplayName } from 'features/App/selectors'
 
 import {
   PatientHeader,
@@ -69,7 +71,7 @@ const label: React.CSSProperties = {
 
 const block: React.CSSProperties = {
   background: 'white', borderRadius: 12, border: '1px solid #e5e7eb',
-  marginBottom: 16, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+  marginBottom: 0, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
 }
 
 const blockHeader: React.CSSProperties = {
@@ -105,7 +107,22 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
     critical: 'крайне тяжёлое',
   }
   if (form.generalCondition) {
-    parts.push(`Общее состояние ${condMap[form.generalCondition]}.`)
+    parts.push(`Общее состояние: ${condMap[form.generalCondition]}.`)
+  }
+
+  const COMPLAINT_ACCUSATIVE_RU: Record<ComplaintKey, string> = {
+    none: 'жалоб нет',
+    weakness: 'общую слабость',
+    cough_dry: 'малопродуктивный кашель',
+    cough_productive: 'продуктивный кашель',
+    dyspnea_exertion: 'одышку при физической нагрузке',
+    dyspnea_rest: 'одышку в покое',
+    fever: 'повышение температуры',
+    chest_pain: 'боль в грудной клетке',
+    sweating: 'повышенную потливость',
+    dizziness: 'головокружение',
+    nausea: 'тошноту',
+    other: 'другие симптомы',
   }
 
   const active = form.complaints.filter(c => c !== 'none')
@@ -113,26 +130,43 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
     parts.push('Жалоб не предъявляет.')
   } else {
     const labels = active.map(c => {
-      let t = COMPLAINT_LABELS[c].toLowerCase()
+      let t = COMPLAINT_ACCUSATIVE_RU[c] || c
       if (c === 'fever' && form.complaintParams.fever?.maxTemp) t += ` до ${form.complaintParams.fever.maxTemp}°C`
       return t
     })
-    parts.push(`Жалобы на ${labels.join(', ')}.`)
+    parts.push(`Жалобы на: ${labels.join(', ')}.`)
     if (form.complaintsNote) parts.push(form.complaintsNote)
   }
 
   const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
   const vitalParts: string[] = []
-  if (form.temperature) vitalParts.push(`Температура ${form.temperature}°C`)
-  if (form.hr) vitalParts.push(`ЧСС ${form.hr} в мин`)
-  if (bpStr) vitalParts.push(`АД ${bpStr} мм рт. ст`)
-  if (form.rr) vitalParts.push(`ЧДД ${form.rr} в мин`)
-  if (form.spo2) vitalParts.push(`SpO₂ ${form.spo2}%`)
-  if (vitalParts.length) parts.push(vitalParts.join('. ') + '.')
+  if (form.temperature) vitalParts.push(`температура — ${form.temperature}°C`)
+  if (form.hr) vitalParts.push(`ЧСС — ${form.hr} в мин`)
+  if (bpStr) vitalParts.push(`АД — ${bpStr} мм рт. ст.`)
+  if (form.rr) vitalParts.push(`ЧДД — ${form.rr} в мин`)
+  if (form.spo2) vitalParts.push(`SpO₂ — ${form.spo2}%`)
+  if (vitalParts.length > 0) {
+    parts.push(`Физиологические показатели: ${vitalParts.join(', ')}.`)
+  }
 
-  const skinColorMap: Record<string, string> = { pale_pink: 'бледно-розовая', pale: 'бледная', hyperemia: 'гиперемирована', cyanosis: 'цианотичная', icteric: 'иктеричная' }
-  const skinTempMap: Record<string, string> = { warm: 'тёплая', cold: 'холодная', hot: 'горячая' }
-  const skinMoistMap: Record<string, string> = { dry: 'сухая', moist: 'влажная', excessive: 'повышенная влажность' }
+  const skinColorMap: Record<string, string> = {
+    pale_pink: 'бледно-розовые',
+    pale: 'бледные',
+    hyperemia: 'гиперемированные',
+    cyanosis: 'цианотичные',
+    icteric: 'иктеричные'
+  }
+  const skinTempMap: Record<string, string> = {
+    warm: 'тёплые',
+    cold: 'холодные',
+    hot: 'горячие'
+  }
+  const skinMoistMap: Record<string, string> = {
+    dry: 'сухие',
+    moist: 'влажные',
+    excessive: 'с повышенной влажностью'
+  }
+  
   if (form.skinColor || form.skinTemp || form.skinMoisture) {
     let skinParts: string[] = []
     if (form.skinColor) skinParts.push(skinColorMap[form.skinColor] ?? form.skinColor)
@@ -142,10 +176,20 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
   }
 
   if (form.breathingType) {
-    const bt: Record<string, string> = { vesicular: 'везикулярное', harsh: 'жёсткое', weakened: 'ослабленное', bronchial: 'бронхиальное' }
-    let respStr = `Аускультативно дыхание ${bt[form.breathingType] ?? form.breathingType}`
+    const bt: Record<string, string> = {
+      vesicular: 'везикулярное',
+      harsh: 'жёсткое',
+      weakened: 'ослабленное',
+      bronchial: 'бронхиальное'
+    }
+    let respStr = `Аускультативно: над лёгкими дыхание ${bt[form.breathingType] ?? form.breathingType}`
     if (form.ralesType) {
-      const rt: Record<string, string> = { none: ', хрипы не выслушиваются', dry: ', сухие хрипы', moist: ', влажные хрипы', crepitation: ', крепитация' }
+      const rt: Record<string, string> = {
+        none: ', хрипы не выслушиваются',
+        dry: ', выслушиваются сухие хрипы',
+        moist: ', выслушиваются влажные хрипы',
+        crepitation: ', отмечается крепитация'
+      }
       respStr += rt[form.ralesType] ?? ''
     }
     respStr += '.'
@@ -154,14 +198,63 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
   }
 
   if (form.heartRhythm) {
-    let heartStr = `Сердечная деятельность ${form.heartRhythm === 'regular' ? 'ритмичная' : 'аритмичная'}, тоны ${form.heartTones === 'clear' ? 'ясные' : form.heartTones === 'muffled' ? 'приглушены' : 'глухие'}.`
+    const tonesMap: Record<HeartTones, string> = {
+      clear: 'ясные',
+      muffled: 'приглушены',
+      deaf: 'глухие'
+    }
+    let heartStr = `Сердечная деятельность ${form.heartRhythm === 'regular' ? 'ритмичная' : 'аритмичная'}, тоны сердца ${tonesMap[form.heartTones ?? 'clear'] ?? form.heartTones}.`
     if (form.heartNote) heartStr += ' ' + form.heartNote
     parts.push(heartStr)
   }
 
+  if (form.tongueState) {
+    const ts: Record<string, string> = {
+      moist_clean: 'влажный, чистый',
+      moist_coated: 'влажный, обложен налётом',
+      dry_clean: 'сухой, чистый',
+      dry_coated: 'сухой, обложен налётом',
+    }
+    parts.push(`Язык: ${ts[form.tongueState]}.`)
+  }
+
+  if (form.abdomenState) {
+    const abdMap: Record<string, string> = {
+      soft: 'мягкий, безболезненный',
+      tense: 'напряжён',
+      bloated: 'вздут'
+    }
+    let abdStr = `Живот при пальпации ${abdMap[form.abdomenState]}.`
+    if (form.abdomenNote) abdStr += ` ${form.abdomenNote}`
+    parts.push(abdStr)
+  }
+
+  if (form.stool || form.urination) {
+    let excretions: string[] = []
+    if (form.urination) {
+      const urMap: Record<string, string> = {
+        free_painless: 'свободное, безболезненное',
+        difficult: 'затруднено',
+        painful: 'болезненное',
+        frequent: 'учащенное'
+      }
+      excretions.push(`мочеиспускание — ${urMap[form.urination]}`)
+    }
+    if (form.stool) {
+      const stoolMap: Record<string, string> = {
+        normal: 'оформленный, регулярный',
+        constipation: 'склонность к запорам / задержка стула',
+        diarrhea: 'жидкий',
+        absent: 'отсутствует'
+      }
+      excretions.push(`стул — ${stoolMap[form.stool]}`)
+    }
+    parts.push(`Физиологические отправления: ${excretions.join(', ')}.`)
+  }
+
   const dynMap: Record<DynamicsState, string> = {
     improvement: 'Отмечается положительная динамика.',
-    no_change: 'Динамика отсутствует.',
+    no_change: 'Динамика отсутствует (стабильное состояние).',
     deterioration: 'Отмечается ухудшение состояния.',
   }
   if (form.dynamics) parts.push(dynMap[form.dynamics])
@@ -173,7 +266,7 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
     parts.push('Лечение скорректировано.')
   }
 
-  if (form.controlStudies) parts.push(`Контроль: ${form.controlStudies}.`)
+  if (form.controlStudies) parts.push(`Контроль исследований: ${form.controlStudies}.`)
   if (form.nextInspection) parts.push(`Повторный осмотр: ${form.nextInspection}.`)
 
   return parts.join(' ')
@@ -188,18 +281,77 @@ interface DailyRoundPageProps {
 
 
 const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onNavigateToTemperatureSheet }) => {
-  const { getPatient, saveInspection, updatePatientVitals, addHistoryEntry, saveDraft, getDraft } = usePatientData()
+  const {
+    getPatient,
+    saveInspection,
+    updatePatientRoundData,
+    addHistoryEntry,
+    updateHistoryEntry,
+    saveDraft,
+    getDraft,
+    loadPatientEncounters,
+    getInspections
+  } = usePatientData()
   const patient = getPatient(patientId)
+  const currentUserDisplayName = useSelector(selectDisplayName)
 
   const [form, setForm] = useState<DailyRoundFormState>(() => {
     const draft = getDraft(`${patientId}-daily`)
     if (draft) return draft
-    return getInitialDailyState(patientId, patient)
+    const initial = getInitialDailyState(patientId, patient)
+    if (currentUserDisplayName) {
+      initial.doctor = currentUserDisplayName
+    }
+    return initial
   })
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [showPrescModal, setShowPrescModal] = useState(false)
   const [newPresc, setNewPresc] = useState<Partial<RoundPrescription>>({})
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
+
+  useEffect(() => {
+    if (selectedHistoryId === null && currentUserDisplayName && (!form.doctor || form.doctor === 'Лечащий врач' || form.doctor === patient?.doctor)) {
+      setForm(prev => ({ ...prev, doctor: currentUserDisplayName }))
+    }
+  }, [currentUserDisplayName, patient, selectedHistoryId])
+
+  // Load all past encounters for this patient when opening the page
+  useEffect(() => {
+    loadPatientEncounters(patientId)
+  }, [patientId])
+
+  const allInspections = getInspections(patientId)
+  const dailyInspections = allInspections
+    .filter(i => i.type === 'daily')
+    .sort((a, b) => {
+      const dtA = new Date(`${a.date}T${a.time}`).getTime()
+      const dtB = new Date(`${b.date}T${b.time}`).getTime()
+      return dtB - dtA
+    })
+  const selectedRecord = selectedHistoryId ? allInspections.find(i => i.id === selectedHistoryId) ?? null : null
+
+  useEffect(() => {
+    if (selectedRecord && selectedRecord.formData) {
+      try {
+        const parsed = JSON.parse(selectedRecord.formData)
+        setForm(parsed)
+      } catch (err) {
+        console.error('Failed to parse formData', err)
+      }
+    } else if (selectedHistoryId === null) {
+      const draft = getDraft(`${patientId}-daily`)
+      if (draft) setForm(draft)
+      else {
+        const initial = getInitialDailyState(patientId, patient)
+        if (currentUserDisplayName) {
+          initial.doctor = currentUserDisplayName
+        }
+        setForm(initial)
+      }
+    }
+  }, [selectedHistoryId, selectedRecord, patientId, patient, getDraft, currentUserDisplayName])
 
   useEffect(() => {
     if (!toastMsg) return
@@ -230,105 +382,167 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
     showToast('Черновик сохранён', 'success')
   }
 
-  const handleGenerateAndSave = () => {
+  const handleGenerateAndSave = async () => {
     if (!patient) return
-    const text = generateDailyText(form, `${patient.lastName} ${patient.firstName}`)
-    setField('generatedText', text)
-    setField('status', 'completed')
-    
-    saveDraft(`${patientId}-daily`, null)
 
-    const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
+    // Validation
+    if (!form.inspectionDate) return showToast('Укажите дату осмотра', 'error')
+    if (!form.inspectionTime) return showToast('Укажите время осмотра', 'error')
+    if (!form.doctor) return showToast('Укажите врача', 'error')
+    if (!form.generalCondition) return showToast('Оцените общее состояние пациента', 'error')
+    if (form.complaints.length === 0) return showToast('Укажите жалобы (или «Нет жалоб»)', 'error')
 
-    const insp: SavedInspection = {
-      id: `daily-${Date.now()}`,
-      type: 'daily',
-      date: form.inspectionDate,
-      time: form.inspectionTime,
-      doctor: form.doctor,
-      vitals: { temp: form.temperature, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
-      generatedText: text,
-    }
-
-    saveInspection(patientId, insp)
-
-    if (form.temperature || form.hr || form.bpSys || form.spo2 || form.rr) {
-      updatePatientVitals(patientId, {
-        temp: form.temperature || undefined,
-        hr: form.hr || undefined,
-        bp: bpStr || undefined,
-        spo2: form.spo2 || undefined,
-        resp: form.rr || undefined,
-      })
-    }
-
-    const getPrescriptionsDiff = (oldMeds: any[], newPrescs: RoundPrescription[], decision: string) => {
-      if (decision === 'keep') return 'Не изменились.'
-      if (oldMeds.length === 0 && newPrescs.length === 0) return 'Назначений нет.'
+    try {
+      const text = generateDailyText(form, `${patient.lastName} ${patient.firstName}`)
       
-      const oldMap = new Map(oldMeds.map((m, i) => [`med-${i}`, m]))
-      const newMap = new Map(newPrescs.map(p => [p.id, p]))
+      const finalForm = { ...form, generatedText: text, status: 'completed' as const }
+      const formJson = JSON.stringify(finalForm)
       
-      const added: string[] = []
-      const removed: string[] = []
-      const changed: string[] = []
-      
-      oldMap.forEach((oldMed, id) => {
-        if (!newMap.has(id)) {
-          removed.push(`${oldMed.name} (${oldMed.dose})`)
-        } else {
-          const newMed = newMap.get(id)!
-          if (newMed.drug !== oldMed.name || newMed.dose !== oldMed.dose || newMed.route !== oldMed.route || newMed.frequency !== oldMed.regimen) {
-            changed.push(`${oldMed.name} ${oldMed.dose} -> ${newMed.drug} ${newMed.dose} ${newMed.unit} ${newMed.route}`)
+      setForm(finalForm)
+      setShowResult(true)
+
+      const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
+
+      let activeMeds = patient.currentMeds;
+      if (form.treatmentDecision === 'modify') {
+        activeMeds = form.prescriptions
+          .filter(p => p.action !== 'cancel')
+          .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }));
+      }
+
+      await updatePatientRoundData(
+        patientId,
+        {
+          temp: form.temperature || undefined,
+          hr: form.hr || undefined,
+          bp: bpStr || undefined,
+          spo2: form.spo2 || undefined,
+          resp: form.rr || undefined,
+        },
+        undefined,
+        activeMeds
+      )
+
+      const getPrescriptionsDiff = (oldMeds: any[], newPrescs: RoundPrescription[], decision: string) => {
+        if (decision === 'keep') return 'Не изменились.'
+        if (oldMeds.length === 0 && newPrescs.length === 0) return 'Назначений нет.'
+        
+        const oldMap = new Map(oldMeds.map((m, i) => [`med-${i}`, m]))
+        const newMap = new Map(newPrescs.map(p => [p.id, p]))
+        
+        const added: string[] = []
+        const removed: string[] = []
+        const changed: string[] = []
+        
+        oldMap.forEach((oldMed, id) => {
+          if (!newMap.has(id)) {
+            removed.push(`${oldMed.name} (${oldMed.dose})`)
+          } else {
+            const newMed = newMap.get(id)!
+            if (newMed.drug !== oldMed.name || newMed.dose !== oldMed.dose || newMed.route !== oldMed.route || newMed.frequency !== oldMed.regimen) {
+              changed.push(`${oldMed.name} ${oldMed.dose} -> ${newMed.drug} ${newMed.dose} ${newMed.unit} ${newMed.route}`)
+            }
           }
-        }
+        })
+        
+        newMap.forEach((newMed, id) => {
+          if (id.startsWith('np-') || !oldMap.has(id)) {
+            added.push(`${newMed.drug} ${newMed.dose}${newMed.unit}`)
+          }
+        })
+        
+        const parts: string[] = []
+        if (added.length) parts.push(`Добавлено: ${added.join(', ')}`)
+        if (removed.length) parts.push(`Убрано: ${removed.join(', ')}`)
+        if (changed.length) parts.push(`Изменено: ${changed.join('; ')}`)
+        
+        if (parts.length === 0) return 'Не изменились.'
+        return parts.join('.\n')
+      }
+
+      const COMPLAINT_ACCUSATIVE_RU: Record<ComplaintKey, string> = {
+        none: 'жалоб нет',
+        weakness: 'общую слабость',
+        cough_dry: 'малопродуктивный кашель',
+        cough_productive: 'продуктивный кашель',
+        dyspnea_exertion: 'одышку при физической нагрузке',
+        dyspnea_rest: 'одышку в покое',
+        fever: 'повышение температуры',
+        chest_pain: 'боль в грудной клетке',
+        sweating: 'повышенную потливость',
+        dizziness: 'головокружение',
+        nausea: 'тошноту',
+        other: 'другие симптомы',
+      }
+
+      const complaintsText = form.complaints.includes('none') || form.complaints.filter(c => c !== 'none').length === 0
+        ? 'Жалоб не предъявляет.'
+        : `Жалобы на ${form.complaints.filter(c => c !== 'none').map(c => {
+            let t = COMPLAINT_ACCUSATIVE_RU[c] || c
+            if (c === 'fever' && form.complaintParams.fever?.maxTemp) t += ` до ${form.complaintParams.fever.maxTemp}°C`
+            return t
+          }).join(', ')}.` + (form.complaintsNote ? ` ${form.complaintsNote}` : '')
+
+      const splitText = text.split('.')
+      const objectiveParts = splitText.filter(p => {
+        const lower = p.toLowerCase()
+        if (lower.includes('осмотр лечащего врача от') || lower.includes('время:')) return false
+        if (lower.includes('жалобы на') || lower.includes('жалоб не предъявляет')) return false
+        if (lower.includes('контроль:') || lower.includes('повторный осмотр:')) return false
+        if (lower.includes('лечение продолжить') || lower.includes('лечение скорректировано')) return false
+        return p.trim().length > 0 && p !== form.complaintsNote
       })
-      
-      newMap.forEach((newMed, id) => {
-        if (id.startsWith('np-') || !oldMap.has(id)) {
-          added.push(`${newMed.drug} ${newMed.dose}${newMed.unit}`)
+
+      const entryPayload = {
+        dateTime: `${form.inspectionDate} ${form.inspectionTime}`,
+        type: 'Ежедневный осмотр',
+        doctor: form.doctor,
+        conclusion: text, 
+        complaints: complaintsText,
+        objective: objectiveParts.join('. ') + '.',
+        recommendations: getPrescriptionsDiff(patient.currentMeds || [], form.prescriptions, form.treatmentDecision || 'keep'),
+        formData: formJson,
+      }
+
+      if (selectedHistoryId) {
+        await updateHistoryEntry(patientId, selectedHistoryId, entryPayload)
+        
+        const insp: SavedInspection = {
+          id: selectedHistoryId,
+          type: 'daily',
+          date: form.inspectionDate,
+          time: form.inspectionTime,
+          doctor: form.doctor,
+          vitals: { temp: form.temperature, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
+          generatedText: text,
+          formData: formJson,
         }
-      })
-      
-      const parts: string[] = []
-      if (added.length) parts.push(`Добавлено: ${added.join(', ')}`)
-      if (removed.length) parts.push(`Убрано: ${removed.join(', ')}`)
-      if (changed.length) parts.push(`Изменено: ${changed.join('; ')}`)
-      
-      if (parts.length === 0) return 'Не изменились.'
-      return parts.join('.\n')
+        saveInspection(patientId, insp)
+      } else {
+        const saved = await addHistoryEntry(patientId, entryPayload)
+        const realId = saved.id
+
+        const insp: SavedInspection = {
+          id: realId,
+          type: 'daily',
+          date: form.inspectionDate,
+          time: form.inspectionTime,
+          doctor: form.doctor,
+          vitals: { temp: form.temperature, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
+          generatedText: text,
+          formData: formJson,
+        }
+        saveInspection(patientId, insp)
+        setSelectedHistoryId(realId)
+      }
+
+      setShowResult(true)
+      showToast('Осмотр сохранён в карточке пациента', 'success')
+      saveDraft(`${patientId}-daily`, null)
+    } catch (err) {
+      console.error(err)
+      showToast(err instanceof Error ? err.message : 'Ошибка сохранения осмотра', 'error')
     }
-
-    const complaintsText = form.complaints.includes('none') || form.complaints.filter(c => c !== 'none').length === 0
-      ? 'Жалоб не предъявляет.'
-      : `Жалобы на ${form.complaints.filter(c => c !== 'none').map(c => {
-          let t = COMPLAINT_LABELS[c].toLowerCase()
-          if (c === 'fever' && form.complaintParams.fever?.maxTemp) t += ` до ${form.complaintParams.fever.maxTemp}°C`
-          return t
-        }).join(', ')}.` + (form.complaintsNote ? ` ${form.complaintsNote}` : '')
-
-    const splitText = text.split('.')
-    const objectiveParts = splitText.filter(p => {
-      const lower = p.toLowerCase()
-      if (lower.includes('осмотр лечащего врача от') || lower.includes('время:')) return false
-      if (lower.includes('жалобы на') || lower.includes('жалоб не предъявляет')) return false
-      if (lower.includes('контроль:') || lower.includes('повторный осмотр:')) return false
-      if (lower.includes('лечение продолжить') || lower.includes('лечение скорректировано')) return false
-      return p.trim().length > 0 && p !== form.complaintsNote
-    })
-
-    addHistoryEntry(patientId, {
-      dateTime: `${form.inspectionDate} ${form.inspectionTime}`,
-      type: 'Ежедневный осмотр',
-      doctor: form.doctor,
-      conclusion: text, 
-      complaints: complaintsText,
-      objective: objectiveParts.join('. ') + '.',
-      recommendations: getPrescriptionsDiff(patient.currentMeds || [], form.prescriptions, form.treatmentDecision || 'keep'),
-    })
-
-    setShowResult(true)
-    showToast('Осмотр сохранён в карточке пациента', 'success')
   }
 
   const addPresc = () => {
@@ -398,350 +612,429 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
       </PatientHeader>
 
       <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        <nav style={{ width: 220, flexShrink: 0, background: 'white', borderRight: '1px solid #e5e7eb', overflowY: 'auto', padding: '12px 0' }}>
-          {[
-            { id: 'info', label: 'Информация', icon: Clock },
-            { id: 'vitals', label: 'Показатели', icon: Activity },
-            { id: 'complaints', label: 'Жалобы', icon: FileText },
-            { id: 'objective', label: 'Объективно', icon: Heart },
-            { id: 'diagnosis', label: 'Диагноз', icon: AlertTriangle },
-            { id: 'prescriptions', label: 'Назначения', icon: Plus },
-            { id: 'recommendations', label: 'Рекомендации', icon: Sparkles }
-          ].map(sec => (
-             <button key={sec.id} onClick={() => document.getElementById(`daily-${sec.id}`)?.scrollIntoView({ behavior: 'smooth' })} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: 'none', background: 'transparent', color: '#374151', fontFamily: FONT, fontSize: 14.5, fontWeight: 450, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
-                <sec.icon size={14} />
-                <span style={{ flex: 1 }}>{sec.label}</span>
-                <span style={{
-                  width: 7, height: 7, borderRadius: '50%',
-                  background: blockDone[sec.id] ? '#22c55e' : '#d1d5db',
-                  flexShrink: 0,
-                }} />
-             </button>
-          ))}
+
+        {/* ===== LEFT SIDEBAR ===== */}
+        <nav style={{ width: 232, flexShrink: 0, background: 'white', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
+          {/* Tab toggle */}
+          <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
+            <button
+              onClick={() => { setShowHistory(false); setSelectedHistoryId(null) }}
+              style={{ flex: 1, padding: '10px 0', fontSize: 12, fontWeight: 600, fontFamily: FONT, border: 'none', cursor: 'pointer', background: !showHistory ? '#eff6ff' : 'white', color: !showHistory ? '#1d4ed8' : '#64748b', borderBottom: !showHistory ? '2px solid #1d4ed8' : '2px solid transparent', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+            >
+              <BookOpen size={13} /> Осмотр
+            </button>
+            <button
+              onClick={() => setShowHistory(true)}
+              style={{ flex: 1, padding: '10px 0', fontSize: 12, fontWeight: 600, fontFamily: FONT, border: 'none', cursor: 'pointer', background: showHistory ? '#eff6ff' : 'white', color: showHistory ? '#1d4ed8' : '#64748b', borderBottom: showHistory ? '2px solid #1d4ed8' : '2px solid transparent', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}
+            >
+              <History size={13} /> История ({dailyInspections.length})
+            </button>
+          </div>
+
+          {!showHistory ? (
+            /* Form section navigation */
+            <div style={{ padding: '8px 0', overflowY: 'auto', flex: 1 }}>
+              {[
+                { id: 'info', label: 'Информация', icon: Clock },
+                { id: 'vitals', label: 'Показатели', icon: Activity },
+                { id: 'complaints', label: 'Жалобы', icon: FileText },
+                { id: 'objective', label: 'Объективно', icon: Heart },
+                { id: 'diagnosis', label: 'Динамика', icon: TrendingUp },
+                { id: 'prescriptions', label: 'Назначения', icon: Plus },
+                { id: 'recommendations', label: 'Рекомендации', icon: Sparkles }
+              ].map(sec => (
+                <button key={sec.id} onClick={() => document.getElementById(`daily-${sec.id}`)?.scrollIntoView({ behavior: 'smooth' })} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: 'none', background: 'transparent', color: '#374151', fontFamily: FONT, fontSize: 14, fontWeight: 450, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}>
+                  <sec.icon size={13} />
+                  <span style={{ flex: 1 }}>{sec.label}</span>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: blockDone[sec.id] ? '#22c55e' : '#d1d5db', flexShrink: 0 }} />
+                </button>
+              ))}
+            </div>
+          ) : (
+            /* History list */
+            <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+              {dailyInspections.length === 0 ? (
+                <div style={{ padding: '20px 14px', color: '#94a3b8', fontSize: 13, textAlign: 'center' }}>
+                  <History size={28} color="#cbd5e1" style={{ display: 'block', margin: '0 auto 8px' }} />
+                  Нет записей
+                </div>
+              ) : (
+                dailyInspections.map(insp => {
+                  const isSelected = selectedHistoryId === insp.id
+                  return (
+                    <button
+                      key={insp.id}
+                      onClick={() => setSelectedHistoryId(isSelected ? null : insp.id)}
+                      style={{ width: '100%', display: 'flex', flexDirection: 'column', padding: '10px 14px', border: 'none', background: isSelected ? '#eff6ff' : 'transparent', borderLeft: `3px solid ${isSelected ? '#1d4ed8' : 'transparent'}`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.13s', gap: 3 }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: isSelected ? '#1d4ed8' : '#1e293b', fontFamily: FONT }}>
+                          {new Date(`${insp.date}T00:00:00`).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                        <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: FONT }}>{insp.time}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#64748b', fontFamily: FONT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                        {insp.doctor}
+                      </div>
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          )}
         </nav>
 
+        {/* ===== MAIN CONTENT AREA ===== */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px', scrollBehavior: 'smooth' }}>
-          <div style={{ maxWidth: 900, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div id="daily-info" style={block}>
-          <div style={blockHeader}><Clock size={15} /> Информация об осмотре</div>
-          <div style={{ ...blockBody, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={label}>Дата</label>
-              <input type="date" style={inputStyle} value={form.inspectionDate} onChange={e => setField('inspectionDate', e.target.value)} />
-            </div>
-            <div>
-              <label style={label}>Время</label>
-              <input type="time" style={inputStyle} value={form.inspectionTime} onChange={e => setField('inspectionTime', e.target.value)} />
-            </div>
-            <div>
-              <label style={label}>Врач</label>
-              <input style={inputStyle} value={form.doctor} onChange={e => setField('doctor', e.target.value)} />
-            </div>
-          </div>
-        </div>
 
-            <div id="daily-vitals" style={block}>
-          <div style={blockHeader}>
-            <Activity size={15} /> Показатели
-            {onNavigateToTemperatureSheet && (
-              <button onClick={() => onNavigateToTemperatureSheet(patientId)} style={{ marginLeft: 'auto', fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: FONT }}>
-                Температурный лист →
-              </button>
-            )}
-          </div>
-          <div style={blockBody}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 12 }}>
-              {([
-                { key: 'temperature', lbl: 'Температура', unit: '°C', icon: <Thermometer size={16} color="#3b82f6" />, min: 35, max: 43, step: '0.1', alert: (v: string) => parseFloat(v) >= 38 },
-                { key: 'hr', lbl: 'ЧСС', unit: 'уд/мин', icon: <Heart size={16} color="#ef4444" />, min: 20, max: 250, step: '1', alert: () => false },
-                { key: 'rr', lbl: 'ЧДД', unit: 'в мин', icon: <Wind size={16} color="#06b6d4" />, min: 6, max: 60, step: '1', alert: () => false },
-                { key: 'spo2', lbl: 'SpO₂', unit: '%', icon: <Droplets size={16} color="#22c55e" />, min: 50, max: 100, step: '1', alert: (v: string) => parseFloat(v) < 95 },
-              ] as const).map(v => {
-                const val = (form as any)[v.key] as string
-                const isAlert = v.alert(val)
-                return (
-                  <div key={v.key} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 12px 10px', border: `1.5px solid ${isAlert ? '#fca5a5' : '#f1f5f9'}` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                      {v.icon}
-                      <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{v.lbl}</span>
-                    </div>
-                    <input
-                      type="number" min={v.min} max={v.max} step={v.step}
-                      style={{ width: '100%', fontSize: 18, fontWeight: 700, border: 'none', background: 'transparent', color: isAlert ? '#dc2626' : '#0f172a', outline: 'none', fontFamily: FONT, padding: '2px 0' }}
-                      value={val}
-                      onChange={e => setField(v.key as any, e.target.value)}
-                    />
-                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{v.unit}</div>
-                  </div>
-                )
-              })}
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 12px 10px', border: '1.5px solid #f1f5f9' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                  <Activity size={16} color="#8b5cf6" />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>АД</span>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <input type="number" min={60} max={260} style={{ width: '50%', fontSize: 16, fontWeight: 700, border: '1px solid #e2e8f0', borderRadius: 6, background: 'white', color: '#0f172a', outline: 'none', fontFamily: FONT, padding: '4px 6px' }} placeholder="120" value={form.bpSys} onChange={e => setField('bpSys', e.target.value)} />
-                  <span style={{ color: '#94a3b8', fontWeight: 700 }}>/</span>
-                  <input type="number" min={40} max={160} style={{ width: '50%', fontSize: 16, fontWeight: 700, border: '1px solid #e2e8f0', borderRadius: 6, background: 'white', color: '#0f172a', outline: 'none', fontFamily: FONT, padding: '4px 6px' }} placeholder="80" value={form.bpDia} onChange={e => setField('bpDia', e.target.value)} />
-                </div>
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>мм рт.ст</div>
+          {selectedRecord && (
+            <div style={{ maxWidth: 900, width: '100%', margin: '0 auto 16px', padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 13, color: '#1e3a8a', fontFamily: FONT }}>
+                <strong>Режим просмотра:</strong> Вы просматриваете запись от {new Date(`${selectedRecord.date}T00:00:00`).toLocaleDateString('ru-RU')} {selectedRecord.time} (Врач: {selectedRecord.doctor})
               </div>
-            </div>
-          </div>
-        </div>
-
-            <div id="daily-complaints" style={block}>
-          <div style={blockHeader}><FileText size={15} /> Жалобы</div>
-          <div style={blockBody}>
-            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginBottom: 12 }}>
-              {(Object.keys(COMPLAINT_LABELS) as ComplaintKey[]).map(k => (
-                <button key={k} style={checkBtn(form.complaints.includes(k))} onClick={() => toggleComplaint(k)}>
-                  <span style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${form.complaints.includes(k) ? '#3b82f6' : '#cbd5e1'}`, background: form.complaints.includes(k) ? '#3b82f6' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    {form.complaints.includes(k) && <Check size={9} color="white" />}
-                  </span>
-                  {COMPLAINT_LABELS[k]}
-                </button>
-              ))}
-            </div>
-            {form.complaints.includes('fever') && (
-              <div style={{ padding: '10px 12px', background: '#fff7ed', borderRadius: 8, border: '1px solid #fed7aa', marginBottom: 10 }}>
-                <label style={{ ...label, color: '#9a3412' }}>Максимальная температура (°C)</label>
-                <input type="number" min={35} max={43} step={0.1} style={inputStyle} placeholder="38.5" value={form.complaintParams.fever?.maxTemp ?? ''} onChange={e => setField('complaintParams', { ...form.complaintParams, fever: { maxTemp: e.target.value } })} />
-              </div>
-            )}
-            <div>
-              <label style={label}>Дополнение врача</label>
-              <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' as const }} placeholder="Уточнения..." value={form.complaintsNote} onChange={e => setField('complaintsNote', e.target.value)} />
-            </div>
-          </div>
-        </div>
-
-            <div id="daily-objective" style={block}>
-          <div style={blockHeader}><Activity size={15} /> Объективно</div>
-          <div style={blockBody}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Общее состояние</div>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
-                  {([['satisfactory', 'Удовлетворительное', 'green'], ['moderate', 'Средней тяжести', 'orange'], ['severe', 'Тяжёлое', 'red']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.generalCondition === val, c)} onClick={() => setField('generalCondition', form.generalCondition === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Кожа</div>
-                <div style={sub}>Цвет</div>
-                <div style={pillGroup}>
-                  {([['pale_pink', 'Бледно-розовая', 'green'], ['pale', 'Бледная', 'blue'], ['hyperemia', 'Гиперемия', 'orange'], ['cyanosis', 'Цианоз', 'blue']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.skinColor === val, c)} onClick={() => setField('skinColor', form.skinColor === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <div style={sub}>Температура</div>
-                <div style={pillGroup}>
-                  {([['warm', 'Тёплая', 'green'], ['cold', 'Холодная', 'blue'], ['hot', 'Горячая', 'red']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.skinTemp === val, c)} onClick={() => setField('skinTemp', form.skinTemp === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <div style={sub}>Влажность</div>
-                <div style={pillGroup}>
-                  {([['dry', 'Сухая', 'orange'], ['moist', 'Влажная', 'green'], ['excessive', 'Повышенная', 'blue']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.skinMoisture === val, c)} onClick={() => setField('skinMoisture', form.skinMoisture === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Грудная клетка</div>
-                <div style={sub}>Форма</div>
-                <div style={pillGroup}>
-                  {([['normosthenic', 'Нормостен.'], ['hypersthenic', 'Гиперстен.'], ['asthenic', 'Астен.'], ['emphysematous', 'Эмфизем.']] as const).map(([val, lbl]) => (
-                    <button key={val} style={pill(form.chestForm === val)} onClick={() => setField('chestForm', form.chestForm === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <div style={sub}>Симметрия</div>
-                <div style={pillGroup}>
-                  {([['symmetric', 'Симметричная', 'green'], ['asymmetric', 'Асимметричная', 'orange']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.chestSymmetry === val, c)} onClick={() => setField('chestSymmetry', form.chestSymmetry === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Дыхание</div>
-                <div style={pillGroup}>
-                  {([['vesicular', 'Везикулярное', 'green'], ['harsh', 'Жёсткое', 'orange'], ['weakened', 'Ослабленное', 'blue']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.breathingType === val, c)} onClick={() => setField('breathingType', form.breathingType === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <div style={{ marginTop: 6, ...sub }}>Хрипы</div>
-                <div style={pillGroup}>
-                  {([['none', 'Нет', 'green'], ['dry', 'Сухие', 'orange'], ['moist', 'Влажные', 'blue']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.ralesType === val, c)} onClick={() => setField('ralesType', form.ralesType === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Доп. данные..." value={form.respiratoryNote} onChange={e => setField('respiratoryNote', e.target.value)} />
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Сердце</div>
-                <div style={pillGroup}>
-                  {([['regular', 'Ритмичное', 'green'], ['irregular', 'Аритмия', 'red']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.heartRhythm === val, c)} onClick={() => setField('heartRhythm', form.heartRhythm === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <div style={{ marginTop: 6, ...pillGroup }}>
-                  {([['clear', 'Тоны ясные', 'green'], ['muffled', 'Приглушены', 'orange'], ['deaf', 'Глухие', 'red']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.heartTones === val, c)} onClick={() => setField('heartTones', form.heartTones === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Комментарий..." value={form.heartNote} onChange={e => setField('heartNote', e.target.value)} />
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Язык</div>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
-                  {([['moist_clean', 'Влажный, чистый', 'green'], ['moist_coated', 'Влажный, обложен', 'orange'], ['dry_clean', 'Сухой, чистый', 'orange'], ['dry_coated', 'Сухой, обложен', 'red']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.tongueState === val, c)} onClick={() => setField('tongueState', form.tongueState === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Живот</div>
-                <div style={pillGroup}>
-                  {([['soft', 'Мягкий, б/б', 'green'], ['tense', 'Напряжён', 'red'], ['bloated', 'Вздут', 'orange']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.abdomenState === val, c)} onClick={() => setField('abdomenState', form.abdomenState === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-                <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Комментарий..." value={form.abdomenNote} onChange={e => setField('abdomenNote', e.target.value)} />
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Стул</div>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
-                  {([['normal', 'Норм., регулярный', 'green'], ['constipation', 'Задержка', 'orange'], ['diarrhea', 'Жидкий', 'red'], ['absent', 'Нет', 'red']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.stool === val, c)} onClick={() => setField('stool', form.stool === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Мочеиспускание</div>
-                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
-                  {([['free_painless', 'Свободное, б/б', 'green'], ['difficult', 'Затруднено', 'orange'], ['painful', 'Болезненное', 'red'], ['frequent', 'Учащённое', 'orange']] as const).map(([val, lbl, c]) => (
-                    <button key={val} style={pill(form.urination === val, c)} onClick={() => setField('urination', form.urination === val ? null : val)}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div id="daily-diagnosis" style={block}>
-          <div style={blockHeader}><TrendingUp size={15} /> Динамика</div>
-          <div style={blockBody}>
-            <div style={pillGroup}>
-              {([
-                ['improvement', 'Улучшение', 'green', TrendingUp],
-                ['no_change', 'Стабильно', 'blue', Minus],
-                ['deterioration', 'Ухудшение', 'red', TrendingDown],
-              ] as const).map(([val, lbl, c, Icon]) => (
-                <button
-                  key={val}
-                  style={{ ...pill(form.dynamics === val, c), display: 'flex', alignItems: 'center', gap: 6 }}
-                  onClick={() => setField('dynamics', form.dynamics === val ? null : val)}
-                >
-                  <Icon size={13} /> {lbl}
-                </button>
-              ))}
-            </div>
-            <div style={{ marginTop: 10 }}>
-              <label style={label}>Комментарий к динамике</label>
-              <input style={inputStyle} placeholder="Состояние улучшается на фоне проводимой терапии..." value={form.dynamicsComment} onChange={e => setField('dynamicsComment', e.target.value)} />
-            </div>
-          </div>
-        </div>
-
-        <div id="daily-prescriptions" style={block}>
-          <div style={blockHeader}>Лечение</div>
-          <div style={blockBody}>
-            <div style={pillGroup}>
-              {([['keep', 'Оставить по листу назначений'], ['modify', 'Изменить']] as const).map(([val, lbl]) => (
-                <button key={val} style={checkBtn(form.treatmentDecision === val)} onClick={() => setField('treatmentDecision', val)}>
-                  <span style={{ width: 15, height: 15, borderRadius: '50%', border: `2px solid ${form.treatmentDecision === val ? '#3b82f6' : '#cbd5e1'}`, background: form.treatmentDecision === val ? '#3b82f6' : 'white', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {form.treatmentDecision === val && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', display: 'block' }} />}
-                  </span>
-                  {lbl}
-                </button>
-              ))}
-            </div>
-
-            {form.treatmentDecision === 'modify' && (
-              <div style={{ marginTop: 14 }}>
-                {form.prescriptions.map(p => (
-                  <div key={p.id} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-                    <input style={{ ...inputStyle, flex: 2 }} value={p.drug} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, drug: e.target.value } : x) }))} placeholder="Препарат" />
-                    <input style={{ ...inputStyle, flex: 1 }} value={p.dose} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, dose: e.target.value } : x) }))} placeholder="Доза" />
-                    <input style={{ ...inputStyle, flex: 1 }} value={p.route} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, route: e.target.value } : x) }))} placeholder="Путь" />
-                    <button onClick={() => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.filter(x => x.id !== p.id) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
-                  </div>
-                ))}
-                <button onClick={() => setShowPrescModal(true)} style={{ marginTop: 6, fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
-                  <Plus size={14} /> Добавить назначение
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div id="daily-plan" style={block}>
-          <div style={blockHeader}>План</div>
-          <div style={{ ...blockBody, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div>
-              <label style={label}>Контроль исследований</label>
-              <input style={inputStyle} placeholder="ФГ ОГК контроль..." value={form.controlStudies} onChange={e => setField('controlStudies', e.target.value)} />
-            </div>
-            <div>
-              <label style={label}>Повторный осмотр</label>
-              <input style={inputStyle} placeholder="Завтра в 10:00..." value={form.nextInspection} onChange={e => setField('nextInspection', e.target.value)} />
-            </div>
-          </div>
-        </div>
-
-        {showResult && form.generatedText ? (
-          <div style={{ ...block, border: '2px solid #22c55e' }}>
-            <div style={{ ...blockHeader, background: '#f0fdf4', color: '#059669' }}>
-              <FileText size={15} color="#059669" /> Запись осмотра сформирована и сохранена
               <button
-                onClick={() => { navigator.clipboard.writeText(form.generatedText); showToast('Текст скопирован', 'success') }}
-                style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 8, border: '1px solid #86efac', background: 'white', color: '#059669', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}
+                onClick={() => setSelectedHistoryId(null)}
+                style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #93c5fd', borderRadius: 6, fontSize: 12, color: '#1d4ed8', cursor: 'pointer', fontFamily: FONT, fontWeight: 500 }}
               >
-                Копировать
+                Вернуться к новому осмотру
               </button>
             </div>
-            <div style={{ ...blockBody, background: '#fafffe' }}>
-              <pre style={{ whiteSpace: 'pre-wrap' as const, fontFamily: FONT, fontSize: 13, color: '#1e293b', lineHeight: 1.7, margin: 0 }}>
-                {form.generatedText}
-              </pre>
+          )}
+
+          {/* ===== NEW INSPECTION FORM ===== */}
+          <div style={{ maxWidth: 900, width: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+              <div id="daily-info" style={block}>
+                <div style={blockHeader}><Clock size={15} /> Информация об осмотре</div>
+                <div style={{ ...blockBody, display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={label}>Дата</label>
+                    <input type="date" style={inputStyle} value={form.inspectionDate} onChange={e => setField('inspectionDate', e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={label}>Время</label>
+                    <input type="time" style={inputStyle} value={form.inspectionTime} onChange={e => setField('inspectionTime', e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={label}>Врач</label>
+                    <input style={inputStyle} value={form.doctor} onChange={e => setField('doctor', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div id="daily-vitals" style={block}>
+                <div style={blockHeader}>
+                  <Activity size={15} /> Показатели
+                  {onNavigateToTemperatureSheet && (
+                    <button onClick={() => onNavigateToTemperatureSheet(patientId)} style={{ marginLeft: 'auto', fontSize: 11, color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: FONT }}>
+                      Температурный лист →
+                    </button>
+                  )}
+                </div>
+                <div style={blockBody}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 12 }}>
+                    {([
+                      { key: 'temperature', lbl: 'Температура', unit: '°C', icon: <Thermometer size={16} color="#3b82f6" />, min: 35, max: 43, step: '0.1', alert: (v: string) => parseFloat(v) >= 38 },
+                      { key: 'hr', lbl: 'ЧСС', unit: 'уд/мин', icon: <Heart size={16} color="#ef4444" />, min: 20, max: 250, step: '1', alert: () => false },
+                      { key: 'rr', lbl: 'ЧДД', unit: 'в мин', icon: <Wind size={16} color="#06b6d4" />, min: 6, max: 60, step: '1', alert: () => false },
+                      { key: 'spo2', lbl: 'SpO₂', unit: '%', icon: <Droplets size={16} color="#22c55e" />, min: 50, max: 100, step: '1', alert: (v: string) => parseFloat(v) < 95 },
+                    ] as const).map(v => {
+                      const val = (form as any)[v.key] as string
+                      const isAlert = v.alert(val)
+                      return (
+                        <div key={v.key} style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 12px 10px', border: `1.5px solid ${isAlert ? '#fca5a5' : '#f1f5f9'}` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                            {v.icon}
+                            <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{v.lbl}</span>
+                          </div>
+                          <input
+                            type="number" min={v.min} max={v.max} step={v.step}
+                            style={{ width: '100%', fontSize: 18, fontWeight: 700, border: 'none', background: 'transparent', color: isAlert ? '#dc2626' : '#0f172a', outline: 'none', fontFamily: FONT, padding: '2px 0' }}
+                            value={val}
+                            onChange={e => setField(v.key as any, e.target.value)}
+                          />
+                          <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{v.unit}</div>
+                        </div>
+                      )
+                    })}
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: '12px 12px 10px', border: '1.5px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <Activity size={16} color="#8b5cf6" />
+                        <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>АД</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <input type="number" min={60} max={260} style={{ width: '50%', fontSize: 16, fontWeight: 700, border: '1px solid #e2e8f0', borderRadius: 6, background: 'white', color: '#0f172a', outline: 'none', fontFamily: FONT, padding: '4px 6px' }} placeholder="120" value={form.bpSys} onChange={e => setField('bpSys', e.target.value)} />
+                        <span style={{ color: '#94a3b8', fontWeight: 700 }}>/</span>
+                        <input type="number" min={40} max={160} style={{ width: '50%', fontSize: 16, fontWeight: 700, border: '1px solid #e2e8f0', borderRadius: 6, background: 'white', color: '#0f172a', outline: 'none', fontFamily: FONT, padding: '4px 6px' }} placeholder="80" value={form.bpDia} onChange={e => setField('bpDia', e.target.value)} />
+                      </div>
+                      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>мм рт.ст</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="daily-complaints" style={block}>
+                <div style={blockHeader}><FileText size={15} /> Жалобы</div>
+                <div style={blockBody}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginBottom: 12 }}>
+                    {(Object.keys(COMPLAINT_LABELS) as ComplaintKey[]).map(k => (
+                      <button key={k} style={checkBtn(form.complaints.includes(k))} onClick={() => toggleComplaint(k)}>
+                        <span style={{ width: 15, height: 15, borderRadius: 3, border: `1.5px solid ${form.complaints.includes(k) ? '#3b82f6' : '#cbd5e1'}`, background: form.complaints.includes(k) ? '#3b82f6' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {form.complaints.includes(k) && <Check size={9} color="white" />}
+                        </span>
+                        {COMPLAINT_LABELS[k]}
+                      </button>
+                    ))}
+                  </div>
+                  {form.complaints.includes('fever') && (
+                    <div style={{ padding: '10px 12px', background: '#fff7ed', borderRadius: 8, border: '1px solid #fed7aa', marginBottom: 10 }}>
+                      <label style={{ ...label, color: '#9a3412' }}>Максимальная температура (°C)</label>
+                      <input type="number" min={35} max={43} step={0.1} style={inputStyle} placeholder="38.5" value={form.complaintParams.fever?.maxTemp ?? ''} onChange={e => setField('complaintParams', { ...form.complaintParams, fever: { maxTemp: e.target.value } })} />
+                    </div>
+                  )}
+                  <div>
+                    <label style={label}>Дополнение врача</label>
+                    <textarea style={{ ...inputStyle, minHeight: 60, resize: 'vertical' as const }} placeholder="Уточнения..." value={form.complaintsNote} onChange={e => setField('complaintsNote', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div id="daily-objective" style={block}>
+                <div style={blockHeader}><Activity size={15} /> Объективно</div>
+                <div style={blockBody}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Общее состояние</div>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+                        {([['satisfactory', 'Удовлетворительное', 'green'], ['moderate', 'Средней тяжести', 'orange'], ['severe', 'Тяжёлое', 'red']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.generalCondition === val, c)} onClick={() => setField('generalCondition', form.generalCondition === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Кожа</div>
+                      <div style={sub}>Цвет</div>
+                      <div style={pillGroup}>
+                        {([['pale_pink', 'Бледно-розовая', 'green'], ['pale', 'Бледная', 'blue'], ['hyperemia', 'Гиперемия', 'orange'], ['cyanosis', 'Цианоз', 'blue']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.skinColor === val, c)} onClick={() => setField('skinColor', form.skinColor === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <div style={sub}>Температура</div>
+                      <div style={pillGroup}>
+                        {([['warm', 'Тёплая', 'green'], ['cold', 'Холодная', 'blue'], ['hot', 'Горячая', 'red']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.skinTemp === val, c)} onClick={() => setField('skinTemp', form.skinTemp === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <div style={sub}>Влажность</div>
+                      <div style={pillGroup}>
+                        {([['dry', 'Сухая', 'orange'], ['moist', 'Влажная', 'green'], ['excessive', 'Повышенная', 'blue']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.skinMoisture === val, c)} onClick={() => setField('skinMoisture', form.skinMoisture === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Грудная клетка</div>
+                      <div style={sub}>Форма</div>
+                      <div style={pillGroup}>
+                        {([['normosthenic', 'Нормостен.'], ['hypersthenic', 'Гиперстен.'], ['asthenic', 'Астен.'], ['emphysematous', 'Эмфизем.']] as const).map(([val, lbl]) => (
+                          <button key={val} style={pill(form.chestForm === val)} onClick={() => setField('chestForm', form.chestForm === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <div style={sub}>Симметрия</div>
+                      <div style={pillGroup}>
+                        {([['symmetric', 'Симметричная', 'green'], ['asymmetric', 'Асимметричная', 'orange']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.chestSymmetry === val, c)} onClick={() => setField('chestSymmetry', form.chestSymmetry === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Дыхание</div>
+                      <div style={pillGroup}>
+                        {([['vesicular', 'Везикулярное', 'green'], ['harsh', 'Жёсткое', 'orange'], ['weakened', 'Ослабленное', 'blue']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.breathingType === val, c)} onClick={() => setField('breathingType', form.breathingType === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 6, ...sub }}>Хрипы</div>
+                      <div style={pillGroup}>
+                        {([['none', 'Нет', 'green'], ['dry', 'Сухие', 'orange'], ['moist', 'Влажные', 'blue']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.ralesType === val, c)} onClick={() => setField('ralesType', form.ralesType === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Доп. данные..." value={form.respiratoryNote} onChange={e => setField('respiratoryNote', e.target.value)} />
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Сердце</div>
+                      <div style={pillGroup}>
+                        {([['regular', 'Ритмичное', 'green'], ['irregular', 'Аритмия', 'red']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.heartRhythm === val, c)} onClick={() => setField('heartRhythm', form.heartRhythm === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 6, ...pillGroup }}>
+                        {([['clear', 'Тоны ясные', 'green'], ['muffled', 'Приглушены', 'orange'], ['deaf', 'Глухие', 'red']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.heartTones === val, c)} onClick={() => setField('heartTones', form.heartTones === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Комментарий..." value={form.heartNote} onChange={e => setField('heartNote', e.target.value)} />
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Язык</div>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+                        {([['moist_clean', 'Влажный, чистый', 'green'], ['moist_coated', 'Влажный, обложен', 'orange'], ['dry_clean', 'Сухой, чистый', 'orange'], ['dry_coated', 'Сухой, обложен', 'red']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.tongueState === val, c)} onClick={() => setField('tongueState', form.tongueState === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Живот</div>
+                      <div style={pillGroup}>
+                        {([['soft', 'Мягкий, б/б', 'green'], ['tense', 'Напряжён', 'red'], ['bloated', 'Вздут', 'orange']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.abdomenState === val, c)} onClick={() => setField('abdomenState', form.abdomenState === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                      <input style={{ ...inputStyle, marginTop: 6, fontSize: 12 }} placeholder="Комментарий..." value={form.abdomenNote} onChange={e => setField('abdomenNote', e.target.value)} />
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Стул</div>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+                        {([['normal', 'Норм., регулярный', 'green'], ['constipation', 'Задержка', 'orange'], ['diarrhea', 'Жидкий', 'red'], ['absent', 'Нет', 'red']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.stool === val, c)} onClick={() => setField('stool', form.stool === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', borderRadius: 10, padding: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' as const, marginBottom: 8 }}>Мочеиспускание</div>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 4 }}>
+                        {([['free_painless', 'Свободное, б/б', 'green'], ['difficult', 'Затруднено', 'orange'], ['painful', 'Болезненное', 'red'], ['frequent', 'Учащённое', 'orange']] as const).map(([val, lbl, c]) => (
+                          <button key={val} style={pill(form.urination === val, c)} onClick={() => setField('urination', form.urination === val ? null : val)}>{lbl}</button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div id="daily-diagnosis" style={block}>
+                <div style={blockHeader}><TrendingUp size={15} /> Динамика</div>
+                <div style={blockBody}>
+                  <div style={pillGroup}>
+                    {([
+                      ['improvement', 'Улучшение', 'green', TrendingUp],
+                      ['no_change', 'Стабильно', 'blue', Minus],
+                      ['deterioration', 'Ухудшение', 'red', TrendingDown],
+                    ] as const).map(([val, lbl, c, Icon]) => (
+                      <button
+                        key={val}
+                        style={{ ...pill(form.dynamics === val, c), display: 'flex', alignItems: 'center', gap: 6 }}
+                        onClick={() => setField('dynamics', form.dynamics === val ? null : val)}
+                      >
+                        <Icon size={13} /> {lbl}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 10 }}>
+                    <label style={label}>Комментарий к динамике</label>
+                    <input style={inputStyle} placeholder="Состояние улучшается на фоне проводимой терапии..." value={form.dynamicsComment} onChange={e => setField('dynamicsComment', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div id="daily-prescriptions" style={block}>
+                <div style={blockHeader}>Лечение</div>
+                <div style={blockBody}>
+                  <div style={pillGroup}>
+                    {([['keep', 'Оставить по листу назначений'], ['modify', 'Изменить']] as const).map(([val, lbl]) => (
+                      <button key={val} style={checkBtn(form.treatmentDecision === val)} onClick={() => setField('treatmentDecision', val)}>
+                        <span style={{ width: 15, height: 15, borderRadius: '50%', border: `2px solid ${form.treatmentDecision === val ? '#3b82f6' : '#cbd5e1'}`, background: form.treatmentDecision === val ? '#3b82f6' : 'white', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {form.treatmentDecision === val && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'white', display: 'block' }} />}
+                        </span>
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+
+                  {form.treatmentDecision === 'modify' && (
+                    <div style={{ marginTop: 14 }}>
+                      {form.prescriptions.map(p => (
+                        <div key={p.id} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+                          <input style={{ ...inputStyle, flex: 2 }} value={p.drug} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, drug: e.target.value } : x) }))} placeholder="Препарат" />
+                          <input style={{ ...inputStyle, flex: 1 }} value={p.dose} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, dose: e.target.value } : x) }))} placeholder="Доза" />
+                          <input style={{ ...inputStyle, flex: 1 }} value={p.route} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, route: e.target.value } : x) }))} placeholder="Путь" />
+                          <button onClick={() => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.filter(x => x.id !== p.id) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
+                        </div>
+                      ))}
+                      <button onClick={() => setShowPrescModal(true)} style={{ marginTop: 6, fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
+                        <Plus size={14} /> Добавить назначение
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div id="daily-recommendations" style={block}>
+                <div style={blockHeader}>План</div>
+                <div style={{ ...blockBody, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={label}>Контроль исследований</label>
+                    <input style={inputStyle} placeholder="ФГ ОГК контроль..." value={form.controlStudies} onChange={e => setField('controlStudies', e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={label}>Повторный осмотр</label>
+                    <input style={inputStyle} placeholder="Завтра в 10:00..." value={form.nextInspection} onChange={e => setField('nextInspection', e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              {showResult && form.generatedText ? (
+                <div style={{ ...block, border: '2px solid #22c55e' }}>
+                  <div style={{ ...blockHeader, background: '#f0fdf4', color: '#059669' }}>
+                    <FileText size={15} color="#059669" /> Запись осмотра сформирована и сохранена
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(form.generatedText); showToast('Текст скопирован', 'success') }}
+                      style={{ marginLeft: 'auto', padding: '4px 10px', borderRadius: 8, border: '1px solid #86efac', background: 'white', color: '#059669', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}
+                    >
+                      Копировать
+                    </button>
+                  </div>
+                  <div style={{ ...blockBody, background: '#fafffe' }}>
+                    <pre style={{ whiteSpace: 'pre-wrap' as const, fontFamily: FONT, fontSize: 13, color: '#1e293b', lineHeight: 1.7, margin: 0 }}>
+                      {form.generatedText}
+                    </pre>
+                  </div>
+                </div>
+              ) : null}
+
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 12, padding: '16px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ background: '#3b82f6', color: 'white', width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Info size={18} />
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>Новый осмотр</div>
+                  <div style={{ fontSize: 13, color: '#1e40af' }}>Заполните данные выше, чтобы сформировать медицинскую запись в истории болезни.</div>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <button
+                  onClick={handleGenerateAndSave}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '14px 32px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: FONT, boxShadow: '0 4px 18px rgba(5,150,105,0.35)' }}
+                >
+                  <Sparkles size={18} /> Сформировать запись осмотра
+                </button>
+                <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>Текст будет сохранён в истории пациента</div>
+              </div>
+
             </div>
           </div>
-        ) : (
-          <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <button
-              onClick={handleGenerateAndSave}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '14px 32px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #059669, #10b981)', color: 'white', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: FONT, boxShadow: '0 4px 18px rgba(5,150,105,0.35)' }}
-            >
-              <Sparkles size={18} /> Сформировать запись осмотра
-            </button>
-            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>Текст будет сохранён в истории пациента</div>
-          </div>
-        )}
-          </div>
-        </div>
       </div>
 
       {showPrescModal && (

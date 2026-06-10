@@ -270,7 +270,8 @@ namespace MedicalSystem.Data.Queries
                     Complaints = e.Complaints,
                     Objective = e.Objective,
                     Conclusion = e.Conclusion,
-                    Recommendations = e.Recommendations
+                    Recommendations = e.Recommendations,
+                    FormData = e.FormData
                 })
                 .Concat(patient.Operations.Select(op => new HistoryEntryDto
                 {

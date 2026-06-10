@@ -31,7 +31,33 @@ namespace MedicalSystem.Data.Storages
 
         public async Task<IReadOnlyCollection<Encounter>> GetAllAsync(CancellationToken token)
         {
-            return await _context.Encounters.ToListAsync(token);
+            return await _context.Encounters.Include(e => e.Doctor).ToListAsync(token);
+        }
+
+        public async Task<Encounter> CreateEncounterWithUserAsync(Encounter encounter, Guid? userId, CancellationToken token)
+        {
+            if (userId.HasValue)
+            {
+                var user = await _context.Users
+                    .Include(u => u.MedicalStaff)
+                    .FirstOrDefaultAsync(u => u.Id == userId.Value, token);
+                if (user != null)
+                {
+                    encounter.DoctorId = user.MedicalStaffId;
+                }
+            }
+            await _context.Encounters.AddAsync(encounter, token);
+            await _context.SaveChangesAsync(token);
+            return encounter;
+        }
+
+        public async Task<IReadOnlyCollection<Encounter>> GetPatientEncountersAsync(Guid patientId, CancellationToken token)
+        {
+            return await _context.Encounters
+                .Include(e => e.Doctor)
+                .Where(e => e.PatientId == patientId)
+                .OrderByDescending(e => e.DateTime)
+                .ToListAsync(token);
         }
 
         public async Task RemoveAsync(Guid id, CancellationToken token)

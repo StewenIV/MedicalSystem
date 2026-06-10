@@ -17,6 +17,9 @@ import {
 } from './types'
 import { getInitialPrimaryState, DEFAULT_LAB_TESTS } from './mockRoundData'
 import { usePatientData } from 'context/PatientDataContext'
+import { Patient } from 'data/mockData'
+import { useSelector } from 'react-redux'
+import { selectDisplayName } from 'features/App/selectors'
 
 import {
   PatientHeader,
@@ -358,17 +361,37 @@ function FieldInput({ label, value, onChange, placeholder, type = 'text' }: {
 }
 
 
-function generatePrimaryText(form: PrimaryFormState): string {
+function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string {
   const parts: string[] = []
   const inspType = form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр'
-  parts.push(`${inspType} лечащего врача от ${form.inspectionDate}. Время: ${form.inspectionTime}.`)
+  
+  const dateRu = form.inspectionDate
+    ? new Date(form.inspectionDate).toLocaleDateString('ru-RU')
+    : form.inspectionDate
+
+  parts.push(`${inspType} лечащего врача от ${dateRu}. Время: ${form.inspectionTime}.`)
+
+  const COMPLAINT_ACCUSATIVE_RU: Record<ComplaintKey, string> = {
+    none: 'жалоб нет',
+    weakness: 'общую слабость',
+    cough_dry: 'малопродуктивный кашель',
+    cough_productive: 'продуктивный кашель',
+    dyspnea_exertion: 'одышку при физической нагрузке',
+    dyspnea_rest: 'одышку в покое',
+    fever: 'повышение температуры',
+    chest_pain: 'боль в грудной клетке',
+    sweating: 'повышенную потливость',
+    dizziness: 'головокружение',
+    nausea: 'тошноту',
+    other: 'другие симптомы',
+  }
 
   const activeComplaints = form.complaints.filter(c => c !== 'none')
   if (form.complaints.includes('none') || activeComplaints.length === 0) {
     parts.push('Жалоб не предъявляет.')
   } else {
     const labels = activeComplaints.map(c => {
-      let text = COMPLAINT_LABELS[c].toLowerCase()
+      let text = COMPLAINT_ACCUSATIVE_RU[c] || c
       if (c === 'fever' && form.complaintParams.fever?.maxTemp) {
         text += ` до ${form.complaintParams.fever.maxTemp}°C`
       }
@@ -378,135 +401,419 @@ function generatePrimaryText(form: PrimaryFormState): string {
       }
       return text
     })
-    parts.push(`Жалобы: на ${labels.join(', ')}.`)
+    parts.push(`Жалобы на: ${labels.join(', ')}.`)
     if (form.complaintsNote) parts.push(form.complaintsNote)
   }
 
+  // Anamnesis morbi
+  const morbiParts: string[] = []
+  const isFemale = patient?.gender === 'Женский'
+  const bSuffix = isFemale ? 'больной' : 'больным'
+
   if (form.illnessStartDate) {
-    parts.push(`Заболел ${form.illnessStartDate}.`)
+    const startRu = new Date(form.illnessStartDate).toLocaleDateString('ru-RU')
+    morbiParts.push(`Считает себя ${bSuffix} с ${startRu}.`)
   }
-  if (form.hospitalizationReason) {
-    parts.push(`Госпитализирован: ${form.hospitalizationReason}.`)
+  
+  if (form.illnessCauses && form.illnessCauses.length > 0) {
+    const causesMap: Record<string, string> = {
+      cold: 'переохлаждением',
+      infection: 'перенесенной инфекцией',
+      contact: 'контактом с больными',
+      unknown: 'не установленной причиной'
+    }
+    const causesRu = form.illnessCauses.map(c => causesMap[c] ?? c).join(', ')
+    morbiParts.push(`Начало заболевания связывает с: ${causesRu}.`)
   }
 
-  const infections: string[] = []
-  if (form.tbStatus === 'denies') infections.push('туберкулёз отрицает')
-  if (form.hivStatus === 'negative') infections.push('ВИЧ отрицательный')
-  if (form.hepatitisStatus === 'negative') infections.push('гепатит отрицательный')
-  if (infections.length) parts.push(`Инфекционный анамнез: ${infections.join(', ')}.`)
+  if (form.preTreatment && form.preTreatment.length > 0) {
+    const treatType: Record<string, string> = {
+      outpatient: 'амбулаторно',
+      inpatient: 'в стационаре'
+    }
+    const treatTypeRu = form.preTreatment.map(t => treatType[t] ?? t).join(', ')
+    let preTreatStr = `Ранее проводилось лечение: ${treatTypeRu}`
+    if (form.preTreatmentDetails) {
+      preTreatStr += ` (${form.preTreatmentDetails})`
+    }
+    if (form.preTreatmentEffect) {
+      const effectMap: Record<string, string> = {
+        improvement: 'с улучшением',
+        no_change: 'без динамики',
+        deterioration: 'с ухудшением состояния'
+      }
+      preTreatStr += `, эффект от проводимой терапии: ${effectMap[form.preTreatmentEffect]}`
+    }
+    morbiParts.push(preTreatStr + '.')
+  }
+
+  if (form.hospitalizationReason) {
+    morbiParts.push(`Причина госпитализации: ${form.hospitalizationReason}.`)
+  }
+
+  if (morbiParts.length > 0) {
+    parts.push(`Анамнез заболевания:\n${morbiParts.join(' ')}`)
+  }
+
+  // Anamnesis vitae
+  const vitaeParts: string[] = []
+  
+  const tbMap: Record<string, string> = { denies: 'отрицает', confirms: 'подтверждает' }
+  const hivMap: Record<string, string> = { negative: 'отрицательный', positive: 'положительный' }
+  const hepMap: Record<string, string> = { negative: 'отрицательный', positive: 'положительный' }
+  const stdMap: Record<string, string> = { denies: 'отрицает', has: 'подтверждает' }
+
+  const infHistory: string[] = []
+  if (form.tbStatus) infHistory.push(`туберкулёз — ${tbMap[form.tbStatus] ?? form.tbStatus}${form.tbContact === 'yes' ? ' (был контакт)' : ''}`)
+  if (form.hivStatus) infHistory.push(`ВИЧ-статус — ${hivMap[form.hivStatus] ?? form.hivStatus}`)
+  if (form.hepatitisStatus) infHistory.push(`вирусные гепатиты — ${hepMap[form.hepatitisStatus] ?? form.hepatitisStatus}`)
+  if (form.stdStatus) infHistory.push(`ИППП — ${stdMap[form.stdStatus] ?? form.stdStatus}`)
+  
+  if (infHistory.length > 0) {
+    vitaeParts.push(`Эпидемиологический анамнез: ${infHistory.join(', ')}`)
+  }
 
   if (form.allergyStatus === 'none') {
-    parts.push('Аллергологический анамнез не отягощён.')
-  } else if (form.allergies.length > 0) {
-    const allNames = form.allergies.map(a => `${a.name} (${a.reaction})`).join(', ')
-    parts.push(`Аллергия: ${allNames}.`)
+    vitaeParts.push('Аллергологический анамнез: не отягощён')
+  } else if (form.allergies && form.allergies.length > 0) {
+    const allNames = form.allergies.map(a => `${a.name} (реакция: ${a.reaction})`).join(', ')
+    vitaeParts.push(`Аллергологический анамнез: отягощён (аллергия на: ${allNames})`)
   }
 
-  parts.push('Объективно:')
+  if (form.operationsStatus === 'none') {
+    vitaeParts.push('Хирургический анамнез: операции отрицает')
+  } else if (form.operations && form.operations.length > 0) {
+    const ops = form.operations.map(o => `${o.name} (${o.date}${o.comment ? ', ' + o.comment : ''})`).join('; ')
+    vitaeParts.push(`Перенесенные операции: ${ops}`)
+  }
+
+  if (form.comorbidities && form.comorbidities.length > 0) {
+    const comorbid = form.comorbidities.map(c => `${c.diagnosis} (${c.activity})`).join(', ')
+    vitaeParts.push(`Сопутствующие заболевания: ${comorbid}¹`)
+  }
+
+  if (form.badHabitsStatus === 'none') {
+    vitaeParts.push('Вредные привычки: отрицает')
+  } else {
+    const habits: string[] = []
+    if (form.smoking) habits.push(`курение (стаж ${form.smokingYears || 0} лет)`)
+    if (form.alcohol) habits.push(`употребление алкоголя (${form.alcoholDetails || 'редко/умеренно'})`)
+    vitaeParts.push(`Вредные привычки: ${habits.length > 0 ? habits.join(', ') : 'отрицает'}`)
+  }
+
+  if (vitaeParts.length > 0) {
+    parts.push(`Анамнез жизни:\n${vitaeParts.join('.\n')}.`)
+  }
+
+  // Objective status
+  parts.push('Объективный статус:')
+  const objParts: string[] = []
+
   const condMap: Record<GeneralCondition, string> = {
     satisfactory: 'удовлетворительное',
     moderate: 'средней степени тяжести, стабильное',
     severe: 'тяжёлое',
     critical: 'крайне тяжёлое',
   }
+  
+  const consciousnessMap: Record<Consciousness, string> = {
+    clear: 'ясное',
+    drowsy: 'оглушение',
+    confused: 'спутанное',
+    absent: 'отсутствует (сопор/кома)'
+  }
+
+  const constitutionMap: Record<Constitution, string> = {
+    normosthenic: 'нормостеническое',
+    hypersthenic: 'гиперстеническое',
+    asthenic: 'астеническое'
+  }
+
+  const nutritionMap: Record<Nutrition, string> = {
+    satisfactory: 'удовлетворительное',
+    elevated: 'повышенное',
+    reduced: 'пониженное'
+  }
+
   if (form.generalCondition) {
-    parts.push(`Общее состояние ${condMap[form.generalCondition]}. Сознание ${form.consciousness === 'clear' ? 'ясное' : form.consciousness === 'confused' ? 'спутанное' : form.consciousness ?? 'ясное'}.`)
+    let condStr = `Общее состояние: ${condMap[form.generalCondition]}.`
+    if (form.consciousness) condStr += ` Сознание: ${consciousnessMap[form.consciousness] ?? form.consciousness}.`
+    if (form.constitution) condStr += ` Телосложение: ${constitutionMap[form.constitution]}.`
+    if (form.nutrition) condStr += ` Питание: ${nutritionMap[form.nutrition]}.`
+    objParts.push(condStr)
   }
 
-  if (form.skinColor) {
-    const skinColorText: Record<string, string> = {
-      pale_pink: 'бледно-розовой окраски',
-      pale: 'бледные',
-      hyperemia: 'гиперемированные',
-      cyanosis: 'цианотичные',
-      icteric: 'иктеричные',
-    }
-    let skinStr = `Кожные покровы ${skinColorText[form.skinColor] ?? form.skinColor}`
-    if (!form.cyanosis) skinStr += ', периферических отёков нет'
-    if (!form.edemaPresent) skinStr += '.'
-    else skinStr += `. Отёки: ${form.edemaLocation || 'имеются'}.`
-    parts.push(skinStr)
+  // Skin and lymph nodes
+  const skinColorText: Record<SkinColor, string> = {
+    pale_pink: 'бледно-розовые',
+    pale: 'бледные',
+    hyperemia: 'гиперемированные',
+    cyanosis: 'цианотичные',
+    icteric: 'иктеричные',
+  }
+  const skinTempText: Record<SkinTemp, string> = {
+    warm: 'тёплые',
+    cold: 'холодные',
+    hot: 'горячие'
+  }
+  const skinMoistText: Record<SkinMoisture, string> = {
+    dry: 'сухие',
+    moist: 'влажные',
+    excessive: 'с повышенной влажностью'
+  }
+  const mucousText: Record<MucousState, string> = {
+    moist: 'влажные, чистые',
+    dry: 'сухие'
   }
 
-  if (form.rr || form.spo2) {
-    let respStr = 'Дыхание через нос свободное.'
-    if (form.chestForm) respStr += ` Грудная клетка ${form.chestForm === 'normosthenic' ? 'нормостенической формы' : form.chestForm}, ${form.chestSymmetry === 'symmetric' ? 'обе половины одинаково участвуют в акте дыхания' : 'асимметрична'}.`
-    if (form.rr) respStr += ` ЧДД ${form.rr} в минуту.`
-    if (form.spo2) respStr += ` SpO₂ ${form.spo2}%.`
-    if (form.percussionSound) {
-      const ps: Record<string, string> = { clear: 'ясный лёгочный звук', dull: 'притупление', tympanic: 'тимпанит', shortened: 'укорочение' }
-      respStr += ` Перкуторно над проекцией лёгких ${ps[form.percussionSound] ?? form.percussionSound}.`
-    }
-    if (form.breathingType) {
-      const bt: Record<string, string> = { vesicular: 'везикулярное', harsh: 'жёсткое', weakened: 'ослабленное', bronchial: 'бронхиальное' }
-      respStr += ` Аускультативно над лёгкими дыхание ${bt[form.breathingType] ?? form.breathingType}.`
-    }
-    if (form.ralesType) {
-      const rt: Record<string, string> = { none: 'Хрипы не выслушиваются.', dry: 'Выслушиваются сухие хрипы.', moist: 'Выслушиваются влажные хрипы.', crepitation: 'Выслушивается крепитация.' }
-      respStr += ' ' + (rt[form.ralesType] ?? '')
-    }
-    parts.push(respStr)
+  let skinStr = 'Кожные покровы:'
+  const skinDesc: string[] = []
+  if (form.skinColor) skinDesc.push(skinColorText[form.skinColor] ?? form.skinColor)
+  if (form.skinTemp) skinDesc.push(skinTempText[form.skinTemp])
+  if (form.skinMoisture) skinDesc.push(skinMoistText[form.skinMoisture])
+  
+  if (skinDesc.length > 0) {
+    skinStr += ` ${skinDesc.join(', ')}.`
+  } else {
+    skinStr += ' обычной окраски и влажности.'
   }
 
-  const bpRight = form.bpRightSys && form.bpRightDia ? `${form.bpRightSys}/${form.bpRightDia}` : (form.bpRightSys || '')
-  const bpLeft = form.bpLeftSys && form.bpLeftDia ? `${form.bpLeftSys}/${form.bpLeftDia}` : (form.bpLeftSys || '')
-  if (form.hr || bpRight) {
-    let heartStr = `Сердечная деятельность ${form.heartRhythm === 'regular' ? 'ритмичная' : 'аритмичная'}, тоны ${form.heartTones === 'clear' ? 'ясные' : form.heartTones === 'muffled' ? 'приглушены' : 'глухие'}.`
-    if (form.heartMurmurs === 'absent') heartStr += ' Шумы не выслушиваются.'
-    if (form.hr) heartStr += ` ЧСС ${form.hr} в мин.`
-    if (bpRight) heartStr += ` АД ${bpRight} мм рт. ст.`
-    if (bpLeft && bpLeft !== bpRight) heartStr += ` (левая рука ${bpLeft}).`
-    parts.push(heartStr)
+  if (form.mucousState) {
+    skinStr += ` Видимые слизистые оболочки: ${mucousText[form.mucousState]}.`
   }
 
+  const cyanosisParts: string[] = []
+  if (form.cyanosis) cyanosisParts.push('диффузный цианоз')
+  if (form.acrocyanosis) cyanosisParts.push('акроцианоз')
+  if (cyanosisParts.length > 0) {
+    skinStr += ` Отмечается: ${cyanosisParts.join(', ')}.`
+  }
+
+  if (form.edemaPresent) {
+    skinStr += ` Имеются отёки: ${form.edemaLocation || 'локализованные'}.`
+  } else {
+    skinStr += ' Периферических отёков нет.'
+  }
+
+  if (form.lymphNodes) {
+    skinStr += ` Периферические лимфатические узлы: ${form.lymphNodes === 'not_palpable' ? 'не пальпируются' : 'увеличены'}.`
+  }
+  objParts.push(skinStr)
+
+  // Respiratory system
+  let respStr = 'Органы дыхания:'
+  if (form.breathingNose) {
+    respStr += ` Дыхание через нос: ${form.breathingNose === 'free' ? 'свободное' : 'затруднено'}.`
+  }
+  if (form.chestForm) {
+    const chestFormMap: Record<ChestForm, string> = {
+      normosthenic: 'нормостеническая',
+      hypersthenic: 'гиперстеническая',
+      asthenic: 'астеническая',
+      rachitic: 'рахитическая',
+      emphysematous: 'эмфизематозная',
+      funnel: 'воронкообразная',
+      keel: 'килевидная'
+    }
+    respStr += ` Грудная клетка: ${chestFormMap[form.chestForm] ?? form.chestForm}.`
+  }
+  if (form.chestSymmetry) {
+    respStr += ` Симметричность: ${form.chestSymmetry === 'symmetric' ? 'обе половины участвуют в дыхании' : 'асимметрична'}.`
+  }
+  if (form.rr) respStr += ` ЧДД: ${form.rr} в минуту.`
+  if (form.spo2) respStr += ` SpO₂: ${form.spo2}%.`
+
+  if (form.percussionSound) {
+    const ps: Record<PercussionSound, string> = {
+      clear: 'ясный лёгочный звук',
+      dull: 'притупление перкуторного звука',
+      tympanic: 'тимпанический звук',
+      shortened: 'укорочение перкуторного звука'
+    }
+    respStr += ` Перкуторный звук: ${ps[form.percussionSound] ?? form.percussionSound}.`
+  }
+
+  if (form.breathingType) {
+    const bt: Record<BreathingType, string> = {
+      vesicular: 'везикулярное',
+      harsh: 'жёсткое',
+      weakened: 'ослабленное',
+      bronchial: 'бронхиальное'
+    }
+    respStr += ` Аускультативно: дыхание ${bt[form.breathingType] ?? form.breathingType}.`
+  }
+
+  if (form.ralesType) {
+    const rt: Record<RalesType, string> = {
+      none: 'Хрипы не выслушиваются.',
+      dry: 'Выслушиваются сухие хрипы.',
+      moist: 'Выслушиваются влажные хрипы.',
+      crepitation: 'Выслушивается крепитация.'
+    }
+    respStr += ` ${rt[form.ralesType]}`
+    if (form.ralesType !== 'none' && form.ralesLocation) {
+      respStr += ` Локализация хрипов: ${form.ralesLocation}.`
+    }
+  }
+
+  if (form.respiratoryComment) {
+    respStr += ` Примечание: ${form.respiratoryComment}`
+  }
+  objParts.push(respStr)
+
+  // Cardiovascular system
+  let cvStr = 'Органы кровообращения:'
+  if (form.heartRhythm || form.heartTones) {
+    cvStr += ` Сердечная деятельность: ${form.heartRhythm === 'regular' ? 'ритмичная' : 'аритмичная'}.`
+    const tonesMap: Record<HeartTones, string> = {
+      clear: 'ясные',
+      muffled: 'приглушены',
+      deaf: 'глухие'
+    }
+    if (form.heartTones) {
+      cvStr += ` Тоны сердца: ${tonesMap[form.heartTones] ?? form.heartTones}.`
+    }
+  }
+  if (form.heartMurmurs) {
+    const murmursMap: Record<HeartMurmurs, string> = {
+      absent: 'шумы отсутствуют',
+      systolic: 'выслушивается систолический шум',
+      diastolic: 'выслушивается диастолический шум'
+    }
+    cvStr += ` Шумы: ${murmursMap[form.heartMurmurs]}.`
+  }
+  if (form.hr) cvStr += ` ЧСС: ${form.hr} в мин.`
+  if (form.pulse) cvStr += ` Пульс: ${form.pulse} в мин.`
+  
+  const bpRight = form.bpRightSys && form.bpRightDia ? `${form.bpRightSys}/${form.bpRightDia}` : ''
+  const bpLeft = form.bpLeftSys && form.bpLeftDia ? `${form.bpLeftSys}/${form.bpLeftDia}` : ''
+  if (bpRight) {
+    cvStr += ` АД на правой руке: ${bpRight} мм рт. ст.`
+    if (bpLeft && bpLeft !== bpRight) {
+      cvStr += `, на левой руке: ${bpLeft} мм рт. ст.`
+    }
+  }
+  if (form.cardiovascularComment) {
+    cvStr += ` Примечание: ${form.cardiovascularComment}`
+  }
+  objParts.push(cvStr)
+
+  // Gastrointestinal system
+  let gktStr = 'Органы пищеварения:'
   if (form.tongueState) {
-    const ts: Record<string, string> = {
+    const ts: Record<TongueState, string> = {
       moist_clean: 'влажный, чистый',
-      moist_coated: 'влажный, обложен',
+      moist_coated: 'влажный, обложен налётом',
       dry_clean: 'сухой, чистый',
-      dry_coated: 'сухой, обложен',
+      dry_coated: 'сухой, обложен налётом',
     }
-    parts.push(`Язык ${ts[form.tongueState] ?? form.tongueState}.`)
+    gktStr += ` Язык: ${ts[form.tongueState]}.`
   }
   if (form.abdomenState) {
-    parts.push(`Живот при пальпации ${form.abdomenState === 'soft' ? 'мягкий, безболезненный' : form.abdomenState === 'tense' ? 'напряжённый' : 'вздут'}.`)
+    const abdMap: Record<AbdomenState, string> = {
+      soft: 'мягкий',
+      tense: 'напряжён',
+      bloated: 'вздут'
+    }
+    gktStr += ` Живот при пальпации: ${abdMap[form.abdomenState]}.`
+  }
+  if (form.abdomenPain) {
+    const painMap: Record<AbdomenPain, string> = {
+      painless: 'безболезненный',
+      painful: 'болезненный',
+      local: 'локально болезненный'
+    }
+    gktStr += ` Болезненность: ${painMap[form.abdomenPain]}.`
+  }
+  if (form.peritoneum) {
+    gktStr += ` Симптомы раздражения брюшины: ${form.peritoneum === 'irritation_absent' ? 'отрицательные' : 'положительные'}.`
   }
   if (form.liverState) {
-    const ls: Record<string, string> = { not_protruding: 'Печень не выступает.', protruding_1: 'Печень +1 см.', protruding_2: 'Печень +2 см.', protruding_3: 'Печень +3 см.' }
-    parts.push(ls[form.liverState] ?? '')
+    const lsMap: Record<LiverState, string> = {
+      not_protruding: 'печень не выступает из-под края рёберной дуги',
+      protruding_1: 'печень выступает на +1 см',
+      protruding_2: 'печень выступает на +2 см',
+      protruding_3: 'печень выступает на +3 см'
+    }
+    gktStr += ` Печень: ${lsMap[form.liverState]}`
+    if (form.liverSize && form.liverState !== 'not_protruding') {
+      gktStr += ` (размеры по Курлову: ${form.liverSize}).`
+    } else {
+      gktStr += '.'
+    }
   }
+  if (form.spleenState) {
+    gktStr += ` Селезёнка: ${form.spleenState === 'not_palpable' ? 'не пальпируется' : 'увеличена'}.`
+  }
+  if (form.gktComment) {
+    gktStr += ` Примечание: ${form.gktComment}`
+  }
+  objParts.push(gktStr)
 
+  // Urinary and bowel systems
+  let urStoolStr = 'Мочевыделительная система и стул:'
+  if (form.kidneyPercussion) {
+    const kidneyMap: Record<KidneyPercussion, string> = {
+      painless: 'симптом поколачивания отрицательный с обеих сторон',
+      painful_left: 'симптом поколачивания положительный слева',
+      painful_right: 'симптом поколачивания положительный справа',
+      painful_both: 'симптом поколачивания положительный с обеих сторон'
+    }
+    urStoolStr += ` ${kidneyMap[form.kidneyPercussion]}.`
+  }
   if (form.urination) {
-    parts.push(`Мочеиспускание ${form.urination === 'free_painless' ? 'свободное, безболезненное' : form.urination}.`)
+    const urMap: Record<UrinationState, string> = {
+      free_painless: 'мочеиспускание свободное, безболезненное',
+      difficult: 'мочеиспускание затруднено',
+      painful: 'мочеиспускание болезненное',
+      frequent: 'мочеиспускание учащенное'
+    }
+    urStoolStr += ` ${urMap[form.urination]}.`
   }
   if (form.stool) {
-    const st: Record<string, string> = { normal: 'оформленный, регулярный', constipation: 'задержка стула', diarrhea: 'жидкий', absent: 'стула нет' }
-    parts.push(`Стул ${st[form.stool] ?? form.stool}.`)
+    const stoolMap: Record<StoolState, string> = {
+      normal: 'стул оформленный, регулярный',
+      constipation: 'склонность к запорам / задержка стула',
+      diarrhea: 'стул жидкий',
+      absent: 'стул отсутствует'
+    }
+    urStoolStr += ` ${stoolMap[form.stool]}.`
   }
+  if (form.urologyComment) {
+    urStoolStr += ` Примечание: ${form.urologyComment}`
+  }
+  objParts.push(urStoolStr)
 
+  parts.push(objParts.join('\n'))
+
+  // Diagnosis
   if (form.primaryDiagnosis) {
-    parts.push(`\nКлинический диагноз:\nОсновной: ${form.primaryDiagnosis}.`)
-    if (form.complicationsDiagnosis) parts.push(`Осложнения: ${form.complicationsDiagnosis}.`)
-    if (form.concomitantDiagnosis) parts.push(`Сопутствующий: ${form.concomitantDiagnosis}.`)
+    parts.push(`Клинический диагноз:\nОсновной: ${form.primaryDiagnosis}`)
+    if (form.complicationsDiagnosis) parts.push(`Осложнения: ${form.complicationsDiagnosis}`)
+    if (form.concomitantDiagnosis) parts.push(`Сопутствующий: ${form.concomitantDiagnosis}`)
   }
 
+  // Prescriptions
   const activeMeds = form.prescriptions.filter(p => p.action !== 'cancel')
   if (activeMeds.length > 0) {
-    parts.push('\nНазначения:')
+    parts.push('Назначенное лечение:')
     activeMeds.forEach((p, i) => {
-      parts.push(`${i + 1}. ${p.drug} ${p.dose} ${p.unit}, ${p.route}, ${p.frequency}.${p.comment ? ' ' + p.comment : ''}`)
+      parts.push(`${i + 1}. ${p.drug} ${p.dose} ${p.unit}, путь: ${p.route}, кратность: ${p.frequency}.${p.comment ? ' Примечание: ' + p.comment : ''}`)
     })
   }
 
+  // Examination plan
   const checked = form.labTests.filter(t => t.checked)
   if (checked.length > 0) {
     const labs = checked.filter(t => t.category === 'lab').map(t => t.name)
     const inst = checked.filter(t => t.category === 'instrumental').map(t => t.name)
-    if (labs.length) parts.push(`Лабораторные исследования: ${labs.join(', ')}.`)
-    if (inst) parts.push(`Инструментальные: ${inst.join(', ')}.`)
+    const plan: string[] = []
+    if (labs.length > 0) plan.push(`лабораторные исследования: ${labs.join(', ')}`)
+    if (inst.length > 0) plan.push(`инструментальные исследования: ${inst.join(', ')}`)
+    parts.push(`План обследования: ${plan.join('; ')}.`)
   }
 
-  return parts.join('\n')
+  return parts.join('\n\n')
 }
 
 
@@ -522,14 +829,60 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   onClose,
   onNavigateToTemperatureSheet,
 }) => {
-  const { getPatient, saveInspection, updatePatientVitals, updatePatientDiagnosis, updatePatientMeds, addHistoryEntry, saveDraft, getDraft } = usePatientData()
+  const {
+    getPatient,
+    saveInspection,
+    updatePatientRoundData,
+    addHistoryEntry,
+    updateHistoryEntry,
+    saveDraft,
+    getDraft,
+    getInspections,
+    loadPatientEncounters
+  } = usePatientData()
   const patient = getPatient(patientId)
+  const currentUserDisplayName = useSelector(selectDisplayName)
+
+  const [editingEncounterId, setEditingEncounterId] = useState<string | null>(null)
+
+  // Load patient encounters to get past primary inspection
+  useEffect(() => {
+    loadPatientEncounters(patientId)
+  }, [patientId])
 
   const [form, setForm] = useState<PrimaryFormState>(() => {
     const draft = getDraft(`${patientId}-primary`)
     if (draft) return draft
-    return getInitialPrimaryState(patientId, patient)
+    const initial = getInitialPrimaryState(patientId, patient)
+    if (currentUserDisplayName) {
+      initial.doctor = currentUserDisplayName
+    }
+    return initial
   })
+
+  useEffect(() => {
+    if (!editingEncounterId && currentUserDisplayName && (!form.doctor || form.doctor === 'Лечащий врач' || form.doctor === patient?.doctor)) {
+      setForm(prev => ({ ...prev, doctor: currentUserDisplayName }))
+    }
+  }, [currentUserDisplayName, patient, editingEncounterId])
+
+  // Load existing primary inspection data if available and no draft
+  useEffect(() => {
+    if (getDraft(`${patientId}-primary`)) return
+    const allInspections = getInspections(patientId)
+    const primaryRecord = allInspections.find(i => i.type === 'primary')
+    if (primaryRecord) {
+      setEditingEncounterId(primaryRecord.id)
+      if (primaryRecord.formData) {
+        try {
+          const parsed = JSON.parse(primaryRecord.formData)
+          setForm(parsed)
+        } catch (err) {
+          console.error('Failed to parse primary formData', err)
+        }
+      }
+    }
+  }, [patientId, getInspections, getDraft])
   const [activeSection, setActiveSection] = useState('info')
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null)
   const [showGenText, setShowGenText] = useState(false)
@@ -601,128 +954,182 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   }
 
 
+
   const handleSaveDraft = () => {
     setField('status', 'draft')
     saveDraft(`${patientId}-primary`, { ...form, status: 'draft' })
     showToast('Черновик сохранён', 'success')
   }
 
-  const handleComplete = () => {
-    const text = generatePrimaryText(form)
-    setField('generatedText', text)
-    setField('status', 'completed')
-    
-    saveDraft(`${patientId}-primary`, null)
+  const handleComplete = async () => {
+    // Validation
+    if (!form.inspectionDate) return showToast('Укажите дату осмотра', 'error')
+    if (!form.inspectionTime) return showToast('Укажите время осмотра', 'error')
+    if (!form.doctor) return showToast('Укажите врача', 'error')
+    if (form.complaints.length === 0) return showToast('Укажите жалобы (или «Нет жалоб»)', 'error')
+    if (!form.primaryDiagnosis) return showToast('Укажите клинический диагноз', 'error')
 
-    const insp: SavedInspection = {
-      id: `insp-${Date.now()}`,
-      type: 'primary',
-      date: form.inspectionDate,
-      time: form.inspectionTime,
-      doctor: form.doctor,
-      department: form.department,
-      diagnosis: form.primaryDiagnosis,
-      vitals: { temp: form.complaintParams.fever?.maxTemp, hr: form.hr, bp: form.bpRightSys && form.bpRightDia ? `${form.bpRightSys}/${form.bpRightDia}` : form.bpRightSys, spo2: form.spo2, rr: form.rr },
-      prescriptions: form.prescriptions,
-      labTests: form.labTests.filter(t => t.checked),
-      generatedText: text,
-    }
-
-    saveInspection(patientId, insp)
-
-    if (form.hr || form.bpRightSys || form.spo2 || form.rr) {
-      updatePatientVitals(patientId, {
-        hr: form.hr || undefined,
-        bp: form.bpRightSys && form.bpRightDia ? `${form.bpRightSys}/${form.bpRightDia}` : form.bpRightSys || undefined,
-        spo2: form.spo2 || undefined,
-        resp: form.rr || undefined,
-      })
-    }
-
-    if (form.primaryDiagnosis) {
-      updatePatientDiagnosis(patientId, form.primaryDiagnosis)
-    }
-
-    const activeMeds = form.prescriptions
-      .filter(p => p.action !== 'cancel')
-      .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }))
-    if (activeMeds.length) updatePatientMeds(patientId, activeMeds)
-
-    const getPrescriptionsDiffPrimary = (oldMeds: any[], newPrescs: RoundPrescription[]) => {
-      if (oldMeds.length === 0 && newPrescs.length === 0) return 'Назначений нет.'
+    try {
+      const text = generatePrimaryText(form, patient)
       
-      const oldMap = new Map(oldMeds.map((m, i) => [`med-${i}`, m]))
-      const newMap = new Map(newPrescs.map(p => [p.id, p]))
+      const finalForm = { ...form, generatedText: text, status: 'completed' as const }
+      const formJson = JSON.stringify(finalForm)
       
-      const added: string[] = []
-      const removed: string[] = []
-      const changed: string[] = []
-      
-      oldMap.forEach((oldMed, id) => {
-        if (!newMap.has(id)) {
-          removed.push(`${oldMed.name} (${oldMed.dose})`)
-        } else {
-          const newMed = newMap.get(id)!
-          if (newMed.drug !== oldMed.name || newMed.dose !== oldMed.dose || newMed.route !== oldMed.route || newMed.frequency !== oldMed.regimen) {
-            changed.push(`${oldMed.name} ${oldMed.dose} -> ${newMed.drug} ${newMed.dose} ${newMed.unit} ${newMed.route}`)
+      setForm(finalForm)
+
+      const bpStr = form.bpRightSys && form.bpRightDia ? `${form.bpRightSys}/${form.bpRightDia}` : form.bpRightSys;
+
+      const activeMeds = form.prescriptions
+        .filter(p => p.action !== 'cancel')
+        .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }))
+
+      // Update patient card once sequentially to avoid race condition state overwriting!
+      await updatePatientRoundData(
+        patientId,
+        {
+          hr: form.hr || undefined,
+          bp: bpStr || undefined,
+          spo2: form.spo2 || undefined,
+          resp: form.rr || undefined,
+          temp: form.complaintParams.fever?.maxTemp || undefined
+        },
+        form.primaryDiagnosis,
+        activeMeds
+      )
+
+      const getPrescriptionsDiffPrimary = (oldMeds: any[], newPrescs: RoundPrescription[]) => {
+        if (oldMeds.length === 0 && newPrescs.length === 0) return 'Назначений нет.'
+        
+        const oldMap = new Map(oldMeds.map((m, i) => [`med-${i}`, m]))
+        const newMap = new Map(newPrescs.map(p => [p.id, p]))
+        
+        const added: string[] = []
+        const removed: string[] = []
+        const changed: string[] = []
+        
+        oldMap.forEach((oldMed, id) => {
+          if (!newMap.has(id)) {
+            removed.push(`${oldMed.name} (${oldMed.dose})`)
+          } else {
+            const newMed = newMap.get(id)!
+            if (newMed.drug !== oldMed.name || newMed.dose !== oldMed.dose || newMed.route !== oldMed.route || newMed.frequency !== oldMed.regimen) {
+              changed.push(`${oldMed.name} ${oldMed.dose} -> ${newMed.drug} ${newMed.dose} ${newMed.unit} ${newMed.route}`)
+            }
           }
-        }
+        })
+        
+        newMap.forEach((newMed, id) => {
+          if (id.startsWith('np-') || !oldMap.has(id)) {
+            added.push(`${newMed.drug} ${newMed.dose}${newMed.unit}`)
+          }
+        })
+        
+        const parts: string[] = []
+        if (added.length) parts.push(`Добавлено: ${added.join(', ')}`)
+        if (removed.length) parts.push(`Убрано: ${removed.join(', ')}`)
+        if (changed.length) parts.push(`Изменено: ${changed.join('; ')}`)
+        
+        if (parts.length === 0) return 'Не изменились.'
+        return parts.join('.\n')
+      }
+
+      const COMPLAINT_ACCUSATIVE_RU: Record<ComplaintKey, string> = {
+        none: 'жалоб нет',
+        weakness: 'общую слабость',
+        cough_dry: 'малопродуктивный кашель',
+        cough_productive: 'продуктивный кашель',
+        dyspnea_exertion: 'одышку при физической нагрузке',
+        dyspnea_rest: 'одышку в покое',
+        fever: 'повышение температуры',
+        chest_pain: 'боль в грудной клетке',
+        sweating: 'повышенную потливость',
+        dizziness: 'головокружение',
+        nausea: 'тошноту',
+        other: 'другие симптомы',
+      }
+
+      const complaintsText = form.complaints.includes('none') || form.complaints.filter(c => c !== 'none').length === 0
+        ? 'Жалоб не предъявляет.'
+        : `Жалобы на ${form.complaints.filter(c => c !== 'none').map(c => {
+            let t = COMPLAINT_ACCUSATIVE_RU[c] || c
+            if (c === 'fever' && form.complaintParams.fever?.maxTemp) t += ` до ${form.complaintParams.fever.maxTemp}°C`
+            return t
+          }).join(', ')}.` + (form.complaintsNote ? ` ${form.complaintsNote}` : '')
+
+      const splitText = text.split('\n\n')
+      const objectiveParts = splitText.filter(p => {
+        const lower = p.toLowerCase()
+        if (lower.startsWith('первичный осмотр') || lower.startsWith('повторный осмотр')) return false
+        if (lower.startsWith('жалобы:')) return false
+        if (lower.startsWith('anamnesis morbi:') || lower.startsWith('anamnesis vitae:')) return false
+        if (lower.startsWith('клинический диагноз:')) return false
+        if (lower.startsWith('план обследования:')) return false
+        return p.trim().length > 0 && p !== form.complaintsNote
       })
-      
-      newMap.forEach((newMed, id) => {
-        if (id.startsWith('np-') || !oldMap.has(id)) {
-          added.push(`${newMed.drug} ${newMed.dose}${newMed.unit}`)
+
+      const entryPayload = {
+        dateTime: `${form.inspectionDate} ${form.inspectionTime}`,
+        type: form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр',
+        doctor: form.doctor,
+        conclusion: text, 
+        complaints: complaintsText,
+        objective: objectiveParts.join('\n\n'),
+        recommendations: getPrescriptionsDiffPrimary(patient?.currentMeds || [], form.prescriptions),
+        formData: formJson,
+      }
+
+      if (editingEncounterId) {
+        await updateHistoryEntry(patientId, editingEncounterId, entryPayload)
+        
+        const insp: SavedInspection = {
+          id: editingEncounterId,
+          type: form.inspectionType === 'primary' ? 'primary' : 'daily',
+          date: form.inspectionDate,
+          time: form.inspectionTime,
+          doctor: form.doctor,
+          department: form.department,
+          diagnosis: form.primaryDiagnosis,
+          vitals: { temp: form.complaintParams.fever?.maxTemp, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
+          prescriptions: form.prescriptions,
+          labTests: form.labTests.filter(t => t.checked),
+          generatedText: text,
+          formData: formJson,
         }
-      })
-      
-      const parts: string[] = []
-      if (added.length) parts.push(`Добавлено: ${added.join(', ')}`)
-      if (removed.length) parts.push(`Убрано: ${removed.join(', ')}`)
-      if (changed.length) parts.push(`Изменено: ${changed.join('; ')}`)
-      
-      if (parts.length === 0) return 'Не изменились.'
-      return parts.join('.\n')
+        saveInspection(patientId, insp)
+      } else {
+        const saved = await addHistoryEntry(patientId, entryPayload)
+        const realId = saved.id
+
+        const insp: SavedInspection = {
+          id: realId,
+          type: form.inspectionType === 'primary' ? 'primary' : 'daily',
+          date: form.inspectionDate,
+          time: form.inspectionTime,
+          doctor: form.doctor,
+          department: form.department,
+          diagnosis: form.primaryDiagnosis,
+          vitals: { temp: form.complaintParams.fever?.maxTemp, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
+          prescriptions: form.prescriptions,
+          labTests: form.labTests.filter(t => t.checked),
+          generatedText: text,
+          formData: formJson,
+        }
+        saveInspection(patientId, insp)
+        setEditingEncounterId(realId)
+      }
+
+      setShowGenText(true)
+      showToast('Осмотр сохранён в карточке пациента', 'success')
+      saveDraft(`${patientId}-primary`, null)
+    } catch (err) {
+      console.error(err)
+      showToast(err instanceof Error ? err.message : 'Ошибка сохранения осмотра', 'error')
     }
-
-    const complaintsText = form.complaints.includes('none') || form.complaints.filter(c => c !== 'none').length === 0
-      ? 'Жалоб не предъявляет.'
-      : `Жалобы на ${form.complaints.filter(c => c !== 'none').map(c => {
-          let t = COMPLAINT_LABELS[c].toLowerCase()
-          if (c === 'fever' && form.complaintParams.fever?.maxTemp) t += ` до ${form.complaintParams.fever.maxTemp}°C`
-          return t
-        }).join(', ')}.` + (form.complaintsNote ? ` ${form.complaintsNote}` : '')
-
-    const splitText = text.split('\n\n')
-    const objectiveParts = splitText.filter(p => {
-      const lower = p.toLowerCase()
-      if (lower.startsWith('первичный осмотр') || lower.startsWith('повторный осмотр')) return false
-      if (lower.startsWith('жалобы:')) return false
-      if (lower.startsWith('anamnesis morbi:') || lower.startsWith('anamnesis vitae:')) return false
-      if (lower.startsWith('клинический диагноз:')) return false
-      if (lower.startsWith('план обследования:')) return false
-      return p.trim().length > 0 && p !== form.complaintsNote
-    })
-
-    addHistoryEntry(patientId, {
-      dateTime: `${form.inspectionDate} ${form.inspectionTime}`,
-      type: form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр',
-      doctor: form.doctor,
-      conclusion: text, 
-      complaints: complaintsText,
-      objective: objectiveParts.join('\n\n'),
-      recommendations: getPrescriptionsDiffPrimary(patient?.currentMeds || [], form.prescriptions),
-    })
-
-    setShowGenText(true)
-    showToast('Осмотр завершён и сохранён в карточке пациента', 'success')
   }
 
   const handleCreateReferral = () => {
-    const checked = form.labTests.filter(t => t.checked)
-    if (checked.length === 0) return showToast('Выберите исследования для направления', 'error')
     setShowReferralModal(true)
   }
-
 
   const blockDone: Record<string, boolean> = {
     info: !!form.inspectionDate,

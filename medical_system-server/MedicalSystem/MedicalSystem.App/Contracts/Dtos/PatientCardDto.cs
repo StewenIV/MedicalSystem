@@ -198,6 +198,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? Objective { get; set; }
         public string? Conclusion { get; set; }
         public string? Recommendations { get; set; }
+        public string? FormData { get; set; }
     }
 
     // Backward compatible classes
@@ -208,6 +209,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string Type { get; set; }
         public string DoctorName { get; set; }
         public string Conclusion { get; set; }
+        public string? FormData { get; set; }
     }
 
     public class PatientMedicationDto
