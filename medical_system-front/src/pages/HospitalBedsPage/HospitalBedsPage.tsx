@@ -114,6 +114,19 @@ import {
   type BedStatsDto,
 } from 'api/bedsApi'
 
+
+const formatLogTime = (timeStr: string) => {
+  if (timeStr.includes('-') || timeStr.includes('T')) {
+    try {
+      const date = new Date(timeStr)
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      }
+    } catch (e) {}
+  }
+  return timeStr
+}
+
 function useCounter(target: number, duration = 1000) {
   const [value, setValue] = useState(0)
   const raf = useRef<number | null>(null) 
@@ -282,6 +295,7 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
     setDetailsLoading(true)
     fetchPatientDetails(bed.patientId)
       .then((data) => {
+        console.log(data)
         setDetails(data)
         const doneIds = new Set<string>(
           data.prescriptions.filter((rx) => rx.done).map((rx) => String(rx.id))
@@ -453,7 +467,7 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
                     <LogWho>{entry.who}</LogWho>
                     <LogAction>{entry.action}</LogAction>
                     <LogMeta>
-                      <span>🕐{entry.time}</span>
+                      <span>🕐{formatLogTime(entry.time)}</span>
                       {entry.amount && <span>Списано: {entry.amount}</span>}
                     </LogMeta>
                   </LogEntry>
@@ -637,7 +651,7 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
                   <LogWho style={{ fontSize: 13 }}>{entry.who}</LogWho>
                   <LogAction style={{ fontSize: 12 }}>{entry.action}</LogAction>
                   <LogMeta>
-                    <span>🕐 {entry.time}</span>
+                    <span>🕐 {formatLogTime(entry.time)}</span>
                     {entry.amount && <span>Списано: {entry.amount}</span>}
                   </LogMeta>
                 </ModalLogEntry>

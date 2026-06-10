@@ -14,7 +14,6 @@ import {
   RegisterBlock
 } from './styled'
 
-import {jwtDecode} from 'jwt-decode'
 import { BackButton } from 'components/Button'
 import { ReactComponent as GoogleIcon } from 'pages/img/google.svg'
 import Input from 'components/Input'
@@ -25,7 +24,7 @@ import { useAppDispatch } from 'store'
 import { setUserInfo } from 'features/App/reducer'
 import { UserRole } from 'features/App/types'
 import { paths } from 'routes/helpers'
-import { authApi } from 'api/authApi'
+import { authApi, decodeJwt } from 'api/authApi'
 import { toast } from 'react-toastify'
 
 const TOKEN_KEY = 'token'
@@ -63,13 +62,16 @@ const AuthPage: React.FC = () => {
       const response = await authApi.login(login.trim(), password)
       localStorage.setItem(TOKEN_KEY, response.token)
 
-      const decodedToken: any = jwtDecode(response.token)
-      console.log(decodedToken.displayName); 
+      const decodedToken = decodeJwt(response.token)
+      if (!decodedToken) {
+        throw new Error('Не удалось декодировать токен авторизации.')
+      }
+
       dispatch(setUserInfo({
-        userId: decodedToken.sub,
-        userLogin: decodedToken.login,  
+        userId: decodedToken.sub ?? '',
+        userLogin: decodedToken.login ?? '',  
         displayName: decodedToken.displayName ?? null,
-        role: decodedToken.role as UserRole
+        role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? decodedToken.role) as UserRole
       }))
       navigate(paths.home)
       toast.success(`Добро пожаловать, ${decodedToken.displayName ?? decodedToken.login}!`)

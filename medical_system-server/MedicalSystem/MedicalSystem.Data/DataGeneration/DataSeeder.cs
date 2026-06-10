@@ -116,7 +116,7 @@ namespace MedicalSystem.Data.DataGeneration
                 
                 await context.SaveChangesAsync();
 
-                await SeedUsersAsync(context, logger);
+                await SeedUsersAsync(context, logger, medicalStaff);
 
                 logger.LogInformation("Проверка и заполнение базы данных завершены.");
             }
@@ -142,33 +142,101 @@ namespace MedicalSystem.Data.DataGeneration
             return newData;
         }
 
-        private static async Task SeedUsersAsync(MedicalSystemDbContext context, ILogger logger)
+        private static async Task SeedUsersAsync(MedicalSystemDbContext context, ILogger logger, List<MedicalStaff> staffList)
         {
-            var testUsers = new[]
+            var existingPatient = await context.Users.AnyAsync(x => x.Login == "patient1");
+            if (!existingPatient)
             {
-                new { Login = "doctor1",    Password = "Password123!", Role = "Doctor",            DisplayName = "Иванов Иван Иванович" },
-                new { Login = "nurse1",     Password = "Password123!", Role = "Nurse",             DisplayName = "Петрова Анна Сергеевна" },
-                new { Login = "head_nurse1",Password = "Password123!", Role = "HeadNurse",         DisplayName = "Смирнова Ольга Николаевна" },
-                new { Login = "chief1",     Password = "Password123!", Role = "ChiefDoctor",       DisplayName = "Козлов Дмитрий Александрович" },
-                new { Login = "lab1",       Password = "Password123!", Role = "LaboratoryEmployee",DisplayName = "Лабораторный сотрудник" },
-                new { Login = "patient1",   Password = "Password123!", Role = "Patient",           DisplayName = "Пациент Тестовый" },
-            };
-
-            foreach (var u in testUsers)
-            {
-                var exists = await context.Users.AnyAsync(x => x.Login == u.Login);
-                if (!exists)
+                context.Users.Add(new User
                 {
-                    context.Users.Add(new User
+                    Id = Guid.NewGuid(),
+                    Login = "patient1",
+                    PasswordHash = BC.HashPassword("Password123!"),
+                    Role = "Patient",
+                    DisplayName = "Пациент Тестовый",
+                    CreatedAt = DateTime.UtcNow
+                });
+                logger.LogInformation("Создан тестовый пользователь: patient1 [Patient]");
+            }
+
+            int doctorCount = 1;
+            int nurseCount = 1;
+            int headNurseCount = 1;
+            int chiefCount = 1;
+            int labCount = 1;
+
+            foreach (var staff in staffList)
+            {
+                var position = await context.Positions.FindAsync(staff.PositionId);
+                var positionName = position?.Name.ToLower() ?? "";
+
+                string role = "Doctor";
+                string loginPrefix = "doctor";
+                int currentCount = 1;
+
+                if (positionName.Contains("главный врач"))
+                {
+                    role = "ChiefDoctor";
+                    loginPrefix = "chief";
+                    currentCount = chiefCount++;
+                }
+                else if (positionName.Contains("заведующий") || positionName.Contains("старшая"))
+                {
+                    role = "HeadNurse";
+                    loginPrefix = "head_nurse";
+                    currentCount = headNurseCount++;
+                }
+                else if (positionName.Contains("медсестра") || positionName.Contains("медицинская сестра"))
+                {
+                    role = "Nurse";
+                    loginPrefix = "nurse";
+                    currentCount = nurseCount++;
+                }
+                else if (positionName.Contains("лаборант") || positionName.Contains("лаборатор"))
+                {
+                    role = "LaboratoryEmployee";
+                    loginPrefix = "lab";
+                    currentCount = labCount++;
+                }
+                else
+                {
+                    role = "Doctor";
+                    loginPrefix = "doctor";
+                    currentCount = doctorCount++;
+                }
+
+                string login = $"{loginPrefix}{currentCount}";
+
+                // Если пользователя для этого сотрудника еще нет
+                var existsByStaff = await context.Users.AnyAsync(x => x.MedicalStaffId == staff.Id);
+                if (!existsByStaff)
+                {
+                    var existsByLogin = await context.Users.AnyAsync(x => x.Login == login);
+                    
+                    if (!existsByLogin)
                     {
-                        Id = Guid.NewGuid(),
-                        Login = u.Login,
-                        PasswordHash = BC.HashPassword(u.Password),
-                        Role = u.Role,
-                        DisplayName = u.DisplayName,
-                        CreatedAt = DateTime.UtcNow
-                    });
-                    logger.LogInformation("Создан тестовый пользователь: {Login} [{Role}]", u.Login, u.Role);
+                        context.Users.Add(new User
+                        {
+                            Id = Guid.NewGuid(),
+                            Login = login,
+                            PasswordHash = BC.HashPassword("Password123!"),
+                            Role = role,
+                            DisplayName = staff.Name,
+                            MedicalStaffId = staff.Id,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                        logger.LogInformation("Создан пользователь: {Login} [{Role}] -> {StaffName}", login, role, staff.Name);
+                    }
+                    else
+                    {
+                        var existingUser = await context.Users.FirstAsync(x => x.Login == login);
+                        if (existingUser.MedicalStaffId == null)
+                        {
+                            existingUser.MedicalStaffId = staff.Id;
+                            existingUser.DisplayName = staff.Name;
+                            logger.LogInformation("Привязан существующий логин {Login} к сотруднику {StaffName}", login, staff.Name);
+                        }
+                    }
                 }
             }
 

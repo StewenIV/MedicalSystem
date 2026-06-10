@@ -308,6 +308,7 @@ namespace MedicalSystem.Data.Queries
                 .Include(p => p.PatientMedication)
                 .ThenInclude(pm => pm.Medicine)
                 .Where(p => p.PatientId == patientId)
+                .OrderBy(p => p.ScheduledTime)
                 .ToListAsync(token);
             
             var prescriptions = dbPrescriptions.Select(p => new BedPrescriptionDto 
@@ -332,15 +333,20 @@ namespace MedicalSystem.Data.Queries
 
             var dbLog = await _context.BedActionLogs.AsNoTracking()
                 .Include(l => l.PerformedBy)
+                    .ThenInclude(ms => ms.Position)
                 .Where(l => l.PatientId == patientId)
                 .OrderByDescending(l => l.PerformedAt)
                 .ToListAsync(token);
 
             var log = dbLog.Select(l => new ActionLogDto 
             { 
-                Who = l.PerformedBy?.Name ?? "Неизвестно", 
+                Who = !string.IsNullOrEmpty(l.PerformedByName) 
+                    ? l.PerformedByName 
+                    : (l.PerformedBy != null 
+                        ? $"{l.PerformedBy.Name} ({l.PerformedBy.Position.Name})" 
+                        : "Неизвестно"), 
                 Action = l.Action, 
-                Time = l.PerformedAt.ToString("HH:mm"), 
+                Time = DateTime.SpecifyKind(l.PerformedAt, DateTimeKind.Utc).ToString("o"), 
                 Amount = l.Amount 
             }).ToList();
 

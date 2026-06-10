@@ -147,6 +147,8 @@ using (var scope = app.Services.CreateScope())
     {
         // await context.Database.MigrateAsync();
 
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"BedActionLogs\" ADD COLUMN IF NOT EXISTS \"PerformedByName\" text NULL;"); } catch { }
+
         await DataSeeder.SeedAsync(context, logger);
     }
     

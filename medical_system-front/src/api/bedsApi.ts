@@ -169,7 +169,12 @@ export const fetchBedById = (bedId: string): Promise<BedDto> =>
   apiFetch(`/api/beds/${bedId}`)
 
 export const fetchPatientDetails = (patientId: string): Promise<PatientDetailDto> =>
-  apiFetch(`/api/beds/patient/${patientId}/details`)
+  apiFetch<PatientDetailDto>(`/api/beds/patient/${patientId}/details`).then((data) => {
+    if (data && data.prescriptions) {
+      data.prescriptions.sort((a, b) => a.time.localeCompare(b.time))
+    }
+    return data
+  })
 
 export const togglePrescription = (
   patientId: string,

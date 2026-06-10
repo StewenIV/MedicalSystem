@@ -37,7 +37,7 @@ namespace MedicalSystem.App.Services
         public Task<BedDto> GetBedByIdAsync(Guid bedId, CancellationToken token) => _bedQuery.GetBedByIdAsync(bedId, token);
         public Task<PatientDetailsDto> GetPatientDetailsAsync(Guid patientId, CancellationToken token) => _bedQuery.GetPatientDetailsAsync(patientId, token);
 
-        public async Task UpdatePrescriptionStatusAsync(Guid patientId, Guid prescriptionId, bool isDone, CancellationToken token)
+        public async Task UpdatePrescriptionStatusAsync(Guid patientId, Guid prescriptionId, bool isDone, Guid? userId, CancellationToken token)
         {
             var prescription = await _prescriptionStorage.GetAsync(prescriptionId, token);
             
@@ -49,14 +49,14 @@ namespace MedicalSystem.App.Services
                     if (isDone)
                     {
                         prescription.DoneAt = DateTime.UtcNow;
-                        prescription.DoneBy = "Текущий пользователь"; // Заглушка, пока нет авторизации
-                        await _prescriptionStorage.UpdateBalanceAsync(prescriptionId, deduct: true, token);
+                        var (_, doneByText) = await _prescriptionStorage.UpdateBalanceAsync(prescriptionId, deduct: true, userId, token);
+                        prescription.DoneBy = doneByText ?? "Текущий пользователь";
                     }
                     else
                     {
                         prescription.DoneAt = null;
                         prescription.DoneBy = null;
-                        await _prescriptionStorage.UpdateBalanceAsync(prescriptionId, deduct: false, token);
+                        await _prescriptionStorage.UpdateBalanceAsync(prescriptionId, deduct: false, userId, token);
                     }
                     await _prescriptionStorage.UpdateAsync(prescription, token);
                 }

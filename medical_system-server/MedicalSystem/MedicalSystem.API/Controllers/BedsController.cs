@@ -5,6 +5,7 @@ using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace MedicalSystem.API.Controllers
 {
@@ -116,7 +117,11 @@ namespace MedicalSystem.API.Controllers
         {
             try
             {
-                await _bedService.UpdatePrescriptionStatusAsync(patientId, prescriptionId, request.IsDone, token);
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                              ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+                Guid? userId = Guid.TryParse(userIdStr, out var parsedId) ? parsedId : null;
+
+                await _bedService.UpdatePrescriptionStatusAsync(patientId, prescriptionId, request.IsDone, userId, token);
                 return Ok();
             }
             catch (Exception ex)

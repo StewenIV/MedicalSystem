@@ -148,7 +148,7 @@ namespace MedicalSystem.Data.Migrations
 
                     b.HasIndex("PatientId");
 
-                    b.ToTable("BedOccupancyHistories");
+                    b.ToTable("BedOccupancyHistories", (string)null);
                 });
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.BedPrescription", b =>
@@ -903,7 +903,7 @@ namespace MedicalSystem.Data.Migrations
 
                     b.HasIndex("PatientId");
 
-                    b.ToTable("Prescription");
+                    b.ToTable("Prescription", (string)null);
                 });
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.Room", b =>
@@ -1008,7 +1008,7 @@ namespace MedicalSystem.Data.Migrations
 
                     b.HasIndex("MedicalStaffId");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.Vaccine", b =>
@@ -1369,7 +1369,7 @@ namespace MedicalSystem.Data.Migrations
 
                             b1.HasKey("PatientId");
 
-                            b1.ToTable("Patients");
+                            b1.ToTable("Patients", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PatientId");
@@ -1397,7 +1397,7 @@ namespace MedicalSystem.Data.Migrations
 
                             b1.HasKey("PatientId");
 
-                            b1.ToTable("Patients");
+                            b1.ToTable("Patients", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PatientId");
@@ -1421,7 +1421,7 @@ namespace MedicalSystem.Data.Migrations
 
                             b1.HasKey("PatientId");
 
-                            b1.ToTable("Patients");
+                            b1.ToTable("Patients", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PatientId");
@@ -1446,7 +1446,7 @@ namespace MedicalSystem.Data.Migrations
 
                             b1.HasKey("PatientId");
 
-                            b1.ToTable("Patients");
+                            b1.ToTable("Patients", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("PatientId");
