@@ -38,11 +38,29 @@ namespace MedicalSystem.Data.Queries
                 .ToListAsync(token);
         }
 
+        public async Task<IEnumerable<PatientLookupDto>> GetActivePatientsAsync(CancellationToken token)
+        {
+            return await _context.Patients
+                .AsNoTracking()
+                .Where(p => p.Status == PatientStatus.Hospitalized || p.Status == PatientStatus.Outpatient)
+                .Select(p => new PatientLookupDto
+                {
+                    Id = p.Id,
+                    FullName = $"{p.LastName} {p.FirstName} {p.MiddleName}",
+                    RoomAndBed = _context.HospitalBeds
+                                    .Include(b => b.Room)
+                                    .Where(b => b.PatientId == p.Id)
+                                    .Select(b => $"Палата {b.Room.RoomNumber} / {b.BedNumber}")
+                                    .FirstOrDefault()
+                })
+                .ToListAsync(token);
+        }
+
         public async Task<IEnumerable<PatientListDto>> GetAllPatientsAsync(CancellationToken token)
         {
             return await _context.Patients
                 .AsNoTracking()
-                .Include(p => p.Doctor)
+                .Include(p => p.Doctor).ThenInclude(d => d.Position)
                 .Include(p => p.Department)
                 .Include(p => p.MedicalProblems)
                 .Select(p => new PatientListDto
@@ -58,7 +76,7 @@ namespace MedicalSystem.Data.Queries
                     StatusText = GetStatusText(p.Status),
                     MedcardNum = p.MedcardNum,
                     HistoryNum = p.HistoryNum,
-                    DoctorName = p.Doctor != null ? p.Doctor.Name : null,
+                    DoctorName = p.Doctor != null ? (string.IsNullOrEmpty(p.Doctor.Position.Name) ? p.Doctor.Name : $"{p.Doctor.Position.Name} {p.Doctor.Name}") : null,
                     DepartmentName = p.Department != null ? p.Department.Name : null,
                     RoomNumber = _context.HospitalBeds
                         .Where(b => b.PatientId == p.Id)
@@ -76,17 +94,17 @@ namespace MedicalSystem.Data.Queries
         {
             var patient = await _context.Patients
                 .AsNoTracking()
-                .Include(p => p.Doctor)
+                .Include(p => p.Doctor).ThenInclude(d => d.Position)
                 .Include(p => p.Department)
                 .Include(p => p.Institution)
-                .Include(p => p.Encounters).ThenInclude(e => e.Doctor)
+                .Include(p => p.Encounters).ThenInclude(e => e.Doctor).ThenInclude(d => d.Position)
                 .Include(p => p.PatientMedications)
                 .Include(p => p.PatientRelatives)
                 .Include(p => p.Allergies)
                 .Include(p => p.MedicalProblems)
                 .Include(p => p.Operations)
-                .Include(p => p.Prescriptions).ThenInclude(r => r.Doctor)
-                .Include(p => p.LabResults).ThenInclude(l => l.Doctor)
+                .Include(p => p.Prescriptions).ThenInclude(r => r.Doctor).ThenInclude(d => d.Position)
+                .Include(p => p.LabResults).ThenInclude(l => l.Doctor).ThenInclude(d => d.Position)
                 .Include(p => p.Vaccines)
                 .Include(p => p.PatientDocuments)
                 .Include(p => p.VitalSigns)
@@ -120,7 +138,7 @@ namespace MedicalSystem.Data.Queries
                 MaritalStatus = patient.MaritalStatus,
                 Institution = patient.Institution?.Name,
                 LastUpdated = patient.LastUpdated,
-                DoctorName = patient.Doctor?.Name,
+                DoctorName = patient.Doctor != null ? (string.IsNullOrEmpty(patient.Doctor.Position.Name) ? patient.Doctor.Name : $"{patient.Doctor.Position.Name} {patient.Doctor.Name}") : null,
                 DepartmentName = patient.Department?.Name,
                 RoomNumber = bed?.Room?.RoomNumber.ToString(),
                 BedNumber = bed?.BedNumber,
@@ -227,7 +245,7 @@ namespace MedicalSystem.Data.Queries
                     Regimen = pr.Regimen,
                     DateStart = pr.DateStart,
                     DateEnd = pr.DateEnd,
-                    DoctorName = pr.Doctor?.Name,
+                    DoctorName = pr.Doctor != null ? (string.IsNullOrEmpty(pr.Doctor.Position.Name) ? pr.Doctor.Name : $"{pr.Doctor.Position.Name} {pr.Doctor.Name}") : null,
                     Comment = pr.Comment
                 }).ToList(),
 
@@ -237,7 +255,7 @@ namespace MedicalSystem.Data.Queries
                     Date = l.Date,
                     Type = l.Type,
                     Reason = l.Reason,
-                    DoctorName = l.Doctor?.Name,
+                    DoctorName = l.Doctor != null ? (string.IsNullOrEmpty(l.Doctor.Position.Name) ? l.Doctor.Name : $"{l.Doctor.Position.Name} {l.Doctor.Name}") : null,
                     StatusText = l.StatusText
                 }).ToList(),
 
@@ -265,8 +283,8 @@ namespace MedicalSystem.Data.Queries
                 {
                     Id = e.Id,
                     DateTime = e.DateTime,
-                    Type = e.Type,
-                    DoctorName = e.Doctor?.Name,
+                    Type = e.Type == "Primary Inspection" ? "Первичный осмотр" : e.Type == "Daily Round" ? "Ежедневный обход" : e.Type,
+                    DoctorName = e.Doctor != null ? (string.IsNullOrEmpty(e.Doctor.Position.Name) ? e.Doctor.Name : $"{e.Doctor.Position.Name} {e.Doctor.Name}") : null,
                     Complaints = e.Complaints,
                     Objective = e.Objective,
                     Conclusion = e.Conclusion,
@@ -302,7 +320,7 @@ namespace MedicalSystem.Data.Queries
                     Id = lab.Id,
                     DateTime = lab.Date ?? DateTime.MinValue,
                     Type = "Анализы",
-                    DoctorName = lab.Doctor?.Name,
+                    DoctorName = lab.Doctor != null ? (string.IsNullOrEmpty(lab.Doctor.Position.Name) ? lab.Doctor.Name : $"{lab.Doctor.Position.Name} {lab.Doctor.Name}") : null,
                     Complaints = lab.Reason,
                     Objective = "Статус: " + lab.StatusText,
                     Conclusion = lab.Type,
@@ -313,7 +331,7 @@ namespace MedicalSystem.Data.Queries
                     Id = pr.Id,
                     DateTime = pr.DateStart ?? DateTime.MinValue,
                     Type = "Назначение",
-                    DoctorName = pr.Doctor?.Name,
+                    DoctorName = pr.Doctor != null ? (string.IsNullOrEmpty(pr.Doctor.Position.Name) ? pr.Doctor.Name : $"{pr.Doctor.Position.Name} {pr.Doctor.Name}") : null,
                     Complaints = pr.Comment,
                     Objective = pr.Dose + " (" + pr.Regimen + ")",
                     Conclusion = "Назначено лекарство: " + pr.Drug,
@@ -329,7 +347,7 @@ namespace MedicalSystem.Data.Queries
                     Id = e.Id,
                     DateTime = e.DateTime,
                     Type = e.Type,
-                    DoctorName = e.Doctor?.Name,
+                    DoctorName = e.Doctor != null ? (string.IsNullOrEmpty(e.Doctor.Position.Name) ? e.Doctor.Name : $"{e.Doctor.Position.Name} {e.Doctor.Name}") : null,
                     Conclusion = e.Conclusion
                 }).ToList(),
 

@@ -64,7 +64,7 @@ import Input from 'components/Input/index'
 import colors from 'consts/colors'
 
 import {
-  fetchHospitalizedPatients,
+  fetchActivePatients,
   fetchVitals,
   fetchWarnings,
   fetchTrends,
@@ -331,7 +331,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
   const [fieldErrors, setFieldErrors] = useState<Record<VitalSignField, string>>(createFieldErrors())
 
   useEffect(() => {
-    fetchHospitalizedPatients()
+    fetchActivePatients()
       .then(data => setPatients(data))
       .catch(() => toast.error('Не удалось загрузить список пациентов'))
   }, [])
@@ -376,7 +376,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
   }
 
   const latestVitals  = vitals.at(-1) ?? null
-  const selectedPatient = patients.find(p => p.id === selectedPatientId)
+  const selectedPatient = patients.find(p => p.id?.toLowerCase() === selectedPatientId?.toLowerCase())
 
   const warnings = useMemo(() =>
     serverWarnings.map(w => {

@@ -30,14 +30,19 @@ namespace MedicalSystem.App.Services
             return await _patientQuery.GetPatientsByStatusAsync(PatientStatus.Hospitalized, token);
         }
 
+        public async Task<IEnumerable<PatientLookupDto>> GetActivePatientsAsync(CancellationToken token)
+        {
+            return await _patientQuery.GetActivePatientsAsync(token);
+        }
+
         public async Task<IEnumerable<PatientListDto>> GetAllPatientsAsync(CancellationToken token)
         {
             return await _patientQuery.GetAllPatientsAsync(token);
         }
 
-        public async Task UpdatePatientCardAsync(Guid patientId, PatientCardDto dto, CancellationToken token)
+        public async Task UpdatePatientCardAsync(Guid patientId, PatientCardDto dto, Guid? userId, CancellationToken token)
         {
-            await _patientStorage.UpdatePatientCardAsync(patientId, dto, token);
+            await _patientStorage.UpdatePatientCardAsync(patientId, dto, userId, token);
         }
 
         public async Task<PatientListDto> AddPatientAsync(PatientCardDto dto, CancellationToken token)

@@ -464,10 +464,10 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   const stdMap: Record<string, string> = { denies: 'отрицает', has: 'подтверждает' }
 
   const infHistory: string[] = []
-  if (form.tbStatus) infHistory.push(`туберкулёз — ${tbMap[form.tbStatus] ?? form.tbStatus}${form.tbContact === 'yes' ? ' (был контакт)' : ''}`)
-  if (form.hivStatus) infHistory.push(`ВИЧ-статус — ${hivMap[form.hivStatus] ?? form.hivStatus}`)
-  if (form.hepatitisStatus) infHistory.push(`вирусные гепатиты — ${hepMap[form.hepatitisStatus] ?? form.hepatitisStatus}`)
-  if (form.stdStatus) infHistory.push(`ИППП — ${stdMap[form.stdStatus] ?? form.stdStatus}`)
+  if (form.tbStatus) infHistory.push(`туберкулёз - ${tbMap[form.tbStatus] ?? form.tbStatus}${form.tbContact === 'yes' ? ' (был контакт)' : ''}`)
+  if (form.hivStatus) infHistory.push(`ВИЧ-статус - ${hivMap[form.hivStatus] ?? form.hivStatus}`)
+  if (form.hepatitisStatus) infHistory.push(`вирусные гепатиты - ${hepMap[form.hepatitisStatus] ?? form.hepatitisStatus}`)
+  if (form.stdStatus) infHistory.push(`ИППП - ${stdMap[form.stdStatus] ?? form.stdStatus}`)
   
   if (infHistory.length > 0) {
     vitaeParts.push(`Эпидемиологический анамнез: ${infHistory.join(', ')}`)
@@ -838,14 +838,15 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     saveDraft,
     getDraft,
     getInspections,
-    loadPatientEncounters
+    loadPatientEncounters,
+    inspections
   } = usePatientData()
   const patient = getPatient(patientId)
   const currentUserDisplayName = useSelector(selectDisplayName)
 
+  const loadedPatientIdRef = useRef<string | null>(null)
   const [editingEncounterId, setEditingEncounterId] = useState<string | null>(null)
 
-  // Load patient encounters to get past primary inspection
   useEffect(() => {
     loadPatientEncounters(patientId)
   }, [patientId])
@@ -868,8 +869,19 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
 
   // Load existing primary inspection data if available and no draft
   useEffect(() => {
-    if (getDraft(`${patientId}-primary`)) return
-    const allInspections = getInspections(patientId)
+    if (loadedPatientIdRef.current === patientId) return
+
+    const isLoaded = inspections[patientId] !== undefined
+    if (!isLoaded) return
+
+    const draft = getDraft(`${patientId}-primary`)
+    if (draft) {
+      setForm(draft)
+      loadedPatientIdRef.current = patientId
+      return
+    }
+
+    const allInspections = inspections[patientId] || []
     const primaryRecord = allInspections.find(i => i.type === 'primary')
     if (primaryRecord) {
       setEditingEncounterId(primaryRecord.id)
@@ -882,7 +894,8 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         }
       }
     }
-  }, [patientId, getInspections, getDraft])
+    loadedPatientIdRef.current = patientId
+  }, [patientId, inspections, getDraft])
   const [activeSection, setActiveSection] = useState('info')
   const [toastMsg, setToastMsg] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null)
   const [showGenText, setShowGenText] = useState(false)
@@ -983,7 +996,71 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         .filter(p => p.action !== 'cancel')
         .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }))
 
-      // Update patient card once sequentially to avoid race condition state overwriting!
+      const medicalProblems: any[] = []
+      if (form.primaryDiagnosis) {
+        medicalProblems.push({
+          id: '00000000-0000-0000-0000-000000000000',
+          name: form.primaryDiagnosis,
+          isActive: true,
+          diseaseStatus: 'Активное',
+          diagnosisDate: new Date().toISOString()
+        })
+      }
+      if (form.comorbidities) {
+        form.comorbidities.forEach(c => {
+          if (c.diagnosis) {
+            medicalProblems.push({
+              id: c.id?.startsWith('cm-') || c.id?.startsWith('mp-') ? '00000000-0000-0000-0000-000000000000' : c.id,
+              name: c.diagnosis,
+              isActive: c.activity === 'Активное' || c.activity === 'active' || c.activity === 'Активно',
+              diseaseStatus: c.activity || 'Активное',
+              diagnosisDate: new Date().toISOString()
+            })
+          }
+        })
+      }
+
+      const allergies: any[] = (form.allergies || []).map(a => ({
+        id: a.id?.startsWith('alg-') || a.id?.startsWith('all-') ? '00000000-0000-0000-0000-000000000000' : a.id,
+        name: a.name,
+        reaction: a.reaction,
+        date: new Date().toISOString()
+      }))
+
+      const operations: any[] = (form.operations || []).map(o => ({
+        id: o.id?.startsWith('op-') ? '00000000-0000-0000-0000-000000000000' : o.id,
+        name: o.name,
+        date: o.date ? new Date(o.date).toISOString() : undefined,
+        description: o.comment || ''
+      }))
+
+      const prescriptions: any[] = form.prescriptions
+        .filter(p => p.action !== 'cancel')
+        .map(p => {
+          const doseStr = p.dose && p.unit ? `${p.dose} ${p.unit}` : p.dose;
+          return {
+            id: p.id?.startsWith('med-') || p.id?.startsWith('np-') ? '00000000-0000-0000-0000-000000000000' : p.id,
+            drug: p.drug,
+            dose: doseStr,
+            form: p.form,
+            route: p.route,
+            regimen: p.frequency || p.regimen,
+            dateStart: new Date().toISOString(),
+            doctorName: form.doctor,
+            comment: p.comment || ''
+          }
+        })
+
+      const checkedLabs = form.labTests.filter(t => t.checked)
+      const labs: any[] = checkedLabs.map(t => ({
+        id: '00000000-0000-0000-0000-000000000000',
+        date: new Date().toISOString(),
+        type: t.name,
+        reason: form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр',
+        doctorName: form.doctor,
+        statusText: 'Назначено'
+      }))
+
       await updatePatientRoundData(
         patientId,
         {
@@ -994,7 +1071,16 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           temp: form.complaintParams.fever?.maxTemp || undefined
         },
         form.primaryDiagnosis,
-        activeMeds
+        activeMeds,
+        {
+          doctorName: form.doctor,
+          departmentName: form.department,
+          allergies,
+          operations,
+          medicalProblems,
+          prescriptions,
+          labs
+        }
       )
 
       const getPrescriptionsDiffPrimary = (oldMeds: any[], newPrescs: RoundPrescription[]) => {
@@ -1256,7 +1342,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
 
               {form.complaints.includes('fever') && (
                 <div style={{ marginTop: 12, padding: '12px 14px', background: '#fff7ed', borderRadius: 8, border: '1px solid #fed7aa' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#9a3412', marginBottom: 8 }}>Повышение температуры — параметры</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#9a3412', marginBottom: 8 }}>Повышение температуры - параметры</div>
               <div style={s.row}>
                 <div>
                   <label style={s.label}>Максимальная температура (°C)</label>
@@ -1272,7 +1358,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               )}
               {(form.complaints.includes('dyspnea_exertion') || form.complaints.includes('dyspnea_rest')) && (
                 <div style={{ marginTop: 12, padding: '12px 14px', background: '#eff6ff', borderRadius: 8, border: '1px solid #bfdbfe' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#1d4ed8', marginBottom: 8 }}>Одышка — степень</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#1d4ed8', marginBottom: 8 }}>Одышка - степень</div>
                   <div style={s.pillGroup}>
                     {(['mild', 'moderate', 'severe'] as const).map(sev => (
                       <PillBtn
@@ -1295,7 +1381,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               )}
               {form.complaints.includes('cough_productive') && (
                 <div style={{ marginTop: 12, padding: '12px 14px', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#166534', marginBottom: 8 }}>Продуктивный кашель — мокрота</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#166534', marginBottom: 8 }}>Продуктивный кашель - мокрота</div>
                   <div style={s.row}>
                     <FieldInput label="Цвет мокроты" value={form.complaintParams.cough_productive?.sputumColor ?? ''} onChange={v => setComplaintParam('cough_productive', { sputumColor: v, sputumAmount: form.complaintParams.cough_productive?.sputumAmount ?? '' })} placeholder="слизистая, гнойная..." />
                     <FieldInput label="Количество" value={form.complaintParams.cough_productive?.sputumAmount ?? ''} onChange={v => setComplaintParam('cough_productive', { sputumColor: form.complaintParams.cough_productive?.sputumColor ?? '', sputumAmount: v })} placeholder="скудное, умеренное..." />
@@ -1535,7 +1621,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                         <input type="number" min="0" max="100" style={s.input} placeholder="10" value={form.smokingYears} onChange={e => setField('smokingYears', e.target.value)} />
                       </div>
                     )}
-                    {form.alcohol && <div style={{ marginTop: 8 }}><FieldInput label="Алкоголь — подробности" value={form.alcoholDetails} onChange={v => setField('alcoholDetails', v)} placeholder="Эпизодически, регулярно..." /></div>}
+                    {form.alcohol && <div style={{ marginTop: 8 }}><FieldInput label="Алкоголь - подробности" value={form.alcoholDetails} onChange={v => setField('alcoholDetails', v)} placeholder="Эпизодически, регулярно..." /></div>}
                   </div>
                 )}
               </div>
@@ -1679,7 +1765,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                   ))}
                 </div>
 
-                <div style={s.subsection}>Аускультация — тип дыхания</div>
+                <div style={s.subsection}>Аускультация - тип дыхания</div>
                 <div style={s.pillGroup}>
                   {([['vesicular', 'Везикулярное', 'green'], ['harsh', 'Жёсткое', 'orange'], ['weakened', 'Ослабленное', 'blue'], ['bronchial', 'Бронхиальное', 'red']] as const).map(([val, lbl, c]) => (
                     <PillBtn key={val} active={form.breathingType === val} color={c} onClick={() => setField('breathingType', form.breathingType === val ? null : val)}>{lbl}</PillBtn>
@@ -1910,7 +1996,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                             <input style={{ ...s.input, border: 'none', background: 'transparent', padding: 0, width: 60 }} value={p.frequency} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, frequency: e.target.value } : x) }))} />
                           </td>
                           <td style={{ padding: '10px' }}>
-                            <input style={{ ...s.input, border: 'none', background: 'transparent', padding: 0 }} value={p.comment ?? ''} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, comment: e.target.value } : x) }))} placeholder="—" />
+                            <input style={{ ...s.input, border: 'none', background: 'transparent', padding: 0 }} value={p.comment ?? ''} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, comment: e.target.value } : x) }))} placeholder="-" />
                           </td>
                           <td style={{ padding: '10px' }}>
                             <button onClick={() => removePresc(p.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={14} /></button>

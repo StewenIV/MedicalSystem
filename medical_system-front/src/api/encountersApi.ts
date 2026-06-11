@@ -33,7 +33,7 @@ export const mapServerEncounterToSavedInspection = (e: ServerEncounterDto): Save
 
   return {
     id: e.id,
-    type: e.type === 'Primary Inspection' ? 'primary' : 'daily',
+    type: e.type === 'Primary Inspection' || e.type === 'Первичный осмотр' ? 'primary' : 'daily',
     date: dateStr,
     time: timeStr,
     doctor: e.doctorName ?? 'Врач',

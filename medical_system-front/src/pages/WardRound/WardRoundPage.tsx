@@ -140,11 +140,11 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
 
   const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
   const vitalParts: string[] = []
-  if (form.temperature) vitalParts.push(`температура — ${form.temperature}°C`)
-  if (form.hr) vitalParts.push(`ЧСС — ${form.hr} в мин`)
-  if (bpStr) vitalParts.push(`АД — ${bpStr} мм рт. ст.`)
-  if (form.rr) vitalParts.push(`ЧДД — ${form.rr} в мин`)
-  if (form.spo2) vitalParts.push(`SpO₂ — ${form.spo2}%`)
+  if (form.temperature) vitalParts.push(`температура - ${form.temperature}°C`)
+  if (form.hr) vitalParts.push(`ЧСС - ${form.hr} в мин`)
+  if (bpStr) vitalParts.push(`АД - ${bpStr} мм рт. ст.`)
+  if (form.rr) vitalParts.push(`ЧДД - ${form.rr} в мин`)
+  if (form.spo2) vitalParts.push(`SpO₂ - ${form.spo2}%`)
   if (vitalParts.length > 0) {
     parts.push(`Физиологические показатели: ${vitalParts.join(', ')}.`)
   }
@@ -238,7 +238,7 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
         painful: 'болезненное',
         frequent: 'учащенное'
       }
-      excretions.push(`мочеиспускание — ${urMap[form.urination]}`)
+      excretions.push(`мочеиспускание - ${urMap[form.urination]}`)
     }
     if (form.stool) {
       const stoolMap: Record<string, string> = {
@@ -247,7 +247,7 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
         diarrhea: 'жидкий',
         absent: 'отсутствует'
       }
-      excretions.push(`стул — ${stoolMap[form.stool]}`)
+      excretions.push(`стул - ${stoolMap[form.stool]}`)
     }
     parts.push(`Физиологические отправления: ${excretions.join(', ')}.`)
   }
@@ -404,10 +404,30 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
       const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
 
       let activeMeds = patient.currentMeds;
+      let additionalData: any = { doctorName: form.doctor };
+
       if (form.treatmentDecision === 'modify') {
         activeMeds = form.prescriptions
           .filter(p => p.action !== 'cancel')
           .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }));
+        
+        const prescriptions = form.prescriptions
+          .filter(p => p.action !== 'cancel')
+          .map(p => {
+            const doseStr = p.dose && p.unit ? `${p.dose} ${p.unit}` : p.dose;
+            return {
+              id: p.id?.startsWith('med-') || p.id?.startsWith('np-') ? '00000000-0000-0000-0000-000000000000' : p.id,
+              drug: p.drug,
+              dose: doseStr,
+              form: p.form,
+              route: p.route,
+              regimen: p.frequency || p.regimen,
+              dateStart: new Date().toISOString(),
+              doctorName: form.doctor,
+              comment: p.comment || ''
+            }
+          });
+        additionalData = { ...additionalData, prescriptions };
       }
 
       await updatePatientRoundData(
@@ -420,7 +440,8 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           resp: form.rr || undefined,
         },
         undefined,
-        activeMeds
+        activeMeds,
+        additionalData
       )
 
       const getPrescriptionsDiff = (oldMeds: any[], newPrescs: RoundPrescription[], decision: string) => {

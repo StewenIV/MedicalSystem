@@ -144,6 +144,32 @@ namespace MedicalSystem.App.Test
         }
 
         [Fact]
+        public async Task GetActivePatientsAsync_ReturnsListOfActivePatients()
+        {
+            // Arrange
+            var activePatients = new List<PatientLookupDto>
+            {
+                new PatientLookupDto { Id = Guid.NewGuid(), FullName = "Alice Brown" },
+                new PatientLookupDto { Id = Guid.NewGuid(), FullName = "Bob Green" }
+            };
+
+            _mockPatientQuery.Setup(q =>
+                    q.GetActivePatientsAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(activePatients);
+
+            // Act
+            var result = await _patientService.GetActivePatientsAsync(CancellationToken.None);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Count());
+            Assert.Contains(result, p => p.FullName == "Alice Brown");
+            Assert.Contains(result, p => p.FullName == "Bob Green");
+            _mockPatientQuery.Verify(
+                q => q.GetActivePatientsAsync(It.IsAny<CancellationToken>()), Times.Once);
+        }
+
+        [Fact]
         public async Task GetAllPatientsAsync_ReturnsListOfAllPatients()
         {
             // Arrange
@@ -180,15 +206,15 @@ namespace MedicalSystem.App.Test
             };
 
             _mockPatientStorage.Setup(s =>
-                    s.UpdatePatientCardAsync(patientId, It.IsAny<PatientCardDto>(), It.IsAny<CancellationToken>()))
+                    s.UpdatePatientCardAsync(patientId, It.IsAny<PatientCardDto>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
             // Act
-            await _patientService.UpdatePatientCardAsync(patientId, patientCardDto, CancellationToken.None);
+            await _patientService.UpdatePatientCardAsync(patientId, patientCardDto, null, CancellationToken.None);
 
             // Assert
             _mockPatientStorage.Verify(
-                s => s.UpdatePatientCardAsync(patientId, It.Is<PatientCardDto>(p => p.FirstName == "Updated"), It.IsAny<CancellationToken>()), Times.Once);
+                s => s.UpdatePatientCardAsync(patientId, It.Is<PatientCardDto>(p => p.FirstName == "Updated"), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

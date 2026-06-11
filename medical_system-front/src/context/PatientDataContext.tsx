@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
 import { mockPatients, Patient } from 'data/mockData'
 import { SavedInspection } from 'pages/WardRound/types'
-import { PatientCardDto } from 'api/patientsApi'
+import { PatientCardDto, AllergyDto, OperationDto, MedicalProblemDto, PrescriptionDto, LabDto } from 'api/patientsApi'
 
 interface PatientDataState {
   patients: Patient[]
@@ -15,7 +15,21 @@ interface PatientDataActions {
   updatePatientMeds: (patientId: string, meds: Patient['currentMeds']) => void
   addHistoryEntry: (patientId: string, entry: Patient['history'][0]) => Promise<SavedInspection>
   updateHistoryEntry: (patientId: string, encounterId: string, entry: Patient['history'][0]) => Promise<void>
-  updatePatientRoundData: (patientId: string, vitals?: any, diagnosis?: string, meds?: Patient['currentMeds']) => Promise<void>
+  updatePatientRoundData: (
+    patientId: string,
+    vitals?: { temp?: string; hr?: string; bp?: string; spo2?: string; resp?: string },
+    diagnosis?: string,
+    meds?: Patient['currentMeds'],
+    additional?: {
+      doctorName?: string
+      departmentName?: string
+      allergies?: AllergyDto[]
+      operations?: OperationDto[]
+      medicalProblems?: MedicalProblemDto[]
+      prescriptions?: PrescriptionDto[]
+      labs?: LabDto[]
+    }
+  ) => Promise<void>
   getPatient: (patientId: string) => Patient | undefined
   getInspections: (patientId: string) => SavedInspection[]
   loadPatientEncounters: (patientId: string) => Promise<void>
@@ -113,12 +127,12 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       await postVitalSign(patientId, payload)
       
       setPatients(prev =>
-        prev.map(p => p.id === patientId ? { ...p, vitals: { ...(p as any).vitals, ...vitals } } as Patient : p)
+        prev.map(p => p.id?.toLowerCase() === patientId?.toLowerCase() ? { ...p, vitals: { ...(p as any).vitals, ...vitals } } as Patient : p)
       )
     } catch (err) {
       console.error('Failed to post vitals to server:', err)
       setPatients(prev =>
-        prev.map(p => p.id === patientId ? { ...p, vitals: { ...(p as any).vitals, ...vitals } } as Patient : p)
+        prev.map(p => p.id?.toLowerCase() === patientId?.toLowerCase() ? { ...p, vitals: { ...(p as any).vitals, ...vitals } } as Patient : p)
       )
     }
   }, [])
@@ -126,7 +140,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updatePatientDiagnosis = useCallback(async (patientId: string, diagnosis: string) => {
     try {
       setPatients(prev => {
-        const patient = prev.find(p => p.id === patientId)
+        const patient = prev.find(p => p.id?.toLowerCase() === patientId?.toLowerCase())
         if (!patient) return prev
         
         const updatedProblems = [...(patient.medicalProblems ?? [])]
@@ -148,7 +162,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
           updatePatientCard(patientId, cleanedDto).catch(console.error)
         })
 
-        return prev.map(p => p.id === patientId ? updatedPatient : p)
+        return prev.map(p => p.id?.toLowerCase() === patientId?.toLowerCase() ? updatedPatient : p)
       })
     } catch (err) {
       console.error('Failed to update patient diagnosis:', err)
@@ -158,7 +172,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updatePatientMeds = useCallback(async (patientId: string, meds: Patient['currentMeds']) => {
     try {
       setPatients(prev => {
-        const patient = prev.find(p => p.id === patientId)
+        const patient = prev.find(p => p.id?.toLowerCase() === patientId?.toLowerCase())
         if (!patient) return prev
         
         const updatedMeds = meds.map((m: any) => ({
@@ -179,7 +193,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
           updatePatientCard(patientId, cleanedDto).catch(console.error)
         })
 
-        return prev.map(p => p.id === patientId ? updatedPatient : p)
+        return prev.map(p => p.id?.toLowerCase() === patientId?.toLowerCase() ? updatedPatient : p)
       })
     } catch (err) {
       console.error('Failed to update patient medications:', err)
@@ -190,9 +204,9 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     try {
       const { createEncounter } = await import('../api/encountersApi')
       
-      let backendType = 'Daily Round'
+      let backendType = 'Ежедневный обход'
       if (entry.type?.toLowerCase().includes('первичн') || entry.type?.toLowerCase().includes('повторн')) {
-        backendType = 'Primary Inspection'
+        backendType = 'Первичный осмотр'
       }
 
       let dt = new Date()
@@ -222,7 +236,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       setPatients(prev =>
         prev.map(p =>
-          p.id === patientId
+          p.id?.toLowerCase() === patientId?.toLowerCase()
             ? {
                 ...p,
                 history: [
@@ -248,7 +262,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       console.error('Failed to save encounter to backend:', err)
       setPatients(prev =>
         prev.map(p =>
-          p.id === patientId
+          p.id?.toLowerCase() === patientId?.toLowerCase()
             ? { ...p, history: [entry, ...(p.history ?? [])] }
             : p
         )
@@ -261,9 +275,9 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     try {
       const { updateEncounter } = await import('../api/encountersApi')
       
-      let backendType = 'Daily Round'
+      let backendType = 'Ежедневный обход'
       if (entry.type?.toLowerCase().includes('первичн') || entry.type?.toLowerCase().includes('повторн')) {
-        backendType = 'Primary Inspection'
+        backendType = 'Первичный осмотр'
       }
 
       let dt = new Date()
@@ -293,7 +307,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
 
       setPatients(prev =>
         prev.map(p =>
-          p.id === patientId
+          p.id?.toLowerCase() === patientId?.toLowerCase()
             ? {
                 ...p,
                 history: (p.history ?? []).map((h: any) =>
@@ -325,10 +339,19 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     patientId: string,
     vitals?: { temp?: string; hr?: string; bp?: string; spo2?: string; resp?: string },
     diagnosis?: string,
-    meds?: Patient['currentMeds']
+    meds?: Patient['currentMeds'],
+    additional?: {
+      doctorName?: string
+      departmentName?: string
+      allergies?: AllergyDto[]
+      operations?: OperationDto[]
+      medicalProblems?: MedicalProblemDto[]
+      prescriptions?: PrescriptionDto[]
+      labs?: LabDto[]
+    }
   ) => {
     try {
-      const patient = patients.find(p => p.id === patientId)
+      const patient = patients.find(p => p.id?.toLowerCase() === patientId?.toLowerCase())
       if (!patient) return
 
       const updatedPatient = { ...patient }
@@ -366,9 +389,46 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         }))
       }
 
+      if (additional) {
+        if (additional.doctorName) {
+          updatedPatient.doctorName = additional.doctorName
+          updatedPatient.doctor = additional.doctorName
+        }
+        if (additional.departmentName) {
+          updatedPatient.departmentName = additional.departmentName
+          updatedPatient.department = additional.departmentName
+        }
+        if (additional.allergies) {
+          updatedPatient.allergies = additional.allergies
+        }
+        if (additional.operations) {
+          updatedPatient.operations = additional.operations
+        }
+        if (additional.medicalProblems) {
+          updatedPatient.medicalProblems = additional.medicalProblems
+          updatedPatient.activeProblems = additional.medicalProblems.filter(p => p.isActive).map(p => p.name)
+        }
+        if (additional.prescriptions) {
+          updatedPatient.prescriptions = additional.prescriptions
+        }
+        if (additional.labs) {
+          updatedPatient.labs = additional.labs
+        }
+      }
+
       const { updatePatientCard } = await import('../api/patientsApi')
       const cleanedDto = cleanEmptyDates(updatedPatient)
-      await updatePatientCard(patientId, cleanedDto)
+      const updatedDto = await updatePatientCard(patientId, cleanedDto)
+
+      const finalPatient = {
+        ...patient,
+        ...updatedDto,
+        id: patient.id,
+        doctor: updatedDto?.doctorName || patient.doctor,
+        department: updatedDto?.departmentName || patient.department,
+        statusText: updatedDto?.statusText || patient.statusText || 'Госпитализирован',
+        activeProblems: updatedDto?.medicalProblems?.map(m => m.name) || patient.activeProblems || []
+      }
 
       if (vitals) {
         const { postVitalSign } = await import('../api/vitalSignsApi')
@@ -387,7 +447,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         await postVitalSign(patientId, vitalsPayload)
       }
 
-      setPatients(prev => prev.map(p => p.id === patientId ? updatedPatient : p))
+      setPatients(prev => prev.map(p => p.id?.toLowerCase() === patientId?.toLowerCase() ? finalPatient : p))
     } catch (err) {
       console.error('Failed to update consolidated patient round data:', err)
       throw err
@@ -395,7 +455,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   }, [patients])
 
   const getPatient = useCallback((patientId: string) => {
-    return patients.find(p => p.id === patientId)
+    return patients.find(p => p.id?.toLowerCase() === patientId?.toLowerCase())
   }, [patients])
   const getInspections = useCallback((patientId: string) => {
     return inspections[patientId] ?? []
@@ -431,16 +491,18 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const updatePatient = useCallback(async (id: string, dto: PatientCardDto) => {
     const { updatePatientCard } = await import('../api/patientsApi')
     const cleanedDto = cleanEmptyDates(dto)
-    await updatePatientCard(id, cleanedDto)
+    const updatedDto = await updatePatientCard(id, cleanedDto)
     setPatients(prev =>
       prev.map(p =>
-        p.id === id
+        p.id?.toLowerCase() === id?.toLowerCase()
           ? {
-              ...dto,
-              doctor: dto.doctorName,
-              department: dto.departmentName,
-              statusText: dto.statusText || 'Госпитализирован',
-              activeProblems: dto.medicalProblems?.map(m => m.name) || []
+              ...p,
+              ...updatedDto,
+              id: p.id,
+              doctor: updatedDto?.doctorName || p.doctor,
+              department: updatedDto?.departmentName || p.department,
+              statusText: updatedDto?.statusText || p.statusText || 'Госпитализирован',
+              activeProblems: updatedDto?.medicalProblems?.map(m => m.name) || p.activeProblems || []
             }
           : p
       )
@@ -450,7 +512,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const deletePatient = useCallback(async (id: string) => {
     const { deletePatient: apiDeletePatient } = await import('../api/patientsApi')
     await apiDeletePatient(id)
-    setPatients(prev => prev.filter(p => p.id !== id))
+    setPatients(prev => prev.filter(p => p.id?.toLowerCase() !== id?.toLowerCase()))
   }, [])
 
   return (

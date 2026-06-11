@@ -14,7 +14,7 @@ namespace MedicalSystem.App.Contracts.Storage
         Task DischargeAsync(Guid patientId, CancellationToken token);
         void Transfer(Guid patientId, Guid departmentId);
         Task TransferAsync(Guid patientId, Guid departmentId, CancellationToken token);
-        Task UpdatePatientCardAsync(Guid patientId, PatientCardDto dto, CancellationToken token);
+        Task UpdatePatientCardAsync(Guid patientId, PatientCardDto dto, Guid? userId, CancellationToken token);
         Task<Patient> AddPatientAsync(PatientCardDto dto, CancellationToken token);
         Task DeletePatientAsync(Guid patientId, CancellationToken token);
     }

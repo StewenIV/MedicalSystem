@@ -675,7 +675,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current)
       }
-      const patient = patients.find((p) => p.id === patientId)
+      const patient = patients.find((p) => p.id?.toLowerCase() === patientId?.toLowerCase())
       if (patient) {
         onDoubleClickPatient?.(patient)
       }
@@ -2801,7 +2801,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       <td>{pr.route}</td>
                       <td>{pr.regimen}</td>
                       <td>{pr.comment || '—'}</td>
-                      <td>{pr.doctor}</td>
+                      <td>{pr.doctorName || pr.doctor || '—'}</td>
                       <td>
                         <ActionButton
                           $variant="ghost"
@@ -2863,7 +2863,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       <td>{formatDateHuman(lab.date)}</td>
                       <td>{lab.type}</td>
                       <td>{lab.reason || '—'}</td>
-                      <td>{lab.doctor}</td>
+                      <td>{lab.doctorName || lab.doctor || '—'}</td>
                       <td>
                         <span
                           style={{
@@ -3728,10 +3728,17 @@ const PatientCard: React.FC<PatientCardProps> = ({
           { color: string; bg: string; icon: React.ReactNode }
         > = {
           Осмотр: { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
+          'Первичный осмотр': { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
+          'Ежедневный обход': { color: '#0ea5e9', bg: '#e0f2fe', icon: <Stethoscope size={18} /> },
+          'Ежедневный осмотр': { color: '#0ea5e9', bg: '#e0f2fe', icon: <Stethoscope size={18} /> },
+          'Primary Inspection': { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
+          'Daily Round': { color: '#0ea5e9', bg: '#e0f2fe', icon: <Stethoscope size={18} /> },
           Консультация: { color: '#7c3aed', bg: '#ede9fe', icon: <User size={18} /> },
           Процедура: { color: '#059669', bg: '#d1fae5', icon: <Syringe size={18} /> },
           Операция: { color: '#dc2626', bg: '#fee2e2', icon: <Clipboard size={18} /> },
           Анализы: { color: '#d97706', bg: '#fef3c7', icon: <TestTube size={18} /> },
+          Назначение: { color: '#7c3aed', bg: '#ede9fe', icon: <Pill size={18} /> },
+          Вакцинация: { color: '#059669', bg: '#d1fae5', icon: <Syringe size={18} /> },
           Выписка: { color: '#0891b2', bg: '#cffafe', icon: <FileText size={18} /> }
         }
         const getVisitConfig = (type: string) =>
@@ -3885,7 +3892,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                 </div>
                                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
                                   <User size={12} style={{ display: 'inline', marginRight: 4 }} />
-                                  {h.doctor || 'Врач не указан'}
+                                  {h.doctorName || h.doctor || 'Врач не указан'}
                                 </div>
                               </div>
                               <div
@@ -4138,7 +4145,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
               </InfoItem>
               <InfoItem>
                 <span className="label">История болезни</span>
-                <span className="value">{localPatient.historyNum}</span>
+                <span className="value">{localPatient.historyNum || 'Не присвоен'}</span>
               </InfoItem>
               <InfoItem>
                 <span className="label">Статус</span>

@@ -74,11 +74,20 @@ export const getInitialPrimaryState = (
     hepatitisStatus: null,
     stdStatus: null,
 
-    allergyStatus: 'none',
-    allergies: [],
+    allergyStatus: patient?.allergies && patient.allergies.length > 0 ? 'has' : 'none',
+    allergies: patient?.allergies?.map((a, i) => ({
+      id: a.id || `alg-${i}`,
+      name: a.name,
+      reaction: a.reaction || ''
+    })) ?? [],
 
-    operationsStatus: 'none',
-    operations: [],
+    operationsStatus: patient?.operations && patient.operations.length > 0 ? 'has' : 'none',
+    operations: patient?.operations?.map((o, i) => ({
+      id: (o as any).id || `op-${i}`,
+      date: o.date ? new Date(o.date).toISOString().split('T')[0] : '',
+      name: o.name || '',
+      comment: o.description || ''
+    })) ?? [],
 
     comorbidities: patient?.medicalProblems?.map((mp, i) => ({
       id: `mp-${i}`,

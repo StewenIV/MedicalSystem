@@ -98,7 +98,7 @@ namespace MedicalSystem.Data.Storages
 
         public bool Exists(Guid id) => throw new NotImplementedException();
 
-        public async Task UpdatePatientCardAsync(Guid patientId, MedicalSystem.App.Contracts.Dtos.PatientCardDto dto, CancellationToken token)
+        public async Task UpdatePatientCardAsync(Guid patientId, MedicalSystem.App.Contracts.Dtos.PatientCardDto dto, Guid? userId, CancellationToken token)
         {
             var patient = await _context.Patients
                 .FirstOrDefaultAsync(p => p.Id == patientId, token);
@@ -115,7 +115,81 @@ namespace MedicalSystem.Data.Storages
                 patient.Status = status;
 
             patient.MedcardNum = dto.MedcardNum;
-            patient.HistoryNum = dto.HistoryNum;
+            
+            if (string.IsNullOrWhiteSpace(patient.HistoryNum))
+            {
+                if (!string.IsNullOrWhiteSpace(dto.HistoryNum))
+                {
+                    patient.HistoryNum = dto.HistoryNum;
+                }
+                else
+                {
+                    var yearPrefix = (DateTime.Now.Year % 100).ToString("D2");
+                    var monthSuffix = DateTime.Now.Month.ToString("D2");
+                    var existingHistoryNums = await _context.Patients
+                        .Where(p => p.HistoryNum != null && p.HistoryNum.StartsWith(yearPrefix + "-"))
+                        .Select(p => p.HistoryNum)
+                        .ToListAsync(token);
+                    
+                    int maxSeq = 0;
+                    foreach (var num in existingHistoryNums)
+                    {
+                        var parts = num.Split(new[] { '-', '/' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (parts.Length >= 2 && int.TryParse(parts[1], out var seq))
+                        {
+                            if (seq > maxSeq)
+                            {
+                                maxSeq = seq;
+                            }
+                        }
+                    }
+                    patient.HistoryNum = $"{yearPrefix}-{(maxSeq + 1):D4}/{monthSuffix}";
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.HistoryNum))
+            {
+                patient.HistoryNum = dto.HistoryNum;
+            }
+
+            MedicalStaff? currentUserStaff = null;
+            if (userId.HasValue)
+            {
+                var user = await _context.Users
+                    .Include(u => u.MedicalStaff)
+                    .FirstOrDefaultAsync(u => u.Id == userId.Value, token);
+                currentUserStaff = user?.MedicalStaff;
+            }
+
+            var staffList = await _context.MedicalStaff.ToListAsync(token);
+            Guid? ResolveDoctorId(string? doctorName)
+            {
+                if (string.IsNullOrWhiteSpace(doctorName) || doctorName == "Лечащий врач" || doctorName == "Врач не указан") 
+                    return currentUserStaff?.Id;
+                var match = staffList.FirstOrDefault(s => string.Equals(s.Name, doctorName, StringComparison.OrdinalIgnoreCase));
+                if (match != null) return match.Id;
+                match = staffList.FirstOrDefault(s => doctorName.Contains(s.Name, StringComparison.OrdinalIgnoreCase) || s.Name.Contains(doctorName, StringComparison.OrdinalIgnoreCase));
+                if (match != null) return match.Id;
+                return currentUserStaff?.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.DoctorName))
+            {
+                var docId = ResolveDoctorId(dto.DoctorName);
+                if (docId != null)
+                {
+                    patient.DoctorId = docId.Value;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(dto.DepartmentName))
+            {
+                var dept = await _context.Departments.FirstOrDefaultAsync(d => d.Name == dto.DepartmentName, token);
+                if (dept != null)
+                {
+                    patient.DepartmentId = dept.Id;
+                }
+            }
+
             patient.MaritalStatus = dto.MaritalStatus;
             patient.LastUpdated = DateTime.UtcNow;
 
@@ -256,12 +330,12 @@ namespace MedicalSystem.Data.Storages
                 await _context.Set<Prescription>().Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Prescriptions != null)
                     foreach (var d in dto.Prescriptions)
-                        _context.Set<Prescription>().Add(new Prescription { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Drug = d.Drug, Dose = d.Dose ?? "", Form = d.Form ?? "", Route = d.Route ?? "", Regimen = d.Regimen ?? "", DateStart = d.DateStart ?? DateTime.UtcNow, DateEnd = d.DateEnd, Comment = d.Comment ?? "" });
+                        _context.Set<Prescription>().Add(new Prescription { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Drug = d.Drug, Dose = d.Dose ?? "", Form = d.Form ?? "", Route = d.Route ?? "", Regimen = d.Regimen ?? "", DateStart = d.DateStart ?? DateTime.UtcNow, DateEnd = d.DateEnd, Comment = d.Comment ?? "", DoctorId = ResolveDoctorId(d.DoctorName) });
 
                 await _context.LabResults.Where(l => l.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Labs != null)
                     foreach (var d in dto.Labs)
-                        _context.LabResults.Add(new LabResult { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Date = d.Date ?? DateTime.UtcNow, Type = d.Type, Reason = d.Reason, StatusText = d.StatusText });
+                        _context.LabResults.Add(new LabResult { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Date = d.Date ?? DateTime.UtcNow, Type = d.Type, Reason = d.Reason, StatusText = d.StatusText, DoctorId = ResolveDoctorId(d.DoctorName) });
 
                 await _context.Vaccines.Where(v => v.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Vaccines != null)
@@ -294,7 +368,7 @@ namespace MedicalSystem.Data.Storages
                 DateOfBirth = dto.DateOfBirth,
                 Gender = dto.Gender == "Мужской" ? Domain.Enums.Gender.Male : Domain.Enums.Gender.Female,
                 MedcardNum = string.IsNullOrWhiteSpace(dto.MedcardNum) ? new Random().Next(10000000, 99999999).ToString() : dto.MedcardNum,
-                HistoryNum = dto.HistoryNum,
+                HistoryNum = string.IsNullOrWhiteSpace(dto.HistoryNum) ? null : dto.HistoryNum,
                 Status = Domain.Enums.PatientStatus.Outpatient,
                 LastUpdated = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow

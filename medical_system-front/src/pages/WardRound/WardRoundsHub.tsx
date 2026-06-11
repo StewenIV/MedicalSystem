@@ -313,7 +313,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                     const inspToday = getInspections(p.id).filter(i => i.date === todayISO)
                     const isInspected = inspToday.length > 0
                     const lastInsp = inspToday[inspToday.length - 1]
-                    const admDate = p.history?.[0]?.dateTime?.split(' ')[0] ?? p.lastUpdated ?? '—'
+                    const admDate = p.history?.[0]?.dateTime?.split(' ')[0] ?? p.lastUpdated ?? '-'
 
                     return (
                       <SearchTr
@@ -348,7 +348,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                         </SearchTdBold>
                         
                         <SearchTd style={{ fontSize: 12, lineHeight: 1.4, maxWidth: 200, whiteSpace: 'normal' }}>
-                          {p.activeProblems?.[0] ?? '—'}
+                          {p.activeProblems?.[0] ?? '-'}
                         </SearchTd>
                         
                         <SearchTd>

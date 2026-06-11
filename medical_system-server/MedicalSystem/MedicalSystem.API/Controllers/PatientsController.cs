@@ -5,6 +5,7 @@ using MedicalSystem.App.Services;
 using MedicalSystem.App.Contracts.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace MedicalSystem.API.Controllers
 {
@@ -40,6 +41,20 @@ namespace MedicalSystem.API.Controllers
             try
             {
                 var patients = await _patientService.GetHospitalizedPatientsAsync(token);
+                return Ok(patients);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.InnerException?.Message ?? ex.Message);
+            }
+        }
+
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActivePatients(CancellationToken token)
+        {
+            try
+            {
+                var patients = await _patientService.GetActivePatientsAsync(token);
                 return Ok(patients);
             }
             catch (Exception ex)
@@ -87,8 +102,13 @@ namespace MedicalSystem.API.Controllers
         {
             try
             {
-                await _patientService.UpdatePatientCardAsync(id, request, token);
-                return Ok();
+                var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                              ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+                Guid? userId = Guid.TryParse(userIdStr, out var parsedId) ? parsedId : null;
+
+                await _patientService.UpdatePatientCardAsync(id, request, userId, token);
+                var updated = await _patientService.GetPatientCardAsync(id, token);
+                return Ok(updated);
             }
             catch (Exception ex)
             {

@@ -41,6 +41,9 @@ export interface CreateVitalSignPayload {
 export const fetchHospitalizedPatients = (): Promise<ServerPatientDto[]> =>
   apiFetch('/api/patients/hospitalized')
 
+export const fetchActivePatients = (): Promise<ServerPatientDto[]> =>
+  apiFetch('/api/patients/active')
+
 export const fetchVitals = (patientId: string): Promise<ServerVitalSignDto[]> =>
   apiFetch(`/api/patients/${patientId}/vitals`)
 
