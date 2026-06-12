@@ -251,8 +251,8 @@ export const ControlCenter = styled.div`
 
 export const ControlRight = styled.div`
   display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: center;
   flex-shrink: 0;
 `
 

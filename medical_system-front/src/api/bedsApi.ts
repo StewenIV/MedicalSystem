@@ -1,6 +1,46 @@
 const BASE_URL = process.env.REACT_APP_API_URL ?? ''
 const TOKEN_KEY = 'token'
 
+function translateErrorToRussian(msg: string): string {
+  if (!msg) return 'Произошла неизвестная ошибка'
+
+  const lower = msg.toLowerCase()
+
+  if (msg.includes("An error occurred while saving the entity changes. See the inner exception for details.")) {
+    return "Произошла ошибка при сохранении изменений в базе данных. Пожалуйста, проверьте корректность вводимых данных или обратитесь к администратору."
+  }
+
+  if (lower.includes("duplicate key") || lower.includes("unique index") || lower.includes("ix_") || lower.includes("already exists")) {
+    return "Запись с такими данными уже существует."
+  }
+
+  if (lower.includes("foreign key") || lower.includes("violates foreign key constraint") || lower.includes("fk_")) {
+    return "Невозможно выполнить операцию: запись связана с другими данными в системе."
+  }
+
+  if (lower.includes("object reference not set") || lower.includes("nullreferenceexception")) {
+    return "Внутренняя ошибка сервера (пустая ссылка)."
+  }
+
+  if (lower.includes("failed to fetch") || lower.includes("network error") || lower.includes("networkerror")) {
+    return "Не удалось подключиться к серверу. Пожалуйста, проверьте интернет-соединение или убедитесь, что сервер запущен."
+  }
+
+  if (lower.includes("unauthorized") || lower.includes("token is expired") || lower.includes("invalid token")) {
+    return "Сессия истекла. Войдите в систему снова."
+  }
+
+  if (lower.includes("forbidden") || lower.includes("access denied") || lower.includes("not authorized")) {
+    return "Доступ запрещен. У вас нет прав на выполнение этого действия."
+  }
+
+  if (lower.includes("value cannot be null") || lower.includes("is required")) {
+    return "Обязательное поле не заполнено."
+  }
+
+  return msg
+}
+
 export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const token = localStorage.getItem(TOKEN_KEY)
 
@@ -52,7 +92,7 @@ export async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
       }
     } catch {
     }
-    throw new Error(errorMsg)
+    throw new Error(translateErrorToRussian(errorMsg))
   }
   const text = await res.text()
   if (!text) return {} as T

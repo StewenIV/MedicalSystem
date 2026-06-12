@@ -80,6 +80,23 @@ namespace MedicalSystem.Data.Storages
             }
         }
 
+        public async Task AddOperationLogAsync(MedicineOperationLog log, CancellationToken token)
+        {
+            await _context.MedicineOperationLogs.AddAsync(log, token);
+            await _context.SaveChangesAsync(token);
+        }
+
+        public async Task<Guid?> GetMedicalStaffIdByUserIdAsync(Guid userId, CancellationToken token)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId, token);
+            return user?.MedicalStaffId;
+        }
+
+        public async Task<bool> HasOperationLogsAsync(Guid medicineId, CancellationToken token)
+        {
+            return await _context.MedicineOperationLogs.AnyAsync(l => l.MedicineId == medicineId, token);
+        }
+
         public void Add(Medicine entity) => throw new NotImplementedException();
         public Medicine? Get(Guid id) => throw new NotImplementedException();
         public IReadOnlyCollection<Medicine> GetAll() => throw new NotImplementedException();
@@ -92,6 +109,16 @@ namespace MedicalSystem.Data.Storages
         public async Task<bool> ExistsAsync(Guid id, CancellationToken token)
         {
             return await _context.Medicines.AnyAsync(m => m.Id == id, token);
+        }
+
+        public async Task<bool> ExistsByNameAsync(string name, CancellationToken token)
+        {
+            return await _context.Medicines.AnyAsync(m => m.Name.ToLower() == name.ToLower(), token);
+        }
+
+        public async Task<bool> ExistsByNameAsync(Guid excludeId, string name, CancellationToken token)
+        {
+            return await _context.Medicines.AnyAsync(m => m.Id != excludeId && m.Name.ToLower() == name.ToLower(), token);
         }
 
         public bool Exists(Guid id) => throw new NotImplementedException();

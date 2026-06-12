@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react'
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import {
@@ -139,8 +139,6 @@ import {
 } from './styled'
 
 import {
-  mockMedicines,
-  mockPatients,
   Medicine,
   MedicineOperationLog,
   MedicineStatus,
@@ -150,6 +148,18 @@ import {
   MedicineUnit,
   computeMedicineStatus
 } from 'data/mockData'
+
+import {
+  fetchAllMedicines,
+  createMedicine,
+  updateMedicine,
+  deleteMedicine,
+  recordReceipt,
+  recordWriteoff
+} from 'api/medicinesApi'
+
+import { fetchAllPatients } from 'api/patientsApi'
+import { toast } from 'react-toastify'
 
 const CURRENT_USER = { id: 'STAFF-01', name: 'Иванова И.И.' }
 
@@ -204,7 +214,53 @@ const formatDateTime = (date: string) => {
 const genId = () => `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
 const MedicinesPage: React.FC = () => {
-  const [medicines, setMedicines] = useState<Medicine[]>(mockMedicines)
+  const [medicines, setMedicines] = useState<Medicine[]>([])
+  const [patients, setPatients] = useState<any[]>([])
+
+  const loadData = useCallback(async () => {
+    try {
+      const [medsData, patientsData] = await Promise.all([fetchAllMedicines(), fetchAllPatients()])
+      const normalized = medsData.map((m) => {
+        const opLog = (m.operationLog || []).map((log) => {
+          let logType: any = 'adjustment'
+          if (log.type) {
+            const lower = log.type.toLowerCase()
+            if (lower === 'получено' || lower === 'receipt' || lower === 'поступление') logType = 'receipt'
+            else if (lower === 'списано' || lower === 'writeoff' || lower === 'списание') logType = 'writeoff'
+            else if (lower === 'откорректировано' || lower === 'adjustment' || lower === 'корректировка') logType = 'adjustment'
+          }
+          return {
+            ...log,
+            type: logType
+          }
+        })
+
+        let lastOp: any = undefined
+        if (opLog.length > 0) {
+          lastOp = opLog[0].type
+        } else if (m.lastOperation) {
+          const lower = m.lastOperation.toLowerCase()
+          if (lower === 'получено' || lower === 'receipt' || lower === 'поступление') lastOp = 'receipt'
+          else if (lower === 'списано' || lower === 'writeoff' || lower === 'списание') lastOp = 'writeoff'
+          else if (lower === 'откорректировано' || lower === 'adjustment' || lower === 'корректировка') lastOp = 'adjustment'
+        }
+
+        return {
+          ...m,
+          status: computeMedicineStatus(m.currentBalance, m.minBalance),
+          lastOperation: lastOp,
+          operationLog: opLog
+        }
+      })
+      setMedicines(normalized)
+      setPatients(patientsData)
+    } catch (e) {
+      console.error('Failed to load medicines or patients', e)
+    }
+  }, [])
+  useEffect(() => {
+    loadData()
+  }, [loadData])
 
   const [search, setSearch] = useState('')
 
@@ -247,10 +303,8 @@ const MedicinesPage: React.FC = () => {
     comment: ''
   })
 
-
   const [writeoffError, setWriteoffError] = useState('')
   const [patientDropdown, setPatientDropdown] = useState(false)
-
 
   const [historySearch, setHistorySearch] = useState('')
   const [historyFilterType, setHistoryFilterType] = useState<string>('')
@@ -285,6 +339,51 @@ const MedicinesPage: React.FC = () => {
     [drawerMedicineId, medicines]
   )
 
+  const resetFilters = useCallback(() => {
+    setSearch('')
+    setFilterCategory('')
+    setFilterOnlyActive(false)
+    setFilterOnlyCompleted(false)
+    setFilterHideEmpty(false)
+    setFilterWarnings(false)
+    setFilterReceiptDateFrom('')
+    setFilterReceiptDateTo('')
+    setFilterWriteOffDateFrom('')
+    setFilterWriteOffDateTo('')
+    setFilterOpType('')
+    setFilterBalanceLessThan('')
+    setPage(1)
+  }, [])
+  const hasActiveFilters = useMemo(
+    () =>
+      search !== '' ||
+      filterCategory !== '' ||
+      filterOnlyActive ||
+      filterOnlyCompleted ||
+      filterHideEmpty ||
+      filterWarnings ||
+      filterReceiptDateFrom !== '' ||
+      filterReceiptDateTo !== '' ||
+      filterWriteOffDateFrom !== '' ||
+      filterWriteOffDateTo !== '' ||
+      filterOpType !== '' ||
+      filterBalanceLessThan !== '',
+    [
+      search,
+      filterCategory,
+      filterOnlyActive,
+      filterOnlyCompleted,
+      filterHideEmpty,
+      filterWarnings,
+      filterReceiptDateFrom,
+      filterReceiptDateTo,
+      filterWriteOffDateFrom,
+      filterWriteOffDateTo,
+      filterOpType,
+      filterBalanceLessThan
+    ]
+  )
+
   const filteredMedicines = useMemo(() => {
     const q = search.toLowerCase().trim()
     return medicines.filter((m) => {
@@ -292,12 +391,12 @@ const MedicinesPage: React.FC = () => {
 
       if (q) {
         const match =
-          m.name.toLowerCase().includes(q) ||
-          m.unit.toLowerCase().includes(q) ||
+          (m.name || '').toLowerCase().includes(q) ||
+          (m.unit || '').toLowerCase().includes(q) ||
           (m.lastReceiptFrom || '').toLowerCase().includes(q) ||
           (m.lastChangedBy || '').toLowerCase().includes(q) ||
-          STATUS_LABELS[m.status].toLowerCase().includes(q) ||
-          m.operationLog.some((l) => l.performedBy.toLowerCase().includes(q))
+          (STATUS_LABELS[m.status] || '').toLowerCase().includes(q) ||
+          (m.operationLog || []).some((l) => (l.performedBy || '').toLowerCase().includes(q))
         if (!match) return false
       }
 
@@ -364,7 +463,6 @@ const MedicinesPage: React.FC = () => {
     return { total: active.length, low, empty, todayOps }
   }, [medicines])
 
-
   const openDrawer = useCallback((med: Medicine) => {
     setDrawerMedicineId(med.id)
     setDrawerTab('overview')
@@ -387,204 +485,133 @@ const MedicinesPage: React.FC = () => {
 
   const closeDrawer = () => setDrawerMedicineId(null)
 
-  const handleReceiptSave = () => {
+  const handleReceiptSave = async () => {
     if (!selectedMedicine) return
     const qty = Number(receiptForm.quantity)
     if (!qty || qty <= 0) return
 
-    const newLog: MedicineOperationLog = {
-      id: genId(),
-      date: new Date(receiptForm.date + 'T' + new Date().toTimeString().slice(0, 5)).toISOString(),
-      type: 'receipt',
-      quantity: qty,
-      balanceAfter: selectedMedicine.currentBalance + qty,
-      performedBy: CURRENT_USER.name,
-      performedById: CURRENT_USER.id,
-      comment: receiptForm.comment,
-      supplier: receiptForm.supplier
-    }
-
-    setMedicines((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedMedicine.id) return m
-        const newBalance = m.currentBalance + qty
-        return {
-          ...m,
-          currentBalance: newBalance,
-          totalReceived: m.totalReceived + qty,
-          lastReceiptDate: receiptForm.date,
-          lastReceiptFrom: receiptForm.supplier || m.lastReceiptFrom,
-          lastOperation: 'receipt' as OperationType,
-          lastChangedBy: CURRENT_USER.name,
-          lastUpdated: new Date().toISOString(),
-          status: computeMedicineStatus(newBalance, m.minBalance),
-          operationLog: [newLog, ...m.operationLog]
-        }
+    try {
+      await recordReceipt(selectedMedicine.id, {
+        date: receiptForm.date,
+        quantity: qty,
+        supplier: receiptForm.supplier,
+        comment: receiptForm.comment
       })
-    )
-
-    setReceiptForm((prev) => ({ ...prev, quantity: '', supplier: '', comment: '' }))
-    setDrawerTab('overview')
+      await loadData()
+      setReceiptForm((prev) => ({ ...prev, quantity: '', supplier: '', comment: '' }))
+      setDrawerTab('overview')
+      toast.success('Поступление успешно записано!')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || 'Ошибка при записи поступления')
+    }
   }
 
-  const handleWriteoffSave = () => {
+  const handleWriteoffSave = async () => {
     if (!selectedMedicine) return
     const qty = Number(writeoffForm.quantity)
     if (!qty || qty <= 0) return
 
     if (qty > selectedMedicine.currentBalance) {
       setWriteoffError('Недостаточно препарата на складе')
+      toast.error('Недостаточно препарата на складе')
       return
     }
     setWriteoffError('')
 
-    const newLog: MedicineOperationLog = {
-      id: genId(),
-      date: new Date(writeoffForm.date + 'T' + new Date().toTimeString().slice(0, 5)).toISOString(),
-      type: 'writeoff',
-      quantity: qty,
-      balanceAfter: selectedMedicine.currentBalance - qty,
-      performedBy: CURRENT_USER.name,
-      performedById: CURRENT_USER.id,
-      comment: writeoffForm.comment,
-      reason: writeoffForm.reason,
-      patientId: writeoffForm.selectedPatientId || undefined,
-      patientName: writeoffForm.selectedPatientName || undefined
-    }
-
-    setMedicines((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedMedicine.id) return m
-        const newBalance = m.currentBalance - qty
-        return {
-          ...m,
-          currentBalance: newBalance,
-          totalWrittenOff: m.totalWrittenOff + qty,
-          lastWriteOffDate: writeoffForm.date,
-          lastOperation: 'writeoff' as OperationType,
-          lastChangedBy: CURRENT_USER.name,
-          lastUpdated: new Date().toISOString(),
-          status: computeMedicineStatus(newBalance, m.minBalance),
-          operationLog: [newLog, ...m.operationLog]
-        }
+    try {
+      await recordWriteoff(selectedMedicine.id, {
+        date: writeoffForm.date,
+        quantity: qty,
+        reason: writeoffForm.reason,
+        patientId: writeoffForm.selectedPatientId || undefined,
+        patientName: writeoffForm.selectedPatientName || undefined,
+        comment: writeoffForm.comment
       })
-    )
-
-    setWriteoffForm((prev) => ({
-      ...prev,
-      quantity: '',
-      patientQuery: '',
-      selectedPatientId: '',
-      selectedPatientName: '',
-      comment: '',
-      date: new Date().toISOString().slice(0, 10)
-    }))
-    setDrawerTab('overview')
+      await loadData()
+      setWriteoffForm((prev) => ({
+        ...prev,
+        quantity: '',
+        patientQuery: '',
+        selectedPatientId: '',
+        selectedPatientName: '',
+        comment: '',
+        date: new Date().toISOString().slice(0, 10)
+      }))
+      setDrawerTab('overview')
+      toast.success('Списание успешно записано!')
+    } catch (e: any) {
+      setWriteoffError(e.message || 'Ошибка списания')
+      toast.error(e.message || 'Ошибка при записи списания')
+    }
   }
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (!selectedMedicine) return
     const newBalance = Number(editForm.currentBalance)
     const newMin = Number(editForm.minBalance)
-    const balanceChanged = newBalance !== selectedMedicine.currentBalance
 
-    const adjustmentLog: MedicineOperationLog | null = balanceChanged
-      ? {
-          id: genId(),
-          date: new Date().toISOString(),
-          type: 'adjustment',
-          quantity: Math.abs(newBalance - selectedMedicine.currentBalance),
-          balanceAfter: newBalance,
-          performedBy: CURRENT_USER.name,
-          performedById: CURRENT_USER.id,
-          comment: `Корректировка остатка с ${selectedMedicine.currentBalance} до ${newBalance}`
-        }
-      : null
-
-    setMedicines((prev) =>
-      prev.map((m) => {
-        if (m.id !== selectedMedicine.id) return m
-        return {
-          ...m,
-          name: editForm.name,
-          description: editForm.description,
-          category: editForm.category,
-          unit: editForm.unit,
-          minBalance: newMin,
-          currentBalance: newBalance,
-          status: computeMedicineStatus(newBalance, newMin),
-          lastChangedBy: CURRENT_USER.name,
-          lastUpdated: new Date().toISOString(),
-          lastOperation: balanceChanged ? 'adjustment' : m.lastOperation,
-          operationLog: adjustmentLog ? [adjustmentLog, ...m.operationLog] : m.operationLog
-        }
+    try {
+      await updateMedicine(selectedMedicine.id, {
+        name: editForm.name,
+        description: editForm.description,
+        category: editForm.category,
+        unit: editForm.unit,
+        currentBalance: newBalance,
+        minBalance: newMin
       })
-    )
-    setShowEditModal(false)
+      await loadData()
+      setShowEditModal(false)
+      toast.success('Препарат успешно изменен!')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || 'Ошибка при изменении препарата')
+    }
   }
 
-  const handleAddSave = () => {
+  const handleAddSave = async () => {
     if (!addForm.name.trim()) return
     const balance = Number(addForm.initialBalance) || 0
     const minBal = Number(addForm.minBalance) || 0
-    const now = new Date().toISOString()
-    const id = `MED-${Date.now()}`
 
-    const initLog: MedicineOperationLog = {
-      id: genId(),
-      date: now,
-      type: 'receipt',
-      quantity: balance,
-      balanceAfter: balance,
-      performedBy: CURRENT_USER.name,
-      performedById: CURRENT_USER.id,
-      comment: 'Первичный ввод препарата'
+    try {
+      await createMedicine({
+        name: addForm.name.trim(),
+        description: addForm.description.trim(),
+        category: addForm.category,
+        unit: addForm.unit,
+        initialBalance: balance,
+        minBalance: minBal
+      })
+      await loadData()
+      setShowAddModal(false)
+      setAddForm({
+        name: '',
+        description: '',
+        category: 'Прочее',
+        unit: 'табл.',
+        initialBalance: '',
+        minBalance: ''
+      })
+      toast.success('Препарат добавлен!')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || 'Ошибка при добавлении препарата')
     }
-
-    const newMed: Medicine = {
-      id,
-      name: addForm.name.trim(),
-      description: addForm.description.trim(),
-      category: addForm.category,
-      unit: addForm.unit,
-      currentBalance: balance,
-      minBalance: minBal,
-      totalReceived: balance,
-      totalWrittenOff: 0,
-      lastReceiptDate: balance > 0 ? now.slice(0, 10) : null,
-      lastWriteOffDate: null,
-      lastReceiptFrom: null,
-      lastOperation: balance > 0 ? 'receipt' : null,
-      lastChangedBy: CURRENT_USER.name,
-      lastUpdated: now,
-      status: computeMedicineStatus(balance, minBal),
-      isArchived: false,
-      operationLog: balance > 0 ? [initLog] : []
-    }
-
-    setMedicines((prev) => [newMed, ...prev])
-    setShowAddModal(false)
-    setAddForm({
-      name: '',
-      description: '',
-      category: 'Прочее',
-      unit: 'табл.',
-      initialBalance: '',
-      minBalance: ''
-    })
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedMedicine) return
-    if (selectedMedicine.operationLog.length === 0) {
-      setMedicines((prev) => prev.filter((m) => m.id !== selectedMedicine.id))
-    } else {
-      setMedicines((prev) =>
-        prev.map((m) => (m.id === selectedMedicine.id ? { ...m, isArchived: true } : m))
-      )
+    try {
+      await deleteMedicine(selectedMedicine.id)
+      await loadData()
+      setShowDeleteConfirm(false)
+      closeDrawer()
+      toast.success('Препарат успешно удален!')
+    } catch (e: any) {
+      console.error(e)
+      toast.error(e.message || 'Ошибка при удалении препарата')
     }
-    setShowDeleteConfirm(false)
-    closeDrawer()
   }
 
   const filteredHistory = useMemo(() => {
@@ -595,10 +622,10 @@ const MedicinesPage: React.FC = () => {
       if (historySearch.trim()) {
         const q = historySearch.toLowerCase()
         return (
-          l.performedBy.toLowerCase().includes(q) ||
-          l.comment.toLowerCase().includes(q) ||
+          (l.performedBy || '').toLowerCase().includes(q) ||
+          (l.comment || '').toLowerCase().includes(q) ||
           (l.patientName || '').toLowerCase().includes(q) ||
-          OP_LABELS[l.type].toLowerCase().includes(q)
+          (OP_LABELS[l.type] || '').toLowerCase().includes(q)
         )
       }
       return true
@@ -614,38 +641,93 @@ const MedicinesPage: React.FC = () => {
   const filteredPatients = useMemo(() => {
     if (!writeoffForm.patientQuery.trim()) return []
     const q = writeoffForm.patientQuery.toLowerCase()
-    return mockPatients
+    return patients
       .filter(
         (p) =>
           `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase().includes(q) ||
           p.medcardNum.toLowerCase().includes(q)
       )
       .slice(0, 6)
-  }, [writeoffForm.patientQuery])
+  }, [patients, writeoffForm.patientQuery])
 
   const handleHistoryExport = async () => {
-    if (!historyExportRef.current) return
-    setIsExporting(true)
-    try {
-      const canvas = await html2canvas(historyExportRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false
+  if (!historyExportRef.current) return
+  setIsExporting(true)
+
+  const scrollContainers: { el: HTMLElement; overflow: string; overflowX: string }[] = []
+  let node: HTMLElement | null = historyExportRef.current.parentElement
+  while (node) {
+    const style = window.getComputedStyle(node)
+    if (
+      style.overflow === 'auto' || style.overflow === 'hidden' || style.overflow === 'scroll' ||
+      style.overflowX === 'auto' || style.overflowX === 'hidden' || style.overflowX === 'scroll'
+    ) {
+      scrollContainers.push({
+        el: node,
+        overflow: node.style.overflow,
+        overflowX: node.style.overflowX
       })
-      const imgData = canvas.toDataURL('image/png')
-      const pdf = new jsPDF({
-        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
-      })
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height)
-      pdf.save(`История_${selectedMedicine?.name}_${new Date().toLocaleDateString('ru-RU')}.pdf`)
-    } catch (e) {
-      console.error('PDF export error', e)
-    } finally {
-      setIsExporting(false)
+      node.style.overflow = 'visible'
+      node.style.overflowX = 'visible'
     }
+    node = node.parentElement
   }
+
+  const refEl = historyExportRef.current
+  const prevWidth = refEl.style.width
+  const prevOverflow = refEl.style.overflow
+  refEl.style.width = refEl.scrollWidth + 'px'
+  refEl.style.overflow = 'visible'
+
+  try {
+    const canvas = await html2canvas(refEl, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      width: refEl.scrollWidth,
+      height: refEl.scrollHeight,
+      windowWidth: refEl.scrollWidth,
+    })
+
+    const imgData = canvas.toDataURL('image/png')
+
+    const A4_W = 297
+    const A4_H = 210
+    const imgW = canvas.width
+    const imgH = canvas.height
+    const ratio = imgW / imgH
+
+    let pdfW = A4_W
+    let pdfH = A4_W / ratio
+    if (pdfH > A4_H) {
+      pdfH = A4_H
+      pdfW = A4_H * ratio
+    }
+
+    const { jsPDF } = await import('jspdf')
+    const pdf = new jsPDF({
+      orientation: ratio >= 1 ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    })
+
+    const offsetX = (pdf.internal.pageSize.getWidth() - pdfW) / 2
+    const offsetY = (pdf.internal.pageSize.getHeight() - pdfH) / 2
+
+    pdf.addImage(imgData, 'PNG', offsetX, offsetY, pdfW, pdfH)
+    pdf.save(`История_${selectedMedicine?.name}_${new Date().toLocaleDateString('ru-RU')}.pdf`)
+  } catch (e) {
+    console.error('PDF export error', e)
+  } finally {
+    refEl.style.width = prevWidth
+    refEl.style.overflow = prevOverflow
+    scrollContainers.forEach(({ el, overflow, overflowX }) => {
+      el.style.overflow = overflow
+      el.style.overflowX = overflowX
+    })
+    setIsExporting(false)
+  }
+}
 
   const openEditModal = () => {
     if (!selectedMedicine) return
@@ -666,11 +748,12 @@ const MedicinesPage: React.FC = () => {
     return <CheckCircle size={11} />
   }
 
-  const OpIcon = ({ type }: { type: OperationType }) => {
-    if (type === 'receipt') return <TrendingUp size={11} />
-    if (type === 'writeoff') return <TrendingDown size={11} />
-    return <RefreshCw size={11} />
-  }
+const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
+  if (type === 'receipt') return <TrendingUp size={11} />
+  if (type === 'writeoff') return <TrendingDown size={11} />
+  if (type === 'adjustment') return <RefreshCw size={11} />
+  return null
+}
 
   return (
     <PageContainer>
@@ -855,10 +938,21 @@ const MedicinesPage: React.FC = () => {
         </ControlCenter>
 
         <ControlRight>
-          <AddButton id="add-medicine-btn" onClick={() => setShowAddModal(true)}>
+          <AddButton
+            id="add-medicine-btn"
+            onClick={() => {
+              setShowAddModal(true)
+            }}
+          >
             <Plus size={16} />
             Добавить препарат
           </AddButton>
+          {hasActiveFilters && (
+            <ExportButton onClick={resetFilters} title="Сбросить все фильтры">
+              <RefreshCw size={15} />
+              Сбросить фильтры
+            </ExportButton>
+          )}
         </ControlRight>
       </ControlBar>
 

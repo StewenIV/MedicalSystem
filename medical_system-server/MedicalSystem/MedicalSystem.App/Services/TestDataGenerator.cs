@@ -83,25 +83,113 @@ namespace MedicalSystem.App.Services
         public static List<Medicine> GenerateMedicines(int count, List<MedicalStaff> staff)
         {
             if (!staff.Any()) return new List<Medicine>();
-            return new Faker<Medicine>("ru").UseSeed(0)
-                .RuleFor(m => m.Id, f => f.Random.Guid())
-                .RuleFor(m => m.Name, f => Truncate($"{f.Commerce.ProductName()} {f.UniqueIndex}", 200))
-                .RuleFor(m => m.Description, f => Truncate(f.Lorem.Sentence(), 1000))
-                .RuleFor(m => m.Category, f => f.PickRandom<MedicineCategory>())
-                .RuleFor(m => m.Unit, f => f.PickRandom<MedicineUnit>())
-                .RuleFor(m => m.CurrentBalance, f => f.Random.Decimal(10, 1000))
-                .RuleFor(m => m.MinBalance, f => f.Random.Decimal(5, 50))
-                .RuleFor(m => m.TotalReceived, f => f.Random.Decimal(1000, 5000))
-                .RuleFor(m => m.TotalWrittenOff, (f, m) => f.Random.Decimal(100, m.TotalReceived))
-                .RuleFor(m => m.LastReceiptDate, f => f.Date.Past(1))
-                .RuleFor(m => m.LastWriteOffDate, (f, m) => f.Date.Between(m.LastReceiptDate.Value, DateTime.Now))
-                .RuleFor(m => m.LastReceiptFrom, f => Truncate(f.Company.CompanyName(), 200))
-                .RuleFor(m => m.LastOperation, f => f.PickRandom<OperationType>())
-                .RuleFor(m => m.LastChangedById, f => f.PickRandom(staff).Id)
-                .RuleFor(m => m.LastUpdated, f => f.Date.Past(1))
-                .RuleFor(m => m.Status, f => f.PickRandom<MedicineStatus>())
-                .RuleFor(m => m.IsArchived, f => f.Random.Bool(0.1f))
-                .Generate(count);
+            
+            var realMedicines = new[]
+            {
+                new { Name = "Амоксициллин", Category = MedicineCategory.Antibiotics, Unit = MedicineUnit.Tablet, Strengths = new[] { "250 мг", "500 мг", "1000 мг" } },
+                new { Name = "Цефтриаксон", Category = MedicineCategory.Antibiotics, Unit = MedicineUnit.Vial, Strengths = new[] { "1 г", "2 г" } },
+                new { Name = "Азитромицин", Category = MedicineCategory.Antibiotics, Unit = MedicineUnit.Tablet, Strengths = new[] { "250 мг", "500 мг" } },
+                new { Name = "Амоксиклав", Category = MedicineCategory.Antibiotics, Unit = MedicineUnit.Tablet, Strengths = new[] { "375 мг", "625 мг", "1000 мг" } },
+                new { Name = "Левофлоксацин", Category = MedicineCategory.Antibiotics, Unit = MedicineUnit.Tablet, Strengths = new[] { "250 мг", "500 мг" } },
+                
+                new { Name = "Ибупрофен", Category = MedicineCategory.Analgesics, Unit = MedicineUnit.Tablet, Strengths = new[] { "200 мг", "400 мг", "600 мг" } },
+                new { Name = "Парацетамол", Category = MedicineCategory.Analgesics, Unit = MedicineUnit.Tablet, Strengths = new[] { "325 мг", "500 мг" } },
+                new { Name = "Анальгин", Category = MedicineCategory.Analgesics, Unit = MedicineUnit.Tablet, Strengths = new[] { "500 мг" } },
+                new { Name = "Кеторолак", Category = MedicineCategory.Analgesics, Unit = MedicineUnit.Tablet, Strengths = new[] { "10 мг" } },
+                new { Name = "Диклофенак", Category = MedicineCategory.Analgesics, Unit = MedicineUnit.Ampule, Strengths = new[] { "25 мг/мл 3 мл" } },
+                new { Name = "Нимесулид", Category = MedicineCategory.Analgesics, Unit = MedicineUnit.Tablet, Strengths = new[] { "100 мг" } },
+                
+                new { Name = "Дексаметазон", Category = MedicineCategory.Hormones, Unit = MedicineUnit.Ampule, Strengths = new[] { "4 мг/мл 1 мл" } },
+                new { Name = "Преднизолон", Category = MedicineCategory.Hormones, Unit = MedicineUnit.Tablet, Strengths = new[] { "5 мг" } },
+                new { Name = "Метилпреднизолон", Category = MedicineCategory.Hormones, Unit = MedicineUnit.Tablet, Strengths = new[] { "4 мг", "16 мг" } },
+                new { Name = "L-Тироксин", Category = MedicineCategory.Hormones, Unit = MedicineUnit.Tablet, Strengths = new[] { "50 мкг", "100 мкг" } },
+                
+                new { Name = "Каптоприл", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "25 мг", "50 мг" } },
+                new { Name = "Аторвастатин", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "10 мг", "20 мг", "40 мг" } },
+                new { Name = "Лозартан", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "25 мг", "50 мг", "100 мг" } },
+                new { Name = "Бисопролол", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "2.5 мг", "5 мг", "10 мг" } },
+                new { Name = "Спиронолактон", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "25 мг", "100 мг" } },
+                new { Name = "Амлодипин", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "5 мг", "10 мг" } },
+                new { Name = "Лизиноприл", Category = MedicineCategory.Cardio, Unit = MedicineUnit.Tablet, Strengths = new[] { "5 мг", "10 мг", "20 мг" } },
+                
+                new { Name = "Хлоргексидин 0.05%", Category = MedicineCategory.Antiseptics, Unit = MedicineUnit.Ml, Strengths = new[] { "100 мл" } },
+                new { Name = "Мирамистин 0.01%", Category = MedicineCategory.Antiseptics, Unit = MedicineUnit.Ml, Strengths = new[] { "150 мл" } },
+                new { Name = "Перекись водорода 3%", Category = MedicineCategory.Antiseptics, Unit = MedicineUnit.Ml, Strengths = new[] { "100 мл" } },
+                
+                new { Name = "Натрия хлорид 0.9%", Category = MedicineCategory.Other, Unit = MedicineUnit.Vial, Strengths = new[] { "200 мл", "400 мл" } },
+                new { Name = "Глюкоза 5%", Category = MedicineCategory.Other, Unit = MedicineUnit.Vial, Strengths = new[] { "200 мл", "400 мл" } },
+                new { Name = "Инсулин короткий", Category = MedicineCategory.Other, Unit = MedicineUnit.Unit, Strengths = new[] { "100 ЕД/мл 3 мл" } },
+                new { Name = "Магния сульфат 25%", Category = MedicineCategory.Other, Unit = MedicineUnit.Ampule, Strengths = new[] { "5 мл", "10 мл" } }
+            };
+
+            var nonLabStaff = staff.Where(s => s.Position != null && !s.Position.Contains("лаборант") && !s.Position.Contains("Лаборант")).ToList();
+            var allowedStaff = nonLabStaff.Any() ? nonLabStaff : staff;
+
+            var random = new Random(0);
+            var medicines = new List<Medicine>();
+            var generatedNames = new HashSet<string>();
+
+            for (int i = 0; i < count; i++)
+            {
+                var template = realMedicines[random.Next(realMedicines.Length)];
+                var strength = template.Strengths[random.Next(template.Strengths.Length)];
+                var name = $"{template.Name} {strength}";
+                var attempt = 1;
+                while (generatedNames.Contains(name))
+                {
+                    name = $"{template.Name} {strength} (Серия {i + attempt + 100})";
+                    attempt++;
+                }
+                generatedNames.Add(name);
+
+                var minBalance = random.Next(10, 50);
+                decimal currentBalance = 0;
+                
+                var roll = random.Next(0, 100);
+                if (roll < 20) // 20% empty
+                {
+                    currentBalance = 0;
+                }
+                else if (roll < 50) // 30% low balance
+                {
+                    currentBalance = random.Next(1, minBalance + 1);
+                }
+                else // 50% normal balance
+                {
+                    currentBalance = random.Next(minBalance + 1, minBalance + 300);
+                }
+
+                var totalReceived = currentBalance + random.Next(200, 1000);
+                var totalWrittenOff = totalReceived - currentBalance;
+
+                var lastReceiptDate = DateTime.Now.AddDays(-random.Next(1, 30));
+                var lastWriteOffDate = lastReceiptDate.AddDays(random.Next(0, 10));
+
+                var status = currentBalance == 0 ? MedicineStatus.Empty : (currentBalance <= minBalance ? MedicineStatus.Low : MedicineStatus.Norm);
+
+                medicines.Add(new Medicine
+                {
+                    Id = Guid.NewGuid(),
+                    Name = name,
+                    Description = $"Описание для препарата {template.Name}.",
+                    Category = template.Category,
+                    Unit = template.Unit,
+                    CurrentBalance = currentBalance,
+                    MinBalance = minBalance,
+                    TotalReceived = totalReceived,
+                    TotalWrittenOff = totalWrittenOff,
+                    LastReceiptDate = lastReceiptDate,
+                    LastWriteOffDate = lastWriteOffDate,
+                    LastReceiptFrom = "ООО «ФармДистрибьюшн»",
+                    LastOperation = random.Next(0, 2) == 0 ? OperationType.Receipt : OperationType.Writeoff,
+                    LastChangedById = allowedStaff[random.Next(allowedStaff.Count)].Id,
+                    LastUpdated = DateTime.Now.AddHours(-random.Next(1, 24)),
+                    Status = status,
+                    IsArchived = false
+                });
+            }
+
+            return medicines;
         }
 
         public static List<PatientRelative> GeneratePatientRelatives(int count, List<Patient> patients)
@@ -416,14 +504,18 @@ namespace MedicalSystem.App.Services
         public static List<MedicineOperationLog> GenerateMedicineOperationLogs(int count, List<Medicine> medicines, List<MedicalStaff> staff, List<Patient> patients, List<PatientMedication> patientMedications)
         {
             if (!medicines.Any() || !staff.Any()) return new List<MedicineOperationLog>();
+
+            var nonLabStaff = staff.Where(s => s.Position != null && !s.Position.Contains("лаборант") && !s.Position.Contains("Лаборант")).ToList();
+            var allowedStaff = nonLabStaff.Any() ? nonLabStaff : staff;
+
             return new Faker<MedicineOperationLog>("ru").UseSeed(0)
                 .RuleFor(mol => mol.Id, f => f.Random.Guid())
                 .RuleFor(mol => mol.MedicineId, f => f.PickRandom(medicines).Id)
                 .RuleFor(mol => mol.PerformedAt, f => f.Date.Past(1))
                 .RuleFor(mol => mol.Type, f => f.PickRandom<OperationType>())
-                .RuleFor(mol => mol.Quantity, f => f.Random.Decimal(1, 50))
-                .RuleFor(mol => mol.BalanceAfter, (f, mol) => medicines.First(m => m.Id == mol.MedicineId).CurrentBalance)
-                .RuleFor(mol => mol.PerformedById, f => f.PickRandom(staff).Id)
+                .RuleFor(mol => mol.Quantity, f => (decimal)f.Random.Int(1, 50))
+                .RuleFor(mol => mol.BalanceAfter, (f, mol) => (decimal)Math.Round(medicines.First(m => m.Id == mol.MedicineId).CurrentBalance))
+                .RuleFor(mol => mol.PerformedById, f => f.PickRandom(allowedStaff).Id)
                 .RuleFor(mol => mol.PatientId, (f, mol) => mol.Type == OperationType.Writeoff ? f.PickRandom(patients).Id : null)
                 .RuleFor(mol => mol.PrescriptionId, (f, mol) => mol.Type == OperationType.Writeoff ? f.PickRandom(patientMedications).Id : null)
                 .Generate(count);

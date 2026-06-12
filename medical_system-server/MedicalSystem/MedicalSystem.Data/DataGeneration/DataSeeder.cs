@@ -27,6 +27,18 @@ namespace MedicalSystem.Data.DataGeneration
                 
                 var medicalStaff = await GetOrCreateAsync(context, context.MedicalStaff, () => TestDataGenerator.GenerateMedicalStaff(50));
                 var patients = await GetOrCreateAsync(context, context.Patients, () => TestDataGenerator.GeneratePatients(200, medicalStaff, institutions));
+
+                var hasEmpty = await context.Medicines.AnyAsync(m => m.CurrentBalance == 0);
+                if (await context.Medicines.AnyAsync(m => m.Name.Contains("Кошелек") || m.Name.Contains("Большой")) || !hasEmpty)
+                {
+                    logger.LogInformation("Обнаружены старые или однородные данные медикаментов. Очистка таблиц перед повторным заполнением...");
+                    context.BedPrescriptions.RemoveRange(context.BedPrescriptions);
+                    context.PatientMedications.RemoveRange(context.PatientMedications);
+                    context.MedicineOperationLogs.RemoveRange(context.MedicineOperationLogs);
+                    context.Medicines.RemoveRange(context.Medicines);
+                    await context.SaveChangesAsync();
+                }
+
                 var medicines = await GetOrCreateAsync(context, context.Medicines, () => TestDataGenerator.GenerateMedicines(100, medicalStaff));
                 var rooms = await GetOrCreateAsync(context, context.Rooms, () => TestDataGenerator.GenerateRooms(16));
                 
