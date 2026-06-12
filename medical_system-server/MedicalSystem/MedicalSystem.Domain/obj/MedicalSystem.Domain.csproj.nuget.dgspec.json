@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj": {}
+    "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj": {}
   },
   "projects": {
-    "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj": {
+    "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj",
+        "projectUniqueName": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj",
         "projectName": "MedicalSystem.Domain",
-        "projectPath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj",
+        "projectPath": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\MedicalSystem.Domain.csproj",
         "packagesPath": "C:\\Users\\amaca\\.nuget\\packages\\",
-        "outputPath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\obj\\",
+        "outputPath": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\Visual Studio - SDK\\NuGetPackages"

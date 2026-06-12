@@ -23,14 +23,12 @@ namespace MedicalSystem.Data.DataGeneration
                     "UPDATE \"Patients\" SET \"Gender\" = 'Мужской' WHERE \"Gender\" = 'Male'; " +
                     "UPDATE \"Patients\" SET \"Gender\" = 'Женский' WHERE \"Gender\" = 'Female';");
                     
-                var departments = await GetOrCreateAsync(context, context.Departments, () => TestDataGenerator.GenerateDepartments(10));
-                var positions = await GetOrCreateAsync(context, context.Positions, () => TestDataGenerator.GeneratePositions(20));
                 var institutions = await GetOrCreateAsync(context, context.Institutions, () => TestDataGenerator.GenerateInstitutions(5));
                 
-                var medicalStaff = await GetOrCreateAsync(context, context.MedicalStaff, () => TestDataGenerator.GenerateMedicalStaff(50, departments: departments, positions: positions));
-                var patients = await GetOrCreateAsync(context, context.Patients, () => TestDataGenerator.GeneratePatients(200, medicalStaff, departments, institutions));
+                var medicalStaff = await GetOrCreateAsync(context, context.MedicalStaff, () => TestDataGenerator.GenerateMedicalStaff(50));
+                var patients = await GetOrCreateAsync(context, context.Patients, () => TestDataGenerator.GeneratePatients(200, medicalStaff, institutions));
                 var medicines = await GetOrCreateAsync(context, context.Medicines, () => TestDataGenerator.GenerateMedicines(100, medicalStaff));
-                var rooms = await GetOrCreateAsync(context, context.Rooms, () => TestDataGenerator.GenerateRooms(16, departments));
+                var rooms = await GetOrCreateAsync(context, context.Rooms, () => TestDataGenerator.GenerateRooms(16));
                 
                 var hospitalBeds = await GetOrCreateAsync(context, context.HospitalBeds, () => TestDataGenerator.GenerateHospitalBeds(0, rooms, patients));
                 var appointments = await GetOrCreateAsync(context, context.Appointments, () => TestDataGenerator.GenerateAppointments(500, patients, medicalStaff));
@@ -167,8 +165,7 @@ namespace MedicalSystem.Data.DataGeneration
 
             foreach (var staff in staffList)
             {
-                var position = await context.Positions.FindAsync(staff.PositionId);
-                var positionName = position?.Name.ToLower() ?? "";
+                var positionName = staff.Position?.ToLower() ?? "";
 
                 string role = "Doctor";
                 string loginPrefix = "doctor";
@@ -240,6 +237,54 @@ namespace MedicalSystem.Data.DataGeneration
                 }
             }
 
+            await context.SaveChangesAsync();
+
+            // Sync all existing MedicalStaff positions to match their User's Role,
+            // this fixes the old bogus data like "Глобальный оптимизационный помощник".
+            // It also ensures every staff User has a corresponding MedicalStaff record.
+            var usersWithStaff = await context.Users.Include(u => u.MedicalStaff).ToListAsync();
+            var staffRoles = new[] { "Doctor", "ChiefDoctor", "HeadNurse", "Nurse", "LaboratoryEmployee" };
+
+            foreach (var user in usersWithStaff)
+            {
+                if (staffRoles.Contains(user.Role))
+                {
+                    if (user.MedicalStaff == null)
+                    {
+                        var position = user.Role switch
+                        {
+                            "Doctor" => "Врач",
+                            "ChiefDoctor" => "Главный врач",
+                            "HeadNurse" => "Старшая медицинская сестра",
+                            "Nurse" => "Медицинская сестра",
+                            "LaboratoryEmployee" => "Лаборант",
+                            _ => "Сотрудник"
+                        };
+
+                        var staff = new MedicalStaff
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = user.DisplayName ?? user.Login,
+                            Position = position
+                        };
+                        context.MedicalStaff.Add(staff);
+                        user.MedicalStaff = staff;
+                        user.MedicalStaffId = staff.Id;
+                    }
+                    else
+                    {
+                        user.MedicalStaff.Position = user.Role switch
+                        {
+                            "Doctor" => "Врач",
+                            "ChiefDoctor" => "Главный врач",
+                            "HeadNurse" => "Старшая медицинская сестра",
+                            "Nurse" => "Медицинская сестра",
+                            "LaboratoryEmployee" => "Лаборант",
+                            _ => user.Role
+                        };
+                    }
+                }
+            }
             await context.SaveChangesAsync();
         }
     }

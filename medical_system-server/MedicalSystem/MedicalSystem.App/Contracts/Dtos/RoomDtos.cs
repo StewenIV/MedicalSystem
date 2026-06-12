@@ -41,7 +41,6 @@ namespace MedicalSystem.App.Contracts.Dtos
         public RoomType Type { get; set; }
         public RoomGender Gender { get; set; }
         public RoomPriority Priority { get; set; }
-        public Guid? DepartmentId { get; set; }
         public List<UpdateRoomBedDto> Beds { get; set; } = new List<UpdateRoomBedDto>();
     }
 

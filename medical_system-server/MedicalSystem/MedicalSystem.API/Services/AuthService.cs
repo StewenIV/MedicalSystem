@@ -76,6 +76,31 @@ namespace MedicalSystem.API.Services
                 CreatedAt = DateTime.UtcNow
             };
 
+            // If a staff user is registered without a MedicalStaffId, auto-create a MedicalStaff record
+            var staffRoles = new[] { "Doctor", "Nurse", "HeadNurse", "ChiefDoctor", "LaboratoryEmployee" };
+            if (dto.MedicalStaffId == null && staffRoles.Contains(dto.Role))
+            {
+                var position = dto.Role switch
+                {
+                    "Doctor" => "Врач",
+                    "ChiefDoctor" => "Главный врач",
+                    "HeadNurse" => "Старшая медицинская сестра",
+                    "Nurse" => "Медицинская сестра",
+                    "LaboratoryEmployee" => "Лаборант",
+                    _ => "Сотрудник"
+                };
+
+                var staff = new MedicalStaff
+                {
+                    Id = Guid.NewGuid(),
+                    Name = dto.DisplayName ?? dto.Login,
+                    Position = position
+                };
+                
+                _context.MedicalStaff.Add(staff);
+                user.MedicalStaffId = staff.Id;
+            }
+
             _context.Users.Add(user);
             await _context.SaveChangesAsync(token);
             return user;

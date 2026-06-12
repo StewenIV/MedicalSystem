@@ -32,7 +32,7 @@ namespace MedicalSystem.Data.Storages
                     performedStaffId = user.MedicalStaffId;
                     if (user.MedicalStaff != null)
                     {
-                        doneByText = $"{user.MedicalStaff.Name} ({user.MedicalStaff.Position.Name})";
+                        doneByText = $"{user.MedicalStaff.Name} ({user.MedicalStaff.Position})";
                     }
                     else
                     {

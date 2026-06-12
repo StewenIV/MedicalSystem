@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using MedicalSystem.Domain.Enums;
@@ -41,7 +41,6 @@ namespace MedicalSystem.Domain.Models
         public string? MaritalStatus { get; set; }
 
         public Guid? DoctorId { get; set; }
-        public Guid? DepartmentId { get; set; }
         public Guid? InstitutionId { get; set; }
 
         [Required]
@@ -58,7 +57,6 @@ namespace MedicalSystem.Domain.Models
 
         // Navigation properties
         public virtual MedicalStaff Doctor { get; set; }
-        public virtual Department Department { get; set; }
         public virtual Institution Institution { get; set; }
         public virtual ICollection<PatientRelative> PatientRelatives { get; set; }
         public virtual ICollection<Allergy> Allergies { get; set; }

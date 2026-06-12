@@ -489,7 +489,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
 
   if (form.comorbidities && form.comorbidities.length > 0) {
     const comorbid = form.comorbidities.map(c => `${c.diagnosis} (${c.activity})`).join(', ')
-    vitaeParts.push(`Сопутствующие заболевания: ${comorbid}¹`)
+    vitaeParts.push(`Сопутствующие заболевания: ${comorbid}`)
   }
 
   if (form.badHabitsStatus === 'none') {
@@ -867,7 +867,6 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     }
   }, [currentUserDisplayName, patient, editingEncounterId])
 
-  // Load existing primary inspection data if available and no draft
   useEffect(() => {
     if (loadedPatientIdRef.current === patientId) return
 
@@ -985,7 +984,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     try {
       const text = generatePrimaryText(form, patient)
       
-      const finalForm = { ...form, generatedText: text, status: 'completed' as const }
+      const finalForm = { ...form, generatedText: text, status: 'completed' as const, doctorDisplayName: form.doctor }
       const formJson = JSON.stringify(finalForm)
       
       setForm(finalForm)
@@ -1014,40 +1013,48 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               name: c.diagnosis,
               isActive: c.activity === 'Активное' || c.activity === 'active' || c.activity === 'Активно',
               diseaseStatus: c.activity || 'Активное',
-              diagnosisDate: new Date().toISOString()
+              diagnosisDate: c.diagnosisDate ? new Date(c.diagnosisDate).toISOString() : new Date().toISOString(),
+              severity: c.severity || '',
+              complications: c.complications || ''
             })
           }
         })
       }
 
       const allergies: any[] = (form.allergies || []).map(a => ({
-        id: a.id?.startsWith('alg-') || a.id?.startsWith('all-') ? '00000000-0000-0000-0000-000000000000' : a.id,
+        id: a.id?.startsWith('alg-') || a.id?.startsWith('all-') || a.id?.startsWith('a-') ? '00000000-0000-0000-0000-000000000000' : a.id,
         name: a.name,
         reaction: a.reaction,
-        date: new Date().toISOString()
+        date: a.date ? new Date(a.date).toISOString() : null,
+        comment: a.comment || ''
       }))
 
       const operations: any[] = (form.operations || []).map(o => ({
         id: o.id?.startsWith('op-') ? '00000000-0000-0000-0000-000000000000' : o.id,
         name: o.name,
         date: o.date ? new Date(o.date).toISOString() : undefined,
-        description: o.comment || ''
+        description: o.comment || '',
+        diagnosis: o.diagnosis || '',
+        result: o.result || '',
+        complications: o.complications || ''
       }))
 
       const prescriptions: any[] = form.prescriptions
         .filter(p => p.action !== 'cancel')
         .map(p => {
+          const original = (patient as any)?.prescriptions?.find((op: any) => op.id === p.id)
           const doseStr = p.dose && p.unit ? `${p.dose} ${p.unit}` : p.dose;
           return {
-            id: p.id?.startsWith('med-') || p.id?.startsWith('np-') ? '00000000-0000-0000-0000-000000000000' : p.id,
+            ...(original || {}),
+            id: p.id?.startsWith('med-') || p.id?.startsWith('np-') || p.id?.startsWith('presc-') ? '00000000-0000-0000-0000-000000000000' : p.id,
             drug: p.drug,
             dose: doseStr,
             form: p.form,
             route: p.route,
             regimen: p.frequency || p.regimen,
-            dateStart: new Date().toISOString(),
-            doctorName: form.doctor,
-            comment: p.comment || ''
+            dateStart: original?.dateStart || new Date().toISOString(),
+            doctorName: original?.doctorName || form.doctor,
+            comment: p.comment || original?.comment || ''
           }
         })
 
@@ -1071,7 +1078,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           temp: form.complaintParams.fever?.maxTemp || undefined
         },
         form.primaryDiagnosis,
-        activeMeds,
+        undefined, // meds shouldn't be overwritten by prescriptions
         {
           doctorName: form.doctor,
           departmentName: form.department,
@@ -1521,14 +1528,26 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 {form.allergyStatus === 'has' && (
                   <div style={{ marginTop: 10 }}>
                     {form.allergies.map((a, i) => (
-                      <div key={a.id} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-                        <input style={{ ...s.input, flex: 1 }} placeholder="Аллерген" value={a.name} onChange={e => setField('allergies', form.allergies.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
-                        <input style={{ ...s.input, flex: 1 }} placeholder="Реакция" value={a.reaction} onChange={e => setField('allergies', form.allergies.map((x, j) => j === i ? { ...x, reaction: e.target.value } : x))} />
-                        <button onClick={() => setField('allergies', form.allergies.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
+                      <div key={a.id} style={{ background: '#fef9f0', borderRadius: 8, padding: '10px 12px', marginBottom: 8, border: '1px solid #fed7aa' }}>
+                        <div style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+                          <input style={{ ...s.input, flex: 2 }} placeholder="Аллерген" value={a.name} onChange={e => setField('allergies', form.allergies.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+                          <input style={{ ...s.input, flex: 2 }} placeholder="Реакция" value={a.reaction} onChange={e => setField('allergies', form.allergies.map((x, j) => j === i ? { ...x, reaction: e.target.value } : x))} />
+                          <button onClick={() => setField('allergies', form.allergies.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 8 }}>
+                          <div>
+                            <label style={s.label}>Дата выявления</label>
+                            <input type="date" style={s.input} value={a.date ?? ''} onChange={e => setField('allergies', form.allergies.map((x, j) => j === i ? { ...x, date: e.target.value } : x))} />
+                          </div>
+                          <div>
+                            <label style={s.label}>Комментарий</label>
+                            <input style={s.input} placeholder="Доп. сведения..." value={a.comment ?? ''} onChange={e => setField('allergies', form.allergies.map((x, j) => j === i ? { ...x, comment: e.target.value } : x))} />
+                          </div>
+                        </div>
                       </div>
                     ))}
                     <button
-                      onClick={() => setField('allergies', [...form.allergies, { id: `a-${Date.now()}`, name: '', reaction: '' }])}
+                      onClick={() => setField('allergies', [...form.allergies, { id: `a-${Date.now()}`, name: '', reaction: '', date: '', comment: '' }])}
                       style={{ marginTop: 6, fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}
                     >
                       <Plus size={14} /> Добавить аллергию
@@ -1543,22 +1562,41 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 {form.operationsStatus !== 'none' && (
                   <div style={{ marginTop: 10 }}>
                     {form.operations.map((op, i) => (
-                      <div key={op.id} style={{ background: '#f8fafc', borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                      <div key={op.id} style={{ background: '#f8fafc', borderRadius: 8, padding: 10, marginBottom: 8, border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
                           <div style={{ flex: '0 0 140px' }}>
                             <label style={s.label}>Дата</label>
                             <input type="date" style={s.input} value={op.date} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, date: e.target.value } : x))} />
                           </div>
                           <div style={{ flex: 1 }}>
-                            <label style={s.label}>Операция</label>
+                            <label style={s.label}>Название операции</label>
                             <input style={s.input} placeholder="Название" value={op.name} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
                           </div>
                           <button onClick={() => setField('operations', form.operations.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', alignSelf: 'flex-end', marginBottom: 2 }}><Trash2 size={15} /></button>
                         </div>
-                        <input style={s.input} placeholder="Комментарий" value={op.comment} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, comment: e.target.value } : x))} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 6 }}>
+                          <div>
+                            <label style={s.label}>Диагноз</label>
+                            <input style={s.input} placeholder="Диагноз..." value={op.diagnosis ?? ''} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, diagnosis: e.target.value } : x))} />
+                          </div>
+                          <div>
+                            <label style={s.label}>Результат</label>
+                            <input style={s.input} placeholder="Результат..." value={op.result ?? ''} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, result: e.target.value } : x))} />
+                          </div>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          <div>
+                            <label style={s.label}>Осложнения</label>
+                            <input style={s.input} placeholder="Осложнения..." value={op.complications ?? ''} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, complications: e.target.value } : x))} />
+                          </div>
+                          <div>
+                            <label style={s.label}>Комментарий</label>
+                            <input style={s.input} placeholder="Комментарий" value={op.comment} onChange={e => setField('operations', form.operations.map((x, j) => j === i ? { ...x, comment: e.target.value } : x))} />
+                          </div>
+                        </div>
                       </div>
                     ))}
-                    <button onClick={() => setField('operations', [...form.operations, { id: `op-${Date.now()}`, date: '', name: '', comment: '' }])} style={{ fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
+                    <button onClick={() => setField('operations', [...form.operations, { id: `op-${Date.now()}`, date: '', name: '', comment: '', diagnosis: '', result: '', complications: '' }])} style={{ fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
                       <Plus size={14} /> Добавить операцию
                     </button>
                   </div>
@@ -1576,7 +1614,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
                       <tr>
-                        {['Диагноз', 'Активность', ''].map(h => (
+                        {['Диагноз', 'Активность', 'Степень тяжести', 'Дата диагноза', 'Осложнения', ''].map(h => (
                           <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 11, color: '#94a3b8', fontWeight: 600, background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
                         ))}
                       </tr>
@@ -1591,6 +1629,15 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                             <input style={s.input} value={c.activity} placeholder="Активность..." onChange={e => setField('comorbidities', form.comorbidities.map((x, j) => j === i ? { ...x, activity: e.target.value } : x))} />
                           </td>
                           <td style={{ padding: '6px 8px', borderBottom: '1px solid #f8fafc' }}>
+                            <input style={s.input} value={c.severity ?? ''} placeholder="Степень..." onChange={e => setField('comorbidities', form.comorbidities.map((x, j) => j === i ? { ...x, severity: e.target.value } : x))} />
+                          </td>
+                          <td style={{ padding: '6px 8px', borderBottom: '1px solid #f8fafc' }}>
+                            <input type="date" style={s.input} value={c.diagnosisDate ?? ''} onChange={e => setField('comorbidities', form.comorbidities.map((x, j) => j === i ? { ...x, diagnosisDate: e.target.value } : x))} />
+                          </td>
+                          <td style={{ padding: '6px 8px', borderBottom: '1px solid #f8fafc' }}>
+                            <input style={s.input} value={c.complications ?? ''} placeholder="Осложнения..." onChange={e => setField('comorbidities', form.comorbidities.map((x, j) => j === i ? { ...x, complications: e.target.value } : x))} />
+                          </td>
+                          <td style={{ padding: '6px 8px', borderBottom: '1px solid #f8fafc' }}>
                             <button onClick={() => setField('comorbidities', form.comorbidities.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={14} /></button>
                           </td>
                         </tr>
@@ -1598,7 +1645,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                     </tbody>
                   </table>
                 ) : <div style={{ color: '#94a3b8', fontSize: 13 }}>Нет сопутствующих заболеваний</div>}
-                <button onClick={() => setField('comorbidities', [...form.comorbidities, { id: `cm-${Date.now()}`, diagnosis: '', activity: 'Активное' }])} style={{ marginTop: 8, fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
+                <button onClick={() => setField('comorbidities', [...form.comorbidities, { id: `cm-${Date.now()}`, diagnosis: '', activity: 'Активное', severity: '', diagnosisDate: '', complications: '' }])} style={{ marginTop: 8, fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
                   <Plus size={14} /> Добавить
                 </button>
               </div>

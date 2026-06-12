@@ -77,7 +77,7 @@ namespace MedicalSystem.Data.Storages
             var patient = await GetAsync(patientId, token);
             if (patient != null)
             {
-                patient.DepartmentId = departmentId;
+                // patient.DepartmentId = departmentId; // Department table removed
                 await UpdateAsync(patient, token);
             }
         }
@@ -181,14 +181,7 @@ namespace MedicalSystem.Data.Storages
                 }
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.DepartmentName))
-            {
-                var dept = await _context.Departments.FirstOrDefaultAsync(d => d.Name == dto.DepartmentName, token);
-                if (dept != null)
-                {
-                    patient.DepartmentId = dept.Id;
-                }
-            }
+
 
             patient.MaritalStatus = dto.MaritalStatus;
             patient.LastUpdated = DateTime.UtcNow;

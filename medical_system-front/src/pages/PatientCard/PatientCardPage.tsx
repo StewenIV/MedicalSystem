@@ -67,6 +67,7 @@ import { toast } from 'react-toastify'
 import { showApiError } from 'utils/showApiError'
 
 import { usePatientData } from 'context/PatientDataContext'
+import { extractDoctorFromFormData } from 'api/encountersApi'
 import {
   PatientCardContainer,
   PatientHeader,
@@ -2806,7 +2807,10 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         <ActionButton
                           $variant="ghost"
                           title="Добавить в текущие лекарства"
-                          onClick={() => handleQuickAction('ADD_MED_FROM_PRESCRIPTION', pr)}
+                          onClick={() => {
+                            handleQuickAction('ADD_MED_FROM_PRESCRIPTION', pr)
+                            toast.success('Назначение добавлено')
+                          }}
                         >
                           <CheckSquare size={14} />
                         </ActionButton>
@@ -3760,8 +3764,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
             </h3>
 
             {history.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '48px 0', color: '#94a3b8' }}>
-                <Clock size={40} style={{ marginBottom: 12, opacity: 0.4 }} />
+              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center', padding: '48px 0', color: '#94a3b8' }}>
+                <Clock size={20} style={{opacity: 0.4 }} />
                 <p style={{ margin: 0 }}>История обращений пуста</p>
               </div>
             ) : (
@@ -3892,7 +3896,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                 </div>
                                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
                                   <User size={12} style={{ display: 'inline', marginRight: 4 }} />
-                                  {h.doctorName || h.doctor || 'Врач не указан'}
+                                  {h.doctorName || extractDoctorFromFormData(h.formData) || h.doctor || 'Врач не указан'}
                                 </div>
                               </div>
                               <div

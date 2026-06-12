@@ -45,8 +45,7 @@ namespace MedicalSystem.App.Services
                 Floor = dto.Floor,
                 Type = dto.Type,
                 Gender = dto.Gender,
-                Priority = dto.Priority,
-                DepartmentId = dto.DepartmentId
+                Priority = dto.Priority
             };
             await _roomStorage.AddAsync(room, token);
 

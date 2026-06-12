@@ -35,17 +35,9 @@ namespace MedicalSystem.App.Services
                 .RuleFor(o => o.Language, f => "Русский")
                 .RuleFor(o => o.Nationality, f => "Русский");
 
-        public static List<Department> GenerateDepartments(int count) =>
-            new Faker<Department>("ru").UseSeed(0)
-                .RuleFor(d => d.Id, f => f.Random.Guid())
-                .RuleFor(d => d.Name, f => Truncate(f.Commerce.Department(), 100))
-                .Generate(count);
 
-        public static List<Position> GeneratePositions(int count) =>
-            new Faker<Position>("ru").UseSeed(0)
-                .RuleFor(p => p.Id, f => f.Random.Guid())
-                .RuleFor(p => p.Name, f => Truncate(f.Name.JobTitle(), 100))
-                .Generate(count);
+
+
 
         public static List<Institution> GenerateInstitutions(int count) =>
             new Faker<Institution>("ru").UseSeed(0)
@@ -53,20 +45,19 @@ namespace MedicalSystem.App.Services
                 .RuleFor(i => i.Name, f => Truncate($"Больница №{f.Random.Number(1, 100)}", 200))
                 .Generate(count);
 
-        public static List<MedicalStaff> GenerateMedicalStaff(int count, List<Position> positions, List<Department> departments)
+        public static List<MedicalStaff> GenerateMedicalStaff(int count)
         {
-            if (!positions.Any() || !departments.Any()) return new List<MedicalStaff>();
+            var medicalPositions = new[] { "Врач", "Врач", "Врач", "Врач", "Медицинская сестра", "Медицинская сестра", "Старшая медицинская сестра", "Главный врач", "Лаборант" };
             return new Faker<MedicalStaff>("ru").UseSeed(0)
                 .RuleFor(ms => ms.Id, f => f.Random.Guid())
                 .RuleFor(ms => ms.Name, f => Truncate(f.Name.FullName(), 200))
-                .RuleFor(ms => ms.PositionId, f => f.PickRandom(positions).Id)
-                .RuleFor(ms => ms.DepartmentId, f => f.PickRandom(departments).Id)
+                .RuleFor(ms => ms.Position, f => f.PickRandom(medicalPositions))
                 .Generate(count);
         }
 
-        public static List<Patient> GeneratePatients(int count, List<MedicalStaff> staff, List<Department> departments, List<Institution> institutions)
+        public static List<Patient> GeneratePatients(int count, List<MedicalStaff> staff, List<Institution> institutions)
         {
-            if (!staff.Any() || !departments.Any() || !institutions.Any()) return new List<Patient>();
+            if (!staff.Any() || !institutions.Any()) return new List<Patient>();
             return new Faker<Patient>("ru").UseSeed(0)
                 .RuleFor(p => p.Id, f => f.Random.Guid())
                 .RuleFor(p => p.Gender, f => f.PickRandom<Gender>())
@@ -79,7 +70,6 @@ namespace MedicalSystem.App.Services
                 .RuleFor(p => p.Status, f => f.PickRandom<PatientStatus>())
                 .RuleFor(p => p.MaritalStatus, f => Truncate(f.PickRandom(new[] { "женат/замужем", "холост/не замужем", "в разводе" }), 50))
                 .RuleFor(p => p.DoctorId, f => f.PickRandom(staff).Id)
-                .RuleFor(p => p.DepartmentId, f => f.PickRandom(departments).Id)
                 .RuleFor(p => p.InstitutionId, f => f.PickRandom(institutions).Id)
                 .RuleFor(p => p.CreatedAt, f => f.Date.Past(2))
                 .RuleFor(p => p.LastUpdated, (f, p) => f.Date.Between(p.CreatedAt, DateTime.Now))
@@ -286,13 +276,10 @@ namespace MedicalSystem.App.Services
                 .Generate(count);
         }
 
-        public static List<Room> GenerateRooms(int count, List<Department> departments)
+        public static List<Room> GenerateRooms(int count)
         {
-            if (!departments.Any()) return new List<Room>();
-
             var rooms = new List<Room>();
             var faker = new Faker("ru");
-            var departmentId = faker.PickRandom(departments).Id;
 
             for (int i = 0; i < count; i++)
             {
@@ -305,8 +292,7 @@ namespace MedicalSystem.App.Services
                     RoomNumber = $"{floor}0{roomNum}",
                     Gender = faker.PickRandom<RoomGender>(),
                     Type = faker.PickRandom<RoomType>(),
-                    Priority = faker.PickRandom<RoomPriority>(),
-                    DepartmentId = departmentId
+                    Priority = faker.PickRandom<RoomPriority>()
                 });
             }
             return rooms;

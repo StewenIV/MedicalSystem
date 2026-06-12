@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj": {}
+    "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj": {}
   },
   "projects": {
-    "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj": {
+    "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj",
+        "projectUniqueName": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj",
         "projectName": "MedicalSystem.Data.Test",
-        "projectPath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj",
+        "projectPath": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\MedicalSystem.Data.Test.csproj",
         "packagesPath": "C:\\Users\\amaca\\.nuget\\packages\\",
-        "outputPath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\obj\\",
+        "outputPath": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.Data.Test\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\Visual Studio - SDK\\NuGetPackages"

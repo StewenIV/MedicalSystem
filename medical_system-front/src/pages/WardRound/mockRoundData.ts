@@ -46,12 +46,12 @@ export const getInitialPrimaryState = (
 ): PrimaryFormState => {
   const vitals = formatVitalsForForm(patientId)
   const bp = parseBP(vitals.bp)
-  const meds = patient?.medications ?? patient?.currentMeds ?? []
+  const prescriptionMeds = (patient as any)?.prescriptions ?? []
   return {
     inspectionDate: todayISO(),
     inspectionTime: timeISO(),
     doctor: patient?.doctor ?? 'Лечащий врач',
-    department: patient?.department ?? '',
+    department: patient?.department ?? 'Пульмонология',
     institution: patient?.institution ?? 'ГУ БЦГБ',
     inspectionType: 'primary',
     status: 'draft',
@@ -76,9 +76,11 @@ export const getInitialPrimaryState = (
 
     allergyStatus: patient?.allergies && patient.allergies.length > 0 ? 'has' : 'none',
     allergies: patient?.allergies?.map((a, i) => ({
-      id: a.id || `alg-${i}`,
+      id: (a as any).id || `alg-${i}`,
       name: a.name,
-      reaction: a.reaction || ''
+      reaction: a.reaction || '',
+      date: (a as any).date ? new Date((a as any).date).toISOString().split('T')[0] : '',
+      comment: (a as any).comment || '',
     })) ?? [],
 
     operationsStatus: patient?.operations && patient.operations.length > 0 ? 'has' : 'none',
@@ -86,13 +88,19 @@ export const getInitialPrimaryState = (
       id: (o as any).id || `op-${i}`,
       date: o.date ? new Date(o.date).toISOString().split('T')[0] : '',
       name: o.name || '',
-      comment: o.description || ''
+      comment: (o as any).description || '',
+      diagnosis: (o as any).diagnosis || '',
+      result: (o as any).result || '',
+      complications: (o as any).complications || '',
     })) ?? [],
 
     comorbidities: patient?.medicalProblems?.map((mp, i) => ({
       id: `mp-${i}`,
       diagnosis: mp.name ?? '',
       activity: mp.diseaseStatus ?? 'Активное',
+      severity: (mp as any).severity ?? '',
+      diagnosisDate: (mp as any).diagnosisDate ? new Date((mp as any).diagnosisDate).toISOString().split('T')[0] : '',
+      complications: (mp as any).complications ?? '',
     })) ?? [],
 
     badHabitsStatus: 'none',
@@ -156,18 +164,18 @@ export const getInitialPrimaryState = (
     complicationsDiagnosis: '',
     concomitantDiagnosis: '',
 
-    prescriptions: meds.map((m, i) => ({
-      id: `med-${i}`,
-      drug: m.name ?? '',
+    prescriptions: prescriptionMeds.map((m: any, i: number) => ({
+      id: m.id?.startsWith('00000000') ? `presc-${i}` : m.id || `presc-${i}`,
+      drug: m.drug ?? m.name ?? '',
       dose: m.dose ?? '',
       unit: 'мг',
       route: m.route ?? 'перорально',
-      frequency: m.regimen ?? '',
+      frequency: m.regimen ?? m.frequency ?? '',
       form: m.form ?? '',
-      regimen: m.regimen ?? '',
+      regimen: m.regimen ?? m.frequency ?? '',
       comment: m.comment ?? '',
       action: 'keep' as const,
-    })) ?? [],
+    })),
 
     labTests: DEFAULT_LAB_TESTS.map(t => ({ ...t })),
 
@@ -182,11 +190,12 @@ export const getInitialDailyState = (
 ): DailyRoundFormState => {
   const vitals = formatVitalsForForm(patientId)
   const bp = parseBP(vitals.bp)
-  const meds = patient?.medications ?? patient?.currentMeds ?? []
+  const prescriptionMeds = (patient as any)?.prescriptions ?? []
   return {
     inspectionDate: todayISO(),
     inspectionTime: timeISO(),
     doctor: patient?.doctor ?? 'Лечащий врач',
+    doctorDisplayName: '',
     status: 'draft',
 
     temperature: vitals.temp,
@@ -222,17 +231,46 @@ export const getInitialDailyState = (
     dynamicsComment: '',
 
     treatmentDecision: 'keep',
-    prescriptions: meds.map((m, i) => ({
-      id: `med-${i}`,
-      drug: m.name ?? '',
+    prescriptions: prescriptionMeds.map((m: any, i: number) => ({
+      id: m.id?.startsWith('00000000') ? `presc-${i}` : m.id || `presc-${i}`,
+      drug: m.drug ?? m.name ?? '',
       dose: m.dose ?? '',
       unit: 'мг',
       route: m.route ?? 'перорально',
-      frequency: m.regimen ?? '',
+      frequency: m.regimen ?? m.frequency ?? '',
       form: m.form ?? '',
-      regimen: m.regimen ?? '',
+      regimen: m.regimen ?? m.frequency ?? '',
       comment: m.comment ?? '',
       action: 'keep' as const,
+    })),
+
+    allergyStatus: patient?.allergies && patient.allergies.length > 0 ? 'has' : 'none',
+    allergies: patient?.allergies?.map((a: any, i: number) => ({
+      id: a.id || `alg-${i}`,
+      name: a.name ?? '',
+      reaction: a.reaction ?? '',
+      date: a.date ? new Date(a.date).toISOString().split('T')[0] : '',
+      comment: a.comment ?? '',
+    })) ?? [],
+
+    operationsStatus: patient?.operations && patient.operations.length > 0 ? 'has' : 'none',
+    operations: patient?.operations?.map((o: any, i: number) => ({
+      id: o.id || `op-${i}`,
+      date: o.date ? new Date(o.date).toISOString().split('T')[0] : '',
+      name: o.name ?? '',
+      comment: o.description ?? '',
+      diagnosis: o.diagnosis ?? '',
+      result: o.result ?? '',
+      complications: o.complications ?? '',
+    })) ?? [],
+
+    comorbidities: patient?.medicalProblems?.map((mp: any, i: number) => ({
+      id: mp.id || `mp-${i}`,
+      diagnosis: mp.name ?? '',
+      activity: mp.diseaseStatus ?? 'Активное',
+      severity: mp.severity ?? '',
+      diagnosisDate: mp.diagnosisDate ? new Date(mp.diagnosisDate).toISOString().split('T')[0] : '',
+      complications: mp.complications ?? '',
     })) ?? [],
 
     controlStudies: '',

@@ -12,15 +12,11 @@ namespace MedicalSystem.Domain.Models
         [StringLength(200, ErrorMessage = "Длина ФИО не должна превышать 200 символов")]
         public string Name { get; set; }
 
-        [Required]
-        public Guid PositionId { get; set; }
-
-        [Required]
-        public Guid DepartmentId { get; set; }
+        [Required(ErrorMessage = "Пожалуйста, укажите должность")]
+        [StringLength(100, ErrorMessage = "Длина должности не должна превышать 100 символов")]
+        public string Position { get; set; }
 
         // Navigation properties
-        public virtual Position Position { get; set; }
-        public virtual Department Department { get; set; }
         public virtual ICollection<Patient> Patients { get; set; }
         public virtual ICollection<Encounter> Encounters { get; set; }
         public virtual ICollection<PatientMedication> PatientMedications { get; set; }

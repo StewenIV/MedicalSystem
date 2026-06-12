@@ -47,9 +47,7 @@ namespace MedicalSystem.Infrastructure.EntityConfigurations
                 .WithMany(d => d.Patients)
                 .HasForeignKey(p => p.DoctorId);
 
-            builder.HasOne(p => p.Department)
-                .WithMany(d => d.Patients)
-                .HasForeignKey(p => p.DepartmentId);
+
 
             builder.HasOne(p => p.Institution)
                 .WithMany(i => i.Patients)

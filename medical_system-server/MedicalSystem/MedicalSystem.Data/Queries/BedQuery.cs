@@ -333,7 +333,7 @@ namespace MedicalSystem.Data.Queries
 
             var dbLog = await _context.BedActionLogs.AsNoTracking()
                 .Include(l => l.PerformedBy)
-                    .ThenInclude(ms => ms.Position)
+                    
                 .Where(l => l.PatientId == patientId)
                 .OrderByDescending(l => l.PerformedAt)
                 .ToListAsync(token);
@@ -343,7 +343,7 @@ namespace MedicalSystem.Data.Queries
                 Who = !string.IsNullOrEmpty(l.PerformedByName) 
                     ? l.PerformedByName 
                     : (l.PerformedBy != null 
-                        ? $"{l.PerformedBy.Name} ({l.PerformedBy.Position.Name})" 
+                        ? $"{l.PerformedBy.Name} ({l.PerformedBy.Position})" 
                         : "Неизвестно"), 
                 Action = l.Action, 
                 Time = DateTime.SpecifyKind(l.PerformedAt, DateTimeKind.Utc).ToString("o"), 

@@ -73,7 +73,7 @@ namespace MedicalSystem.Data.Queries
 
             if (departmentId.HasValue)
             {
-                dbQuery = dbQuery.Where(d => d.DepartmentId == departmentId.Value);
+                // dbQuery = dbQuery.Where(d => d.DepartmentId == departmentId.Value);
             }
 
             return await dbQuery
@@ -83,8 +83,8 @@ namespace MedicalSystem.Data.Queries
                 {
                     Id = d.Id,
                     FullName = d.Name,
-                    Position = d.Position != null ? d.Position.Name : null,
-                    Department = d.Department != null ? d.Department.Name : null
+                    Position = d.Position != null ? d.Position : null,
+                    Department = "Пульмонология"
                 })
                 .ToListAsync(token);
         }

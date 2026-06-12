@@ -25,18 +25,31 @@ export interface CreateEncounterPayload {
   formData?: string | null
 }
 
+export const extractDoctorFromFormData = (formDataStr?: string | null): string | null => {
+  if (!formDataStr) return null
+  try {
+    const parsed = JSON.parse(formDataStr)
+    return parsed.doctorDisplayName || parsed.doctor || null
+  } catch {
+    return null
+  }
+}
+
 export const mapServerEncounterToSavedInspection = (e: ServerEncounterDto): SavedInspection => {
   const dt = new Date(e.dateTime)
   
   const dateStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   const timeStr = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
 
+  const doctorName = e.doctorName || extractDoctorFromFormData((e as any).formData)
+
   return {
     id: e.id,
     type: e.type === 'Primary Inspection' || e.type === 'Первичный осмотр' ? 'primary' : 'daily',
     date: dateStr,
     time: timeStr,
-    doctor: e.doctorName ?? 'Врач',
+    doctor: doctorName ?? '',
+    doctorDisplayName: doctorName ?? '',
     generatedText: e.conclusion ?? '',
     complaints: e.complaints ?? undefined,
     objective: e.objective ?? undefined,

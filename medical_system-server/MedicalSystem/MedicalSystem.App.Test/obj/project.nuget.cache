@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "E9MfqPjYiek=",
+  "dgSpecHash": "M6CCRKC+6Hw=",
   "success": true,
-  "projectFilePath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.App.Test\\MedicalSystem.App.Test.csproj",
+  "projectFilePath": "d:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.App.Test\\MedicalSystem.App.Test.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\amaca\\.nuget\\packages\\bogus\\35.6.5\\bogus.35.6.5.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",

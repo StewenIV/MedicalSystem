@@ -34,9 +34,6 @@ namespace MedicalSystem.Data.EntityConfigurations
                     v => (RoomPriority)Enum.Parse(typeof(RoomPriority), v))
                 .HasMaxLength(50);
 
-            builder.HasOne(r => r.Department)
-                .WithMany(d => d.Rooms)
-                .HasForeignKey(r => r.DepartmentId);
         }
     }
 }

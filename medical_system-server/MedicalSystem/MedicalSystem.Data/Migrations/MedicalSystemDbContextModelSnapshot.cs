@@ -200,22 +200,6 @@ namespace MedicalSystem.Data.Migrations
                     b.ToTable("BedPrescriptions", (string)null);
                 });
 
-            modelBuilder.Entity("MedicalSystem.Domain.Models.Department", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Departments", (string)null);
-                });
-
             modelBuilder.Entity("MedicalSystem.Domain.Models.Encounter", b =>
                 {
                     b.Property<Guid>("Id")
@@ -398,22 +382,17 @@ namespace MedicalSystem.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("DepartmentId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<Guid>("PositionId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
-
-                    b.HasIndex("PositionId");
 
                     b.ToTable("MedicalStaff", (string)null);
                 });
@@ -650,9 +629,6 @@ namespace MedicalSystem.Data.Migrations
                     b.Property<DateTime>("DateOfBirth")
                         .HasColumnType("timestamp without time zone");
 
-                    b.Property<Guid?>("DepartmentId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("DoctorId")
                         .HasColumnType("uuid");
 
@@ -700,8 +676,6 @@ namespace MedicalSystem.Data.Migrations
                         .HasColumnType("character varying(50)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("DoctorId");
 
@@ -835,22 +809,6 @@ namespace MedicalSystem.Data.Migrations
                     b.ToTable("PatientRelatives", (string)null);
                 });
 
-            modelBuilder.Entity("MedicalSystem.Domain.Models.Position", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Positions", (string)null);
-                });
-
             modelBuilder.Entity("MedicalSystem.Domain.Models.Prescription", b =>
                 {
                     b.Property<Guid>("Id")
@@ -914,9 +872,6 @@ namespace MedicalSystem.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("DepartmentId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("Floor")
                         .HasColumnType("integer");
 
@@ -939,8 +894,6 @@ namespace MedicalSystem.Data.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DepartmentId");
 
                     b.HasIndex("RoomNumber")
                         .IsUnique();
@@ -1231,25 +1184,6 @@ namespace MedicalSystem.Data.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("MedicalSystem.Domain.Models.MedicalStaff", b =>
-                {
-                    b.HasOne("MedicalSystem.Domain.Models.Department", "Department")
-                        .WithMany("MedicalStaff")
-                        .HasForeignKey("DepartmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("MedicalSystem.Domain.Models.Position", "Position")
-                        .WithMany("MedicalStaff")
-                        .HasForeignKey("PositionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Department");
-
-                    b.Navigation("Position");
-                });
-
             modelBuilder.Entity("MedicalSystem.Domain.Models.Medicine", b =>
                 {
                     b.HasOne("MedicalSystem.Domain.Models.MedicalStaff", "LastChangedBy")
@@ -1320,10 +1254,6 @@ namespace MedicalSystem.Data.Migrations
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.Patient", b =>
                 {
-                    b.HasOne("MedicalSystem.Domain.Models.Department", "Department")
-                        .WithMany("Patients")
-                        .HasForeignKey("DepartmentId");
-
                     b.HasOne("MedicalSystem.Domain.Models.MedicalStaff", "Doctor")
                         .WithMany("Patients")
                         .HasForeignKey("DoctorId");
@@ -1457,8 +1387,6 @@ namespace MedicalSystem.Data.Migrations
                     b.Navigation("Contacts")
                         .IsRequired();
 
-                    b.Navigation("Department");
-
                     b.Navigation("Doctor");
 
                     b.Navigation("Institution");
@@ -1535,15 +1463,6 @@ namespace MedicalSystem.Data.Migrations
                     b.Navigation("Patient");
                 });
 
-            modelBuilder.Entity("MedicalSystem.Domain.Models.Room", b =>
-                {
-                    b.HasOne("MedicalSystem.Domain.Models.Department", "Department")
-                        .WithMany("Rooms")
-                        .HasForeignKey("DepartmentId");
-
-                    b.Navigation("Department");
-                });
-
             modelBuilder.Entity("MedicalSystem.Domain.Models.Shift", b =>
                 {
                     b.HasOne("MedicalSystem.Domain.Models.MedicalStaff", "Staff")
@@ -1584,15 +1503,6 @@ namespace MedicalSystem.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Patient");
-                });
-
-            modelBuilder.Entity("MedicalSystem.Domain.Models.Department", b =>
-                {
-                    b.Navigation("MedicalStaff");
-
-                    b.Navigation("Patients");
-
-                    b.Navigation("Rooms");
                 });
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.Institution", b =>
@@ -1670,11 +1580,6 @@ namespace MedicalSystem.Data.Migrations
                     b.Navigation("BedPrescriptions");
 
                     b.Navigation("MedicineOperationLogs");
-                });
-
-            modelBuilder.Entity("MedicalSystem.Domain.Models.Position", b =>
-                {
-                    b.Navigation("MedicalStaff");
                 });
 
             modelBuilder.Entity("MedicalSystem.Domain.Models.Room", b =>

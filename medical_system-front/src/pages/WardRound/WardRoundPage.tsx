@@ -301,6 +301,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
     const initial = getInitialDailyState(patientId, patient)
     if (currentUserDisplayName) {
       initial.doctor = currentUserDisplayName
+      initial.doctorDisplayName = currentUserDisplayName
     }
     return initial
   })
@@ -313,11 +314,10 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
 
   useEffect(() => {
     if (selectedHistoryId === null && currentUserDisplayName && (!form.doctor || form.doctor === 'Лечащий врач' || form.doctor === patient?.doctor)) {
-      setForm(prev => ({ ...prev, doctor: currentUserDisplayName }))
+      setForm(prev => ({ ...prev, doctor: currentUserDisplayName, doctorDisplayName: currentUserDisplayName }))
     }
   }, [currentUserDisplayName, patient, selectedHistoryId])
 
-  // Load all past encounters for this patient when opening the page
   useEffect(() => {
     loadPatientEncounters(patientId)
   }, [patientId])
@@ -347,6 +347,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
         const initial = getInitialDailyState(patientId, patient)
         if (currentUserDisplayName) {
           initial.doctor = currentUserDisplayName
+          initial.doctorDisplayName = currentUserDisplayName
         }
         setForm(initial)
       }
@@ -395,7 +396,8 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
     try {
       const text = generateDailyText(form, `${patient.lastName} ${patient.firstName}`)
       
-      const finalForm = { ...form, generatedText: text, status: 'completed' as const }
+      // Always store doctorDisplayName in formData for history restoration
+      const finalForm = { ...form, generatedText: text, status: 'completed' as const, doctorDisplayName: form.doctor }
       const formJson = JSON.stringify(finalForm)
       
       setForm(finalForm)
@@ -403,31 +405,28 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
 
       const bpStr = form.bpSys && form.bpDia ? `${form.bpSys}/${form.bpDia}` : ''
 
-      let activeMeds = patient.currentMeds;
-      let additionalData: any = { doctorName: form.doctor };
+      const prescriptionsForSync = form.prescriptions
+        .filter(p => p.action !== 'cancel')
+        .map(p => {
+          const original = (patient as any)?.prescriptions?.find((op: any) => op.id === p.id)
+          const doseStr = p.dose && p.unit ? `${p.dose} ${p.unit}` : p.dose
+          return {
+            ...(original || {}),
+            id: p.id?.startsWith('med-') || p.id?.startsWith('np-') || p.id?.startsWith('presc-') ? '00000000-0000-0000-0000-000000000000' : p.id,
+            drug: p.drug,
+            dose: doseStr,
+            form: p.form,
+            route: p.route,
+            regimen: p.frequency || p.regimen,
+            dateStart: original?.dateStart || new Date().toISOString(),
+            doctorName: original?.doctorName || form.doctor,
+            comment: p.comment || original?.comment || ''
+          }
+        })
 
-      if (form.treatmentDecision === 'modify') {
-        activeMeds = form.prescriptions
-          .filter(p => p.action !== 'cancel')
-          .map(p => ({ name: p.drug, dose: p.dose, form: p.form, regimen: p.regimen }));
-        
-        const prescriptions = form.prescriptions
-          .filter(p => p.action !== 'cancel')
-          .map(p => {
-            const doseStr = p.dose && p.unit ? `${p.dose} ${p.unit}` : p.dose;
-            return {
-              id: p.id?.startsWith('med-') || p.id?.startsWith('np-') ? '00000000-0000-0000-0000-000000000000' : p.id,
-              drug: p.drug,
-              dose: doseStr,
-              form: p.form,
-              route: p.route,
-              regimen: p.frequency || p.regimen,
-              dateStart: new Date().toISOString(),
-              doctorName: form.doctor,
-              comment: p.comment || ''
-            }
-          });
-        additionalData = { ...additionalData, prescriptions };
+      const additionalData: any = {
+        doctorName: form.doctor,
+        prescriptions: prescriptionsForSync,
       }
 
       await updatePatientRoundData(
@@ -440,7 +439,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           resp: form.rr || undefined,
         },
         undefined,
-        activeMeds,
+        undefined, // meds shouldn't be overwritten by prescriptions
         additionalData
       )
 
@@ -534,6 +533,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           date: form.inspectionDate,
           time: form.inspectionTime,
           doctor: form.doctor,
+          doctorDisplayName: form.doctor,
           vitals: { temp: form.temperature, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
           generatedText: text,
           formData: formJson,
@@ -549,6 +549,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           date: form.inspectionDate,
           time: form.inspectionTime,
           doctor: form.doctor,
+          doctorDisplayName: form.doctor,
           vitals: { temp: form.temperature, hr: form.hr, bp: bpStr, spo2: form.spo2, rr: form.rr },
           generatedText: text,
           formData: formJson,
@@ -970,7 +971,14 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
               </div>
 
               <div id="daily-prescriptions" style={block}>
-                <div style={blockHeader}>Лечение</div>
+                <div style={blockHeader}>
+                  Лечение
+                  {form.treatmentDecision === 'modify' && (
+                    <button onClick={() => setShowPrescModal(true)} style={{ marginLeft: 'auto', fontSize: 12, color: '#1d4ed8', background: '#eff6ff', border: 'none', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT, fontWeight: 600 }}>
+                      <Plus size={13} /> Добавить назначение
+                    </button>
+                  )}
+                </div>
                 <div style={blockBody}>
                   <div style={pillGroup}>
                     {([['keep', 'Оставить по листу назначений'], ['modify', 'Изменить']] as const).map(([val, lbl]) => (
@@ -983,23 +991,127 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                     ))}
                   </div>
 
-                  {form.treatmentDecision === 'modify' && (
-                    <div style={{ marginTop: 14 }}>
-                      {form.prescriptions.map(p => (
-                        <div key={p.id} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
-                          <input style={{ ...inputStyle, flex: 2 }} value={p.drug} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, drug: e.target.value } : x) }))} placeholder="Препарат" />
-                          <input style={{ ...inputStyle, flex: 1 }} value={p.dose} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, dose: e.target.value } : x) }))} placeholder="Доза" />
-                          <input style={{ ...inputStyle, flex: 1 }} value={p.route} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, route: e.target.value } : x) }))} placeholder="Путь" />
-                          <button onClick={() => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.filter(x => x.id !== p.id) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={15} /></button>
-                        </div>
-                      ))}
-                      <button onClick={() => setShowPrescModal(true)} style={{ marginTop: 6, fontSize: 13, color: '#1d4ed8', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5, fontFamily: FONT }}>
-                        <Plus size={14} /> Добавить назначение
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ marginTop: 14 }}>
+                    {form.prescriptions.length === 0 ? (
+                      <div style={{ color: '#94a3b8', fontSize: 13, padding: '12px 0' }}>Назначений нет. Нажмите «Добавить назначение».</div>
+                    ) : (
+                      <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                          <thead>
+                            <tr>
+                              {['Препарат', 'Доза', 'Ед.', 'Путь', 'Кратность', 'Комментарий', ''].map(h => (
+                                <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 11, fontWeight: 600, color: '#94a3b8', background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {form.prescriptions.map(p => (
+                              <tr key={p.id} style={{ borderBottom: '1px solid #f8fafc', opacity: p.action === 'cancel' ? 0.4 : 1 }}>
+                                <td style={{ padding: '8px' }}>
+                                  <input style={{ ...inputStyle, border: 'none', background: 'transparent', fontWeight: 600, padding: 0 }} value={p.drug} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, drug: e.target.value } : x) }))} />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <input style={{ ...inputStyle, border: 'none', background: 'transparent', padding: 0, width: 60 }} value={p.dose} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, dose: e.target.value } : x) }))} />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <input style={{ ...inputStyle, border: 'none', background: 'transparent', padding: 0, width: 40 }} value={p.unit} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, unit: e.target.value } : x) }))} />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <input style={{ ...inputStyle, border: 'none', background: 'transparent', padding: 0, width: 80 }} value={p.route} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, route: e.target.value } : x) }))} />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <input style={{ ...inputStyle, border: 'none', background: 'transparent', padding: 0, width: 60 }} value={p.frequency} onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, frequency: e.target.value } : x) }))} />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <input style={{ ...inputStyle, border: 'none', background: 'transparent', padding: 0 }} value={p.comment ?? ''} placeholder="-" onChange={e => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.map(x => x.id === p.id ? { ...x, comment: e.target.value } : x) }))} />
+                                </td>
+                                <td style={{ padding: '8px' }}>
+                                  <button onClick={() => setForm(prev => ({ ...prev, prescriptions: prev.prescriptions.filter(x => x.id !== p.id) }))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}><Trash2 size={14} /></button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {/* Medical history info sections */}
+              {form.allergies.length > 0 && (
+                <div style={block}>
+                  <div style={blockHeader}>Аллергический анамнез</div>
+                  <div style={blockBody}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr>
+                          {['Аллерген', 'Реакция', 'Дата выявления', 'Комментарий'].map(h => (
+                            <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 11, color: '#94a3b8', fontWeight: 600, background: '#fef9f0', borderBottom: '1px solid #fed7aa' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {form.allergies.map(a => (
+                          <tr key={a.id} style={{ borderBottom: '1px solid #fff7ed' }}>
+                            <td style={{ padding: '6px 8px', fontWeight: 600 }}>{a.name}</td>
+                            <td style={{ padding: '6px 8px', color: '#dc2626' }}>{a.reaction}</td>
+                            <td style={{ padding: '6px 8px', color: '#64748b' }}>{a.date ? new Date(a.date).toLocaleDateString('ru-RU') : '—'}</td>
+                            <td style={{ padding: '6px 8px', color: '#64748b' }}>{a.comment || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {form.operations.length > 0 && (
+                <div style={block}>
+                  <div style={blockHeader}>Операции в анамнезе</div>
+                  <div style={blockBody}>
+                    {form.operations.map(op => (
+                      <div key={op.id} style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
+                        <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{op.name}</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12, color: '#64748b' }}>
+                          <div><span style={{ fontWeight: 600 }}>Дата:</span> {op.date ? new Date(op.date).toLocaleDateString('ru-RU') : '—'}</div>
+                          {op.diagnosis && <div><span style={{ fontWeight: 600 }}>Диагноз:</span> {op.diagnosis}</div>}
+                          {op.result && <div><span style={{ fontWeight: 600 }}>Результат:</span> {op.result}</div>}
+                          {op.complications && <div><span style={{ fontWeight: 600 }}>Осложнения:</span> {op.complications}</div>}
+                          {op.comment && <div><span style={{ fontWeight: 600 }}>Комментарий:</span> {op.comment}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {form.comorbidities.length > 0 && (
+                <div style={block}>
+                  <div style={blockHeader}>Сопутствующие заболевания</div>
+                  <div style={blockBody}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                      <thead>
+                        <tr>
+                          {['Диагноз', 'Активность', 'Степень тяжести', 'Осложнения'].map(h => (
+                            <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 11, color: '#94a3b8', fontWeight: 600, background: '#f8fafc', borderBottom: '1px solid #f1f5f9' }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {form.comorbidities.map(c => (
+                          <tr key={c.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                            <td style={{ padding: '6px 8px', fontWeight: 500 }}>{c.diagnosis}</td>
+                            <td style={{ padding: '6px 8px', color: c.activity === 'Активное' ? '#059669' : '#64748b' }}>{c.activity}</td>
+                            <td style={{ padding: '6px 8px', color: '#64748b' }}>{c.severity || '—'}</td>
+                            <td style={{ padding: '6px 8px', color: '#64748b' }}>{c.complications || '—'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <div id="daily-recommendations" style={block}>
                 <div style={blockHeader}>План</div>

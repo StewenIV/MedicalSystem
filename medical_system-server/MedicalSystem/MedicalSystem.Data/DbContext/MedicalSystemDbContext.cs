@@ -29,9 +29,8 @@ namespace MedicalSystem.Data.DbContext
         public DbSet<MedicalStaff> MedicalStaff { get; set; }
         public DbSet<Shift> Shifts { get; set; }
         public DbSet<Notification> Notifications { get; set; }
-        public DbSet<Department> Departments { get; set; }
         public DbSet<Institution> Institutions { get; set; }
-        public DbSet<Position> Positions { get; set; }
+
         public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

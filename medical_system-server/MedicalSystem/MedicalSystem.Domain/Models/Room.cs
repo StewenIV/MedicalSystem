@@ -12,9 +12,7 @@ namespace MedicalSystem.Domain.Models
         public RoomGender Gender { get; set; }
         public RoomType Type { get; set; }
         public RoomPriority Priority { get; set; }
-        public Guid? DepartmentId { get; set; }
         
-        public virtual Department Department { get; set; }
         public virtual ICollection<HospitalBed> HospitalBeds { get; set; }
     }
 }

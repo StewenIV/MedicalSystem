@@ -148,12 +148,12 @@ export interface PrimaryFormState {
   stdStatus: 'denies' | 'has' | null
 
   allergyStatus: 'none' | 'has'
-  allergies: { id: string; name: string; reaction: string }[]
+  allergies: { id: string; name: string; reaction: string; date?: string; comment?: string }[]
 
   operationsStatus: 'none' | 'has'
-  operations: { id: string; date: string; name: string; comment: string }[]
+  operations: { id: string; date: string; name: string; comment: string; diagnosis?: string; result?: string; complications?: string }[]
 
-  comorbidities: { id: string; diagnosis: string; activity: string }[]
+  comorbidities: { id: string; diagnosis: string; activity: string; severity?: string; diagnosisDate?: string; complications?: string }[]
 
   badHabitsStatus: 'none' | 'has'
   smoking: boolean
@@ -229,6 +229,7 @@ export interface DailyRoundFormState {
   inspectionDate: string
   inspectionTime: string
   doctor: string
+  doctorDisplayName?: string
   status: 'draft' | 'completed'
 
   temperature: string
@@ -266,6 +267,13 @@ export interface DailyRoundFormState {
   treatmentDecision: 'keep' | 'modify'
   prescriptions: RoundPrescription[]
 
+  // Medical history sections (for display and sync)
+  allergyStatus: 'none' | 'has'
+  allergies: { id: string; name: string; reaction: string; date?: string; comment?: string }[]
+  operationsStatus: 'none' | 'has'
+  operations: { id: string; date: string; name: string; comment: string; diagnosis?: string; result?: string; complications?: string }[]
+  comorbidities: { id: string; diagnosis: string; activity: string; severity?: string; diagnosisDate?: string; complications?: string }[]
+
   controlStudies: string
   nextInspection: string
 
@@ -279,6 +287,7 @@ export interface SavedInspection {
   date: string
   time: string
   doctor: string
+  doctorDisplayName?: string
   department?: string
   diagnosis?: string
   vitals?: {

@@ -16,13 +16,10 @@ namespace MedicalSystem.Data.EntityConfigurations
                 .IsRequired()
                 .HasMaxLength(200);
 
-            builder.HasOne(ms => ms.Position)
-                .WithMany(p => p.MedicalStaff)
-                .HasForeignKey(ms => ms.PositionId);
+            builder.Property(ms => ms.Position)
+                .IsRequired()
+                .HasMaxLength(100);
 
-            builder.HasOne(ms => ms.Department)
-                .WithMany(d => d.MedicalStaff)
-                .HasForeignKey(ms => ms.DepartmentId);
         }
     }
 }

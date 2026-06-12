@@ -86,7 +86,6 @@ namespace MedicalSystem.App.Test
                 Type = RoomType.Ordinary,
                 Gender = RoomGender.Male,
                 Priority = RoomPriority.Normal,
-                DepartmentId = Guid.NewGuid(),
                 Beds = new List<UpdateRoomBedDto>
                 {
                     new UpdateRoomBedDto { IsNew = true },
