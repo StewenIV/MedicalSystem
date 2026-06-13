@@ -1,4 +1,5 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react'
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react'
+import { toast } from 'react-toastify'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import {
@@ -14,7 +15,9 @@ import {
   Coffee,
   X,
   Check,
-  Edit3
+  Edit3,
+  LayoutGrid,
+  ClipboardList
 } from 'lucide-react'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 import {
@@ -78,9 +81,29 @@ import {
   MobileScrollRow,
   MobileDayChip,
   MobileDayNum,
-  MobileDayLabel
+  MobileDayLabel,
+  ViewModeContainer,
+  ViewModeBtn,
+  DaysSlider,
+  SliderDayBtn,
+  RosterColumnsGrid,
+  RosterColumn,
+  RosterColumnHeader,
+  RosterColumnTitle,
+  RosterBadgeCount,
+  RosterEmployeeCard,
+  RosterEmployeeInfo,
+  RosterEmployeeName,
+  RosterEmployeePosition,
+  RosterHoursBadge
 } from './styled'
-import { mockMedicalStaffSchedule, getStaffScheduleForMonth, Shift } from 'data/mockData'
+import { fetchMonthSchedule, updateShift, ServerStaffScheduleDto, ServerShiftDto } from 'api/scheduleApi'
+
+export interface Shift {
+  day: number
+  type: 'day' | 'night' | 'day-off'
+  hours: number
+}
 
 interface MedicalStaffSchedulePageProps {
   onNavigate?: (screen: string) => void
@@ -102,8 +125,6 @@ interface EditTarget {
   currentType: ShiftType
   currentHours: number
 }
-
-type ScheduleOverrides = Record<string, Record<number, Shift | null>>
 
 const selectStyles: StylesConfig<SelectOption, false> = {
   control: (base, state) => ({
@@ -174,9 +195,165 @@ const monthNames = [
 
 const daysOfWeek = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
 
+interface EmployeeRowProps {
+  employee: ServerStaffScheduleDto
+  daysArray: number[]
+  displayMonth: number
+  displayYear: number
+  monthNames: string[]
+  monthlySchedule: ServerShiftDto[] | null
+  openEditModal: (employeeId: string, employeeName: string, day: number, currentType: ShiftType, currentHours: number) => void
+}
+
+const EmployeeRow: React.FC<EmployeeRowProps> = React.memo(({
+  employee,
+  daysArray,
+  displayMonth,
+  displayYear,
+  monthNames,
+  monthlySchedule,
+  openEditModal
+}) => {
+  return (
+    <EmployeeCardRow>
+      <StickyNameColumn>
+        <EmployeeInfo>
+          <EmployeeName>{employee.staffName}</EmployeeName>
+          <Position>{employee.staffPosition}</Position>
+        </EmployeeInfo>
+      </StickyNameColumn>
+      {daysArray.map((day) => {
+        const date = new Date(displayYear, displayMonth, day)
+        const dayOfWeek = date.getDay()
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+        
+        let shift: ServerShiftDto | undefined = undefined
+        if (monthlySchedule) {
+          shift = monthlySchedule.find((s) => s.day === day)
+        } else {
+          shift = employee.schedule.find((s) => s.day === day)
+        }
+        
+        const type = shift ? shift.type : 'empty'
+
+        return (
+          <ShiftCell
+            key={`${employee.staffId}-${day}`}
+            $type={type as any}
+            $isWeekend={isWeekend}
+            onClick={() => openEditModal(employee.staffId, employee.staffName, day, type as ShiftType, shift ? shift.hours : 0)}
+            title={`Изменить смену: ${employee.staffName}, ${day} ${monthNames[displayMonth]}`}
+          >
+            {type === 'empty' ? (
+              <EmptyCell>·</EmptyCell>
+            ) : (
+              <ShiftBadge $type={type as 'day' | 'night' | 'day-off'}>
+                {type === 'day' && (
+                  <span className="badge-icon">
+                    <Sun size={11} strokeWidth={2.5} /> Д
+                  </span>
+                )}
+                {type === 'night' && (
+                  <span className="badge-icon">
+                    <Moon size={11} strokeWidth={2.5} /> Н
+                  </span>
+                )}
+                {type === 'day-off' && (
+                  <span className="badge-icon">
+                    <Coffee size={11} strokeWidth={2.5} /> В
+                  </span>
+                )}
+                {type !== 'day-off' && (
+                  <span className="badge-hrs">{shift?.hours}ч</span>
+                )}
+              </ShiftBadge>
+            )}
+          </ShiftCell>
+        )
+      })}
+    </EmployeeCardRow>
+  )
+})
+
+interface MobileEmployeeCardComponentProps {
+  employee: ServerStaffScheduleDto
+  daysArray: number[]
+  displayMonth: number
+  displayYear: number
+  monthNames: string[]
+  daysOfWeek: string[]
+  shiftLabels: Record<ShiftType, string>
+  monthlySchedule: ServerShiftDto[] | null
+  isCurrentMonth: boolean
+  currentDay: number
+  openEditModal: (employeeId: string, employeeName: string, day: number, currentType: ShiftType, currentHours: number) => void
+}
+
+const MobileEmployeeCardComponent: React.FC<MobileEmployeeCardComponentProps> = React.memo(({
+  employee,
+  daysArray,
+  displayMonth,
+  displayYear,
+  monthNames,
+  daysOfWeek,
+  shiftLabels,
+  monthlySchedule,
+  isCurrentMonth,
+  currentDay,
+  openEditModal
+}) => {
+  return (
+    <MobileEmployeeCard>
+      <MobileCardHeader>
+        <MobileCardName>{employee.staffName}</MobileCardName>
+        <MobileCardPosition>{employee.staffPosition}</MobileCardPosition>
+      </MobileCardHeader>
+      <MobileScrollRow>
+        {daysArray.map((day) => {
+          const date = new Date(displayYear, displayMonth, day)
+          const dayOfWeek = date.getDay()
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+          const isToday = isCurrentMonth && day === currentDay
+          
+          let shift: ServerShiftDto | undefined = undefined
+          if (monthlySchedule) {
+            shift = monthlySchedule.find((s) => s.day === day)
+          } else {
+            shift = employee.schedule.find((s) => s.day === day)
+          }
+          
+          const type = shift ? shift.type : 'empty'
+
+          return (
+            <MobileDayChip
+              key={day}
+              $type={type as ShiftType}
+              $isWeekend={isWeekend}
+              $isToday={isToday}
+              onClick={() => openEditModal(employee.staffId, employee.staffName, day, type as ShiftType, shift ? shift.hours : 0)}
+              title={`${day} ${monthNames[displayMonth]}: ${shiftLabels[type as ShiftType] || ''}`}
+            >
+              <MobileDayLabel $isWeekend={isWeekend} $isToday={isToday}>
+                {daysOfWeek[dayOfWeek]}
+              </MobileDayLabel>
+              <MobileDayNum $isWeekend={isWeekend} $isToday={isToday}>{day}</MobileDayNum>
+              <span className="mobile-shift-icon">
+                {type === 'day' && <Sun size={10} />}
+                {type === 'night' && <Moon size={10} />}
+                {type === 'day-off' && <Coffee size={10} />}
+                {type === 'empty' && '·'}
+              </span>
+            </MobileDayChip>
+          )
+        })}
+      </MobileScrollRow>
+    </MobileEmployeeCard>
+  )
+})
+
 const defaultHours: Record<string, number> = {
   day: 8,
-  night: 12,
+  night: 24,
   'day-off': 0,
   empty: 0
 }
@@ -196,52 +373,87 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
   const [displayMonth, setDisplayMonth] = useState(new Date().getMonth())
   const [displayYear, setDisplayYear] = useState(new Date().getFullYear())
   const [selectedPosition, setSelectedPosition] = useState<string | null>(null)
-  const [overrides, setOverrides] = useState<ScheduleOverrides>({})
+  
+  const [schedule, setSchedule] = useState<ServerStaffScheduleDto[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const [viewMode, setViewMode] = useState<'grid' | 'roster'>('grid')
+  const [selectedDay, setSelectedDay] = useState<number>(new Date().getDate())
 
   const [editTarget, setEditTarget] = useState<EditTarget | null>(null)
   const [modalType, setModalType] = useState<ShiftType>('day')
   const [modalHours, setModalHours] = useState<number | string>(8)
 
-  const daysInMonth = (month: number, year: number) => new Date(year, month + 1, 0).getDate()
+  const daysInMonth = useCallback((month: number, year: number) => new Date(year, month + 1, 0).getDate(), [])
+
+  const loadSchedule = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await fetchMonthSchedule(displayYear, displayMonth + 1)
+      setSchedule(data)
+    } catch (err: any) {
+      console.error('Ошибка при загрузке графика:', err)
+      setError(err.message || 'Не удалось загрузить график работы сотрудников.')
+    } finally {
+      setLoading(false)
+    }
+  }, [displayYear, displayMonth])
+
+  useEffect(() => {
+    loadSchedule()
+  }, [loadSchedule])
 
   const positions = useMemo(() => {
-    return Array.from(new Set(mockMedicalStaffSchedule.map((e) => e.position))).sort()
-  }, [])
+    return Array.from(new Set(schedule.map((e) => e.staffPosition))).sort()
+  }, [schedule])
 
   const filteredSchedule = useMemo(() => {
-    return mockMedicalStaffSchedule.filter((employee) => {
+    return schedule.filter((employee) => {
       if (selectedPosition && selectedPosition !== 'all') {
-        return employee.position === selectedPosition
+        return employee.staffPosition === selectedPosition
       }
       return true
     })
-  }, [selectedPosition])
+  }, [schedule, selectedPosition])
 
-  const getDaysArray = () => {
+  const daysArray = useMemo(() => {
     const days = daysInMonth(displayMonth, displayYear)
     return Array.from({ length: days }, (_, i) => i + 1)
-  }
-  const daysArray = getDaysArray()
+  }, [displayMonth, displayYear, daysInMonth])
 
-  const getShiftInfo = useCallback((employee: (typeof mockMedicalStaffSchedule)[0], day: number): Shift | undefined => {
-    const empOverrides = overrides[employee.id]
-    if (empOverrides && empOverrides[day] !== undefined) {
-      return empOverrides[day] ?? undefined
-    }
-    const monthlySchedule = getStaffScheduleForMonth(employee.id, displayMonth, displayYear)
+  const monthlySchedules = useMemo(() => {
+    const map: Record<string, ServerShiftDto[] | null> = {}
+    filteredSchedule.forEach(employee => {
+      map[employee.staffId] = employee.schedule
+    })
+    return map
+  }, [filteredSchedule])
+
+  const getShiftInfo = useCallback((employee: ServerStaffScheduleDto, day: number): ServerShiftDto | undefined => {
+    const monthlySchedule = monthlySchedules[employee.staffId]
     if (monthlySchedule) return monthlySchedule.find((s) => s.day === day)
     return employee.schedule.find((s) => s.day === day)
-  }, [overrides, displayMonth, displayYear])
+  }, [monthlySchedules])
 
-  const handlePreviousMonth = () => {
-    if (displayMonth === 0) { setDisplayMonth(11); setDisplayYear(displayYear - 1) }
-    else setDisplayMonth(displayMonth - 1)
-  }
+  const handlePreviousMonth = useCallback(() => {
+    if (displayMonth === 0) {
+      setDisplayMonth(11)
+      setDisplayYear(prev => prev - 1)
+    } else {
+      setDisplayMonth(prev => prev - 1)
+    }
+  }, [displayMonth])
 
-  const handleNextMonth = () => {
-    if (displayMonth === 11) { setDisplayMonth(0); setDisplayYear(displayYear + 1) }
-    else setDisplayMonth(displayMonth + 1)
-  }
+  const handleNextMonth = useCallback(() => {
+    if (displayMonth === 11) {
+      setDisplayMonth(0)
+      setDisplayYear(prev => prev + 1)
+    } else {
+      setDisplayMonth(prev => prev + 1)
+    }
+  }, [displayMonth])
 
   const stats = useMemo(() => {
     let totalShifts = 0, totalNightShifts = 0, totalHours = 0
@@ -256,7 +468,7 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
       })
     })
     return { totalShifts, totalNightShifts, totalHours }
-  }, [filteredSchedule, displayMonth, displayYear, daysArray, getShiftInfo])
+  }, [filteredSchedule, daysArray, getShiftInfo])
 
   const [isExporting, setIsExporting] = useState(false)
   const exportContainerRef = useRef<HTMLDivElement>(null)
@@ -281,57 +493,115 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
     }
   }
 
-  const openEditModal = (employee: (typeof mockMedicalStaffSchedule)[0], day: number) => {
-    const shift = getShiftInfo(employee, day)
-    const currentType: ShiftType = shift ? (shift.type as ShiftType) : 'empty'
-    const currentHours = shift ? shift.hours : 0
+  const openEditModal = useCallback((employeeId: string, employeeName: string, day: number, currentType: ShiftType, currentHours: number) => {
     setEditTarget({
-      employeeId: employee.id,
-      employeeName: employee.name,
+      employeeId,
+      employeeName,
       day,
       currentType,
       currentHours
     })
     setModalType(currentType)
     setModalHours(currentType === 'empty' ? 8 : currentHours)
-  }
+  }, [])
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     setEditTarget(null)
-  }
+  }, [])
 
-  const handleTypeChange = (type: ShiftType) => {
+  const handleTypeChange = useCallback((type: ShiftType) => {
     setModalType(type)
     if (type === 'day-off' || type === 'empty') {
       setModalHours(0)
     } else {
       setModalHours(defaultHours[type])
     }
-  }
+  }, [])
 
-  const handleSave = () => {
+  const handleSave = useCallback(async () => {
     if (!editTarget) return
     const { employeeId, day } = editTarget
 
-    setOverrides(prev => {
-      const empOverrides = { ...(prev[employeeId] || {}) }
-      if (modalType === 'empty') {
-        empOverrides[day] = null
-      } else {
-        empOverrides[day] = {
-          day,
-          type: modalType as 'day' | 'night' | 'day-off',
-          hours: modalType === 'day-off' ? 0 : modalHours as number
-        }
-      }
-      return { ...prev, [employeeId]: empOverrides }
-    })
-    closeModal()
-  }
+    const monthStr = String(displayMonth + 1).padStart(2, '0')
+    const dayStr = String(day).padStart(2, '0')
+    const dateStr = `${displayYear}-${monthStr}-${dayStr}`
+
+    try {
+      await updateShift({
+        staffId: employeeId,
+        date: dateStr,
+        type: modalType,
+        hours: modalType === 'day-off' ? 0 : Number(modalHours)
+      })
+
+      setSchedule(prevSchedule => {
+        return prevSchedule.map(employee => {
+          if (employee.staffId !== employeeId) return employee
+
+          const existingShifts = employee.schedule || []
+          let updatedSchedule: ServerShiftDto[]
+
+          if (modalType === 'empty') {
+            updatedSchedule = existingShifts.filter(s => s.day !== day)
+          } else {
+            const shiftIndex = existingShifts.findIndex(s => s.day === day)
+            const newShift: ServerShiftDto = {
+              day,
+              type: modalType as 'day' | 'night' | 'day-off',
+              hours: modalType === 'day-off' ? 0 : Number(modalHours)
+            }
+
+            if (shiftIndex >= 0) {
+              updatedSchedule = [...existingShifts]
+              updatedSchedule[shiftIndex] = newShift
+            } else {
+              updatedSchedule = [...existingShifts, newShift]
+            }
+          }
+
+          return {
+            ...employee,
+            schedule: updatedSchedule
+          }
+        })
+      })
+
+      closeModal()
+      toast.success('Смена успешно обновлена')
+    } catch (err: any) {
+      console.error('Ошибка при обновлении смены:', err)
+      toast.error('Не удалось обновить смену: ' + (err.message || err))
+    }
+  }, [editTarget, modalType, modalHours, displayMonth, displayYear, closeModal])
 
   const today = new Date()
   const isCurrentMonth = today.getMonth() === displayMonth && today.getFullYear() === displayYear
   const currentDay = today.getDate()
+
+  const activeDay = useMemo(() => {
+    const maxDays = daysInMonth(displayMonth, displayYear)
+    return selectedDay > maxDays ? maxDays : selectedDay
+  }, [selectedDay, displayMonth, displayYear, daysInMonth])
+
+  const rosterData = useMemo(() => {
+    const dayShift: typeof filteredSchedule = []
+    const nightShift: typeof filteredSchedule = []
+    const offShift: typeof filteredSchedule = []
+
+    filteredSchedule.forEach(employee => {
+      const shift = getShiftInfo(employee, activeDay)
+      const type = shift ? shift.type : 'empty'
+      if (type === 'day') {
+        dayShift.push(employee)
+      } else if (type === 'night') {
+        nightShift.push(employee)
+      } else {
+        offShift.push(employee)
+      }
+    })
+
+    return { dayShift, nightShift, offShift }
+  }, [filteredSchedule, activeDay, getShiftInfo])
 
   const shiftTypeOptions: { type: ShiftType; label: string; icon: React.ReactNode }[] = [
     { type: 'day', label: 'Дневная', icon: <Sun size={16} /> },
@@ -348,6 +618,25 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
           <HeaderSubtitle>Управление расписанием и сменами сотрудников</HeaderSubtitle>
         </HeaderLeft>
         <HeaderRight>
+          <ViewModeContainer>
+            <ViewModeBtn
+              $active={viewMode === 'grid'}
+              onClick={() => setViewMode('grid')}
+              title="Табличный вид"
+            >
+              <LayoutGrid size={15} />
+              Сетка
+            </ViewModeBtn>
+            <ViewModeBtn
+              $active={viewMode === 'roster'}
+              onClick={() => setViewMode('roster')}
+              title="Смены по дням"
+            >
+              <ClipboardList size={15} />
+              Смены по дням
+            </ViewModeBtn>
+          </ViewModeContainer>
+
           <MonthYearSelector>
             <NavigationButton onClick={handlePreviousMonth} title="Предыдущий месяц">
               <ChevronLeft size={18} />
@@ -416,164 +705,247 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
         </ToolbarRight>
       </Toolbar>
 
-      <TableWrapper className="desktop-table">
-        <TableScrollWrapper>
-          <Table>
-            <TheadGlass as="thead">
-              <tr>
-                <NameColumnHeader>Сотрудник</NameColumnHeader>
-                {daysArray.map((day) => {
-                  const date = new Date(displayYear, displayMonth, day)
-                  const dayOfWeek = date.getDay()
-                  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-                  const isToday = isCurrentMonth && day === currentDay
+      {loading ? (
+        <NoDataState style={{ minHeight: '300px' }}>
+          <div style={{ fontSize: '20px', marginBottom: '8px' }}>⌛ Загрузка...</div>
+          <div>Загрузка графика работы сотрудников...</div>
+        </NoDataState>
+      ) : error ? (
+        <NoDataState style={{ minHeight: '300px', borderColor: '#f87171' }}>
+          <div style={{ color: '#ef4444', fontSize: '24px', marginBottom: '10px' }}>⚠️</div>
+          <div style={{ color: '#ef4444', fontWeight: 600 }}>Не удалось загрузить данные</div>
+          <div style={{ color: '#ef4444' }}>{error}</div>
+        </NoDataState>
+      ) : viewMode === 'grid' ? (
+        <>
+          <TableWrapper className="desktop-table">
+            <TableScrollWrapper>
+              <Table>
+                <TheadGlass as="thead">
+                  <tr>
+                    <NameColumnHeader>Сотрудник</NameColumnHeader>
+                    {daysArray.map((day) => {
+                      const date = new Date(displayYear, displayMonth, day)
+                      const dayOfWeek = date.getDay()
+                      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+                      const isToday = isCurrentMonth && day === currentDay
 
+                      return (
+                        <DayTh key={day} $isWeekend={isWeekend}>
+                          <DayHeader $isWeekend={isWeekend} $isToday={isToday}>
+                            <span className="day-short">{daysOfWeek[dayOfWeek]}</span>
+                            <span className="day-num">{day}</span>
+                          </DayHeader>
+                        </DayTh>
+                      )
+                    })}
+                  </tr>
+                </TheadGlass>
+
+                <tbody>
+                  {filteredSchedule.length > 0 ? (
+                    filteredSchedule.map((employee, idx) => (
+                      <React.Fragment key={employee.staffId}>
+                        {idx > 0 && (
+                          <RowSpacer>
+                            <td colSpan={daysArray.length + 1} />
+                          </RowSpacer>
+                        )}
+                        <EmployeeRow
+                          employee={employee}
+                          daysArray={daysArray}
+                          displayMonth={displayMonth}
+                          displayYear={displayYear}
+                          monthNames={monthNames}
+                          monthlySchedule={employee.schedule}
+                          openEditModal={openEditModal}
+                        />
+                      </React.Fragment>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={daysArray.length + 1}>
+                        <NoDataState>
+                          <Users size={48} />
+                          <div>Сотрудники не найдены по заданным критериям</div>
+                        </NoDataState>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </Table>
+            </TableScrollWrapper>
+
+            <LegendBar>
+              <LegendItem $type="day">Дневная смена (8ч)</LegendItem>
+              <LegendItem $type="night">Ночная смена (12ч)</LegendItem>
+              <LegendItem $type="day-off">Выходной день</LegendItem>
+              <span style={{ marginLeft: 'auto', fontSize: '11.5px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Edit3 size={12} /> Нажмите на ячейку для редактирования
+              </span>
+            </LegendBar>
+          </TableWrapper>
+
+          <div className="mobile-schedule">
+            {filteredSchedule.length > 0 ? (
+              filteredSchedule.map((employee) => (
+                <MobileEmployeeCardComponent
+                  key={employee.staffId}
+                  employee={employee}
+                  daysArray={daysArray}
+                  displayMonth={displayMonth}
+                  displayYear={displayYear}
+                  monthNames={monthNames}
+                  daysOfWeek={daysOfWeek}
+                  shiftLabels={shiftLabels}
+                  monthlySchedule={employee.schedule}
+                  isCurrentMonth={isCurrentMonth}
+                  currentDay={currentDay}
+                  openEditModal={openEditModal}
+                />
+              ))
+            ) : (
+              <NoDataState>
+                <Users size={40} />
+                <div>Сотрудники не найдены</div>
+              </NoDataState>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <DaysSlider>
+            {daysArray.map((day) => {
+              const date = new Date(displayYear, displayMonth, day)
+              const dayOfWeek = date.getDay()
+              const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
+              const isToday = isCurrentMonth && day === currentDay
+              const active = day === activeDay
+
+              return (
+                <SliderDayBtn
+                  key={day}
+                  $active={active}
+                  $isWeekend={isWeekend}
+                  $isToday={isToday}
+                  onClick={() => setSelectedDay(day)}
+                >
+                  <span className="slider-weekday">{daysOfWeek[dayOfWeek]}</span>
+                  <span className="slider-num">{day}</span>
+                </SliderDayBtn>
+              )
+            })}
+          </DaysSlider>
+
+          <RosterColumnsGrid>
+            <RosterColumn $type="day">
+              <RosterColumnHeader>
+                <RosterColumnTitle>
+                  <Sun size={16} color="#3b82f6" />
+                  Дневная смена
+                </RosterColumnTitle>
+                <RosterBadgeCount $bg="#eff6ff" $color="#1d4ed8">
+                  {rosterData.dayShift.length}
+                </RosterBadgeCount>
+              </RosterColumnHeader>
+              {rosterData.dayShift.length > 0 ? (
+                rosterData.dayShift.map((employee) => {
+                  const shift = getShiftInfo(employee, activeDay)
                   return (
-                    <DayTh key={day} $isWeekend={isWeekend}>
-                      <DayHeader $isWeekend={isWeekend} $isToday={isToday}>
-                        <span className="day-short">{daysOfWeek[dayOfWeek]}</span>
-                        <span className="day-num">{day}</span>
-                      </DayHeader>
-                    </DayTh>
-                  )
-                })}
-              </tr>
-            </TheadGlass>
-
-            <tbody>
-              {filteredSchedule.length > 0 ? (
-                filteredSchedule.map((employee, idx) => (
-                  <React.Fragment key={employee.id}>
-                    {idx > 0 && (
-                      <RowSpacer>
-                        <td colSpan={daysArray.length + 1} />
-                      </RowSpacer>
-                    )}
-                    <EmployeeCardRow>
-                      <StickyNameColumn>
-                        <EmployeeInfo>
-                          <EmployeeName>{employee.name}</EmployeeName>
-                          <Position>{employee.position}</Position>
-                        </EmployeeInfo>
-                      </StickyNameColumn>
-                      {daysArray.map((day) => {
-                        const date = new Date(displayYear, displayMonth, day)
-                        const dayOfWeek = date.getDay()
-                        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-                        const shift = getShiftInfo(employee, day)
-                        const type = shift ? shift.type : 'empty'
-
-                        return (
-                          <ShiftCell
-                            key={`${employee.id}-${day}`}
-                            $type={type as any}
-                            $isWeekend={isWeekend}
-                            onClick={() => openEditModal(employee, day)}
-                            title={`Изменить смену: ${employee.name}, ${day} ${monthNames[displayMonth]}`}
-                          >
-                            {type === 'empty' ? (
-                              <EmptyCell>·</EmptyCell>
-                            ) : (
-                              <ShiftBadge $type={type as 'day' | 'night' | 'day-off'}>
-                                {type === 'day' && (
-                                  <span className="badge-icon">
-                                    <Sun size={11} strokeWidth={2.5} /> Д
-                                  </span>
-                                )}
-                                {type === 'night' && (
-                                  <span className="badge-icon">
-                                    <Moon size={11} strokeWidth={2.5} /> Н
-                                  </span>
-                                )}
-                                {type === 'day-off' && (
-                                  <span className="badge-icon">
-                                    <Coffee size={11} strokeWidth={2.5} /> В
-                                  </span>
-                                )}
-                                {type !== 'day-off' && (
-                                  <span className="badge-hrs">{shift?.hours}ч</span>
-                                )}
-                              </ShiftBadge>
-                            )}
-                          </ShiftCell>
-                        )
-                      })}
-                    </EmployeeCardRow>
-                  </React.Fragment>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={daysArray.length + 1}>
-                    <NoDataState>
-                      <Users size={48} />
-                      <div>Сотрудники не найдены по заданным критериям</div>
-                    </NoDataState>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </Table>
-        </TableScrollWrapper>
-
-        <LegendBar>
-          <LegendItem $type="day">Дневная смена (8ч)</LegendItem>
-          <LegendItem $type="night">Ночная смена (12ч)</LegendItem>
-          <LegendItem $type="day-off">Выходной день</LegendItem>
-          <span style={{ marginLeft: 'auto', fontSize: '11.5px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Edit3 size={12} /> Нажмите на ячейку для редактирования
-          </span>
-        </LegendBar>
-      </TableWrapper>
-
-      <div className="mobile-schedule">
-        {filteredSchedule.length > 0 ? (
-          filteredSchedule.map((employee) => (
-            <MobileEmployeeCard key={employee.id}>
-              <MobileCardHeader>
-                <MobileCardName>{employee.name}</MobileCardName>
-                <MobileCardPosition>{employee.position}</MobileCardPosition>
-              </MobileCardHeader>
-              <MobileScrollRow>
-                {daysArray.map((day) => {
-                  const date = new Date(displayYear, displayMonth, day)
-                  const dayOfWeek = date.getDay()
-                  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-                  const isToday = isCurrentMonth && day === currentDay
-                  const shift = getShiftInfo(employee, day)
-                  const type = shift ? shift.type : 'empty'
-
-                  return (
-                    <MobileDayChip
-                      key={day}
-                      $type={type as ShiftType}
-                      $isWeekend={isWeekend}
-                      $isToday={isToday}
-                      onClick={() => openEditModal(employee, day)}
-                      title={`${day} ${monthNames[displayMonth]}: ${shiftLabels[type as ShiftType] || ''}`}
+                    <RosterEmployeeCard
+                      key={employee.staffId}
+                      onClick={() => openEditModal(employee.staffId, employee.staffName, activeDay, 'day', shift?.hours || 8)}
                     >
-                      <MobileDayLabel $isWeekend={isWeekend} $isToday={isToday}>
-                        {daysOfWeek[dayOfWeek]}
-                      </MobileDayLabel>
-                      <MobileDayNum $isWeekend={isWeekend} $isToday={isToday}>{day}</MobileDayNum>
-                      <span className="mobile-shift-icon">
-                        {type === 'day' && <Sun size={10} />}
-                        {type === 'night' && <Moon size={10} />}
-                        {type === 'day-off' && <Coffee size={10} />}
-                        {type === 'empty' && '·'}
-                      </span>
-                    </MobileDayChip>
+                      <RosterEmployeeInfo>
+                        <RosterEmployeeName>{employee.staffName}</RosterEmployeeName>
+                        <RosterEmployeePosition>{employee.staffPosition}</RosterEmployeePosition>
+                      </RosterEmployeeInfo>
+                      <RosterHoursBadge $type="day">
+                        {shift?.hours || 8}ч
+                      </RosterHoursBadge>
+                    </RosterEmployeeCard>
                   )
-                })}
-              </MobileScrollRow>
-            </MobileEmployeeCard>
-          ))
-        ) : (
-          <NoDataState>
-            <Users size={40} />
-            <div>Сотрудники не найдены</div>
-          </NoDataState>
-        )}
-      </div>
+                })
+              ) : (
+                <div style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                  Нет сотрудников
+                </div>
+              )}
+            </RosterColumn>
+
+            <RosterColumn $type="night">
+              <RosterColumnHeader>
+                <RosterColumnTitle>
+                  <Moon size={16} color="#8b5cf6" />
+                  Ночная смена
+                </RosterColumnTitle>
+                <RosterBadgeCount $bg="#f5f3ff" $color="#5b21b6">
+                  {rosterData.nightShift.length}
+                </RosterBadgeCount>
+              </RosterColumnHeader>
+              {rosterData.nightShift.length > 0 ? (
+                rosterData.nightShift.map((employee) => {
+                  const shift = getShiftInfo(employee, activeDay)
+                  return (
+                    <RosterEmployeeCard
+                      key={employee.staffId}
+                      onClick={() => openEditModal(employee.staffId, employee.staffName, activeDay, 'night', shift?.hours || 12)}
+                    >
+                      <RosterEmployeeInfo>
+                        <RosterEmployeeName>{employee.staffName}</RosterEmployeeName>
+                        <RosterEmployeePosition>{employee.staffPosition}</RosterEmployeePosition>
+                      </RosterEmployeeInfo>
+                      <RosterHoursBadge $type="night">
+                        {shift?.hours || 12}ч
+                      </RosterHoursBadge>
+                    </RosterEmployeeCard>
+                  )
+                })
+              ) : (
+                <div style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                  Нет сотрудников
+                </div>
+              )}
+            </RosterColumn>
+
+            <RosterColumn $type="day-off">
+              <RosterColumnHeader>
+                <RosterColumnTitle>
+                  <Coffee size={16} color="#ef4444" />
+                  Выходной / Нет смены
+                </RosterColumnTitle>
+                <RosterBadgeCount $bg="#fff1f2" $color="#b91c1c">
+                  {rosterData.offShift.length}
+                </RosterBadgeCount>
+              </RosterColumnHeader>
+              {rosterData.offShift.length > 0 ? (
+                rosterData.offShift.map((employee) => {
+                  const shift = getShiftInfo(employee, activeDay)
+                  const type = shift ? shift.type : 'empty'
+                  return (
+                    <RosterEmployeeCard
+                      key={employee.staffId}
+                      onClick={() => openEditModal(employee.staffId, employee.staffName, activeDay, type as ShiftType, shift?.hours || 0)}
+                    >
+                      <RosterEmployeeInfo>
+                        <RosterEmployeeName>{employee.staffName}</RosterEmployeeName>
+                        <RosterEmployeePosition>{employee.staffPosition}</RosterEmployeePosition>
+                      </RosterEmployeeInfo>
+                      <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600 }}>
+                        {type === 'day-off' ? 'Выходной' : 'Нет смены'}
+                      </div>
+                    </RosterEmployeeCard>
+                  )
+                })
+              ) : (
+                <div style={{ color: '#94a3b8', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                  Нет сотрудников
+                </div>
+              )}
+            </RosterColumn>
+          </RosterColumnsGrid>
+        </>
+      )}
 
       {editTarget && (
         <ModalOverlay onClick={closeModal}>
@@ -641,7 +1013,7 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
                     onBlur={() => {
 
                       if (modalHours === '') {
-                        setModalHours(1);
+                        setModalHours(8);
                       }
                     }} />
                   <span style={{ fontSize: '13px', color: '#64748b' }}>ч</span>
@@ -716,10 +1088,10 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
             </thead>
             <tbody>
               {filteredSchedule.map((employee) => (
-                <tr key={employee.id}>
+                <tr key={employee.staffId}>
                   <td style={{ padding: '14px 18px', border: '1px solid #cbd5e1', background: 'white' }}>
-                    <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', marginBottom: '3px' }}>{employee.name}</div>
-                    <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>{employee.position}</div>
+                    <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '14px', marginBottom: '3px' }}>{employee.staffName}</div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '500' }}>{employee.staffPosition}</div>
                   </td>
                   {daysArray.map((day) => {
                     const shift = getShiftInfo(employee, day)

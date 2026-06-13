@@ -1244,3 +1244,227 @@ export const MobileDayNum = styled.span<{ $isWeekend?: boolean; $isToday?: boole
   color: ${({ $isWeekend, $isToday }) =>
     $isToday ? '#2563eb' : $isWeekend ? '#ef4444' : '#1e293b'};
 `
+
+export const ViewModeContainer = styled.div`
+  display: flex;
+  background: #f1f5f9;
+  padding: 4px;
+  border-radius: 12px;
+  gap: 2px;
+`
+
+export const ViewModeBtn = styled.button<{ $active?: boolean }>`
+  font-family: ${FONT};
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 9px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: ${({ $active }) => ($active ? '#ffffff' : 'transparent')};
+  color: ${({ $active }) => ($active ? '#0f172a' : '#64748b')};
+  box-shadow: ${({ $active }) => ($active ? '0 2px 8px rgba(15, 23, 42, 0.05)' : 'none')};
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #0f172a;
+  }
+`
+
+export const DaysSlider = styled.div`
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 4px;
+  margin-bottom: 24px;
+  -webkit-overflow-scrolling: touch;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+`
+
+export const SliderDayBtn = styled.button<{ $active?: boolean; $isWeekend?: boolean; $isToday?: boolean }>`
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 64px;
+  border-radius: 14px;
+  border: 1px solid;
+  cursor: pointer;
+  font-family: ${FONT};
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+  ${({ $active, $isWeekend, $isToday }) => {
+    if ($active) {
+      return css`
+        background: ${GRADIENT_ACCENT};
+        border-color: transparent;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(37, 99, 235, 0.24);
+      `
+    }
+    return css`
+      background: #ffffff;
+      border-color: ${$isToday ? '#2563eb' : '#e2e8f0'};
+      color: ${$isWeekend ? '#ef4444' : '#1e293b'};
+      box-shadow: ${$isToday ? '0 0 0 1px rgba(37, 99, 235, 0.2)' : '0 2px 4px rgba(0,0,0,0.02)'};
+      
+      &:hover {
+        border-color: #cbd5e1;
+        background: #f8fafc;
+        transform: translateY(-1px);
+      }
+    `
+  }}
+
+  .slider-weekday {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    opacity: 0.6;
+  }
+
+  .slider-num {
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 2px;
+  }
+`
+
+export const RosterColumnsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  animation: ${fadeIn} 0.4s ease-out;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+`
+
+export const RosterColumn = styled.div<{ $type: 'day' | 'night' | 'day-off' | 'empty' }>`
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.03);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 280px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: ${({ $type }) => {
+      if ($type === 'day') return '#3b82f6'
+      if ($type === 'night') return '#8b5cf6'
+      return '#ef4444' // day-off / off
+    }};
+  }
+`
+
+export const RosterColumnHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 12px;
+`
+
+export const RosterColumnTitle = styled.h3`
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+`
+
+export const RosterBadgeCount = styled.span<{ $bg?: string; $color?: string }>`
+  font-size: 11px;
+  font-weight: 700;
+  background: ${({ $bg }) => $bg || '#f1f5f9'};
+  color: ${({ $color }) => $color || '#64748b'};
+  padding: 2px 8px;
+  border-radius: 99px;
+`
+
+export const RosterEmployeeCard = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #cbd5e1;
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+    transform: translateY(-1px);
+  }
+`
+
+export const RosterEmployeeInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`
+
+export const RosterEmployeeName = styled.div`
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #0f172a;
+`
+
+export const RosterEmployeePosition = styled.div`
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+`
+
+export const RosterHoursBadge = styled.div<{ $type: 'day' | 'night' }>`
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  ${({ $type }) =>
+    $type === 'day'
+      ? css`
+          background: #eff6ff;
+          color: #1d4ed8;
+        `
+      : css`
+          background: #f5f3ff;
+          color: #5b21b6;
+        `}
+`

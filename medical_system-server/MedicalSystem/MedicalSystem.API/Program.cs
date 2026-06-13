@@ -34,6 +34,7 @@ builder.Services.AddScoped<IRoomQuery, RoomQuery>();
 builder.Services.AddScoped<IWardStatisticsQuery, WardStatisticsQuery>();
 builder.Services.AddScoped<IPatientSearchQuery, PatientSearchQuery>();
 builder.Services.AddScoped<IMedicineQuery, MedicineQuery>();
+builder.Services.AddScoped<IStaffScheduleQuery, StaffScheduleQuery>();
 
 builder.Services.AddScoped<IRoomStorage, RoomStorage>();
 builder.Services.AddScoped<IVitalSignStorage, VitalSignStorage>();
@@ -44,6 +45,7 @@ builder.Services.AddScoped<IPatientStorage, PatientStorage>();
 builder.Services.AddScoped<IMedicalProblemStorage, MedicalProblemStorage>();
 builder.Services.AddScoped<IEncounterStorage, EncounterStorage>();
 builder.Services.AddScoped<IMedicineStorage, MedicineStorage>();
+builder.Services.AddScoped<IShiftStorage, ShiftStorage>();
 
 builder.Services.AddScoped<VitalSignService>();
 builder.Services.AddScoped<PatientService>();
@@ -53,6 +55,7 @@ builder.Services.AddScoped<WardStatisticsService>();
 builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<EncounterService>();
 builder.Services.AddScoped<MedicineService>();
+builder.Services.AddScoped<StaffScheduleService>();
 
 
 builder.Services.AddScoped<AuthService>();

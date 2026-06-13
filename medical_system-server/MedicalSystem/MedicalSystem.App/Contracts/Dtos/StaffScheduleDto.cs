@@ -7,6 +7,16 @@ namespace MedicalSystem.App.Contracts.Dtos
     {
         public Guid StaffId { get; set; }
         public string StaffName { get; set; }
-        public Dictionary<int, string> Schedule { get; set; } // Day -> ShiftType
+        public string StaffPosition { get; set; }
+        public string StaffDepartment { get; set; }
+        public List<ShiftDto> Schedule { get; set; }
+    }
+
+    public class UpdateShiftDto
+    {
+        public Guid StaffId { get; set; }
+        public DateTime Date { get; set; }
+        public string Type { get; set; }
+        public short Hours { get; set; }
     }
 }

@@ -1,5 +1,3 @@
-import { lazy } from 'react'
-
-const MedicalStaffSchedulePage = lazy(() => import('./MedicalStaffSchedulePage'))
+import MedicalStaffSchedulePage from './MedicalStaffSchedulePage'
 
 export default MedicalStaffSchedulePage
