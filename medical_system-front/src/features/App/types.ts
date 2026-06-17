@@ -15,4 +15,5 @@ export interface I_AppStore {
   userId: string | null
   userLogin: string | null
   displayName: string | null
+  patientId: string | null
 }

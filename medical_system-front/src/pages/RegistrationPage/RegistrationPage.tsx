@@ -241,13 +241,13 @@ const RegistrationPage: React.FC = () => {
                   allowEmptyFormatting
                   value={formData.phone}
                   onValueChange={(values) =>
-                    setFormData({ ...formData, phone: values.value })
+                    setFormData({ ...formData, phone: values.value ? values.formattedValue : '' })
                   }
                   customInput={RegistrationInput}
                   error={errors.phone}
                   icon={<Phone />}
                   type="tel"
-                  format="+373 (##) ###-###"
+                  format="+### (###) ##-###"
                   mask="_"
                 />
               </Field>

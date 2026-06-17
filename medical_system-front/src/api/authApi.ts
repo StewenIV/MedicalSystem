@@ -7,6 +7,7 @@ export interface LoginResponse {
   userId: string
   login: string
   displayName?: string
+  patientId?: string
 }
 
 export interface MeResponse {
@@ -14,6 +15,7 @@ export interface MeResponse {
   login: string
   role: string
   displayName?: string
+  patientId?: string
 }
 
 export interface RegisterPatientPayload {

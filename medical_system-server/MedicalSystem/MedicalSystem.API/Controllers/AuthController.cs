@@ -42,9 +42,6 @@ namespace MedicalSystem.API.Controllers
             return Ok(new { message = "Выход выполнен успешно." });
         }
 
-        /// <summary>
-        /// GET /api/auth/me — возвращает данные текущего аутентифицированного пользователя.
-        /// </summary>
         [HttpGet("me")]
         [Authorize]
         public IActionResult Me()
@@ -54,19 +51,18 @@ namespace MedicalSystem.API.Controllers
             var login = User.FindFirstValue("login");
             var role = User.FindFirstValue(ClaimTypes.Role);
             var displayName = User.FindFirstValue("displayName");
+            var patientId = User.FindFirstValue("patientId");
 
             return Ok(new
             {
                 userId,
                 login,
                 role,
-                displayName
+                displayName,
+                patientId
             });
         }
 
-        /// <summary>
-        /// POST /api/auth/register — создание нового пользователя (только для ChiefDoctor).
-        /// </summary>
         [HttpPost("register")]
         [Authorize(Roles = "ChiefDoctor")]
         public async Task<IActionResult> Register([FromBody] RegisterRequestDto dto, CancellationToken token)
@@ -92,9 +88,6 @@ namespace MedicalSystem.API.Controllers
             }
         }
 
-        /// <summary>
-        /// POST /api/auth/register-patient — саморегистрация пациента (публичный эндпоинт).
-        /// </summary>
         [HttpPost("register-patient")]
         [AllowAnonymous]
         public async Task<IActionResult> RegisterPatient([FromBody] RegisterPatientRequestDto dto, CancellationToken token)

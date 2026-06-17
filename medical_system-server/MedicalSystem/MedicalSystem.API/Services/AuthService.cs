@@ -46,13 +46,11 @@ namespace MedicalSystem.API.Services
                 Role = user.Role,
                 UserId = user.Id.ToString(),
                 Login = user.Login,
-                DisplayName = user.DisplayName
+                DisplayName = user.DisplayName,
+                PatientId = user.PatientId?.ToString()
             };
         }
 
-        /// <summary>
-        /// Регистрирует нового пользователя (только ChiefDoctor).
-        /// </summary>
         public async Task<User> RegisterAsync(RegisterRequestDto dto, CancellationToken token = default)
         {
             var existing = await _context.Users
@@ -76,8 +74,7 @@ namespace MedicalSystem.API.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            // If a staff user is registered without a MedicalStaffId, auto-create a MedicalStaff record
-            var staffRoles = new[] { "Doctor", "Nurse", "HeadNurse", "ChiefDoctor", "LaboratoryEmployee" };
+                var staffRoles = new[] { "Doctor", "Nurse", "HeadNurse", "ChiefDoctor", "LaboratoryEmployee" };
             if (dto.MedicalStaffId == null && staffRoles.Contains(dto.Role))
             {
                 var position = dto.Role switch
@@ -106,9 +103,6 @@ namespace MedicalSystem.API.Services
             return user;
         }
 
-        /// <summary>
-        /// Регистрирует нового пациента (общедоступно).
-        /// </summary>
         public async Task<User> RegisterPatientAsync(RegisterPatientRequestDto dto, CancellationToken token = default)
         {
             var existing = await _context.Users
@@ -173,7 +167,7 @@ namespace MedicalSystem.API.Services
                 Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var claims = new[]
+            var claimsList = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
                 new Claim("login", user.Login),
@@ -182,12 +176,17 @@ namespace MedicalSystem.API.Services
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
+            if (user.PatientId.HasValue)
+            {
+                claimsList.Add(new Claim("patientId", user.PatientId.Value.ToString()));
+            }
+
             var expiry = int.TryParse(_config["Jwt:ExpiryMinutes"], out var mins) ? mins : 60;
 
             var jwtToken = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
-                claims: claims,
+                claims: claimsList,
                 expires: DateTime.UtcNow.AddMinutes(expiry),
                 signingCredentials: creds
             );

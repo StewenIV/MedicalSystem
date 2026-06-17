@@ -161,3 +161,4 @@ D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.App.Test\obj\Debug\
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.App.Test\obj\Debug\net10.0\MedicalSystem.App.Test.pdb
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.App.Test\obj\Debug\net10.0\MedicalSystem.App.Test.genruntimeconfig.cache
 D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.App.Test\obj\Debug\net10.0\ref\MedicalSystem.App.Test.dll
+D:\Dimpola\medical_system-server\MedicalSystem\MedicalSystem.App.Test\bin\Debug\net10.0\PhoneNumbers.dll

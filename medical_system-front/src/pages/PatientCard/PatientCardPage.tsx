@@ -457,6 +457,12 @@ const DISEASE_STATUS_OPTIONS: SelectOption[] = [
   { value: 'Вылечено', label: 'Вылечено' },
   { value: 'Ремиссия', label: 'Ремиссия' }
 ]
+const MARITAL_STATUS_OPTIONS: SelectOption[] = [
+  { value: 'Холост/Не замужем', label: 'Холост/Не замужем' },
+  { value: 'Женат/Замужем', label: 'Женат/Замужем' },
+  { value: 'В разводе', label: 'В разводе' },
+  { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
+]
 const SEVERITY_OPTIONS: SelectOption[] = [
   { value: 'Лёгкая', label: 'Лёгкая' },
   { value: 'Умеренная', label: 'Умеренная' },
@@ -1209,6 +1215,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     diseaseStatus: { options: DISEASE_STATUS_OPTIONS, placeholder: 'Статус заболевания...' },
     severity: { options: SEVERITY_OPTIONS, placeholder: 'Степень тяжести...' },
     gender: { options: GENDER_OPTIONS, placeholder: 'Пол...' },
+    maritalStatus: { options: MARITAL_STATUS_OPTIONS, placeholder: 'Семейное положение...' },
     status: { options: STATUS_OPTIONS, placeholder: 'Статус...' },
     doctor: { options: DOCTOR_OPTIONS, placeholder: 'Выберите врача...' }
   }
@@ -1216,17 +1223,10 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const phoneSchema = z.string().superRefine((val, ctx) => {
     const digits = val.replace(/\D/g, '')
     if (!val || digits.length === 0) return
-    if (!digits.startsWith('373')) {
+    if (digits.length < 6 || digits.length > 18) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Допускаются только молдавские номера (+373)'
-      })
-      return
-    }
-    if (digits.length !== 11) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Неверный формат: +373 XX XXX XXX (8 цифр после кода)'
+        message: 'Номер должен содержать от 6 до 18 цифр'
       })
     }
   })
@@ -1702,12 +1702,12 @@ const PatientCard: React.FC<PatientCardProps> = ({
         <FormGroup key={f.name}>
           {labelNode}
           <PatternFormat
-            format="+373 (##) ###-###"
+            format="+### (###) ##-###"
             mask="_"
             allowEmptyFormatting
             value={rawVal}
             onValueChange={(v) => {
-              const val = v.formattedValue
+              const val = v.value ? v.formattedValue : ''
               setFormData((p: any) => ({ ...p, [f.name]: val }))
               validatePhoneWithZod(f.name, val)
             }}
@@ -4348,7 +4348,12 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
     }
 
     try {
-      const newPatient = await addPatient(addFormData)
+      const payload = {
+        ...addFormData,
+        contacts: { country: 'Приднестровская Молдавская Республика' },
+        other: { language: 'Русский', nationality: 'Русский' }
+      }
+      const newPatient = await addPatient(payload)
       toast.success('Пациент успешно добавлен')
       setIsAddModalOpen(false)
       setAddFormData({

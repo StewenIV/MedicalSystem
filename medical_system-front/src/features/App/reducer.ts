@@ -11,7 +11,8 @@ const initialState: I_AppStore = {
   userRole: null,
   userId: null,
   userLogin: null,
-  displayName: null
+  displayName: null,
+  patientId: null
 }
 
 export const isLoggedReducer: T_Reducer<I_AppStore, boolean> = (
@@ -20,12 +21,12 @@ export const isLoggedReducer: T_Reducer<I_AppStore, boolean> = (
 ) => {
   state.isLogged = action.payload
   if (!action.payload) {
-    // очиается localStorage при выходе
     localStorage.removeItem(TOKEN_KEY)
     state.userRole = null
     state.userId = null
     state.userLogin = null
     state.displayName = null
+    state.patientId = null
   }
 }
 
@@ -45,12 +46,13 @@ export const userRoleReducer: T_Reducer<I_AppStore, UserRole> = (
 
 export const userInfoReducer: T_Reducer<
   I_AppStore,
-  { userId: string; userLogin: string; displayName: string | null; role: UserRole }
+  { userId: string; userLogin: string; displayName: string | null; role: UserRole; patientId: string | null }
 > = (state, action) => {
   state.userId = action.payload.userId
   state.userLogin = action.payload.userLogin
   state.displayName = action.payload.displayName
   state.userRole = action.payload.role
+  state.patientId = action.payload.patientId
   state.isLogged = true
 }
 
@@ -65,7 +67,6 @@ const appslice = createSlice({
   }
 })
 
-//action creators
 const {
   isLogged: setIsLoggedAction,
   isAppLoading: setIsAppLoadingAction,
@@ -92,7 +93,7 @@ export const setUserRole =
   }
 
 export const setUserInfo =
-  (info: { userId: string; userLogin: string; displayName: string | null; role: UserRole }): T_AppThunk =>
+  (info: { userId: string; userLogin: string; displayName: string | null; role: UserRole; patientId: string | null }): T_AppThunk =>
   (dispatch: Dispatch) => {
     dispatch(setUserInfoAction(info))
   }

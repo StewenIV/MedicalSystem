@@ -48,7 +48,6 @@ namespace MedicalSystem.Data.DataGeneration
                 var medicalProblems = await GetOrCreateAsync(context, context.MedicalProblems, () => TestDataGenerator.GenerateMedicalProblems(300, patients));
                 var encounters = await GetOrCreateAsync(context, context.Encounters, () => TestDataGenerator.GenerateEncounters(400, patients, medicalStaff));
                 
-                // Backfill existing encounters with Russian clinical details if missing
                 var missingDetails = encounters.Where(e => string.IsNullOrWhiteSpace(e.Type) || string.IsNullOrWhiteSpace(e.Objective) || string.IsNullOrWhiteSpace(e.Recommendations)).ToList();
                 if (missingDetails.Any())
                 {
@@ -65,8 +64,7 @@ namespace MedicalSystem.Data.DataGeneration
                     context.UpdateRange(missingDetails);
                 }
 
-                // Ensure EVERY patient has at least one encounter
-                var patientsWithNoEncounters = patients.Where(p => !context.Encounters.Any(e => e.PatientId == p.Id)).ToList();
+                 var patientsWithNoEncounters = patients.Where(p => !context.Encounters.Any(e => e.PatientId == p.Id)).ToList();
                 if (patientsWithNoEncounters.Any())
                 {
                     var types = new[] { "Осмотр", "Консультация", "Процедура", "Операция", "Анализы", "Выписка" };
@@ -154,20 +152,53 @@ namespace MedicalSystem.Data.DataGeneration
 
         private static async Task SeedUsersAsync(MedicalSystemDbContext context, ILogger logger, List<MedicalStaff> staffList)
         {
-            var existingPatient = await context.Users.AnyAsync(x => x.Login == "patient1");
-            if (!existingPatient)
+            var patients = await context.Patients.OrderBy(p => p.LastName).ThenBy(p => p.FirstName).ThenBy(p => p.Id).ToListAsync();
+            var existingUsers = await context.Users.ToListAsync();
+            var usersById = existingUsers.ToDictionary(u => u.Id);
+            var usersByLogin = existingUsers.ToDictionary(u => u.Login, StringComparer.OrdinalIgnoreCase);
+
+            int pCount = 1;
+            string hashedPwd = BC.HashPassword("Password123!");
+            foreach (var patient in patients)
             {
-                context.Users.Add(new User
+                string login = $"patient{pCount}";
+
+                if (!usersById.TryGetValue(patient.Id, out var existingUser))
                 {
-                    Id = Guid.NewGuid(),
-                    Login = "patient1",
-                    PasswordHash = BC.HashPassword("Password123!"),
-                    Role = "Patient",
-                    DisplayName = "Пациент Тестовый",
-                    CreatedAt = DateTime.UtcNow
-                });
-                logger.LogInformation("Создан тестовый пользователь: patient1 [Patient]");
+                    if (usersByLogin.TryGetValue(login, out var userWithLogin))
+                    {
+                        context.Users.Remove(userWithLogin);
+                        usersById.Remove(userWithLogin.Id);
+                        usersByLogin.Remove(login);
+                    }
+
+                    var newUser = new User
+                    {
+                        Id = patient.Id,
+                        Login = login,
+                        PasswordHash = hashedPwd,
+                        Role = "Patient",
+                        DisplayName = $"{patient.LastName} {patient.FirstName} {patient.MiddleName}".Trim(),
+                        PatientId = patient.Id,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    context.Users.Add(newUser);
+                    usersById[newUser.Id] = newUser;
+                    usersByLogin[newUser.Login] = newUser;
+                }
+                else
+                {
+                    existingUser.Login = login;
+                    existingUser.Role = "Patient";
+                    existingUser.DisplayName = $"{patient.LastName} {patient.FirstName} {patient.MiddleName}".Trim();
+                    existingUser.PasswordHash = hashedPwd;
+                    existingUser.PatientId = patient.Id;
+                    context.Users.Update(existingUser);
+                }
+                pCount++;
             }
+            await context.SaveChangesAsync();
+            logger.LogInformation("Создано/актуализировано {Count} аккаунтов пациентов с паролями patient1..patientN", patients.Count);
 
             int doctorCount = 1;
             int nurseCount = 1;
@@ -216,7 +247,6 @@ namespace MedicalSystem.Data.DataGeneration
 
                 string login = $"{loginPrefix}{currentCount}";
 
-                // Если пользователя для этого сотрудника еще нет
                 var existsByStaff = await context.Users.AnyAsync(x => x.MedicalStaffId == staff.Id);
                 if (!existsByStaff)
                 {
@@ -251,9 +281,6 @@ namespace MedicalSystem.Data.DataGeneration
 
             await context.SaveChangesAsync();
 
-            // Sync all existing MedicalStaff positions to match their User's Role,
-            // this fixes the old bogus data like "Глобальный оптимизационный помощник".
-            // It also ensures every staff User has a corresponding MedicalStaff record.
             var usersWithStaff = await context.Users.Include(u => u.MedicalStaff).ToListAsync();
             var staffRoles = new[] { "Doctor", "ChiefDoctor", "HeadNurse", "Nurse", "LaboratoryEmployee" };
 

@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
+import { PatternFormat } from 'react-number-format'
 import {
   Activity,
   FileText,
@@ -31,7 +32,30 @@ import {
 } from 'lucide-react'
 
 import { selectUserId, selectDisplayName } from 'features/App/selectors'
-import { fetchPatientCard, PatientCardDto } from 'api/patientsApi'
+import { PatientCardDto } from 'api/patientsApi'
+import { usePatientNotifications } from 'context/PatientNotificationsContext'
+import {
+  updatePatientContacts,
+  updatePatientGeneralInfo,
+  updatePatientOtherInfo,
+  updatePatientWorkInfo,
+  addPatientRelative,
+  updatePatientRelative,
+  changePatientPassword,
+  fetchPatientDocuments,
+  fetchPatientExams,
+  fetchPatientProfile
+} from 'api/patientCabinetApi'
+import {
+  generalSchema,
+  contactsSchema,
+  otherSchema,
+  workSchema,
+  relativeSchema,
+  changePasswordSchema
+} from 'lib/validators/patientCabinet'
+
+import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
 
 import {
   PageContainer,
@@ -143,6 +167,86 @@ interface ExamItem {
   parameters?: { name: string; value: string; norm: string; unit: string }[]
 }
 
+interface SelectOption {
+  value: string
+  label: string
+}
+
+const RELATION_OPTIONS: SelectOption[] = [
+  { value: 'Супруг(а)', label: 'Супруг(а)' },
+  { value: 'Мать', label: 'Мать' },
+  { value: 'Отец', label: 'Отец' },
+  { value: 'Сын', label: 'Сын' },
+  { value: 'Дочь', label: 'Дочь' },
+  { value: 'Брат', label: 'Брат' },
+  { value: 'Сестра', label: 'Сестра' },
+  { value: 'Бабушка', label: 'Бабушка' },
+  { value: 'Дедушка', label: 'Дедушка' },
+  { value: 'Опекун', label: 'Опекун' },
+  { value: 'Другое', label: 'Другое' }
+]
+
+const selectStyles: StylesConfig<SelectOption, false> = {
+  control: (base, state) => ({
+    ...base,
+    minHeight: '40px',
+    borderRadius: '10px',
+    borderColor: state.isFocused ? '#2563eb' : 'rgba(191,219,254,0.8)',
+    boxShadow: state.isFocused ? '0 0 0 3px rgba(37,99,235,0.12)' : 'none',
+    backgroundColor: '#ffffff',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    '&:hover': { borderColor: state.isFocused ? '#2563eb' : '#9ca3af' }
+  }),
+  valueContainer: (base) => ({ ...base, padding: '0 8px 0 12px' }),
+  placeholder: (base) => ({ ...base, color: '#94a3b8', fontSize: '14px' }),
+  input: (base) => ({ ...base, color: '#111827', fontSize: '14px' }),
+  singleValue: (base) => ({ ...base, color: '#111827', fontSize: '14px' }),
+  indicatorsContainer: (base) => ({ ...base, paddingRight: '5px' }),
+  indicatorSeparator: () => ({ display: 'none' }),
+  dropdownIndicator: (base, state) => ({
+    ...base,
+    color: state.isFocused ? '#2563eb' : '#64748b',
+    padding: '2px',
+    margin: '0 4px',
+    borderRadius: '6px',
+    border: '1px solid #e2e8f0',
+    backgroundColor: state.selectProps.menuIsOpen ? '#eaf1ff' : '#f8fafc',
+    transition: 'all 0.15s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    '&:hover': { color: '#2563eb', backgroundColor: '#eaf1ff', borderColor: '#c7d2fe' },
+    svg: { width: '14px', height: '14px' }
+  }),
+  menu: (base) => ({
+    ...base,
+    marginTop: '6px',
+    borderRadius: '10px',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 10px 24px rgba(15,23,42,0.12)',
+    overflow: 'hidden',
+    zIndex: 20
+  }),
+  menuList: (base) => ({ ...base, padding: '6px' }),
+  option: (base, state) => ({
+    ...base,
+    borderRadius: '7px',
+    fontSize: '14px',
+    cursor: 'pointer',
+    backgroundColor: state.isSelected ? '#2563eb' : state.isFocused ? '#eff6ff' : '#ffffff',
+    color: state.isSelected ? '#ffffff' : '#1f2937',
+    transition: 'all 0.15s ease',
+    ':active': { backgroundColor: state.isSelected ? '#2563eb' : '#dbeafe' }
+  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 })
+}
+
+const DropdownIndicator = (props: DropdownIndicatorProps<SelectOption, false>) => (
+  <components.DropdownIndicator {...props} />
+)
+const selectComponents = { DropdownIndicator, IndicatorSeparator: () => null }
+
 interface DocItem {
   id: string
   name: string
@@ -221,16 +325,47 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
     }
   }, [activeSection])
 
+  const { notifications, unreadCount, markRead, markAllRead } = usePatientNotifications()
+
   const [loading, setLoading] = useState(false)
   const [patientData, setPatientData] = useState<Partial<PatientCardDto> | null>(null)
 
-  const [phone, setPhone] = useState('')
+  // General Info
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [middleName, setMiddleName] = useState('')
+  const [dateOfBirth, setDateOfBirth] = useState('')
+  const [gender, setGender] = useState('0')
+  const [maritalStatus, setMaritalStatus] = useState('')
+
+  // Contacts
+  const [phoneMobile, setPhoneMobile] = useState('')
+  const [phoneHome, setPhoneHome] = useState('')
   const [email, setEmail] = useState('')
   const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [region, setRegion] = useState('')
+  const [zip, setZip] = useState('')
+  const [country, setCountry] = useState('')
+
+  // Other
+  const [language, setLanguage] = useState('')
+  const [nationality, setNationality] = useState('')
+
+  // Work
+  const [profession, setProfession] = useState('')
+  const [organization, setOrganization] = useState('')
+  const [workAddress, setWorkAddress] = useState('')
+
+  // Relative
+  const [relativeId, setRelativeId] = useState<string | null>(null)
   const [trustedName, setTrustedName] = useState('')
   const [trustedPhone, setTrustedPhone] = useState('')
   const [trustedRelation, setTrustedRelation] = useState('')
   const [profilePic, setProfilePic] = useState<string | null>(null)
+
+  const [profileErrors, setProfileErrors] = useState<Record<string, string>>({})
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
   const [oldPassword, setOldPassword] = useState('')
@@ -253,241 +388,115 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [activePrintDoc, setActivePrintDoc] = useState<DocItem | null>(null)
   const [pdfGenerating, setPdfGenerating] = useState(false)
 
-  const fallbackPatient: Partial<PatientCardDto> = {
-    id: 'P001',
-    lastName: 'Иванов',
-    firstName: 'Петр',
-    middleName: 'Сергеевич',
-    dateOfBirth: '1985-03-15',
-    gender: 'Мужской',
-    medcardNum: 'МК-10293',
-    historyNum: 'ИБ-2026-45',
-    statusText: 'Активное наблюдение',
-    doctorName: 'Смирнов А.А.',
-    departmentName: 'Пульмонологическое отделение',
-    contacts: {
-      phoneMobile: '+7 (999) 123-45-67',
-      email: 'i.petrov@example.com',
-      address: 'г. Москва, ул. Ленина, д. 10, кв. 5',
-      city: 'Москва',
-      country: 'Россия'
-    },
-    relatives: [
-      { id: 'R1', name: 'Петрова Мария Ивановна', relation: 'Супруга', phone: '+7 (999) 765-43-21' }
-    ]
-  }
-
-  const [examsList] = useState<ExamItem[]>([
-    {
-      id: 'EX01',
-      name: 'Общий анализ крови (ОАК)',
-      date: '12.05.2026',
-      resultDate: '13.05.2026',
-      type: 'lab',
-      status: 'ready',
-      doctor: 'Смирнов А.А.',
-      details:
-        'Лейкоциты в норме, незначительное повышение СОЭ до 18 мм/ч (норма до 15). Остальные показатели в пределах референсных значений. Картина характерна для разрешающегося воспалительного процесса.',
-      parameters: [
-        { name: 'Эритроциты (RBC)', value: '4.8 × 10¹²', norm: '4.0 – 5.1 × 10¹²', unit: '/л' },
-        { name: 'Гемоглобин (HGB)', value: '145', norm: '130 – 160', unit: 'г/л' },
-        { name: 'Лейкоциты (WBC)', value: '6.4 × 10⁹', norm: '4.0 – 9.0 × 10⁹', unit: '/л' },
-        { name: 'Тромбоциты (PLT)', value: '250 × 10⁹', norm: '180 – 320 × 10⁹', unit: '/л' },
-        { name: 'СОЭ (ESR)', value: '18', norm: '2 – 15', unit: 'мм/ч' }
-      ]
-    },
-    {
-      id: 'EX02',
-      name: 'Биохимический анализ крови',
-      date: '12.05.2026',
-      resultDate: '13.05.2026',
-      type: 'lab',
-      status: 'ready',
-      doctor: 'Смирнов А.А.',
-      details:
-        'Показатели печёночных ферментов (АЛТ, АСТ) и билирубина в пределах нормы. Функция почек не нарушена. Уровень глюкозы нормальный.',
-      parameters: [
-        { name: 'АЛТ', value: '24', norm: 'до 41', unit: 'Ед/л' },
-        { name: 'АСТ', value: '28', norm: 'до 37', unit: 'Ед/л' },
-        { name: 'Билирубин общий', value: '14.2', norm: '3.4 – 20.5', unit: 'мкмоль/л' },
-        { name: 'Креатинин', value: '88', norm: '62 – 106', unit: 'мкмоль/л' },
-        { name: 'Глюкоза', value: '5.2', norm: '4.1 – 5.9', unit: 'ммоль/л' }
-      ]
-    },
-    {
-      id: 'EX03',
-      name: 'КТ органов грудной клетки',
-      date: '10.05.2026',
-      resultDate: '11.05.2026',
-      type: 'imaging',
-      status: 'ready',
-      doctor: 'Орлова Е.В.',
-      details:
-        'Лёгкие расправлены. Справа в нижней доле — участки инфильтрации малой интенсивности с нечёткими контурами, характерные для разрешающейся пневмонии. Плевральные полости свободны. Средостение не смещено. Заключение: картина разрешающейся правосторонней пневмонии.'
-    },
-    {
-      id: 'EX04',
-      name: 'Спирометрия (ФВД)',
-      date: '08.05.2026',
-      resultDate: '08.05.2026',
-      type: 'functional',
-      status: 'ready',
-      doctor: 'Смирнов А.А.',
-      details:
-        'Проходимость дыхательных путей умеренно снижена. Проба с бронхолитиком (сальбутамол 400 мкг) положительная — прирост ОФВ1 составил 14% (260 мл). Рекомендован контроль через 2 недели.',
-      parameters: [
-        { name: 'ЖЕЛ (VC)', value: '86%', norm: '>80%', unit: '' },
-        { name: 'ФЖЕЛ (FVC)', value: '82%', norm: '>80%', unit: '' },
-        { name: 'ОФВ1 (FEV1)', value: '74%', norm: '>80%', unit: '' },
-        { name: 'Индекс Тиффно', value: '72%', norm: '>70%', unit: '' }
-      ]
-    },
-    {
-      id: 'EX05',
-      name: 'Рентгенография лёгких (2 проекции)',
-      date: '02.05.2026',
-      resultDate: '02.05.2026',
-      type: 'imaging',
-      status: 'ready',
-      doctor: 'Орлова Е.В.',
-      details:
-        'Справа в нижней доле — инфильтративное затенение средней интенсивности. Корни структурны, не расширены. Купола диафрагмы чёткие. Синусы свободны. Заключение: правосторонняя нижнедолевая пневмония.'
-    },
-    {
-      id: 'EX06',
-      name: 'Бакпосев мокроты на флору',
-      date: '15.05.2026',
-      resultDate: '—',
-      type: 'lab',
-      status: 'processing',
-      doctor: 'Козлова Н.И.',
-      details: 'Исследование находится в работе лаборатории. Ожидаемая дата готовности: 18.05.2026.'
-    }
-  ])
-
-  const [docsList] = useState<DocItem[]>([
-    {
-      id: 'D01',
-      name: 'Выписной эпикриз',
-      date: '15.05.2026',
-      type: 'выписка',
-      doctor: 'Смирнов А.А.',
-      content:
-        'Пациент находился на стационарном лечении в пульмонологическом отделении с 01.05.2026 по 15.05.2026 с диагнозом: Внебольничная правосторонняя нижнедолевая пневмония средней степени тяжести.\n\nПроведено лечение: антибиотикотерапия (амоксициллин/клавуланат), ингаляции с бронхолитиками, дыхательная гимнастика по Бутейко.\n\nСостояние при выписке удовлетворительное. Температура нормальная, одышка купирована. Даны рекомендации по амбулаторному долечиванию.'
-    },
-    {
-      id: 'D02',
-      name: 'Направление к аллергологу',
-      date: '16.05.2026',
-      type: 'направление',
-      doctor: 'Смирнов А.А.',
-      content:
-        'Направляется в городской аллергологический центр для консультации аллерголога-иммунолога и проведения кожных скарификационных проб.\n\nДиагноз направившего: Бронхиальная астма (под вопросом), сопутствующий аллергический ринит.'
-    },
-    {
-      id: 'D03',
-      name: 'Заключение пульмонолога по КТ',
-      date: '11.05.2026',
-      type: 'заключение',
-      doctor: 'Смирнов А.А.',
-      content:
-        'На основании данных КТ органов грудной клетки от 10.05.2026 выявлены признаки разрешающейся правосторонней пневмонии.\n\nРекомендовано: продолжить поддерживающую терапию, провести повторную спирометрию через 2 недели, контрольная рентгенография через 1 месяц.'
-    },
-    {
-      id: 'D04',
-      name: 'Справка о временной нетрудоспособности',
-      date: '15.05.2026',
-      type: 'справка',
-      doctor: 'Смирнов А.А.',
-      content:
-        'Настоящим удостоверяется, что пациент Иванов Петр Сергеевич находился на стационарном лечении в ГУ БЦГБ с 01.05.2026 по 15.05.2026.\n\nОсвобождение от физических нагрузок и профессиональной деятельности на указанный период.'
-    }
-  ])
-
-  const [notifications, setNotifications] = useState<NotificationItem[]>([
-    {
-      id: 'N01',
-      type: 'medical',
-      severity: 'warning',
-      title: 'Результаты спирометрии готовы',
-      text: 'Результаты исследования функции внешнего дыхания от 08.05.2026 загружены и доступны во вкладке «Обследования».',
-      details:
-        'Обнаружено умеренное снижение показателей ФЖЕЛ до 74% от нормы. Рекомендуется повторить исследование через 14 дней.',
-      time: '08.05.2026, 14:30',
-      read: false
-    },
-    {
-      id: 'N02',
-      type: 'medical',
-      severity: 'info',
-      title: 'Новый документ: выписной эпикриз',
-      text: 'Вам подготовлен выписной эпикриз от 15.05.2026. Скачайте его в разделе «Документы».',
-      details:
-        'В эпикризе содержатся рекомендации по дальнейшей схеме терапии, дыхательным упражнениям и ограничениям на физические нагрузки.',
-      time: '15.05.2026, 10:15',
-      read: false
-    },
-    {
-      id: 'N03',
-      type: 'consultation',
-      severity: 'info',
-      title: 'Назначена консультация врача',
-      text: 'Онлайн-консультация лечащего врача Смирнова А.А. запланирована на 22.05.2026 в 11:00.',
-      details:
-        'Ссылка на подключение к телемедицинской платформе будет доступна за 10 минут до начала приёма.',
-      time: '16.05.2026, 09:00',
-      read: false
-    },
-    {
-      id: 'N04',
-      type: 'system',
-      severity: 'critical',
-      title: 'Статус лечения изменён',
-      text: 'Статус изменён на: «Выписан с улучшением». Продолжение реабилитации амбулаторно.',
-      details:
-        'Внимание: пациент переведён на амбулаторный этап реабилитации. Необходимо строго соблюдать рекомендации лечащего врача и контролировать уровень сатурации кислорода.',
-      time: '15.05.2026, 11:00',
-      read: true
-    },
-    {
-      id: 'N05',
-      type: 'system',
-      severity: 'info',
-      title: 'Обновление системы завершено',
-      text: 'Плановое обновление личного кабинета пациента успешно завершено.',
-      time: '10.05.2026, 08:00',
-      read: true
-    }
-  ])
+  const [examsList, setExamsList] = useState<ExamItem[]>([])
+  const [docsList, setDocsList] = useState<DocItem[]>([])
 
   useEffect(() => {
     const load = async () => {
       setLoading(true)
       try {
         if (userId) {
-          const data = await fetchPatientCard(userId)
+          const data = await fetchPatientProfile()
           setPatientData(data)
-          setPhone(data.contacts?.phoneMobile || '')
+          setFirstName(data.firstName || '')
+          setLastName(data.lastName || '')
+          setMiddleName(data.middleName || '')
+          setDateOfBirth(data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : '')
+          setGender(data.gender === 'Female' ? '1' : '0')
+          setMaritalStatus(data.maritalStatus || '')
+
+          setPhoneMobile(data.contacts?.phoneMobile || '')
+          setPhoneHome(data.contacts?.phoneHome || '')
           setEmail(data.contacts?.email || '')
           setAddress(data.contacts?.address || '')
-          if (data.relatives?.[0]) {
+          setCity(data.contacts?.city || '')
+          setRegion(data.contacts?.region || '')
+          setZip(data.contacts?.zip || '')
+          setCountry(data.contacts?.country || 'Приднестровская Молдавская Республика')
+
+          setLanguage(data.other?.language || 'Русский')
+          setNationality(data.other?.nationality || 'Русский')
+
+          setProfession(data.work?.profession || '')
+          setOrganization(data.work?.organization || '')
+          setWorkAddress(data.work?.address || '')
+
+          if (data.relatives && data.relatives.length > 0) {
+            setRelativeId(data.relatives[0].id)
             setTrustedName(data.relatives[0].name || '')
             setTrustedPhone(data.relatives[0].phone || '')
             setTrustedRelation(data.relatives[0].relation || '')
+          } else {
+            setRelativeId(null)
+            setTrustedName('')
+            setTrustedPhone('')
+            setTrustedRelation('')
+          }
+
+          try {
+            const exams = await fetchPatientExams()
+            setExamsList(exams.map(e => ({
+              id: e.id,
+              name: e.name,
+              date: e.date,
+              resultDate: e.resultDate,
+              type: e.type,
+              status: e.status,
+              doctor: e.doctor || '',
+              details: e.details || '',
+              parameters: e.parameters
+            })))
+          } catch (e) {
+            console.error('Failed to fetch patient exams', e)
+          }
+
+          try {
+            const docs = await fetchPatientDocuments()
+            setDocsList(docs.map(d => ({
+              id: d.id,
+              name: d.name,
+              date: d.date || '',
+              type: (d.documentType || 'справка') as DocItem['type'],
+              doctor: d.doctorName || '',
+              content: d.content || '',
+              filePath: d.filePath || ''
+            })))
+          } catch (e) {
+            console.error('Failed to fetch patient documents', e)
           }
         } else {
-          setPatientData(fallbackPatient)
-          setPhone(fallbackPatient.contacts?.phoneMobile || '')
-          setEmail(fallbackPatient.contacts?.email || '')
-          setAddress(fallbackPatient.contacts?.address || '')
-          if (fallbackPatient.relatives?.[0]) {
-            setTrustedName(fallbackPatient.relatives[0].name || '')
-            setTrustedPhone(fallbackPatient.relatives[0].phone || '')
-            setTrustedRelation(fallbackPatient.relatives[0].relation || '')
-          }
+          setPatientData(null)
+          setFirstName('')
+          setLastName('')
+          setMiddleName('')
+          setDateOfBirth('')
+          setGender('0')
+          setMaritalStatus('')
+
+          setPhoneMobile('')
+          setPhoneHome('')
+          setEmail('')
+          setAddress('')
+          setCity('')
+          setRegion('')
+          setZip('')
+          setCountry('Приднестровская Молдавская Республика')
+
+          setLanguage('Русский')
+          setNationality('Русский')
+
+          setProfession('')
+          setOrganization('')
+          setWorkAddress('')
+
+          setRelativeId(null)
+          setTrustedName('')
+          setTrustedPhone('')
+          setTrustedRelation('')
         }
-      } catch {
-        setPatientData(fallbackPatient)
+      } catch (err) {
+        console.error('Failed to load patient card', err)
+        setPatientData(null)
       } finally {
         setLoading(false)
       }
@@ -505,7 +514,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
     return `${patientData.firstName || ''} ${patientData.middleName || ''}`.trim()
   }, [patientData])
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
 
   const filteredExams = useMemo(
     () =>
@@ -537,31 +545,97 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
     [notifications, notifFilter]
   )
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    toast.success('Профиль успешно обновлён')
-    setPatientData((prev) => ({
-      ...prev,
-      contacts: { ...prev?.contacts, phoneMobile: phone, email, address },
-      relatives: [{ id: 'R1', name: trustedName, phone: trustedPhone, relation: trustedRelation }]
-    }))
+
+    const generalResult = generalSchema.safeParse({ firstName, lastName, middleName, dateOfBirth, gender, maritalStatus })
+    const contactsResult = contactsSchema.safeParse({ phoneMobile, phoneHome, email, address, city, region, zip, country })
+    const otherResult = otherSchema.safeParse({ language, nationality })
+    const workResult = workSchema.safeParse({ profession, organization, address: workAddress })
+    
+    let relativeResult = null
+    if (trustedName || trustedPhone || trustedRelation) {
+      relativeResult = relativeSchema.safeParse({ name: trustedName, phone: trustedPhone, relation: trustedRelation })
+    }
+
+    const errors: Record<string, string> = {}
+    if (!generalResult.success) generalResult.error.errors.forEach((err) => { if (err.path[0]) errors[`general_${err.path[0]}`] = err.message })
+    if (!contactsResult.success) contactsResult.error.errors.forEach((err) => { if (err.path[0]) errors[`contacts_${err.path[0]}`] = err.message })
+    if (!otherResult.success) otherResult.error.errors.forEach((err) => { if (err.path[0]) errors[`other_${err.path[0]}`] = err.message })
+    if (!workResult.success) workResult.error.errors.forEach((err) => { if (err.path[0]) errors[`work_${err.path[0]}`] = err.message })
+    if (relativeResult && !relativeResult.success) relativeResult.error.errors.forEach((err) => { if (err.path[0]) errors[`relative_${err.path[0]}`] = err.message })
+
+    if (Object.keys(errors).length > 0) {
+      setProfileErrors(errors)
+      toast.error('Пожалуйста, исправьте ошибки заполнения формы')
+      return
+    }
+
+    setProfileErrors({})
+    setLoading(true)
+    try {
+      await updatePatientGeneralInfo(generalResult.data!)
+      await updatePatientContacts(contactsResult.data!)
+      await updatePatientOtherInfo(otherResult.data!)
+      await updatePatientWorkInfo(workResult.data!)
+      
+      if (relativeResult) {
+        if (relativeId) {
+          await updatePatientRelative(relativeId, relativeResult.data!)
+        } else {
+          await addPatientRelative(relativeResult.data!)
+        }
+      }
+
+      toast.success('Профиль успешно обновлён')
+      
+      if (userId) {
+        const data = await fetchPatientProfile()
+        setPatientData(data)
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Не удалось сохранить профиль')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!oldPassword || !newPassword || !confirmPassword) {
-      toast.error('Заполните все поля')
+
+    const result = changePasswordSchema.safeParse({ oldPassword, newPassword, confirmPassword })
+    if (!result.success) {
+      const errors: Record<string, string> = {}
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0]] = err.message
+      })
+      setPasswordErrors(errors)
       return
     }
-    if (newPassword !== confirmPassword) {
-      toast.error('Пароли не совпадают')
-      return
+
+    setPasswordErrors({})
+    setLoading(true)
+    try {
+      await changePatientPassword({ oldPassword, newPassword, confirmPassword })
+      toast.success('Пароль успешно изменён')
+      setIsPasswordModalOpen(false)
+      setOldPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      toast.error(err?.message || 'Не удалось сменить пароль')
+    } finally {
+      setLoading(false)
     }
-    toast.success('Пароль успешно изменён')
-    setIsPasswordModalOpen(false)
-    setOldPassword('')
-    setNewPassword('')
-    setConfirmPassword('')
+  }
+
+  const handleMarkAsRead = (id: string) => {
+    markRead(id)
+  }
+
+  const handleMarkAllAsRead = () => {
+    markAllRead()
+    toast.success('Все уведомления прочитаны')
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,15 +647,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
       toast.success('Фото обновлено')
     }
     reader.readAsDataURL(file)
-  }
-
-  const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
-  }
-
-  const handleMarkAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-    toast.success('Все уведомления прочитаны')
   }
 
   const generatePdf = async (node: HTMLElement, filename: string) => {
@@ -1207,28 +1272,64 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <SectionSubTitle>
                   <User size={13} />
-                  Персональные данные
+                  1. Основные данные
                 </SectionSubTitle>
                 <FieldsGrid>
                   <FieldWrapper>
-                    <FieldLabel>ФИО</FieldLabel>
-                    <FieldValueReadOnly>{patientFullName}</FieldValueReadOnly>
+                    <FieldLabel>Фамилия</FieldLabel>
+                    <InputField value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    {profileErrors.general_lastName && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.general_lastName}</div>}
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Имя</FieldLabel>
+                    <InputField value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                    {profileErrors.general_firstName && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.general_firstName}</div>}
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Отчество</FieldLabel>
+                    <InputField value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Дата рождения</FieldLabel>
-                    <FieldValueReadOnly>
-                      {patientData?.dateOfBirth
-                        ? new Date(patientData.dateOfBirth).toLocaleDateString('ru-RU')
-                        : '15.03.1985'}
-                    </FieldValueReadOnly>
+                    <InputField type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+                    {profileErrors.general_dateOfBirth && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.general_dateOfBirth}</div>}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Пол</FieldLabel>
-                    <FieldValueReadOnly>{patientData?.gender || 'Мужской'}</FieldValueReadOnly>
+                    <Select
+                      options={[{value: '0', label: 'Мужской'}, {value: '1', label: 'Женский'}]}
+                      value={[{value: '0', label: 'Мужской'}, {value: '1', label: 'Женский'}].find((o) => o.value === gender) || null}
+                      onChange={(option) => setGender(option ? option.value : '0')}
+                      placeholder="Выберите..."
+                      styles={selectStyles}
+                      components={selectComponents}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                    />
                   </FieldWrapper>
                   <FieldWrapper>
-                    <FieldLabel>№ медицинской карты</FieldLabel>
-                    <FieldValueReadOnly>{patientData?.medcardNum || 'МК-10293'}</FieldValueReadOnly>
+                    <FieldLabel>Сем. положение</FieldLabel>
+                    <Select
+                      options={[
+                        { value: 'Холост/Не замужем', label: 'Холост/Не замужем' },
+                        { value: 'Женат/Замужем', label: 'Женат/Замужем' },
+                        { value: 'В разводе', label: 'В разводе' },
+                        { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
+                      ]}
+                      value={[
+                        { value: 'Холост/Не замужем', label: 'Холост/Не замужем' },
+                        { value: 'Женат/Замужем', label: 'Женат/Замужем' },
+                        { value: 'В разводе', label: 'В разводе' },
+                        { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
+                      ].find((o) => o.value === maritalStatus) || null}
+                      onChange={(option) => setMaritalStatus(option ? option.value : '')}
+                      placeholder="Выберите..."
+                      styles={selectStyles}
+                      components={selectComponents}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      isClearable
+                    />
                   </FieldWrapper>
                 </FieldsGrid>
               </div>
@@ -1236,33 +1337,95 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <SectionSubTitle>
                   <MapPin size={13} />
-                  Контакты
+                  2. Контакты
                 </SectionSubTitle>
                 <FieldsGrid>
                   <FieldWrapper>
-                    <FieldLabel>Мобильный телефон</FieldLabel>
-                    <InputField
-                      placeholder="+7 (999) 000-00-00"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                    />
+                    <FieldLabel>Страна</FieldLabel>
+                    <InputField value={country} onChange={(e) => setCountry(e.target.value)} />
                   </FieldWrapper>
                   <FieldWrapper>
-                    <FieldLabel>Электронная почта</FieldLabel>
-                    <InputField
-                      type="email"
-                      placeholder="example@mail.ru"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
+                    <FieldLabel>Область / Регион</FieldLabel>
+                    <InputField value={region} onChange={(e) => setRegion(e.target.value)} />
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Город</FieldLabel>
+                    <InputField value={city} onChange={(e) => setCity(e.target.value)} />
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Индекс</FieldLabel>
+                    <InputField value={zip} onChange={(e) => setZip(e.target.value)} />
                   </FieldWrapper>
                   <FieldWrapper style={{ gridColumn: 'span 2' }}>
-                    <FieldLabel>Адрес проживания</FieldLabel>
-                    <InputField
-                      placeholder="Индекс, город, улица, дом, квартира"
-                      value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                    <FieldLabel>Адрес (Улица, Дом, Квартира)</FieldLabel>
+                    <InputField value={address} onChange={(e) => setAddress(e.target.value)} />
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Мобильный телефон</FieldLabel>
+                    <PatternFormat
+                      format="+### (###) ##-###"
+                      allowEmptyFormatting
+                      mask="_"
+                      value={phoneMobile}
+                      onValueChange={(values) => setPhoneMobile(values.value ? values.formattedValue : '')}
+                      customInput={InputField}
                     />
+                    {profileErrors.contacts_phoneMobile && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.contacts_phoneMobile}</div>}
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Домашний телефон</FieldLabel>
+                    <PatternFormat
+                      format="+### (###) #-##-##"
+                      allowEmptyFormatting
+                      mask="_"
+                      value={phoneHome}
+                      onValueChange={(values) => setPhoneHome(values.value ? values.formattedValue : '')}
+                      customInput={InputField}
+                    />
+                    {profileErrors.contacts_phoneHome && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.contacts_phoneHome}</div>}
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Email</FieldLabel>
+                    <InputField value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="example@mail.ru" />
+                    {profileErrors.contacts_email && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.contacts_email}</div>}
+                  </FieldWrapper>
+                </FieldsGrid>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <SectionSubTitle>
+                  <Activity size={13} />
+                  3. Прочее
+                </SectionSubTitle>
+                <FieldsGrid>
+                  <FieldWrapper>
+                    <FieldLabel>Язык</FieldLabel>
+                    <InputField value={language} onChange={(e) => setLanguage(e.target.value)} />
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Национальность</FieldLabel>
+                    <InputField value={nationality} onChange={(e) => setNationality(e.target.value)} />
+                  </FieldWrapper>
+                </FieldsGrid>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <SectionSubTitle>
+                  <Activity size={13} />
+                  4. Работа
+                </SectionSubTitle>
+                <FieldsGrid>
+                  <FieldWrapper>
+                    <FieldLabel>Профессия</FieldLabel>
+                    <InputField value={profession} onChange={(e) => setProfession(e.target.value)} />
+                  </FieldWrapper>
+                  <FieldWrapper>
+                    <FieldLabel>Организация</FieldLabel>
+                    <InputField value={organization} onChange={(e) => setOrganization(e.target.value)} />
+                  </FieldWrapper>
+                  <FieldWrapper style={{ gridColumn: 'span 2' }}>
+                    <FieldLabel>Рабочий адрес</FieldLabel>
+                    <InputField value={workAddress} onChange={(e) => setWorkAddress(e.target.value)} />
                   </FieldWrapper>
                 </FieldsGrid>
               </div>
@@ -1270,32 +1433,39 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <SectionSubTitle>
                   <UserCheck size={13} />
-                  Доверенное лицо
+                  5. Родственники / Доверенное лицо
                 </SectionSubTitle>
                 <FieldsGrid>
                   <FieldWrapper>
                     <FieldLabel>ФИО</FieldLabel>
-                    <InputField
-                      placeholder="Полное имя"
-                      value={trustedName}
-                      onChange={(e) => setTrustedName(e.target.value)}
-                    />
+                    <InputField placeholder="Полное имя" value={trustedName} onChange={(e) => setTrustedName(e.target.value)} />
+                    {profileErrors.relative_name && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.relative_name}</div>}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Степень родства</FieldLabel>
-                    <InputField
-                      placeholder="Супруга, мать, сын…"
-                      value={trustedRelation}
-                      onChange={(e) => setTrustedRelation(e.target.value)}
+                    <Select
+                      options={RELATION_OPTIONS}
+                      value={RELATION_OPTIONS.find((o) => o.value === trustedRelation) || null}
+                      onChange={(option) => setTrustedRelation(option ? option.value : '')}
+                      placeholder="Выберите..."
+                      styles={selectStyles}
+                      components={selectComponents}
+                      menuPortalTarget={document.body}
+                      menuPosition="fixed"
+                      isClearable
                     />
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Телефон</FieldLabel>
-                    <InputField
-                      placeholder="+7 (999) 000-00-00"
+                    <PatternFormat
+                      format="+### (###) ##-###"
+                      allowEmptyFormatting
+                      mask="_"
                       value={trustedPhone}
-                      onChange={(e) => setTrustedPhone(e.target.value)}
+                      onValueChange={(values) => setTrustedPhone(values.value ? values.formattedValue : '')}
+                      customInput={InputField}
                     />
+                    {profileErrors.relative_phone && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.relative_phone}</div>}
                   </FieldWrapper>
                 </FieldsGrid>
               </div>
@@ -1588,6 +1758,11 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       value={oldPassword}
                       onChange={(e) => setOldPassword(e.target.value)}
                     />
+                    {passwordErrors.oldPassword && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {passwordErrors.oldPassword}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Новый пароль</FieldLabel>
@@ -1597,6 +1772,11 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
+                    {passwordErrors.newPassword && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {passwordErrors.newPassword}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Подтверждение пароля</FieldLabel>
@@ -1606,6 +1786,11 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
+                    {passwordErrors.confirmPassword && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {passwordErrors.confirmPassword}
+                      </div>
+                    )}
                   </FieldWrapper>
                 </div>
               </ModalBody>

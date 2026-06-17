@@ -3,6 +3,7 @@ namespace MedicalSystem.Domain.Enums
     public enum SeverityType
     {
         Critical,
-        Warning
+        Warning,
+        Info
     }
 }

@@ -22,6 +22,13 @@ namespace MedicalSystem.Data.EntityConfigurations
                     v => (NotificationType)Enum.Parse(typeof(NotificationType), v))
                 .HasMaxLength(50);
 
+            builder.Property(n => n.RecipientType)
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (RecipientType)Enum.Parse(typeof(RecipientType), v))
+                .HasMaxLength(50)
+                .HasDefaultValue(RecipientType.Staff);
+
             builder.Property(n => n.Severity)
                 .HasConversion(
                     v => v.ToString(),
@@ -35,6 +42,11 @@ namespace MedicalSystem.Data.EntityConfigurations
             builder.HasOne(n => n.Patient)
                 .WithMany(p => p.Notifications)
                 .HasForeignKey(n => n.PatientId);
+
+            builder.HasOne(n => n.PatientRecipient)
+                .WithMany()
+                .HasForeignKey(n => n.PatientRecipientId);
+
         }
     }
 }

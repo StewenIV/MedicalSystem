@@ -14,9 +14,6 @@ namespace MedicalSystem.Domain.Models
         [Required]
         public string PasswordHash { get; set; } = string.Empty;
 
-        /// <summary>
-        /// Роль пользователя: Doctor, Nurse, HeadNurse, ChiefDoctor, LaboratoryEmployee, Patient
-        /// </summary>
         [Required]
         [StringLength(50)]
         public string Role { get; set; } = string.Empty;
@@ -27,6 +24,10 @@ namespace MedicalSystem.Domain.Models
         public Guid? MedicalStaffId { get; set; }
 
         public virtual MedicalStaff? MedicalStaff { get; set; }
+
+        public Guid? PatientId { get; set; }
+
+        public virtual Patient? Patient { get; set; }
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }

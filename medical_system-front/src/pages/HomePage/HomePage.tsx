@@ -81,6 +81,8 @@ import LaboratoryPage from 'pages/LaboratoryPage'
 import PatientCabinetPage from 'pages/PatientCabinetPage'
 import { selectDisplayName, selectUserRole } from 'features/App/selectors'
 import { UserRole } from 'features/App/types'
+import { usePatientNotifications } from 'context/PatientNotificationsContext'
+import { fetchPatientProfile } from 'api/patientCabinetApi'
 
 interface DoctorDashboardProps {
   onNavigate?: (screen: string, patientId?: string) => void
@@ -95,6 +97,8 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
 }) => {
   const displayName = useSelector(selectDisplayName)
   const reduxRole = useSelector(selectUserRole)
+  const patientNotifCtx = usePatientNotifications()
+
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [headerSearchQuery, setHeaderSearchQuery] = useState('')
@@ -115,60 +119,24 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
   const [wardRoundPatientId, setWardRoundPatientId] = useState<string | undefined>()
   const [wardRoundType, setWardRoundType] = useState<'hub' | 'primary' | 'daily'>('hub')
-
-  const mockPatientNotifications: Notification[] = [
-    {
-      id: 'N01',
-      type: 'lab-result',
-      message: 'Результаты спирометрии готовы',
-      details: 'Результаты исследования функции внешнего дыхания от 08.05.2026 загружены и доступны во вкладке «Обследования».',
-      time: '08.05.2026, 14:30',
-      read: false,
-      patientName: '',
-      patientId: '',
-    },
-    {
-      id: 'N02',
-      type: 'appointment-reminder',
-      message: 'Новый документ: выписной эпикриз',
-      details: 'Вам подготовлен выписной эпикриз от 15.05.2026. Скачайте его в разделе «Документы».',
-      time: '15.05.2026, 10:15',
-      read: false,
-      patientName: '',
-      patientId: '',
-    },
-    {
-      id: 'N03',
-      type: 'appointment-reminder',
-      message: 'Назначена консультация врача',
-      details: 'Онлайн-консультация лечащего врача Смирнова А.А. запланирована на 22.05.2026 в 11:00.',
-      time: '16.05.2026, 09:00',
-      read: false,
-      patientName: '',
-      patientId: '',
-    }
-  ]
-
-  const [notifications, setNotifications] = useState<Notification[]>(() => {
-    return reduxRole === 'Patient' ? mockPatientNotifications : mockNotifications
-  })
+  const [patientProfile, setPatientProfile] = useState<any>(null)
 
   React.useEffect(() => {
-    setNotifications(reduxRole === 'Patient' ? mockPatientNotifications : mockNotifications)
+    if (reduxRole === 'Patient') {
+      fetchPatientProfile()
+        .then((data) => setPatientProfile(data))
+        .catch(console.error)
+    }
   }, [reduxRole])
 
-  const [unreadPatientCount, setUnreadPatientCount] = useState(() => {
-    return Number(localStorage.getItem('patient_unread_notif_count') || '0')
-  })
+  // Уведомления медперсонала (локальный стейт)
+  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
 
   React.useEffect(() => {
-    const handleUpdate = () => {
-      setUnreadPatientCount(Number(localStorage.getItem('patient_unread_notif_count') || '0'))
+    if (reduxRole !== 'Patient') {
+      setNotifications(mockNotifications)
     }
-    window.addEventListener('patient_notif_update', handleUpdate)
-    handleUpdate()
-    return () => window.removeEventListener('patient_notif_update', handleUpdate)
-  }, [])
+  }, [reduxRole])
 
   const markRead = (id: string) =>
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
@@ -214,14 +182,18 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const handleNotifClick = (n: Notification) => {
     markRead(n.id)
     setNotificationsOpen(false)
-    if (reduxRole === 'Patient') {
-      setActiveSection('patient-notifications')
-    } else {
-      openPatientCard(n.patientId)
-    }
+    openPatientCard(n.patientId)
   }
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const handlePatientNotifClick = (id: string) => {
+    patientNotifCtx.markRead(id)
+    setNotificationsOpen(false)
+    setActiveSection('patient-notifications')
+  }
+
+    const unreadCount = reduxRole === 'Patient'
+    ? patientNotifCtx.unreadCount
+    : notifications.filter((n) => !n.read).length
 
   const formatDate = () => {
     const s = new Intl.DateTimeFormat('ru-RU', {
@@ -267,11 +239,19 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                     <PatientInfoWrapper>
                       <PatientInfoItem>
                         <PatientInfoDot $color="#3b82f6" />
-                        <PatientInfoLabel>Лечащий врач:</PatientInfoLabel> <span>Смирнов А.А.</span>
+                        <PatientInfoLabel>Лечащий врач:</PatientInfoLabel>{' '}
+                        <span>{patientProfile?.doctorName || 'Загрузка...'}</span>
                       </PatientInfoItem>
                       <PatientInfoItem>
                         <PatientInfoDot $color="#8b5cf6" />
-                        <PatientInfoLabel>Палата:</PatientInfoLabel> <span>304 (Койка 2)</span>
+                        <PatientInfoLabel>Палата:</PatientInfoLabel>{' '}
+                        <span>
+                          {patientProfile
+                            ? patientProfile.roomNumber
+                              ? `${patientProfile.roomNumber} (Койка ${patientProfile.bedNumber || 1})`
+                              : 'Не назначена'
+                            : 'Загрузка...'}
+                        </span>
                       </PatientInfoItem>
                     </PatientInfoWrapper>
                   )}
@@ -504,7 +484,49 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                 </CardHeader>
 
                 <CardBody style={{ maxHeight: 'calc(80vh - 80px)', overflowY: 'auto' }}>
-                  {notifications.length === 0 ? (
+                          {reduxRole === 'Patient' ? (
+                    patientNotifCtx.notifications.length === 0 ? (
+                      <EmptyNotifications>
+                        <Bell size={44} />
+                        <p>Нет новых уведомлений</p>
+                      </EmptyNotifications>
+                    ) : (
+                      patientNotifCtx.notifications.map((n) => (
+                        <NotificationItem
+                          key={n.id}
+                          read={n.read}
+                          onClick={() => handlePatientNotifClick(n.id)}
+                        >
+                          <NotificationContent>
+                            <NotificationIconWrapper
+                              severity={n.severity === 'critical' ? 'critical' : n.severity === 'warning' ? 'warning' : 'info'}
+                            >
+                              {n.type === 'medical' ? <AlertCircle size={18} /> : <Clock size={18} />}
+                            </NotificationIconWrapper>
+                            <NotificationBody>
+                              <NotificationHeader>
+                                <div style={{ flex: 1 }}>
+                                  {n.severity && n.severity !== 'info' && (
+                                    <SeverityBadge severity={n.severity as 'critical' | 'warning'}>
+                                      {n.severity === 'critical' ? 'Критично' : 'Внимание'}
+                                    </SeverityBadge>
+                                  )}
+                                  <NotificationTitle>{n.title}</NotificationTitle>
+                                </div>
+                                <NotificationTime>{n.time}</NotificationTime>
+                              </NotificationHeader>
+                              {n.details && (
+                                <NotificationDetails>
+                                  <strong>Детали:</strong> {n.details}
+                                </NotificationDetails>
+                              )}
+                            </NotificationBody>
+                          </NotificationContent>
+                        </NotificationItem>
+                      ))
+                    )
+                  ) : (
+                    notifications.length === 0 ? (
                     <EmptyNotifications>
                       <Bell size={44} />
                       <p>Нет новых уведомлений</p>
@@ -540,7 +562,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                               <NotificationTime>{n.time}</NotificationTime>
                             </NotificationHeader>
 
-                            {reduxRole !== 'Patient' && (
+                             {(reduxRole as string) !== 'Patient' && (
                               <NotificationPatient>
                                 <strong>{n.patientName}</strong>
                                 <span>ID: {n.patientId}</span>
@@ -558,7 +580,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                         </NotificationContent>
                       </NotificationItem>
                     ))
-                  )}
+                  ))}
                 </CardBody>
               </NotificationPanel>
             </>

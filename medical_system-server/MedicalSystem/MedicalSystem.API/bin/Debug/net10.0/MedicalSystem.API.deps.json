@@ -92,6 +92,14 @@
           }
         }
       },
+      "libphonenumber-csharp/9.0.32": {
+        "runtime": {
+          "lib/net10.0/PhoneNumbers.dll": {
+            "assemblyVersion": "9.0.32.0",
+            "fileVersion": "9.0.32.0"
+          }
+        }
+      },
       "Microsoft.AspNetCore.Authentication.JwtBearer/10.0.0-preview.1.25120.3": {
         "dependencies": {
           "Microsoft.IdentityModel.Protocols.OpenIdConnect": "8.0.1"
@@ -823,7 +831,8 @@
           "FluentValidation": "12.1.1",
           "FluentValidation.AspNetCore": "11.3.1",
           "FluentValidation.DependencyInjectionExtensions": "12.1.1",
-          "MedicalSystem.Domain": "1.0.0"
+          "MedicalSystem.Domain": "1.0.0",
+          "libphonenumber-csharp": "9.0.32"
         },
         "runtime": {
           "MedicalSystem.App.dll": {
@@ -911,6 +920,13 @@
       "sha512": "sha512-lQKvtaTDOXnoVJ20ibTuSIOf2i0uO0MPbDhd1jm238I+U/2ZnRENj0cktKZhtchBMtCUSRQ5v4xBCUbKNmyVMw==",
       "path": "humanizer.core/2.14.1",
       "hashPath": "humanizer.core.2.14.1.nupkg.sha512"
+    },
+    "libphonenumber-csharp/9.0.32": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-Ro1/CG2ONXaKDpcS7Ay9lRuAvfnPqrHTE2MrXDepuznM4i52ae/uoAamLmYRoPPiTIyVWTU1rDkplbjeH/tR1Q==",
+      "path": "libphonenumber-csharp/9.0.32",
+      "hashPath": "libphonenumber-csharp.9.0.32.nupkg.sha512"
     },
     "Microsoft.AspNetCore.Authentication.JwtBearer/10.0.0-preview.1.25120.3": {
       "type": "package",

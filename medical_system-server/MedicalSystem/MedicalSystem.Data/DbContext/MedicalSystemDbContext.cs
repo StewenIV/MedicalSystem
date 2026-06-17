@@ -37,6 +37,12 @@ namespace MedicalSystem.Data.DbContext
         {
             base.OnModelCreating(modelBuilder);
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedicalSystemDbContext).Assembly);
+
+            modelBuilder.Entity<User>()
+                .HasOne(u => u.Patient)
+                .WithMany()
+                .HasForeignKey(u => u.PatientId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

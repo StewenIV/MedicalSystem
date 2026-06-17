@@ -10,6 +10,7 @@ import { GlobalStyles } from 'App.styled'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { decodeJwt, isTokenValid } from 'api/authApi'
 import { UserRole } from 'features/App/types'
+import { PatientNotificationsProvider } from 'context/PatientNotificationsContext'
 
 const TOKEN_KEY = 'token'
 
@@ -26,7 +27,8 @@ const App = () => {
           userId: claims.sub ?? '',
           userLogin: claims.login ?? '',
           displayName: claims.displayName ?? null,
-          role: (claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? claims.role) as UserRole
+          role: (claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? claims.role) as UserRole,
+          patientId: claims.patientId ?? null
         }))
       }
     } else {
@@ -51,7 +53,13 @@ const App = () => {
       <ToastContainer />
       <GlobalStyles />
       <Suspense fallback={<div>Loading...</div>}>
-        {isLogged ? <PrivateRoutes /> : <PublicRoutes />}
+        {isLogged
+          ? (
+            <PatientNotificationsProvider>
+              <PrivateRoutes />
+            </PatientNotificationsProvider>
+          )
+          : <PublicRoutes />}
       </Suspense>
     </TooltipProvider>
   )

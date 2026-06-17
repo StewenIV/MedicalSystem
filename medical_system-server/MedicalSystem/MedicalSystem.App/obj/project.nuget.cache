@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "ON0BtL4ITNw=",
+  "dgSpecHash": "l4jEpGuxnAw=",
   "success": true,
   "projectFilePath": "D:\\Dimpola\\medical_system-server\\MedicalSystem\\MedicalSystem.App\\MedicalSystem.App.csproj",
   "expectedPackageFiles": [
@@ -8,6 +8,7 @@
     "C:\\Users\\amaca\\.nuget\\packages\\fluentvalidation\\12.1.1\\fluentvalidation.12.1.1.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\fluentvalidation.aspnetcore\\11.3.1\\fluentvalidation.aspnetcore.11.3.1.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\fluentvalidation.dependencyinjectionextensions\\12.1.1\\fluentvalidation.dependencyinjectionextensions.12.1.1.nupkg.sha512",
+    "C:\\Users\\amaca\\.nuget\\packages\\libphonenumber-csharp\\9.0.32\\libphonenumber-csharp.9.0.32.nupkg.sha512",
     "C:\\Users\\amaca\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\2.1.0\\microsoft.extensions.dependencyinjection.abstractions.2.1.0.nupkg.sha512"
   ],
   "logs": []

@@ -71,7 +71,8 @@ const AuthPage: React.FC = () => {
         userId: decodedToken.sub ?? '',
         userLogin: decodedToken.login ?? '',  
         displayName: decodedToken.displayName ?? null,
-        role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? decodedToken.role) as UserRole
+        role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? decodedToken.role) as UserRole,
+        patientId: decodedToken.patientId ?? null
       }))
       navigate(paths.home)
       toast.success(`Добро пожаловать, ${decodedToken.displayName ?? decodedToken.login}!`)

@@ -46,6 +46,10 @@ builder.Services.AddScoped<IMedicalProblemStorage, MedicalProblemStorage>();
 builder.Services.AddScoped<IEncounterStorage, EncounterStorage>();
 builder.Services.AddScoped<IMedicineStorage, MedicineStorage>();
 builder.Services.AddScoped<IShiftStorage, ShiftStorage>();
+builder.Services.AddScoped<INotificationStorage, NotificationStorage>();
+builder.Services.AddScoped<IDocumentStorage, DocumentStorage>();
+builder.Services.AddScoped<IPatientCabinetStorage, PatientCabinetStorage>();
+
 
 builder.Services.AddScoped<VitalSignService>();
 builder.Services.AddScoped<PatientService>();
@@ -56,6 +60,7 @@ builder.Services.AddScoped<SearchService>();
 builder.Services.AddScoped<EncounterService>();
 builder.Services.AddScoped<MedicineService>();
 builder.Services.AddScoped<StaffScheduleService>();
+builder.Services.AddScoped<PatientCabinetService>();
 
 
 builder.Services.AddScoped<AuthService>();
@@ -157,6 +162,14 @@ using (var scope = app.Services.CreateScope())
 
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"BedActionLogs\" ADD COLUMN IF NOT EXISTS \"PerformedByName\" text NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Encounters\" ADD COLUMN IF NOT EXISTS \"FormData\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ADD COLUMN IF NOT EXISTS \"Title\" text NOT NULL DEFAULT '';"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ADD COLUMN IF NOT EXISTS \"PatientRecipientId\" uuid NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ADD COLUMN IF NOT EXISTS \"RecipientType\" text NOT NULL DEFAULT 'Staff';"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ALTER COLUMN \"RecipientId\" DROP NOT NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PatientDocuments\" ADD COLUMN IF NOT EXISTS \"DocumentType\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PatientDocuments\" ADD COLUMN IF NOT EXISTS \"Content\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PatientDocuments\" ADD COLUMN IF NOT EXISTS \"DoctorName\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"PatientId\" uuid NULL;"); } catch { }
 
         await DataSeeder.SeedAsync(context, logger);
     }

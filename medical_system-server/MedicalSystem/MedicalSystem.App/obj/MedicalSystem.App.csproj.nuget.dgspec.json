@@ -69,6 +69,10 @@
             "FluentValidation.DependencyInjectionExtensions": {
               "target": "Package",
               "version": "[12.1.1, )"
+            },
+            "libphonenumber-csharp": {
+              "target": "Package",
+              "version": "[9.0.32, )"
             }
           },
           "imports": [

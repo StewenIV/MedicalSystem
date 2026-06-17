@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Storage;
@@ -31,7 +32,37 @@ namespace MedicalSystem.Data.Storages
 
         public async Task<IReadOnlyCollection<Notification>> GetAllAsync(CancellationToken token)
         {
-            return await _context.Notifications.ToListAsync(token);
+            return await _context.Notifications
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync(token);
+        }
+
+        public async Task<IReadOnlyCollection<Notification>> GetByPatientIdAsync(Guid patientId, CancellationToken token)
+        {
+            return await _context.Notifications
+                .Where(n => n.PatientRecipientId == patientId)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync(token);
+        }
+
+        public async Task<IReadOnlyCollection<Notification>> GetByRecipientIdAsync(Guid recipientId, CancellationToken token)
+        {
+            return await _context.Notifications
+                .Where(n => n.RecipientId == recipientId)
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync(token);
+        }
+
+        public async Task MarkAllAsReadByPatientAsync(Guid patientId, CancellationToken token)
+        {
+            var notifications = await _context.Notifications
+                .Where(n => n.PatientRecipientId == patientId && !n.IsRead)
+                .ToListAsync(token);
+
+            foreach (var n in notifications)
+                n.IsRead = true;
+
+            await _context.SaveChangesAsync(token);
         }
 
         public async Task RemoveAsync(Guid id, CancellationToken token)
