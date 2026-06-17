@@ -51,7 +51,11 @@ import {
   AccountText,
   AccountName,
   AccountRole,
-  AccountAvatar
+  AccountAvatar,
+  PatientInfoWrapper,
+  PatientInfoItem,
+  PatientInfoDot,
+  PatientInfoLabel
 } from './styled'
 
 import {
@@ -96,14 +100,14 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const [headerSearchQuery, setHeaderSearchQuery] = useState('')
   const [isNotificationsOpen, setNotificationsOpen] = useState(false)
   const [activeSection, setActiveSection] = useState<string>(() => {
-    if (reduxRole === 'Patient') return 'patient-cabinet'
+    if (reduxRole === 'Patient') return 'patient-dashboard'
     if (reduxRole === 'LaboratoryEmployee') return 'laboratory'
     return 'dashboard'
   })
 
   React.useEffect(() => {
     if (reduxRole === 'Patient') {
-      setActiveSection('patient-cabinet')
+      setActiveSection('patient-dashboard')
     } else if (reduxRole === 'LaboratoryEmployee') {
       setActiveSection('laboratory')
     }
@@ -112,7 +116,59 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const [wardRoundPatientId, setWardRoundPatientId] = useState<string | undefined>()
   const [wardRoundType, setWardRoundType] = useState<'hub' | 'primary' | 'daily'>('hub')
 
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
+  const mockPatientNotifications: Notification[] = [
+    {
+      id: 'N01',
+      type: 'lab-result',
+      message: 'Результаты спирометрии готовы',
+      details: 'Результаты исследования функции внешнего дыхания от 08.05.2026 загружены и доступны во вкладке «Обследования».',
+      time: '08.05.2026, 14:30',
+      read: false,
+      patientName: '',
+      patientId: '',
+    },
+    {
+      id: 'N02',
+      type: 'appointment-reminder',
+      message: 'Новый документ: выписной эпикриз',
+      details: 'Вам подготовлен выписной эпикриз от 15.05.2026. Скачайте его в разделе «Документы».',
+      time: '15.05.2026, 10:15',
+      read: false,
+      patientName: '',
+      patientId: '',
+    },
+    {
+      id: 'N03',
+      type: 'appointment-reminder',
+      message: 'Назначена консультация врача',
+      details: 'Онлайн-консультация лечащего врача Смирнова А.А. запланирована на 22.05.2026 в 11:00.',
+      time: '16.05.2026, 09:00',
+      read: false,
+      patientName: '',
+      patientId: '',
+    }
+  ]
+
+  const [notifications, setNotifications] = useState<Notification[]>(() => {
+    return reduxRole === 'Patient' ? mockPatientNotifications : mockNotifications
+  })
+
+  React.useEffect(() => {
+    setNotifications(reduxRole === 'Patient' ? mockPatientNotifications : mockNotifications)
+  }, [reduxRole])
+
+  const [unreadPatientCount, setUnreadPatientCount] = useState(() => {
+    return Number(localStorage.getItem('patient_unread_notif_count') || '0')
+  })
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setUnreadPatientCount(Number(localStorage.getItem('patient_unread_notif_count') || '0'))
+    }
+    window.addEventListener('patient_notif_update', handleUpdate)
+    handleUpdate()
+    return () => window.removeEventListener('patient_notif_update', handleUpdate)
+  }, [])
 
   const markRead = (id: string) =>
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
@@ -158,7 +214,11 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
   const handleNotifClick = (n: Notification) => {
     markRead(n.id)
     setNotificationsOpen(false)
-    openPatientCard(n.patientId)
+    if (reduxRole === 'Patient') {
+      setActiveSection('patient-notifications')
+    } else {
+      openPatientCard(n.patientId)
+    }
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -201,8 +261,20 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
           <SidebarInset className="overflow-x-hidden min-w-0">
             <Header>
               <HeaderInner>
-                <Flex>
+                <Flex style={{ alignItems: 'center' }}>
                   <SidebarTrigger className="rounded-lg" />
+                  {reduxRole === 'Patient' && (
+                    <PatientInfoWrapper>
+                      <PatientInfoItem>
+                        <PatientInfoDot $color="#3b82f6" />
+                        <PatientInfoLabel>Лечащий врач:</PatientInfoLabel> <span>Смирнов А.А.</span>
+                      </PatientInfoItem>
+                      <PatientInfoItem>
+                        <PatientInfoDot $color="#8b5cf6" />
+                        <PatientInfoLabel>Палата:</PatientInfoLabel> <span>304 (Койка 2)</span>
+                      </PatientInfoItem>
+                    </PatientInfoWrapper>
+                  )}
                 </Flex>
 
                 {reduxRole !== 'Patient' && reduxRole !== 'LaboratoryEmployee' && (
@@ -242,7 +314,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                     <span>{formatDate()}</span>
                   </DateLabel>
 
-                  {reduxRole !== 'Patient' && reduxRole !== 'LaboratoryEmployee' && (
+                  {reduxRole !== 'LaboratoryEmployee' && (
                     <IconButton onClick={() => setNotificationsOpen(true)}>
                       <Bell size={20} />
                       {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
@@ -400,7 +472,13 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
               {activeSection === 'settings' && (
                 <SectionTitle style={{ marginTop: 24 }}>Управление</SectionTitle>
               )}
-              {activeSection === 'patient-cabinet' && <PatientCabinetPage />}
+              {(activeSection === 'patient-dashboard' ||
+                activeSection === 'patient-exams' ||
+                activeSection === 'patient-docs' ||
+                activeSection === 'patient-notifications' ||
+                activeSection === 'patient-profile') && (
+                <PatientCabinetPage activeSection={activeSection} onSectionChange={setActiveSection} />
+              )}
               {activeSection === 'laboratory' && <LaboratoryPage />}
             </Main>
           </SidebarInset>
@@ -462,12 +540,14 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                               <NotificationTime>{n.time}</NotificationTime>
                             </NotificationHeader>
 
-                            <NotificationPatient>
-                              <strong>{n.patientName}</strong>
-                              <span>ID: {n.patientId}</span>
-                              {n.dateOfBirth && <span>Дата рождения: {n.dateOfBirth}</span>}
-                              {n.doctor && <span>Лечащий врач: {n.doctor}</span>}
-                            </NotificationPatient>
+                            {reduxRole !== 'Patient' && (
+                              <NotificationPatient>
+                                <strong>{n.patientName}</strong>
+                                <span>ID: {n.patientId}</span>
+                                {n.dateOfBirth && <span>Дата рождения: {n.dateOfBirth}</span>}
+                                {n.doctor && <span>Лечащий врач: {n.doctor}</span>}
+                              </NotificationPatient>
+                            )}
 
                             {n.details && (
                               <NotificationDetails>

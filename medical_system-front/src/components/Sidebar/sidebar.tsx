@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import {
   LayoutDashboard,
@@ -14,7 +14,9 @@ import {
   Pill,
   ClipboardList,
   FlaskConical,
-  UserCircle
+  UserCircle,
+  FileText,
+  Bell
 } from 'lucide-react'
 
 import {
@@ -114,8 +116,32 @@ const ALL_NAV_ITEMS: NavItem[] = [
     roles: ['ChiefDoctor']
   },
   {
-    key: 'patient-cabinet',
-    label: 'Личный кабинет',
+    key: 'patient-dashboard',
+    label: 'Главная',
+    icon: LayoutDashboard,
+    roles: ['Patient']
+  },
+  {
+    key: 'patient-exams',
+    label: 'Результаты обследований',
+    icon: FileText,
+    roles: ['Patient']
+  },
+  {
+    key: 'patient-docs',
+    label: 'Медицинские документы',
+    icon: ClipboardList,
+    roles: ['Patient']
+  },
+  {
+    key: 'patient-notifications',
+    label: 'Уведомления',
+    icon: Bell,
+    roles: ['Patient']
+  },
+  {
+    key: 'patient-profile',
+    label: 'Мой профиль',
     icon: UserCircle,
     roles: ['Patient']
   },
@@ -129,6 +155,19 @@ const ALL_NAV_ITEMS: NavItem[] = [
 
 export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) {
   const userRole = useSelector(selectUserRole)
+
+  const [unreadNotifCount, setUnreadNotifCount] = useState(() => {
+    return Number(localStorage.getItem('patient_unread_notif_count') || '3')
+  })
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      setUnreadNotifCount(Number(localStorage.getItem('patient_unread_notif_count') || '0'))
+    }
+    window.addEventListener('patient_notif_update', handleUpdate)
+    handleUpdate()
+    return () => window.removeEventListener('patient_notif_update', handleUpdate)
+  }, [])
 
   const navItems = useMemo(() => {
     if (!userRole) return []
@@ -182,6 +221,23 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
 
                     <span className="h-6 w-[1px] bg-slate-200"></span>
                     <span>{label}</span>
+                    {key === 'patient-notifications' && unreadNotifCount > 0 && (
+                      <span
+                        style={{
+                          marginLeft: 'auto',
+                          background: '#ef4444',
+                          color: '#ffffff',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: '99px',
+                          minWidth: '16px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        {unreadNotifCount}
+                      </span>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}

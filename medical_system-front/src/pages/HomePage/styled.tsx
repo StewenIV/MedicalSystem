@@ -58,6 +58,64 @@ export const Flex = styled.div`
   min-width: 0;
 `
 
+export const PatientInfoWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-left: 16px;
+  font-size: 13px;
+  color: #475569;
+  min-width: 0;
+
+  @media (max-width: 1024px) {
+    gap: 12px;
+  }
+
+  @media (max-width: 768px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    font-size: 11px;
+    margin-left: 12px;
+  }
+
+  @media (max-width: 480px) {
+    flex-direction: column;
+    gap: 1px;
+    font-size: 10px;
+    margin-left: 8px;
+  }
+`
+
+export const PatientInfoItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+`
+
+export const PatientInfoDot = styled.span<{ $color: string }>`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: ${props => props.$color};
+  flex-shrink: 0;
+`
+
+export const PatientInfoLabel = styled.strong`
+  font-weight: 600;
+  @media (max-width: 1024px) {
+    display: none;
+  }
+  @media (max-width: 768px) {
+    display: inline;
+  }
+  @media (max-width: 480px) {
+    display: none;
+  }
+`
+
 export const FlexRight = styled(Flex)`
 justify-content: flex-end;
   gap: 12px;
@@ -455,6 +513,8 @@ export const AccountName = styled.span`
   color: #1f2937;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   @media (max-width: 900px) {
     font-size: 13px;
@@ -468,6 +528,8 @@ export const AccountRole = styled.span`
   color: #6b7280;
   letter-spacing: 0;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   @media (max-width: 900px) {
     font-size: 11px;
