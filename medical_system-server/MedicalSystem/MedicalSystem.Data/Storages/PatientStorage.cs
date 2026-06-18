@@ -231,15 +231,19 @@ namespace MedicalSystem.Data.Storages
                 // This bypasses the EF change tracker entirely — no risk of conflicting
                 // DELETE+UPDATE on the same entity (root cause of DbUpdateConcurrencyException).
 
-                await _context.PatientRelatives.Where(r => r.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Relatives != null)
+                {
+                    await _context.PatientRelatives.Where(r => r.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Relatives)
                         _context.PatientRelatives.Add(new PatientRelative { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Relation = d.Relation, Phone = d.Phone });
+                }
 
-                await _context.Allergies.Where(a => a.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Allergies != null)
+                {
+                    await _context.Allergies.Where(a => a.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Allergies)
                         _context.Allergies.Add(new Allergy { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Reaction = d.Reaction, Date = d.Date, Comment = d.Comment });
+                }
 
                 // For PatientMedications, do a differential update instead of ExecuteDeleteAsync to avoid violating foreign key constraints for active prescriptions.
                 var existingMeds = await _context.PatientMedications
@@ -310,35 +314,47 @@ namespace MedicalSystem.Data.Storages
                     }
                 }
 
-                await _context.Operations.Where(o => o.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Operations != null)
+                {
+                    await _context.Operations.Where(o => o.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Operations)
                         _context.Operations.Add(new Operation { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Date = d.Date, Diagnosis = d.Diagnosis, Description = d.Description, Complications = d.Complications, Implants = d.Implants, Result = d.Result });
+                }
 
-                await _context.MedicalProblems.Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.MedicalProblems != null)
+                {
+                    await _context.MedicalProblems.Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.MedicalProblems)
                         _context.MedicalProblems.Add(new MedicalProblem { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, DiagnosisDate = d.DiagnosisDate, DiseaseStatus = d.DiseaseStatus, Severity = d.Severity, Description = d.Description, Complications = d.Complications, IsActive = d.IsActive });
+                }
 
-                await _context.Set<Prescription>().Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Prescriptions != null)
+                {
+                    await _context.Set<Prescription>().Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Prescriptions)
                         _context.Set<Prescription>().Add(new Prescription { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Drug = d.Drug, Dose = d.Dose ?? "", Form = d.Form ?? "", Route = d.Route ?? "", Regimen = d.Regimen ?? "", DateStart = d.DateStart ?? DateTime.UtcNow, DateEnd = d.DateEnd, Comment = d.Comment ?? "", DoctorId = ResolveDoctorId(d.DoctorName) });
+                }
 
-                await _context.LabResults.Where(l => l.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Labs != null)
+                {
+                    await _context.LabResults.Where(l => l.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Labs)
                         _context.LabResults.Add(new LabResult { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Date = d.Date ?? DateTime.UtcNow, Type = d.Type, Reason = d.Reason, StatusText = d.StatusText, DoctorId = ResolveDoctorId(d.DoctorName) });
+                }
 
-                await _context.Vaccines.Where(v => v.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Vaccines != null)
+                {
+                    await _context.Vaccines.Where(v => v.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Vaccines)
                         _context.Vaccines.Add(new Vaccine { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Disease = d.Disease, Date = d.Date, Validity = d.Validity, Manufacturer = d.Manufacturer, Series = d.Series });
+                }
 
-                await _context.PatientDocuments.Where(d => d.PatientId == patientId).ExecuteDeleteAsync(token);
                 if (dto.Documents != null)
+                {
+                    await _context.PatientDocuments.Where(d => d.PatientId == patientId).ExecuteDeleteAsync(token);
                     foreach (var d in dto.Documents)
                         _context.PatientDocuments.Add(new PatientDocument { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Date = d.Date, FilePath = d.FilePath });
+                }
 
                 await _context.SaveChangesAsync(token);
                 await transaction.CommitAsync(token);

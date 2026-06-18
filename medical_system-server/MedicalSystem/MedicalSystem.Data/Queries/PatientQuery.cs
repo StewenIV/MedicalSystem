@@ -93,6 +93,7 @@ namespace MedicalSystem.Data.Queries
         {
             var patient = await _context.Patients
                 .AsNoTracking()
+                .AsSplitQuery()
                 .Include(p => p.Doctor)
                 .Include(p => p.Institution)
                 .Include(p => p.Encounters).ThenInclude(e => e.Doctor)

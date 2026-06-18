@@ -5,7 +5,10 @@ using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Contracts.Query;
 using MedicalSystem.App.Contracts.Storage;
+using MedicalSystem.App.Contracts.Services;
 using MedicalSystem.Domain.Enums;
+using MedicalSystem.Domain.Models;
+using System.Linq;
 
 namespace MedicalSystem.App.Services
 {
@@ -13,11 +16,13 @@ namespace MedicalSystem.App.Services
     {
         private readonly IPatientQuery _patientQuery;
         private readonly IPatientStorage _patientStorage;
+        private readonly INotificationService _notificationService;
 
-        public PatientService(IPatientQuery patientQuery, IPatientStorage patientStorage)
+        public PatientService(IPatientQuery patientQuery, IPatientStorage patientStorage, INotificationService notificationService)
         {
             _patientQuery = patientQuery;
             _patientStorage = patientStorage;
+            _notificationService = notificationService;
         }
 
         public async Task<PatientCardDto?> GetPatientCardAsync(Guid patientId, CancellationToken token)
@@ -42,7 +47,29 @@ namespace MedicalSystem.App.Services
 
         public async Task UpdatePatientCardAsync(Guid patientId, PatientCardDto dto, Guid? userId, CancellationToken token)
         {
+            var oldCard = await _patientQuery.GetCardByIdAsync(patientId, token);
+            var oldLabIds = oldCard?.Labs?.Select(l => l.Id).ToHashSet() ?? new HashSet<Guid>();
+
             await _patientStorage.UpdatePatientCardAsync(patientId, dto, userId, token);
+
+            if (dto.Labs != null)
+            {
+                foreach (var lab in dto.Labs)
+                {
+                    if (lab.Id == Guid.Empty || !oldLabIds.Contains(lab.Id))
+                    {
+                        await _notificationService.SendNotificationAsync(new Notification
+                        {
+                            Type = NotificationType.LabResult,
+                            Severity = SeverityType.Info,
+                            Title = "Новый анализ",
+                            RecipientType = RecipientType.Patient,
+                            Message = $"Вам назначен новый анализ: {lab.Type}" + (string.IsNullOrWhiteSpace(lab.Reason) ? "" : $". Причина: {lab.Reason}"),
+                            PatientRecipientId = patientId
+                        }, token);
+                    }
+                }
+            }
         }
 
         public async Task<PatientListDto> AddPatientAsync(PatientCardDto dto, CancellationToken token)

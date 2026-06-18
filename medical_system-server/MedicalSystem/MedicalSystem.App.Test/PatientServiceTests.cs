@@ -12,6 +12,7 @@ using Xunit;
 using MedicalSystem.Domain.Models;
 using MedicalSystem.Domain.Enums;
 using Assert = Xunit.Assert;
+using MedicalSystem.App.Contracts.Services;
 
 namespace MedicalSystem.App.Test
 {
@@ -19,13 +20,15 @@ namespace MedicalSystem.App.Test
     {
         private readonly Mock<IPatientQuery> _mockPatientQuery;
         private readonly Mock<IPatientStorage> _mockPatientStorage;
+        private readonly Mock<INotificationService> _mockNotificationService;
         private readonly PatientService _patientService;
 
         public PatientServiceTests()
         {
             _mockPatientQuery = new Mock<IPatientQuery>();
             _mockPatientStorage = new Mock<IPatientStorage>();
-            _patientService = new PatientService(_mockPatientQuery.Object, _mockPatientStorage.Object);
+            _mockNotificationService = new Mock<INotificationService>();
+            _patientService = new PatientService(_mockPatientQuery.Object, _mockPatientStorage.Object, _mockNotificationService.Object);
         }
         
         [Fact]

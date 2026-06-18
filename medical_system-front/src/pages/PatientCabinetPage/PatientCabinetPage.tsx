@@ -275,6 +275,39 @@ interface PatientCabinetPageProps {
   onSectionChange?: (section: string) => void
 }
 
+function LoadingSpinner() {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 48,
+        color: '#9ca3af',
+        fontSize: 14,
+        gap: 8,
+        height: '100%',
+        minHeight: '200px'
+      }}
+    >
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="#2563eb"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+        style={{ animation: 'spin 1s linear infinite' }}
+      >
+        <circle cx="12" cy="12" r="10" strokeOpacity="0.3" />
+        <path d="M12 2a10 10 0 0 1 10 10" />
+      </svg>
+      Загрузка данных...
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  )
+}
+
 // Иконка типа исследования
 const ExamTypeIcon: React.FC<{ type: string }> = ({ type }) => {
   const props = { size: 14 }
@@ -365,6 +398,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [trustedName, setTrustedName] = useState('')
   const [trustedPhone, setTrustedPhone] = useState('')
   const [trustedRelation, setTrustedRelation] = useState('')
+  const [otherRelatives, setOtherRelatives] = useState<{id: string; name: string; relation: string; phone: string}[]>([])
   const [profilePic, setProfilePic] = useState<string | null>(null)
 
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({})
@@ -404,7 +438,9 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           setFirstName(data.firstName || '')
           setLastName(data.lastName || '')
           setMiddleName(data.middleName || '')
-          setDateOfBirth(data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : '')
+          setDateOfBirth(
+            data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : ''
+          )
           setGender(data.gender === 'Female' ? '1' : '0')
           setMaritalStatus(data.maritalStatus || '')
 
@@ -429,41 +465,47 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             setTrustedName(data.relatives[0].name || '')
             setTrustedPhone(data.relatives[0].phone || '')
             setTrustedRelation(data.relatives[0].relation || '')
+            setOtherRelatives(data.relatives.slice(1))
           } else {
             setRelativeId(null)
             setTrustedName('')
             setTrustedPhone('')
             setTrustedRelation('')
+            setOtherRelatives([])
           }
 
           try {
             const exams = await fetchPatientExams()
-            setExamsList(exams.map(e => ({
-              id: e.id,
-              name: e.name,
-              date: e.date,
-              resultDate: e.resultDate,
-              type: e.type,
-              status: e.status,
-              doctor: e.doctor || '',
-              details: e.details || '',
-              parameters: e.parameters
-            })))
+            setExamsList(
+              exams.map((e) => ({
+                id: e.id,
+                name: e.name,
+                date: e.date,
+                resultDate: e.resultDate,
+                type: e.type,
+                status: e.status,
+                doctor: e.doctor || '',
+                details: e.details || '',
+                parameters: e.parameters
+              }))
+            )
           } catch (e) {
             console.error('Failed to fetch patient exams', e)
           }
 
           try {
             const docs = await fetchPatientDocuments()
-            setDocsList(docs.map(d => ({
-              id: d.id,
-              name: d.name,
-              date: d.date || '',
-              type: (d.documentType || 'справка') as DocItem['type'],
-              doctor: d.doctorName || '',
-              content: d.content || '',
-              filePath: d.filePath || ''
-            })))
+            setDocsList(
+              docs.map((d) => ({
+                id: d.id,
+                name: d.name,
+                date: d.date || '',
+                type: (d.documentType || 'справка') as DocItem['type'],
+                doctor: d.doctorName || '',
+                content: d.content || '',
+                filePath: d.filePath || ''
+              }))
+            )
           } catch (e) {
             console.error('Failed to fetch patient documents', e)
           }
@@ -517,7 +559,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
     return `${patientData.firstName || ''} ${patientData.middleName || ''}`.trim()
   }, [patientData])
 
-
   const filteredExams = useMemo(
     () =>
       examsList.filter(
@@ -551,22 +592,57 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const generalResult = generalSchema.safeParse({ firstName, lastName, middleName, dateOfBirth, gender, maritalStatus })
-    const contactsResult = contactsSchema.safeParse({ phoneMobile, phoneHome, email, address, city, region, zip, country })
+    const generalResult = generalSchema.safeParse({
+      firstName,
+      lastName,
+      middleName,
+      dateOfBirth,
+      gender,
+      maritalStatus
+    })
+    const contactsResult = contactsSchema.safeParse({
+      phoneMobile,
+      phoneHome,
+      email,
+      address,
+      city,
+      region,
+      zip,
+      country
+    })
     const otherResult = otherSchema.safeParse({ language, nationality })
     const workResult = workSchema.safeParse({ profession, organization, address: workAddress })
-    
+
     let relativeResult = null
     if (trustedName || trustedPhone || trustedRelation) {
-      relativeResult = relativeSchema.safeParse({ name: trustedName, phone: trustedPhone, relation: trustedRelation })
+      relativeResult = relativeSchema.safeParse({
+        name: trustedName,
+        phone: trustedPhone,
+        relation: trustedRelation
+      })
     }
 
     const errors: Record<string, string> = {}
-    if (!generalResult.success) generalResult.error.errors.forEach((err) => { if (err.path[0]) errors[`general_${err.path[0]}`] = err.message })
-    if (!contactsResult.success) contactsResult.error.errors.forEach((err) => { if (err.path[0]) errors[`contacts_${err.path[0]}`] = err.message })
-    if (!otherResult.success) otherResult.error.errors.forEach((err) => { if (err.path[0]) errors[`other_${err.path[0]}`] = err.message })
-    if (!workResult.success) workResult.error.errors.forEach((err) => { if (err.path[0]) errors[`work_${err.path[0]}`] = err.message })
-    if (relativeResult && !relativeResult.success) relativeResult.error.errors.forEach((err) => { if (err.path[0]) errors[`relative_${err.path[0]}`] = err.message })
+    if (!generalResult.success)
+      generalResult.error.errors.forEach((err) => {
+        if (err.path[0]) errors[`general_${err.path[0]}`] = err.message
+      })
+    if (!contactsResult.success)
+      contactsResult.error.errors.forEach((err) => {
+        if (err.path[0]) errors[`contacts_${err.path[0]}`] = err.message
+      })
+    if (!otherResult.success)
+      otherResult.error.errors.forEach((err) => {
+        if (err.path[0]) errors[`other_${err.path[0]}`] = err.message
+      })
+    if (!workResult.success)
+      workResult.error.errors.forEach((err) => {
+        if (err.path[0]) errors[`work_${err.path[0]}`] = err.message
+      })
+    if (relativeResult && !relativeResult.success)
+      relativeResult.error.errors.forEach((err) => {
+        if (err.path[0]) errors[`relative_${err.path[0]}`] = err.message
+      })
 
     if (Object.keys(errors).length > 0) {
       setProfileErrors(errors)
@@ -581,7 +657,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
       await updatePatientContacts(contactsResult.data!)
       await updatePatientOtherInfo(otherResult.data!)
       await updatePatientWorkInfo(workResult.data!)
-      
+
       if (relativeResult) {
         if (relativeId) {
           await updatePatientRelative(relativeId, relativeResult.data!)
@@ -591,7 +667,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
       }
 
       toast.success('Профиль успешно обновлён')
-      
+
       if (userId) {
         const data = await fetchPatientProfile()
         setPatientData(data)
@@ -714,6 +790,25 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
       setPdfGenerating(false)
       setActivePrintDoc(null)
     }, 300)
+  }
+
+  if (loading) {
+    return (
+      <PageContainer>
+        <Header>
+          <HeaderLeft>
+            <HeaderIconBox>
+              <Stethoscope size={20} />
+            </HeaderIconBox>
+            <HeaderTitles>
+              <HeaderTitle>Личный кабинет</HeaderTitle>
+              <HeaderSubtitle>Загрузка данных профиля...</HeaderSubtitle>
+            </HeaderTitles>
+          </HeaderLeft>
+        </Header>
+        <LoadingSpinner />
+      </PageContainer>
+    )
   }
 
   return (
@@ -874,7 +969,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           </DashboardRow>
         </>
       )}
-
 
       {activeTab === 'exams' && (
         <>
@@ -1137,9 +1231,17 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       </NotificationDetails>
                     )}
                     <NotifTimeBlock>
-                      <span>{n.time ? new Date(n.time).toLocaleString('ru-RU', {
-                        day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                      }) : ''}</span>
+                      <span>
+                        {n.time
+                          ? new Date(n.time).toLocaleString('ru-RU', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })
+                          : ''}
+                      </span>
                       {!n.read && (
                         <span
                           style={{
@@ -1297,27 +1399,54 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   <FieldWrapper>
                     <FieldLabel>Фамилия</FieldLabel>
                     <InputField value={lastName} onChange={(e) => setLastName(e.target.value)} />
-                    {profileErrors.general_lastName && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.general_lastName}</div>}
+                    {profileErrors.general_lastName && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.general_lastName}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Имя</FieldLabel>
                     <InputField value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-                    {profileErrors.general_firstName && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.general_firstName}</div>}
+                    {profileErrors.general_firstName && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.general_firstName}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Отчество</FieldLabel>
-                    <InputField value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+                    <InputField
+                      value={middleName}
+                      onChange={(e) => setMiddleName(e.target.value)}
+                    />
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Дата рождения</FieldLabel>
-                    <InputField type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
-                    {profileErrors.general_dateOfBirth && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.general_dateOfBirth}</div>}
+                    <InputField
+                      type="date"
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                    />
+                    {profileErrors.general_dateOfBirth && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.general_dateOfBirth}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Пол</FieldLabel>
                     <Select
-                      options={[{value: '0', label: 'Мужской'}, {value: '1', label: 'Женский'}]}
-                      value={[{value: '0', label: 'Мужской'}, {value: '1', label: 'Женский'}].find((o) => o.value === gender) || null}
+                      options={[
+                        { value: '0', label: 'Мужской' },
+                        { value: '1', label: 'Женский' }
+                      ]}
+                      value={
+                        [
+                          { value: '0', label: 'Мужской' },
+                          { value: '1', label: 'Женский' }
+                        ].find((o) => o.value === gender) || null
+                      }
                       onChange={(option) => setGender(option ? option.value : '0')}
                       placeholder="Выберите..."
                       styles={selectStyles}
@@ -1335,12 +1464,14 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                         { value: 'В разводе', label: 'В разводе' },
                         { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
                       ]}
-                      value={[
-                        { value: 'Холост/Не замужем', label: 'Холост/Не замужем' },
-                        { value: 'Женат/Замужем', label: 'Женат/Замужем' },
-                        { value: 'В разводе', label: 'В разводе' },
-                        { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
-                      ].find((o) => o.value === maritalStatus) || null}
+                      value={
+                        [
+                          { value: 'Холост/Не замужем', label: 'Холост/Не замужем' },
+                          { value: 'Женат/Замужем', label: 'Женат/Замужем' },
+                          { value: 'В разводе', label: 'В разводе' },
+                          { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
+                        ].find((o) => o.value === maritalStatus) || null
+                      }
                       onChange={(option) => setMaritalStatus(option ? option.value : '')}
                       placeholder="Выберите..."
                       styles={selectStyles}
@@ -1386,10 +1517,16 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       allowEmptyFormatting
                       mask="_"
                       value={phoneMobile}
-                      onValueChange={(values) => setPhoneMobile(values.value ? values.formattedValue : '')}
+                      onValueChange={(values) =>
+                        setPhoneMobile(values.value ? values.formattedValue : '')
+                      }
                       customInput={InputField}
                     />
-                    {profileErrors.contacts_phoneMobile && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.contacts_phoneMobile}</div>}
+                    {profileErrors.contacts_phoneMobile && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.contacts_phoneMobile}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Домашний телефон</FieldLabel>
@@ -1398,15 +1535,30 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       allowEmptyFormatting
                       mask="_"
                       value={phoneHome}
-                      onValueChange={(values) => setPhoneHome(values.value ? values.formattedValue : '')}
+                      onValueChange={(values) =>
+                        setPhoneHome(values.value ? values.formattedValue : '')
+                      }
                       customInput={InputField}
                     />
-                    {profileErrors.contacts_phoneHome && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.contacts_phoneHome}</div>}
+                    {profileErrors.contacts_phoneHome && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.contacts_phoneHome}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Email</FieldLabel>
-                    <InputField value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="example@mail.ru" />
-                    {profileErrors.contacts_email && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.contacts_email}</div>}
+                    <InputField
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      type="email"
+                      placeholder="example@mail.ru"
+                    />
+                    {profileErrors.contacts_email && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.contacts_email}
+                      </div>
+                    )}
                   </FieldWrapper>
                 </FieldsGrid>
               </div>
@@ -1423,7 +1575,10 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Национальность</FieldLabel>
-                    <InputField value={nationality} onChange={(e) => setNationality(e.target.value)} />
+                    <InputField
+                      value={nationality}
+                      onChange={(e) => setNationality(e.target.value)}
+                    />
                   </FieldWrapper>
                 </FieldsGrid>
               </div>
@@ -1436,15 +1591,24 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <FieldsGrid>
                   <FieldWrapper>
                     <FieldLabel>Профессия</FieldLabel>
-                    <InputField value={profession} onChange={(e) => setProfession(e.target.value)} />
+                    <InputField
+                      value={profession}
+                      onChange={(e) => setProfession(e.target.value)}
+                    />
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Организация</FieldLabel>
-                    <InputField value={organization} onChange={(e) => setOrganization(e.target.value)} />
+                    <InputField
+                      value={organization}
+                      onChange={(e) => setOrganization(e.target.value)}
+                    />
                   </FieldWrapper>
                   <FieldWrapper style={{ gridColumn: 'span 2' }}>
                     <FieldLabel>Рабочий адрес</FieldLabel>
-                    <InputField value={workAddress} onChange={(e) => setWorkAddress(e.target.value)} />
+                    <InputField
+                      value={workAddress}
+                      onChange={(e) => setWorkAddress(e.target.value)}
+                    />
                   </FieldWrapper>
                 </FieldsGrid>
               </div>
@@ -1457,8 +1621,16 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <FieldsGrid>
                   <FieldWrapper>
                     <FieldLabel>ФИО</FieldLabel>
-                    <InputField placeholder="Полное имя" value={trustedName} onChange={(e) => setTrustedName(e.target.value)} />
-                    {profileErrors.relative_name && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.relative_name}</div>}
+                    <InputField
+                      placeholder="Полное имя"
+                      value={trustedName}
+                      onChange={(e) => setTrustedName(e.target.value)}
+                    />
+                    {profileErrors.relative_name && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.relative_name}
+                      </div>
+                    )}
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Степень родства</FieldLabel>
@@ -1481,12 +1653,35 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       allowEmptyFormatting
                       mask="_"
                       value={trustedPhone}
-                      onValueChange={(values) => setTrustedPhone(values.value ? values.formattedValue : '')}
+                      onValueChange={(values) =>
+                        setTrustedPhone(values.value ? values.formattedValue : '')
+                      }
                       customInput={InputField}
                     />
-                    {profileErrors.relative_phone && <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>{profileErrors.relative_phone}</div>}
+                    {profileErrors.relative_phone && (
+                      <div style={{ color: '#ef4444', fontSize: '11px', marginTop: '4px' }}>
+                        {profileErrors.relative_phone}
+                      </div>
+                    )}
                   </FieldWrapper>
                 </FieldsGrid>
+
+                {otherRelatives.length > 0 && (
+                  <div style={{ marginTop: 12, padding: 16, backgroundColor: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 12 }}>
+                      Дополнительные доверенные лица (добавлены врачом):
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {otherRelatives.map(rel => (
+                        <div key={rel.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, fontSize: 14, color: '#1e293b' }}>
+                          <div><span style={{color: '#64748b', fontSize: 12, display: 'block'}}>ФИО</span>{rel.name}</div>
+                          <div><span style={{color: '#64748b', fontSize: 12, display: 'block'}}>Степень родства</span>{rel.relation}</div>
+                          <div><span style={{color: '#64748b', fontSize: 12, display: 'block'}}>Телефон</span>{rel.phone}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <SaveButton type="submit">Сохранить изменения</SaveButton>
@@ -1713,7 +1908,13 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <iframe
                   src={`${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(viewingDoc.filePath)}`}
                   title={viewingDoc.name}
-                  style={{ width: '100%', height: 500, border: 'none', borderRadius: 8, marginTop: 10 }}
+                  style={{
+                    width: '100%',
+                    height: 500,
+                    border: 'none',
+                    borderRadius: 8,
+                    marginTop: 10
+                  }}
                 />
               ) : (
                 <div

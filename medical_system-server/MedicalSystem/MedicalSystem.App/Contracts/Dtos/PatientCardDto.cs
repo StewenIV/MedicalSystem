@@ -36,20 +36,20 @@ namespace MedicalSystem.App.Contracts.Dtos
         public VitalsDto? Vitals { get; set; }
 
         // Lists
-        public List<RelativeDto> Relatives { get; set; } = new();
-        public List<AllergyDto> Allergies { get; set; } = new();
-        public List<MedicationDto> CurrentMeds { get; set; } = new();
-        public List<OperationDto> Operations { get; set; } = new();
-        public List<MedicalProblemDto> MedicalProblems { get; set; } = new();
-        public List<PrescriptionDto> Prescriptions { get; set; } = new();
-        public List<LabDto> Labs { get; set; } = new();
-        public List<VaccineDto> Vaccines { get; set; } = new();
-        public List<DocumentDto> Documents { get; set; } = new();
-        public List<HistoryEntryDto> History { get; set; } = new();
+        public List<RelativeDto>? Relatives { get; set; }
+        public List<AllergyDto>? Allergies { get; set; }
+        public List<MedicationDto>? CurrentMeds { get; set; }
+        public List<OperationDto>? Operations { get; set; }
+        public List<MedicalProblemDto>? MedicalProblems { get; set; }
+        public List<PrescriptionDto>? Prescriptions { get; set; }
+        public List<LabDto>? Labs { get; set; }
+        public List<VaccineDto>? Vaccines { get; set; }
+        public List<DocumentDto>? Documents { get; set; }
+        public List<HistoryEntryDto>? History { get; set; }
         
         // For backward compatibility
-        public List<EncounterDto> Encounters { get; set; } = new();
-        public List<PatientMedicationDto> Medications { get; set; } = new();
+        public List<EncounterDto>? Encounters { get; set; }
+        public List<PatientMedicationDto>? Medications { get; set; }
     }
 
     public class PassportInfoDto
