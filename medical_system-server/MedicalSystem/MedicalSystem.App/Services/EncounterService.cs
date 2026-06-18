@@ -5,17 +5,21 @@ using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Contracts.Storage;
+using MedicalSystem.App.Contracts.Services;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.App.Services
 {
     public class EncounterService
     {
         private readonly IEncounterStorage _encounterStorage;
+        private readonly INotificationService _notificationService;
 
-        public EncounterService(IEncounterStorage encounterStorage)
+        public EncounterService(IEncounterStorage encounterStorage, INotificationService notificationService)
         {
             _encounterStorage = encounterStorage;
+            _notificationService = notificationService;
         }
 
         public async Task<IEnumerable<PatientEncounterDto>> GetPatientEncountersAsync(Guid patientId, CancellationToken token)
@@ -49,6 +53,35 @@ namespace MedicalSystem.App.Services
             };
 
             var saved = await _encounterStorage.CreateEncounterWithUserAsync(encounter, userId, token);
+            
+            if (!string.IsNullOrEmpty(request.Type) && !request.Type.Contains("Обход", StringComparison.OrdinalIgnoreCase))
+            {
+                var notifType = NotificationType.HistoryUpdate;
+                var title = "Новая запись в карте";
+                var message = $"В вашу медицинскую карту добавлена новая запись: {request.Type}.";
+
+                if (request.Type.Contains("Анализ", StringComparison.OrdinalIgnoreCase) || request.Type.Contains("Lab", StringComparison.OrdinalIgnoreCase))
+                {
+                    notifType = NotificationType.LabResult;
+                    title = "Результаты анализов готовы";
+                    message = "Ваши результаты анализов готовы и добавлены в вашу карту.";
+                }
+                else if (request.Type.Contains("Направление", StringComparison.OrdinalIgnoreCase))
+                {
+                    notifType = NotificationType.Referral;
+                    title = "Новое направление";
+                    message = "Вам выдано новое направление на обследование.";
+                }
+
+                await _notificationService.SendNotificationAsync(new Notification
+                {
+                    PatientRecipientId = patientId,
+                    RecipientType = RecipientType.Patient,
+                    Type = notifType,
+                    Title = title,
+                    Message = message
+                }, token);
+            }
             
             var reloaded = await _encounterStorage.GetPatientEncountersAsync(patientId, token);
             var reloadedItem = reloaded.FirstOrDefault(e => e.Id == saved.Id) ?? saved;

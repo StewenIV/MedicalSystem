@@ -31,6 +31,7 @@ import { PatternFormat } from 'react-number-format'
 import { paths } from 'routes/helpers'
 import { BackButton } from 'components/Button'
 import { authApi } from 'api/authApi'
+import { getPhoneFormat } from 'utils/phoneFormat'
 
 
 const RegistrationPage: React.FC = () => {
@@ -247,7 +248,7 @@ const RegistrationPage: React.FC = () => {
                   error={errors.phone}
                   icon={<Phone />}
                   type="tel"
-                  format="+### (###) ##-###"
+                  format={getPhoneFormat(formData.phone)}
                   mask="_"
                 />
               </Field>

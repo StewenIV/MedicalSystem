@@ -35,6 +35,7 @@ import { LogoBox, LogoTextBlock, LogoTitle, LogoSubtitle } from '@/pages/HomePag
 import { cn } from '@/lib/utils'
 import { selectUserRole } from 'features/App/selectors'
 import { UserRole } from 'features/App/types'
+import { usePatientNotifications } from 'context/PatientNotificationsContext'
 
 interface AppSidebarProps {
   activeSection: string
@@ -155,19 +156,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
 
 export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) {
   const userRole = useSelector(selectUserRole)
-
-  const [unreadNotifCount, setUnreadNotifCount] = useState(() => {
-    return Number(localStorage.getItem('patient_unread_notif_count') || '3')
-  })
-
-  useEffect(() => {
-    const handleUpdate = () => {
-      setUnreadNotifCount(Number(localStorage.getItem('patient_unread_notif_count') || '0'))
-    }
-    window.addEventListener('patient_notif_update', handleUpdate)
-    handleUpdate()
-    return () => window.removeEventListener('patient_notif_update', handleUpdate)
-  }, [])
+  const { unreadCount } = usePatientNotifications()
 
   const navItems = useMemo(() => {
     if (!userRole) return []
@@ -221,7 +210,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
 
                     <span className="h-6 w-[1px] bg-slate-200"></span>
                     <span>{label}</span>
-                    {key === 'patient-notifications' && unreadNotifCount > 0 && (
+                    {key === 'patient-notifications' && unreadCount > 0 && (
                       <span
                         style={{
                           marginLeft: 'auto',
@@ -235,7 +224,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
                           textAlign: 'center'
                         }}
                       >
-                        {unreadNotifCount}
+                        {unreadCount}
                       </span>
                     )}
                   </SidebarMenuButton>
@@ -250,3 +239,4 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
     </Sidebar>
   )
 }
+

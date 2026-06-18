@@ -739,8 +739,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                       tickCount={10} width={52}
                       label={{ value: 'Температура, °C', angle: 90, position: 'insideRight', offset: -10 }} />
 
-                    <Tooltip
-                      formatter={(value, name, entry) => {
+                    <Tooltip isAnimationActive={false} formatter={(value, name, entry) => {
                         const row = entry.payload as any
                         const dataKey = entry.dataKey as string
                         const formatAlert = (text: string | React.ReactNode, alertText?: string) =>
@@ -848,8 +847,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
                   <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
 
-                  <Tooltip
-                    formatter={(value, name, entry) => {
+                  <Tooltip isAnimationActive={false} formatter={(value, name, entry) => {
                       const row = entry.payload as any
                       const dataKey = entry.dataKey as string
                       const formatAlert = (text: string, alert?: string) =>
@@ -905,3 +903,4 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
 }
 
 export default TemperaturePage
+

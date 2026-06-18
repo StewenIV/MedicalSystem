@@ -7,6 +7,11 @@ module.exports = {
         target: 'http://localhost:5046',
         changeOrigin: true,
       },
+      '/hubs': {
+        target: 'http://localhost:5046',
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   babel: {

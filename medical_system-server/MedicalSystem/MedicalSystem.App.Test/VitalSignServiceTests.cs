@@ -9,18 +9,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MedicalSystem.App.Contracts.Services;
 
 namespace MedicalSystem.App.Test
 {
     public class VitalSignServiceTests
     {
         private readonly Mock<IVitalSignStorage> _mockStorage;
+        private readonly Mock<INotificationService> _mockNotificationService;
+        private readonly Mock<IPatientStorage> _mockPatientStorage;
         private readonly VitalSignService _service;
 
         public VitalSignServiceTests()
         {
             _mockStorage = new Mock<IVitalSignStorage>();
-            _service = new VitalSignService(_mockStorage.Object);
+            _mockNotificationService = new Mock<INotificationService>();
+            _mockPatientStorage = new Mock<IPatientStorage>();
+            _service = new VitalSignService(_mockStorage.Object, _mockNotificationService.Object, _mockPatientStorage.Object);
         }
 
         [Fact]
@@ -116,27 +121,27 @@ namespace MedicalSystem.App.Test
 
             var tempWarning = warnings.First(w => w.FieldName == nameof(VitalSign.Temperature));
             Assert.Equal("high", tempWarning.Direction);
-            Assert.Equal(38.5m, decimal.Parse(tempWarning.Value!));
+            Assert.Equal(38.5m, decimal.Parse(tempWarning.Value!.Replace('.',',')));
 
             var bpSystolicWarning = warnings.First(w => w.FieldName == nameof(VitalSign.BloodPressureSystolic));
             Assert.Equal("low", bpSystolicWarning.Direction);
-            Assert.Equal(90m, decimal.Parse(bpSystolicWarning.Value!));
+            Assert.Equal(90m, decimal.Parse(bpSystolicWarning.Value!.Replace('.',',')));
 
             var bpDiastolicWarning = warnings.First(w => w.FieldName == nameof(VitalSign.BloodPressureDiastolic));
             Assert.Equal("low", bpDiastolicWarning.Direction);
-            Assert.Equal(50m, decimal.Parse(bpDiastolicWarning.Value!));
+            Assert.Equal(50m, decimal.Parse(bpDiastolicWarning.Value!.Replace('.',',')));
 
             var pulseWarning = warnings.First(w => w.FieldName == nameof(VitalSign.Pulse));
             Assert.Equal("high", pulseWarning.Direction);
-            Assert.Equal(110m, decimal.Parse(pulseWarning.Value!));
+            Assert.Equal(110m, decimal.Parse(pulseWarning.Value!.Replace('.',',')));
 
             var spo2Warning = warnings.First(w => w.FieldName == nameof(VitalSign.SpO2));
             Assert.Equal("low", spo2Warning.Direction);
-            Assert.Equal(92m, decimal.Parse(spo2Warning.Value!));
+            Assert.Equal(92m, decimal.Parse(spo2Warning.Value!.Replace('.',',')));
 
             var respWarning = warnings.First(w => w.FieldName == nameof(VitalSign.RespiratoryRate));
             Assert.Equal("high", respWarning.Direction);
-            Assert.Equal(22m, decimal.Parse(respWarning.Value!));
+            Assert.Equal(22m, decimal.Parse(respWarning.Value!.Replace('.',',')));
         }
 
         [Fact]

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-const PHONE_REGEX = /^\+?[0-9\s\-()]+$/
+const PHONE_REGEX = /^\+?[0-9\s\-()_]+$/
 
 export const generalSchema = z.object({
   firstName: z.string().min(1, 'Имя обязательно').max(100, 'Не более 100 символов'),

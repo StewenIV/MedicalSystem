@@ -6,6 +6,8 @@ import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-
 import CreatableSelect from 'react-select/creatable'
 import { z } from 'zod'
 import { PatternFormat } from 'react-number-format'
+import { getPhoneFormat } from 'utils/phoneFormat'
+import { paths } from 'routes/helpers'
 import {
   User,
   Edit,
@@ -68,6 +70,7 @@ import { showApiError } from 'utils/showApiError'
 
 import { usePatientData } from 'context/PatientDataContext'
 import { extractDoctorFromFormData } from 'api/encountersApi'
+import { uploadFile, downloadFileFromServer } from 'api/filesApi'
 import {
   PatientCardContainer,
   PatientHeader,
@@ -1183,15 +1186,36 @@ const PatientCard: React.FC<PatientCardProps> = ({
 
   const [docFile, setDocFile] = useState<File | null>(null)
   const [docDragOver, setDocDragOver] = useState(false)
+  const [docUploading, setDocUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDocumentUpload = async (file: File) => {
+    setDocFile(file)
+    setDocUploading(true)
+    try {
+      const result = await uploadFile(file)
+      setFormData((p: any) => ({
+        ...p,
+        name: file.name,
+        date: new Date().toISOString().slice(0, 10),
+        filePath: result.objectName,
+        url: `${process.env.REACT_APP_API_URL ?? ''}${result.url}`
+      }))
+      toast.success('Файл успешно загружен в хранилище')
+    } catch (err: any) {
+      toast.error(err.message || 'Ошибка при загрузке файла')
+      setDocFile(null)
+    } finally {
+      setDocUploading(false)
+    }
+  }
 
   const handleDocDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDocDragOver(false)
     const f = e.dataTransfer.files[0]
     if (f && f.type === 'application/pdf') {
-      setDocFile(f)
-      setFormData((p: any) => ({ ...p, name: f.name, date: new Date().toISOString().slice(0, 10) }))
+      handleDocumentUpload(f)
     }
   }
 
@@ -1702,7 +1726,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         <FormGroup key={f.name}>
           {labelNode}
           <PatternFormat
-            format="+### (###) ##-###"
+            format={getPhoneFormat(rawVal)}
             mask="_"
             allowEmptyFormatting
             value={rawVal}
@@ -1943,6 +1967,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
       dateTime: 'Дата и время',
       type: 'Тип',
       doctor: 'Врач',
+      doctorName: 'Имя врача',
       conclusion: 'Заключение',
       complaints: 'Жалобы',
       objective: 'Объективные данные',
@@ -2045,24 +2070,46 @@ const PatientCard: React.FC<PatientCardProps> = ({
             {isView && !isPatientPreview && (
               <div style={{ display: 'grid', gap: 12 }}>
                 {Object.entries(modalConfig.data || {})
-                  .filter(([k]) => k !== 'index')
-                  .map(([k, v]) => (
-                    <div
-                      key={k}
-                      style={{
-                        display: 'flex',
-                        gap: 8,
-                        padding: '8px 12px',
-                        background: '#f8fafc',
-                        borderRadius: 8
-                      }}
-                    >
-                      <strong style={{ color: '#475569', minWidth: 120 }}>
-                        {VIEW_LABELS[k] || k}:
-                      </strong>
-                      <span>{String(v)}</span>
-                    </div>
-                  ))}
+                  .filter(([k, v]) => {
+                    const lowerKey = k.toLowerCase()
+                    return lowerKey !== 'id' &&
+                           lowerKey !== 'filepath' &&
+                           lowerKey !== 'url' &&
+                           lowerKey !== 'patientid' &&
+                           lowerKey !== 'index' &&
+                           lowerKey !== 'formdata' &&
+                           v !== null &&
+                           v !== undefined
+                  })
+                  .map(([k, v]) => {
+                    let displayValue = String(v)
+                    const lowerKey = k.toLowerCase()
+                    if (lowerKey === 'date' || lowerKey === 'datetime' || lowerKey.includes('date') || lowerKey.includes('time')) {
+                      const strVal = String(v)
+                      if (strVal.includes('T') && !strVal.endsWith('T00:00:00') && !strVal.endsWith('T00:00:00.000')) {
+                        displayValue = formatDateHumanWithTime(strVal)
+                      } else {
+                        displayValue = formatDateHuman(strVal)
+                      }
+                    }
+                    return (
+                      <div
+                        key={k}
+                        style={{
+                          display: 'flex',
+                          gap: 8,
+                          padding: '8px 12px',
+                          background: '#f8fafc',
+                          borderRadius: 8
+                        }}
+                      >
+                        <strong style={{ color: '#475569', minWidth: 120 }}>
+                          {VIEW_LABELS[k] || k}:
+                        </strong>
+                        <span>{displayValue}</span>
+                      </div>
+                    )
+                  })}
               </div>
             )}
             {isDocView && modalConfig.data?.url && (
@@ -2094,7 +2141,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 >
                   <Upload size={32} style={{ color: '#94a3b8', marginBottom: 8 }} />
                   <div style={{ fontWeight: 600, color: '#374151' }}>
-                    {docFile ? docFile.name : 'Перетащите PDF сюда или нажмите для выбора'}
+                    {docUploading ? 'Загрузка файла в хранилище...' : (docFile ? docFile.name : 'Перетащите PDF сюда или нажмите для выбора')}
                   </div>
                   <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
                     Только PDF файлы
@@ -2107,13 +2154,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                     onChange={(e) => {
                       const f = e.target.files?.[0]
                       if (f) {
-                        setDocFile(f)
-                        setFormData((p: any) => ({
-                          ...p,
-                          name: f.name,
-                          date: new Date().toISOString().slice(0, 10),
-                          url: URL.createObjectURL(f)
-                        }))
+                        handleDocumentUpload(f)
                       }
                     }}
                   />
@@ -2132,7 +2173,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
               Закрыть
             </ActionButton>
             {!isView && !isPatientPreview && (
-              <ActionButton $variant={isDelete ? 'danger' : 'primary'} onClick={handleSave}>
+              <ActionButton $variant={isDelete ? 'danger' : 'primary'} onClick={handleSave} disabled={docUploading}>
                 {isDelete ? 'Удалить' : 'Сохранить'}
               </ActionButton>
             )}
@@ -2888,7 +2929,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         </ActionButton>
                         <ActionButton
                           $variant="ghost"
-                          onClick={() => alert('Скачивание результатов анализа...')}
+                          onClick={() => console.log()}
                         >
                           <Download size={14} />
                         </ActionButton>
@@ -3148,8 +3189,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           }}
                         />
 
-                        <Tooltip
-                          formatter={(value, name, entry) => {
+                        <Tooltip isAnimationActive={false} formatter={(value, name, entry) => {
                             const row = entry.payload as any
                             const dataKey = entry.dataKey as string
 
@@ -3518,8 +3558,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
 
-                        <Tooltip
-                          formatter={(value, name, entry) => {
+                        <Tooltip isAnimationActive={false} formatter={(value, name, entry) => {
                             const row = entry.payload as any
                             const dataKey = entry.dataKey as string
 
@@ -4085,13 +4124,27 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       <td>
                         <ActionButton
                           $variant="ghost"
-                          onClick={() => openModal('VIEW_DOCUMENT', d)}
+                          onClick={() => {
+                            const docWithUrl = {
+                              ...d,
+                              url: d.url || (d.filePath ? `${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(d.filePath)}` : '')
+                            };
+                            openModal('VIEW_DOCUMENT', docWithUrl);
+                          }}
                         >
                           <Eye size={14} />
                         </ActionButton>
                         <ActionButton
                           $variant="ghost"
-                          onClick={() => alert('Скачивание документа...')}
+                          onClick={() => {
+                            if (d.filePath) {
+                              downloadFileFromServer(d.name, d.filePath);
+                            } else if (d.url) {
+                              window.open(d.url, '_blank');
+                            } else {
+                              alert('Файл недоступен для скачивания');
+                            }
+                          }}
                         >
                           <Download size={14} />
                         </ActionButton>
@@ -4635,3 +4688,4 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
 
 export { PatientSearchPanel, PatientCard }
 export default PatientCardPageWrapper
+

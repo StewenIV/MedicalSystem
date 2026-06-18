@@ -60,8 +60,8 @@ export const Flex = styled.div`
 
 export const PatientInfoWrapper = styled.div`
   display: flex;
-  align-items: center;
-  gap: 16px;
+  flex-direction: column;
+  gap: 10px;
   margin-left: 16px;
   font-size: 13px;
   color: #475569;
@@ -89,6 +89,7 @@ export const PatientInfoWrapper = styled.div`
 
 export const PatientInfoItem = styled.div`
   display: flex;
+  
   align-items: center;
   gap: 6px;
   white-space: nowrap;

@@ -5,6 +5,9 @@ namespace MedicalSystem.Domain.Enums
         LabResult,
         AppointmentReminder,
         Consultation,
-        System
+        System,
+        Referral,
+        HistoryUpdate,
+        VitalsAlert
     }
 }

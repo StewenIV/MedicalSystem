@@ -68,7 +68,7 @@ import {
 import { AppSidebar } from '@/components/Sidebar/sidebar'
 
 import Input from 'components/Input'
-import { mockTodayAppointments, mockNotifications, type Notification } from 'data/mockData'
+import { mockTodayAppointments } from 'data/mockData'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { HospitalWorkplace } from 'pages/HospitalBedsPage'
 import { WardAdmin } from 'pages/BedsAdminPage'
@@ -129,17 +129,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
     }
   }, [reduxRole])
 
-  // Уведомления медперсонала (локальный стейт)
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
-
-  React.useEffect(() => {
-    if (reduxRole !== 'Patient') {
-      setNotifications(mockNotifications)
-    }
-  }, [reduxRole])
-
-  const markRead = (id: string) =>
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
+  const markRead = (id: string) => patientNotifCtx.markRead(id)
 
   const openPatientCard = (patientId?: string) => {
     setActiveSection('patients')
@@ -179,10 +169,10 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
     }
   }
 
-  const handleNotifClick = (n: Notification) => {
+  const handleNotifClick = (n: any) => {
     markRead(n.id)
     setNotificationsOpen(false)
-    openPatientCard(n.patientId)
+    if (n.patientId) openPatientCard(n.patientId)
   }
 
   const handlePatientNotifClick = (id: string) => {
@@ -191,9 +181,7 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
     setActiveSection('patient-notifications')
   }
 
-    const unreadCount = reduxRole === 'Patient'
-    ? patientNotifCtx.unreadCount
-    : notifications.filter((n) => !n.read).length
+  const unreadCount = patientNotifCtx.unreadCount
 
   const formatDate = () => {
     const s = new Intl.DateTimeFormat('ru-RU', {
@@ -477,110 +465,83 @@ const HomePage: React.FC<DoctorDashboardProps> = ({
                         </span>
                       )}
                     </div>
-                    <IconButton onClick={() => setNotificationsOpen(false)}>
-                      <X size={17} />
-                    </IconButton>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={() => patientNotifCtx.markAllRead()}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: 8,
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            cursor: 'pointer',
+                            color: '#475569',
+                          }}
+                        >
+                          Прочитать все
+                        </button>
+                      )}
+                      <IconButton onClick={() => setNotificationsOpen(false)}>
+                        <X size={17} />
+                      </IconButton>
+                    </div>
                   </FlexBetween>
                 </CardHeader>
 
                 <CardBody style={{ maxHeight: 'calc(80vh - 80px)', overflowY: 'auto' }}>
-                          {reduxRole === 'Patient' ? (
-                    patientNotifCtx.notifications.length === 0 ? (
-                      <EmptyNotifications>
-                        <Bell size={44} />
-                        <p>Нет новых уведомлений</p>
-                      </EmptyNotifications>
-                    ) : (
-                      patientNotifCtx.notifications.map((n) => (
-                        <NotificationItem
-                          key={n.id}
-                          read={n.read}
-                          onClick={() => handlePatientNotifClick(n.id)}
-                        >
-                          <NotificationContent>
-                            <NotificationIconWrapper
-                              severity={n.severity === 'critical' ? 'critical' : n.severity === 'warning' ? 'warning' : 'info'}
-                            >
-                              {n.type === 'medical' ? <AlertCircle size={18} /> : <Clock size={18} />}
-                            </NotificationIconWrapper>
-                            <NotificationBody>
-                              <NotificationHeader>
-                                <div style={{ flex: 1 }}>
-                                  {n.severity && n.severity !== 'info' && (
-                                    <SeverityBadge severity={n.severity as 'critical' | 'warning'}>
-                                      {n.severity === 'critical' ? 'Критично' : 'Внимание'}
-                                    </SeverityBadge>
-                                  )}
-                                  <NotificationTitle>{n.title}</NotificationTitle>
-                                </div>
-                                <NotificationTime>{n.time}</NotificationTime>
-                              </NotificationHeader>
-                              {n.details && (
-                                <NotificationDetails>
-                                  <strong>Детали:</strong> {n.details}
-                                </NotificationDetails>
-                              )}
-                            </NotificationBody>
-                          </NotificationContent>
-                        </NotificationItem>
-                      ))
-                    )
-                  ) : (
-                    notifications.length === 0 ? (
+                  {patientNotifCtx.loading ? (
+                    <EmptyNotifications>
+                      <p>Загрузка...</p>
+                    </EmptyNotifications>
+                  ) : patientNotifCtx.notifications.length === 0 ? (
                     <EmptyNotifications>
                       <Bell size={44} />
-                      <p>Нет новых уведомлений</p>
+                      <p>Нет уведомлений</p>
                     </EmptyNotifications>
                   ) : (
-                    notifications.map((n) => (
+                    patientNotifCtx.notifications.map((n) => (
                       <NotificationItem
                         key={n.id}
                         read={n.read}
-                        onClick={() => handleNotifClick(n)}
+                        onClick={() => {
+                          if (reduxRole === 'Patient') {
+                            handlePatientNotifClick(n.id)
+                          } else {
+                            handleNotifClick(n)
+                          }
+                        }}
                       >
                         <NotificationContent>
                           <NotificationIconWrapper
-                            severity={n.type === 'lab-result' && n.severity ? n.severity : 'info'}
+                            severity={n.severity === 'critical' ? 'critical' : n.severity === 'warning' ? 'warning' : 'info'}
                           >
-                            {n.type === 'lab-result' ? (
-                              <AlertCircle size={18} />
-                            ) : (
-                              <Clock size={18} />
-                            )}
+                            {n.type === 'medical' ? <AlertCircle size={18} /> : <Clock size={18} />}
                           </NotificationIconWrapper>
-
                           <NotificationBody>
                             <NotificationHeader>
                               <div style={{ flex: 1 }}>
-                                {n.type === 'lab-result' && n.severity && (
+                                {n.severity && n.severity !== 'info' && (
                                   <SeverityBadge severity={n.severity as 'critical' | 'warning'}>
                                     {n.severity === 'critical' ? 'Критично' : 'Внимание'}
                                   </SeverityBadge>
                                 )}
-                                <NotificationTitle>{n.message}</NotificationTitle>
+                                <NotificationTitle>{n.title}</NotificationTitle>
                               </div>
-                              <NotificationTime>{n.time}</NotificationTime>
+                              <NotificationTime>
+                                {n.time ? new Date(n.time).toLocaleString('ru-RU', {
+                                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                                }) : ''}
+                              </NotificationTime>
                             </NotificationHeader>
-
-                             {(reduxRole as string) !== 'Patient' && (
-                              <NotificationPatient>
-                                <strong>{n.patientName}</strong>
-                                <span>ID: {n.patientId}</span>
-                                {n.dateOfBirth && <span>Дата рождения: {n.dateOfBirth}</span>}
-                                {n.doctor && <span>Лечащий врач: {n.doctor}</span>}
-                              </NotificationPatient>
-                            )}
-
-                            {n.details && (
-                              <NotificationDetails>
-                                <strong>Детали:</strong> {n.details}
-                              </NotificationDetails>
+                            {n.text && (
+                              <NotificationDetails>{n.text}</NotificationDetails>
                             )}
                           </NotificationBody>
                         </NotificationContent>
                       </NotificationItem>
                     ))
-                  ))}
+                  )}
                 </CardBody>
               </NotificationPanel>
             </>

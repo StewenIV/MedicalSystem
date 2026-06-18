@@ -7,6 +7,7 @@ using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.Domain.Models;
 using MedicalSystem.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
+using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.Data.Storages
 {
@@ -53,10 +54,30 @@ namespace MedicalSystem.Data.Storages
                 .ToListAsync(token);
         }
 
+        public async Task<IReadOnlyCollection<Notification>> GetStaffNotificationsAsync(Guid staffId, CancellationToken token)
+        {
+            return await _context.Notifications
+                .Where(n => n.RecipientId == staffId || (n.RecipientType == RecipientType.Staff && n.RecipientId == null))
+                .OrderByDescending(n => n.CreatedAt)
+                .ToListAsync(token);
+        }
+
         public async Task MarkAllAsReadByPatientAsync(Guid patientId, CancellationToken token)
         {
             var notifications = await _context.Notifications
                 .Where(n => n.PatientRecipientId == patientId && !n.IsRead)
+                .ToListAsync(token);
+
+            foreach (var n in notifications)
+                n.IsRead = true;
+
+            await _context.SaveChangesAsync(token);
+        }
+
+        public async Task MarkAllAsReadByStaffAsync(Guid staffId, CancellationToken token)
+        {
+            var notifications = await _context.Notifications
+                .Where(n => (n.RecipientId == staffId || (n.RecipientType == RecipientType.Staff && n.RecipientId == null)) && !n.IsRead)
                 .ToListAsync(token);
 
             foreach (var n in notifications)

@@ -13,7 +13,9 @@ namespace MedicalSystem.App.Contracts.Storage
 
         Task<IReadOnlyCollection<Notification>> GetByPatientIdAsync(Guid patientId, CancellationToken token);
         Task MarkAllAsReadByPatientAsync(Guid patientId, CancellationToken token);
+        Task MarkAllAsReadByStaffAsync(Guid staffId, CancellationToken token);
 
         Task<IReadOnlyCollection<Notification>> GetByRecipientIdAsync(Guid recipientId, CancellationToken token);
+        Task<IReadOnlyCollection<Notification>> GetStaffNotificationsAsync(Guid staffId, CancellationToken token);
     }
 }

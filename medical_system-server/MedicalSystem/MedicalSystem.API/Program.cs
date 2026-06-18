@@ -1,7 +1,11 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using MedicalSystem.API.Services;
+using MedicalSystem.API.Hubs;
+using Minio;
+using Microsoft.Extensions.Options;
 using MedicalSystem.App.Contracts.Query;
+using MedicalSystem.App.Contracts.Services;
 using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.App.Services;
 using MedicalSystem.App.Validators;
@@ -61,6 +65,19 @@ builder.Services.AddScoped<EncounterService>();
 builder.Services.AddScoped<MedicineService>();
 builder.Services.AddScoped<StaffScheduleService>();
 builder.Services.AddScoped<PatientCabinetService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+
+builder.Services.Configure<MinioSettings>(builder.Configuration.GetSection("Minio"));
+builder.Services.AddSingleton<IMinioClient>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<MinioSettings>>().Value;
+    return new MinioClient()
+        .WithEndpoint(settings.Endpoint)
+        .WithCredentials(settings.AccessKey, settings.SecretKey)
+        .WithSSL(settings.Secure)
+        .Build();
+});
+builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
 
 
 builder.Services.AddScoped<AuthService>();
@@ -88,13 +105,36 @@ builder.Services.AddAuthentication(options =>
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.Zero
         };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs/notifications"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddSignalR().AddJsonProtocol(options =>
+{
+    options.PayloadSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
 builder.Services.AddControllers()
-    .AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles)
+    .AddJsonOptions(x =>
+    {
+        x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        x.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    })
     .AddFluentValidation(fv =>
     {
         fv.RegisterValidatorsFromAssemblyContaining<AssignPatientRequestDtoValidator>();
@@ -205,8 +245,7 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
-
 app.MapControllers();
-
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();

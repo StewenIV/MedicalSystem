@@ -46,6 +46,8 @@ import {
   fetchPatientExams,
   fetchPatientProfile
 } from 'api/patientCabinetApi'
+import { downloadFileFromServer } from 'api/filesApi'
+import { getPhoneFormat } from 'utils/phoneFormat'
 import {
   generalSchema,
   contactsSchema,
@@ -254,6 +256,7 @@ interface DocItem {
   type: 'выписка' | 'справка' | 'заключение' | 'направление'
   content?: string
   doctor?: string
+  filePath?: string
 }
 
 interface NotificationItem {
@@ -641,6 +644,11 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const MAX_AVATAR_SIZE = 15 * 1024 * 1024
+    if (file.size > MAX_AVATAR_SIZE) {
+      toast.error('Размер файла превышает лимит (15 МБ)')
+      return
+    }
     const reader = new FileReader()
     reader.onloadend = () => {
       setProfilePic(reader.result as string)
@@ -867,7 +875,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         </>
       )}
 
-      {/* ── EXAMS ─────────────────────────────────────────── */}
+
       {activeTab === 'exams' && (
         <>
           <FilterBar>
@@ -1049,7 +1057,16 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                         <ActionButton $primary onClick={() => setViewingDoc(doc)}>
                           <Eye size={13} /> Открыть
                         </ActionButton>
-                        <ActionButton onClick={() => downloadDocPdf(doc)} disabled={pdfGenerating}>
+                        <ActionButton
+                          onClick={() => {
+                            if (doc.filePath) {
+                              downloadFileFromServer(doc.name, doc.filePath)
+                            } else {
+                              downloadDocPdf(doc)
+                            }
+                          }}
+                          disabled={pdfGenerating}
+                        >
                           <Download size={13} />
                         </ActionButton>
                       </FlexActions>
@@ -1120,7 +1137,9 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       </NotificationDetails>
                     )}
                     <NotifTimeBlock>
-                      <span>{n.time}</span>
+                      <span>{n.time ? new Date(n.time).toLocaleString('ru-RU', {
+                        day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                      }) : ''}</span>
                       {!n.read && (
                         <span
                           style={{
@@ -1363,7 +1382,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   <FieldWrapper>
                     <FieldLabel>Мобильный телефон</FieldLabel>
                     <PatternFormat
-                      format="+### (###) ##-###"
+                      format={getPhoneFormat(phoneMobile)}
                       allowEmptyFormatting
                       mask="_"
                       value={phoneMobile}
@@ -1375,7 +1394,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   <FieldWrapper>
                     <FieldLabel>Домашний телефон</FieldLabel>
                     <PatternFormat
-                      format="+### (###) #-##-##"
+                      format={getPhoneFormat(phoneHome)}
                       allowEmptyFormatting
                       mask="_"
                       value={phoneHome}
@@ -1458,7 +1477,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   <FieldWrapper>
                     <FieldLabel>Телефон</FieldLabel>
                     <PatternFormat
-                      format="+### (###) ##-###"
+                      format={getPhoneFormat(trustedPhone)}
                       allowEmptyFormatting
                       mask="_"
                       value={trustedPhone}
@@ -1690,26 +1709,39 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   {viewingDoc.type}
                 </span>
               </div>
-              <div
-                style={{
-                  fontSize: '13.5px',
-                  color: '#334155',
-                  background: '#F8FAFC',
-                  padding: '18px 20px',
-                  borderRadius: 10,
-                  border: '1px solid rgba(15,23,42,0.07)',
-                  lineHeight: 1.7,
-                  whiteSpace: 'pre-wrap'
-                }}
-              >
-                {viewingDoc.content}
-              </div>
+              {viewingDoc.filePath ? (
+                <iframe
+                  src={`${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(viewingDoc.filePath)}`}
+                  title={viewingDoc.name}
+                  style={{ width: '100%', height: 500, border: 'none', borderRadius: 8, marginTop: 10 }}
+                />
+              ) : (
+                <div
+                  style={{
+                    fontSize: '13.5px',
+                    color: '#334155',
+                    background: '#F8FAFC',
+                    padding: '18px 20px',
+                    borderRadius: 10,
+                    border: '1px solid rgba(15,23,42,0.07)',
+                    lineHeight: 1.7,
+                    whiteSpace: 'pre-wrap',
+                    marginTop: 10
+                  }}
+                >
+                  {viewingDoc.content}
+                </div>
+              )}
             </ModalBody>
             <ModalFooter>
               <SecondaryButton onClick={() => setViewingDoc(null)}>Закрыть</SecondaryButton>
               <SaveButton
                 onClick={() => {
-                  downloadDocPdf(viewingDoc)
+                  if (viewingDoc.filePath) {
+                    downloadFileFromServer(viewingDoc.name, viewingDoc.filePath)
+                  } else {
+                    downloadDocPdf(viewingDoc)
+                  }
                   setViewingDoc(null)
                 }}
               >

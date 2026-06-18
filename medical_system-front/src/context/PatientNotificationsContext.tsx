@@ -9,11 +9,16 @@ import React, {
 import { useSelector } from 'react-redux'
 import { selectUserId, selectUserRole } from 'features/App/selectors'
 import {
-  fetchPatientNotifications,
-  markPatientNotificationRead,
-  markAllPatientNotificationsRead,
   type PatientNotificationDto,
 } from 'api/patientCabinetApi'
+import {
+  fetchMyNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  mapNotification,
+} from 'api/notificationsApi'
+import { HubConnectionBuilder, LogLevel, HubConnection } from '@microsoft/signalr'
+import { toast } from 'react-toastify'
 
 interface PatientNotificationsContextValue {
   notifications: PatientNotificationDto[]
@@ -43,29 +48,75 @@ export const PatientNotificationsProvider: React.FC<{ children: React.ReactNode 
   const [notifications, setNotifications] = useState<PatientNotificationDto[]>([])
   const [loading, setLoading] = useState(false)
 
-  const isPatient = role === 'Patient'
-
   const load = useCallback(async () => {
-    if (!isPatient || !userId) return
+    if (!userId) return
     setLoading(true)
     try {
-      const data = await fetchPatientNotifications()
+      const data = await fetchMyNotifications()
       setNotifications(data)
     } catch {
+      // ignore
     } finally {
       setLoading(false)
     }
-  }, [isPatient, userId])
+  }, [userId])
 
   useEffect(() => {
     load()
   }, [load])
 
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  )
+
+  useEffect(() => {
+    if (role === 'Patient') {
+      localStorage.setItem('patient_unread_notif_count', String(unreadCount))
+      window.dispatchEvent(new Event('patient_notif_update'))
+    }
+  }, [unreadCount, role])
+
+  useEffect(() => {
+    if (!userId) return
+    const token = localStorage.getItem('token')
+    if (!token) return
+
+    const baseUrl = process.env.REACT_APP_API_URL ?? ''
+    const hubUrl = `${baseUrl}/hubs/notifications`
+
+    const connection = new HubConnectionBuilder()
+      .withUrl(hubUrl, {
+        accessTokenFactory: () => token,
+      })
+      .configureLogging(LogLevel.Information)
+      .withAutomaticReconnect()
+      .build()
+
+    connection.on('ReceiveNotification', (n: any) => {
+      const notification = mapNotification(n)
+      setNotifications((prev) => {
+        if (prev.some((p) => p.id === notification.id)) return prev
+        return [notification, ...prev]
+      })
+      const severityStr = notification.severity === 'critical' ? '🚨 ' : ''
+      toast.info(`${severityStr}${notification.title}${notification.text ? '\n' + notification.text : ''}`, {
+        autoClose: 6000,
+      })
+    })
+
+    connection.start().catch((err) => console.error('SignalR connection error:', err))
+
+    return () => {
+      connection.stop()
+    }
+  }, [userId])
+
   const markRead = useCallback(
     async (id: string) => {
       setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
       try {
-        await markPatientNotificationRead(id)
+        await markNotificationRead(id)
       } catch {
         setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: false } : n)))
       }
@@ -76,16 +127,11 @@ export const PatientNotificationsProvider: React.FC<{ children: React.ReactNode 
   const markAllRead = useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
     try {
-      await markAllPatientNotificationsRead()
+      await markAllNotificationsRead()
     } catch {
       await load()
     }
   }, [load])
-
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.read).length,
-    [notifications]
-  )
 
   const value = useMemo(
     () => ({

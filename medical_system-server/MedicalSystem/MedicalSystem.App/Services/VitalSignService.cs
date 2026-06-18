@@ -5,13 +5,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Contracts.Storage;
+using MedicalSystem.App.Contracts.Services;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
 
 namespace MedicalSystem.App.Services
 {
     public class VitalSignService
     {
         private readonly IVitalSignStorage _vitalSignStorage;
+        private readonly INotificationService _notificationService;
+        private readonly IPatientStorage _patientStorage;
 
         private static readonly Dictionary<string, (decimal min, decimal max)> NormalRanges = new()
         {
@@ -23,12 +27,16 @@ namespace MedicalSystem.App.Services
             { nameof(VitalSign.RespiratoryRate),        (12,    20)    }
         };
 
-        public VitalSignService(IVitalSignStorage vitalSignStorage)
+        public VitalSignService(
+            IVitalSignStorage vitalSignStorage,
+            INotificationService notificationService,
+            IPatientStorage patientStorage)
         {
             _vitalSignStorage = vitalSignStorage;
+            _notificationService = notificationService;
+            _patientStorage = patientStorage;
         }
 
-        // GET api/patients/{patientId}/vitals
         public async Task<IEnumerable<VitalSignDto>> GetVitalSignsAsync(Guid patientId, CancellationToken token)
         {
             var vitals = await _vitalSignStorage.GetAllAsync(token);
@@ -48,7 +56,6 @@ namespace MedicalSystem.App.Services
                 });
         }
 
-        // POST api/patients/{patientId}/vitals
         public async Task AddVitalSignAsync(Guid patientId, CreateVitalSignRequest request, CancellationToken token)
         {
             var vitalSign = new VitalSign
@@ -64,9 +71,39 @@ namespace MedicalSystem.App.Services
                 RespiratoryRate       = request.RespiratoryRate
             };
             await _vitalSignStorage.AddAsync(vitalSign, token);
+
+            if ((request.SpO2.HasValue && request.SpO2.Value < 90) || 
+                (request.Temperature.HasValue && request.Temperature.Value > 38.5m))
+            {
+                var patient = await _patientStorage.GetAsync(patientId, token);
+                var patientName = patient != null ? $"{patient.LastName} {patient.FirstName}" : "Неизвестный пациент";
+                
+                // Уведомление медперсоналу
+                await _notificationService.BroadcastToMedicalStaffAsync(new Notification
+                {
+                    Type = NotificationType.VitalsAlert,
+                    RecipientType = RecipientType.Staff,
+                    Severity = SeverityType.Critical,
+                    Title = "Критические показатели!",
+                    Message = $"Внимание: у пациента {patientName} зафиксированы критические показатели (SpO2: {request.SpO2 ?? 0}%, Темп: {request.Temperature ?? 0}°C).",
+                    PatientId = patientId
+                }, token);
+                
+                // Уведомление самому пациенту
+                await _notificationService.SendNotificationAsync(new Notification
+                {
+                    PatientRecipientId = patientId,
+                    RecipientType = RecipientType.Patient,
+                    Type = NotificationType.VitalsAlert,
+                    Severity = SeverityType.Critical,
+                    Title = "Внимание: критические показатели",
+                    Message = $"Зафиксированы критические показатели: SpO2 {request.SpO2 ?? 0}%, температура {request.Temperature ?? 0}°C. Пожалуйста, немедленно сообщите лечащему врачу.",
+                    PatientId = patientId
+                }, token);
+            }
+
         }
 
-        // GET api/patients/{patientId}/vitals/warnings
         public async Task<List<VitalSignWarningDto>> GetWarningsAsync(Guid patientId, CancellationToken token)
         {
             var vitals = await _vitalSignStorage.GetAllAsync(token);

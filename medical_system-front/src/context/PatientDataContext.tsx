@@ -73,23 +73,35 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [drafts, setDrafts] = useState<Record<string, any>>({})
 
   React.useEffect(() => {
-    import('../api/patientsApi').then(({ fetchAllPatients }) => {
-      fetchAllPatients().then((data) => {
-        const mapped = data.map(dto => ({
-          ...dto,
-          doctor: dto.doctorName,
-          department: dto.departmentName,
-          statusText: dto.statusText || 'Госпитализирован',
-          activeProblems: dto.medicalProblems?.map(m => m.name) || []
-        }))
-        setPatients(mapped)
-      }).catch(console.error)
-    })
+    import('../api/authApi').then(({ decodeJwt, isTokenValid }) => {
+      if (!isTokenValid()) return;
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const claims = decodeJwt(token);
+      if (!claims) return;
+      
+      const role = claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? claims.role;
+      if (role === 'Patient') return; // Patients don't have access to all patients or encounters
 
-    import('../api/encountersApi').then(({ fetchTodayEncounters }) => {
-      fetchTodayEncounters().then((grouped) => {
-        setInspections(grouped)
-      }).catch(console.error)
+      import('../api/patientsApi').then(({ fetchAllPatients }) => {
+        fetchAllPatients().then((data) => {
+          const mapped = data.map((dto: any) => ({
+            ...dto,
+            doctor: dto.doctorName,
+            department: dto.departmentName,
+            statusText: dto.statusText || 'Госпитализирован',
+            activeProblems: dto.medicalProblems?.map((m: any) => m.name) || []
+          }))
+          setPatients(mapped)
+        }).catch(console.error)
+      })
+
+      import('../api/encountersApi').then(({ fetchTodayEncounters }) => {
+        fetchTodayEncounters().then((grouped) => {
+          setInspections(grouped)
+        }).catch(console.error)
+      })
     })
   }, [])
 
