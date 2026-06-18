@@ -28,6 +28,25 @@ export interface RegisterPatientPayload {
   phone: string
 }
 
+export interface GoogleAuthResponse {
+  isNewUser: boolean
+  email: string
+  firstName: string
+  lastName: string
+  token?: string
+  role?: string
+  userId?: string
+  displayName?: string
+  patientId?: string
+}
+
+export interface GoogleRegisterPayload {
+  accessToken: string
+  gender: string
+  dateOfBirth: string
+  phone: string
+}
+
 export const authApi = {
 
   async registerPatient(payload: RegisterPatientPayload): Promise<any> {
@@ -103,6 +122,52 @@ export const authApi = {
     } catch {
       return null
     }
+  },
+
+  async getGoogleConfig(): Promise<{ clientId: string }> {
+    const res = await fetch(`${BASE_URL}/api/auth/google-config`)
+    if (!res.ok) {
+      throw new Error('Не удалось получить конфигурацию Google OAuth.')
+    }
+    return res.json()
+  },
+
+  async googleLogin(accessToken: string): Promise<GoogleAuthResponse> {
+    const res = await fetch(`${BASE_URL}/api/auth/google-login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accessToken })
+    })
+
+    if (!res.ok) {
+      let message = 'Ошибка входа через Google.'
+      try {
+        const data = await res.json()
+        if (data?.message) message = data.message
+      } catch {}
+      throw new Error(message)
+    }
+
+    return res.json()
+  },
+
+  async googleRegister(payload: GoogleRegisterPayload): Promise<GoogleAuthResponse> {
+    const res = await fetch(`${BASE_URL}/api/auth/google-register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+      let message = 'Ошибка регистрации через Google.'
+      try {
+        const data = await res.json()
+        if (data?.message) message = data.message
+      } catch {}
+      throw new Error(message)
+    }
+
+    return res.json()
   }
 }
 

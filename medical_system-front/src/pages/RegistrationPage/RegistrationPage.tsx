@@ -261,7 +261,7 @@ const RegistrationPage: React.FC = () => {
 
           <Divider>или</Divider>
 
-          <OAuthButton>
+          <OAuthButton type="button" onClick={() => navigate(`${paths.auth}?role=patient&triggerGoogle=true`)}>
             <GoogleIcon
               width={24}
               height={24}

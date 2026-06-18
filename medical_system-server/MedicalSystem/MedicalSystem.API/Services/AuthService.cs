@@ -13,6 +13,9 @@ using MedicalSystem.Domain.Models.Owned;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace MedicalSystem.API.Services
 {
@@ -121,6 +124,7 @@ namespace MedicalSystem.API.Services
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
                 Role = "Patient",
                 DisplayName = displayName,
+                PatientId = userId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -158,6 +162,194 @@ namespace MedicalSystem.API.Services
             }
 
             return user;
+        }
+
+        public async Task<GoogleAuthResponseDto> GoogleLoginAsync(string accessToken, CancellationToken token = default)
+        {
+            var googleUser = await VerifyGoogleTokenAsync(accessToken, token);
+            
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == googleUser.Email, token);
+
+            if (user == null)
+            {
+                return new GoogleAuthResponseDto
+                {
+                    IsNewUser = true,
+                    Email = googleUser.Email,
+                    FirstName = googleUser.GivenName ?? "",
+                    LastName = googleUser.FamilyName ?? ""
+                };
+            }
+
+            if (user.Role != "Patient")
+            {
+                throw new UnauthorizedAccessException("Вход через Google доступен только для пациентов. Медицинский персонал должен использовать стандартный вход.");
+            }
+
+            if (user.PatientId == null)
+            {
+                var patientExists = await _context.Patients.AnyAsync(p => p.Id == user.Id, token);
+                if (patientExists)
+                {
+                    user.PatientId = user.Id;
+                    await _context.SaveChangesAsync(token);
+                }
+            }
+
+            var jwtToken = GenerateToken(user);
+
+            return new GoogleAuthResponseDto
+            {
+                IsNewUser = false,
+                Token = jwtToken,
+                Role = user.Role,
+                UserId = user.Id.ToString(),
+                Login = user.Login,
+                DisplayName = user.DisplayName,
+                PatientId = user.PatientId?.ToString()
+            };
+        }
+
+        public async Task<GoogleAuthResponseDto> GoogleRegisterAsync(GoogleRegisterRequestDto dto, CancellationToken token = default)
+        {
+            var googleUser = await VerifyGoogleTokenAsync(dto.AccessToken, token);
+
+            var existing = await _context.Users
+                .AnyAsync(u => u.Login == googleUser.Email, token);
+
+            if (existing)
+                throw new InvalidOperationException($"Пользователь с email '{googleUser.Email}' уже зарегистрирован.");
+
+            var userId = Guid.NewGuid();
+            var firstName = googleUser.GivenName ?? "";
+            var lastName = googleUser.FamilyName ?? "";
+            var displayName = $"{lastName} {firstName}".Trim();
+
+            var user = new User
+            {
+                Id = userId,
+                Login = googleUser.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString()),
+                Role = "Patient",
+                DisplayName = displayName,
+                PatientId = userId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var parsedGender = Gender.Male;
+            if (string.Equals(dto.Gender, "Female", System.StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(dto.Gender, "Женский", System.StringComparison.OrdinalIgnoreCase))
+            {
+                parsedGender = Gender.Female;
+            }
+
+            var patient = new Patient
+            {
+                Id = userId,
+                FirstName = firstName,
+                LastName = lastName,
+                MiddleName = "",
+                Gender = parsedGender,
+                DateOfBirth = dto.DateOfBirth,
+                MedcardNum = new Random().Next(10000000, 99999999).ToString(),
+                Status = PatientStatus.Outpatient,
+                LastUpdated = DateTime.UtcNow,
+                CreatedAt = DateTime.UtcNow,
+                Contacts = new PatientContacts
+                {
+                    Email = googleUser.Email,
+                    PhoneMobile = dto.Phone
+                }
+            };
+
+            using var transaction = await _context.Database.BeginTransactionAsync(token);
+            try
+            {
+                _context.Users.Add(user);
+                _context.Patients.Add(patient);
+                await _context.SaveChangesAsync(token);
+                await transaction.CommitAsync(token);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(token);
+                throw;
+            }
+
+            var jwtToken = GenerateToken(user);
+
+            return new GoogleAuthResponseDto
+            {
+                IsNewUser = false,
+                Token = jwtToken,
+                Role = user.Role,
+                UserId = user.Id.ToString(),
+                Login = user.Login,
+                DisplayName = user.DisplayName,
+                PatientId = user.PatientId?.ToString()
+            };
+        }
+
+        private async Task<GoogleUserResult> VerifyGoogleTokenAsync(string accessToken, CancellationToken token)
+        {
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+            var response = await client.GetAsync("https://www.googleapis.com/oauth2/v3/userinfo", token);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ArgumentException("Недействительный токен доступа Google.");
+            }
+
+            var content = await response.Content.ReadAsStringAsync(token);
+            var googleUser = System.Text.Json.JsonSerializer.Deserialize<GoogleUserResult>(content);
+            if (googleUser == null || string.IsNullOrWhiteSpace(googleUser.Email))
+            {
+                throw new ArgumentException("Не удалось получить информацию о пользователе Google.");
+            }
+
+            var isVerified = false;
+            if (googleUser.EmailVerified is bool bVal)
+            {
+                isVerified = bVal;
+            }
+            else if (googleUser.EmailVerified is string sVal)
+            {
+                isVerified = string.Equals(sVal, "true", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (googleUser.EmailVerified is System.Text.Json.JsonElement je)
+            {
+                if (je.ValueKind == System.Text.Json.JsonValueKind.True) isVerified = true;
+                else if (je.ValueKind == System.Text.Json.JsonValueKind.String)
+                {
+                    isVerified = string.Equals(je.GetString(), "true", StringComparison.OrdinalIgnoreCase);
+                }
+            }
+
+            if (!isVerified)
+            {
+                throw new InvalidOperationException("Email в аккаунте Google не подтвержден.");
+            }
+
+            return googleUser;
+        }
+
+        private class GoogleUserResult
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("sub")]
+            public string Sub { get; set; } = string.Empty;
+
+            [System.Text.Json.Serialization.JsonPropertyName("email")]
+            public string Email { get; set; } = string.Empty;
+
+            [System.Text.Json.Serialization.JsonPropertyName("email_verified")]
+            public object? EmailVerified { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("given_name")]
+            public string? GivenName { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("family_name")]
+            public string? FamilyName { get; set; }
         }
 
 
