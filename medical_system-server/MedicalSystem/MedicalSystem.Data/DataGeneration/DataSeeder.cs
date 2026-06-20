@@ -161,15 +161,13 @@ namespace MedicalSystem.Data.DataGeneration
             string hashedPwd = BC.HashPassword("Password123!");
             foreach (var patient in patients)
             {
-                string login = $"patient{pCount}";
-
                 if (!usersById.TryGetValue(patient.Id, out var existingUser))
                 {
-                    if (usersByLogin.TryGetValue(login, out var userWithLogin))
+                    string login = $"patient{pCount}";
+                    while (usersByLogin.ContainsKey(login))
                     {
-                        context.Users.Remove(userWithLogin);
-                        usersById.Remove(userWithLogin.Id);
-                        usersByLogin.Remove(login);
+                        pCount++;
+                        login = $"patient{pCount}";
                     }
 
                     var newUser = new User
@@ -185,17 +183,16 @@ namespace MedicalSystem.Data.DataGeneration
                     context.Users.Add(newUser);
                     usersById[newUser.Id] = newUser;
                     usersByLogin[newUser.Login] = newUser;
+                    pCount++;
                 }
                 else
                 {
-                    existingUser.Login = login;
                     existingUser.Role = "Patient";
                     existingUser.DisplayName = $"{patient.LastName} {patient.FirstName} {patient.MiddleName}".Trim();
                     existingUser.PasswordHash = hashedPwd;
                     existingUser.PatientId = patient.Id;
                     context.Users.Update(existingUser);
                 }
-                pCount++;
             }
             await context.SaveChangesAsync();
             logger.LogInformation("Создано/актуализировано {Count} аккаунтов пациентов с паролями patient1..patientN", patients.Count);

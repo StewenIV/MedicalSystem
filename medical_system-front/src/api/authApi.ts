@@ -45,6 +45,9 @@ export interface GoogleRegisterPayload {
   gender: string
   dateOfBirth: string
   phone: string
+  firstName: string
+  lastName: string
+  middleName?: string
 }
 
 export const authApi = {
@@ -117,7 +120,10 @@ export const authApi = {
       const res = await fetch(`${BASE_URL}/api/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      if (!res.ok) return null
+      if (!res.ok) {
+        localStorage.removeItem(TOKEN_KEY)
+        return null
+      }
       return res.json()
     } catch {
       return null
@@ -160,6 +166,63 @@ export const authApi = {
 
     if (!res.ok) {
       let message = 'Ошибка регистрации через Google.'
+      try {
+        const data = await res.json()
+        if (data?.message) message = data.message
+      } catch {}
+      throw new Error(message)
+    }
+
+    return res.json()
+  },
+
+  async forgotPassword(email: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/api/auth/forgot-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    })
+
+    if (!res.ok) {
+      let message = 'Не удалось отправить код восстановления.'
+      try {
+        const data = await res.json()
+        if (data?.message) message = data.message
+      } catch {}
+      throw new Error(message)
+    }
+
+    return res.json()
+  },
+
+  async verifyResetCode(email: string, code: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/api/auth/verify-reset-code`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code })
+    })
+
+    if (!res.ok) {
+      let message = 'Неверный или истекший код.'
+      try {
+        const data = await res.json()
+        if (data?.message) message = data.message
+      } catch {}
+      throw new Error(message)
+    }
+
+    return res.json()
+  },
+
+  async resetPassword(email: string, code: string, password: string, confirmPassword: string): Promise<any> {
+    const res = await fetch(`${BASE_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, code, password, confirmPassword })
+    })
+
+    if (!res.ok) {
+      let message = 'Не удалось изменить пароль.'
       try {
         const data = await res.json()
         if (data?.message) message = data.message

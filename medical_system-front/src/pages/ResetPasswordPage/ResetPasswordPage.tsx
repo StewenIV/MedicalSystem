@@ -44,6 +44,7 @@ import { BackButton } from 'components/Button'
 import { z } from 'zod'
 import { useNavigate } from 'react-router-dom'
 import { paths } from 'routes/helpers'
+import { authApi } from 'api/authApi'
 
 interface ResetPasswordPageProps {
   onLogin?: () => void
@@ -56,10 +57,10 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
 
   const navigate = useNavigate()
  
-  const [email, setEmail] = useState('asasd@kla.re')
+  const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
-  const [password, setPassword] = useState('sadsdasAs4')
-  const [confirmPassword, setConfirmPassword] = useState('sadsdasAs4')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
@@ -156,16 +157,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     setIsLoading(true)
 
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          Math.random() > 0.1
-            ? resolve(true)
-            : reject(
-                new Error('Не удалось отправить письмо. Попробуйте позже.')
-              )
-        }, 2000)
-      })
-
+      await authApi.forgotPassword(email.trim())
       setStep('code')
       setError('')
     } catch (err) {
@@ -186,16 +178,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     setIsLoading(true)
 
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          if (code === '578202') {
-            resolve(true)
-          } else {
-            reject(new Error('Неверный код. Проверьте код и попробуйте снова.'))
-          }
-        }, 2000)
-      })
-
+      await authApi.verifyResetCode(email.trim(), code)
       setStep('password')
       setError('')
     } catch (err) {
@@ -214,14 +197,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     setIsLoading(true)
 
     try {
-      await new Promise((resolve, reject) => {
-        setTimeout(() => {
-          Math.random() > 0.1
-            ? resolve(true)
-            : reject(new Error('Не удалось сбросить пароль. Попробуйте позже.'))
-        }, 2000)
-      })
-
+      await authApi.resetPassword(email.trim(), code, password, confirmPassword)
       setStep('success')
       setError('')
     } catch (err) {

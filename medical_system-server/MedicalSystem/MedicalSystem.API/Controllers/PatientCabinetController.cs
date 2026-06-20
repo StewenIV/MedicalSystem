@@ -16,11 +16,13 @@ namespace MedicalSystem.API.Controllers
     {
         private readonly PatientCabinetService _cabinetService;
         private readonly PatientService _patientService;
+        private readonly MedicalSystem.API.Services.AuthService _authService;
 
-        public PatientCabinetController(PatientCabinetService cabinetService, PatientService patientService)
+        public PatientCabinetController(PatientCabinetService cabinetService, PatientService patientService, MedicalSystem.API.Services.AuthService authService)
         {
             _cabinetService = cabinetService;
             _patientService = patientService;
+            _authService = authService;
         }
         
         [HttpGet("profile")]
@@ -185,6 +187,21 @@ namespace MedicalSystem.API.Controllers
             catch (InvalidOperationException ex)
             {
                 return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        [HttpDelete("account")]
+        public async Task<IActionResult> DeleteAccount(CancellationToken token)
+        {
+            try
+            {
+                var userId = GetUserId();
+                await _authService.DeleteUserAndPatientAsync(userId, token);
+                return Ok(new { message = "Аккаунт успешно удален." });
             }
             catch (Exception ex)
             {

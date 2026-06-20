@@ -16,5 +16,13 @@ namespace MedicalSystem.API.DTOs.Auth
 
         [Required(ErrorMessage = "Телефон обязателен")]
         public string Phone { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Имя обязательно")]
+        public string FirstName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Фамилия обязательна")]
+        public string LastName { get; set; } = string.Empty;
+
+        public string MiddleName { get; set; } = string.Empty;
     }
 }

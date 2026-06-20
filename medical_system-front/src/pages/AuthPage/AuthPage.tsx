@@ -60,11 +60,13 @@ const AuthPage: React.FC = () => {
   const [googleRegData, setGoogleRegData] = useState({
     gender: 'Male',
     dateOfBirth: '',
-    phone: ''
+    phone: '',
+    firstName: '',
+    lastName: '',
+    middleName: ''
   })
   const [googleErrors, setGoogleErrors] = useState<Record<string, string>>({})
-  
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     authApi.getGoogleConfig()
       .then(config => {
@@ -124,6 +126,12 @@ const AuthPage: React.FC = () => {
           firstName: response.firstName,
           lastName: response.lastName
         })
+        setGoogleRegData(prev => ({
+          ...prev,
+          firstName: response.firstName || '',
+          lastName: response.lastName || '',
+          middleName: ''
+        }))
       } else {
         if (!response.token) throw new Error('Не получен токен авторизации.')
         localStorage.setItem(TOKEN_KEY, response.token)
@@ -162,14 +170,37 @@ const AuthPage: React.FC = () => {
     if (!googleToken) return
 
     const errs: Record<string, string> = {}
+    
+    const singleWordRegex = /^[А-Яа-яЁё]+(-[А-Яа-яЁё]+)?$/i
+    
+    if (!googleRegData.lastName.trim()) {
+      errs.lastName = 'Укажите фамилию'
+    } else if (!singleWordRegex.test(googleRegData.lastName.trim())) {
+      errs.lastName = 'Только русские буквы'
+    }
+
+    if (!googleRegData.firstName.trim()) {
+      errs.firstName = 'Укажите имя'
+    } else if (!singleWordRegex.test(googleRegData.firstName.trim())) {
+      errs.firstName = 'Только русские буквы'
+    }
+
+    if (googleRegData.middleName.trim() && !singleWordRegex.test(googleRegData.middleName.trim())) {
+      errs.middleName = 'Только русские буквы'
+    }
+
     if (!googleRegData.dateOfBirth) errs.dateOfBirth = 'Укажите дату рождения'
     if (!googleRegData.phone) errs.phone = 'Укажите телефон'
 
     if (Object.keys(errs).length > 0) {
       setGoogleErrors(errs)
-      toast.error('Пожалуйста, заполните обязательные поля.')
+      toast.error('Пожалуйста, заполните поля корректно.')
       return
     }
+
+    const firstName = googleRegData.firstName.trim()
+    const lastName = googleRegData.lastName.trim()
+    const middleName = googleRegData.middleName.trim()
 
     setIsLoading(true)
     try {
@@ -177,7 +208,10 @@ const AuthPage: React.FC = () => {
         accessToken: googleToken,
         gender: googleRegData.gender,
         dateOfBirth: googleRegData.dateOfBirth,
-        phone: googleRegData.phone
+        phone: googleRegData.phone,
+        firstName,
+        lastName,
+        middleName
       })
 
       if (!response.token) throw new Error('Не получен токен авторизации после регистрации.')
@@ -271,12 +305,47 @@ const AuthPage: React.FC = () => {
               </InputGroup>
 
               <InputGroup>
-                <label>Имя и Фамилия</label>
+                <label>Фамилия *</label>
                 <Input
                   icon={<User size={18} />}
                   type="text"
-                  value={`${newGoogleUser.lastName} ${newGoogleUser.firstName}`.trim()}
-                  disabled
+                  value={googleRegData.lastName}
+                  onChange={(e) => {
+                    setGoogleRegData({ ...googleRegData, lastName: e.target.value })
+                    if (googleErrors.lastName) setGoogleErrors({ ...googleErrors, lastName: '' })
+                  }}
+                  error={googleErrors.lastName}
+                  placeholder="Иванов"
+                />
+              </InputGroup>
+
+              <InputGroup>
+                <label>Имя *</label>
+                <Input
+                  icon={<User size={18} />}
+                  type="text"
+                  value={googleRegData.firstName}
+                  onChange={(e) => {
+                    setGoogleRegData({ ...googleRegData, firstName: e.target.value })
+                    if (googleErrors.firstName) setGoogleErrors({ ...googleErrors, firstName: '' })
+                  }}
+                  error={googleErrors.firstName}
+                  placeholder="Иван"
+                />
+              </InputGroup>
+
+              <InputGroup>
+                <label>Отчество</label>
+                <Input
+                  icon={<User size={18} />}
+                  type="text"
+                  value={googleRegData.middleName}
+                  onChange={(e) => {
+                    setGoogleRegData({ ...googleRegData, middleName: e.target.value })
+                    if (googleErrors.middleName) setGoogleErrors({ ...googleErrors, middleName: '' })
+                  }}
+                  error={googleErrors.middleName}
+                  placeholder="Иванович"
                 />
               </InputGroup>
 

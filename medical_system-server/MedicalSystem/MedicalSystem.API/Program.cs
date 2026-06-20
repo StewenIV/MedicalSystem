@@ -81,6 +81,7 @@ builder.Services.AddScoped<IFileStorageService, MinioFileStorageService>();
 
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<EmailService>();
 
 
 var jwtKey = builder.Configuration["Jwt:Key"]!;
@@ -210,6 +211,8 @@ using (var scope = app.Services.CreateScope())
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PatientDocuments\" ADD COLUMN IF NOT EXISTS \"Content\" text NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"PatientDocuments\" ADD COLUMN IF NOT EXISTS \"DoctorName\" text NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"PatientId\" uuid NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"ResetToken\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"ResetTokenExpiry\" timestamp with time zone NULL;"); } catch { }
 
         await DataSeeder.SeedAsync(context, logger);
     }

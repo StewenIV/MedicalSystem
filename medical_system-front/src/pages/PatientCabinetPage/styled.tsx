@@ -934,7 +934,8 @@ export const InputField = styled.input`
 `
 
 export const SaveButton = styled.button`
-  align-self: flex-end;
+  display: flex;
+  justify-self: end;
   background: ${C.blue};
   color: white;
   border: none;

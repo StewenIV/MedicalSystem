@@ -44,7 +44,8 @@ import {
   changePatientPassword,
   fetchPatientDocuments,
   fetchPatientExams,
-  fetchPatientProfile
+  fetchPatientProfile,
+  deleteAccount
 } from 'api/patientCabinetApi'
 import { downloadFileFromServer } from 'api/filesApi'
 import { getPhoneFormat } from 'utils/phoneFormat'
@@ -405,6 +406,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
 
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -705,6 +707,21 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
       toast.error(err?.message || 'Не удалось сменить пароль')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    setLoading(true)
+    try {
+      await deleteAccount()
+      toast.success('Аккаунт успешно удален')
+      localStorage.removeItem('token')
+      localStorage.removeItem('patient_unread_notif_count')
+      window.location.href = '/auth'
+    } catch (err: any) {
+      toast.error(err?.message || 'Не удалось удалить аккаунт')
+      setLoading(false)
+      setIsDeleteModalOpen(false)
     }
   }
 
@@ -1365,6 +1382,14 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             >
               <Lock size={14} style={{ marginRight: 7 }} />
               Сменить пароль
+            </SecondaryButton>
+
+            <SecondaryButton
+              style={{ width: '100%', justifyContent: 'center', marginTop: '10px', color: '#ef4444', borderColor: '#fee2e2', backgroundColor: '#fef2f2' }}
+              onClick={() => setIsDeleteModalOpen(true)}
+            >
+              <User size={14} style={{ marginRight: 7 }} />
+              Удалить аккаунт
             </SecondaryButton>
 
             <div
@@ -2034,6 +2059,37 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <SaveButton type="submit">Изменить пароль</SaveButton>
               </ModalFooter>
             </form>
+          </ModalContent>
+        </ModalOverlay>
+      )}
+
+      {isDeleteModalOpen && (
+        <ModalOverlay onClick={() => setIsDeleteModalOpen(false)}>
+          <ModalContent onClick={(e) => e.stopPropagation()} style={{ maxWidth: 450 }}>
+            <ModalHeader>
+              <ModalTitle style={{ color: '#ef4444' }}>Удаление аккаунта</ModalTitle>
+              <CloseBtn type="button" onClick={() => setIsDeleteModalOpen(false)}>
+                <X size={20} />
+              </CloseBtn>
+            </ModalHeader>
+            <div style={{ padding: '24px 24px 0 24px' }}>
+              <p style={{ margin: 0, fontSize: 14, color: '#334155', lineHeight: 1.5 }}>
+                Вы уверены, что хотите полностью удалить свой аккаунт? Это действие необратимо.
+                Все ваши данные будут стерты.
+              </p>
+            </div>
+            <ModalFooter style={{ marginTop: 24 }}>
+              <SecondaryButton type="button" onClick={() => setIsDeleteModalOpen(false)}>
+                Отмена
+              </SecondaryButton>
+              <SaveButton
+                type="button"
+                onClick={handleDeleteAccount}
+                style={{ backgroundColor: '#ef4444', borderColor: '#ef4444', color: '#fff' }}
+              >
+                Да, удалить
+              </SaveButton>
+            </ModalFooter>
           </ModalContent>
         </ModalOverlay>
       )}

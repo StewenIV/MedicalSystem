@@ -30,6 +30,65 @@ namespace MedicalSystem.API.Services
             _config = config;
         }
 
+        public async Task<bool> UserExistsAsync(Guid userId, CancellationToken token = default)
+        {
+            return await _context.Users.AnyAsync(u => u.Id == userId, token);
+        }
+
+        public async Task DeleteUserAndPatientAsync(Guid userId, CancellationToken token = default)
+        {
+            var user = await _context.Users
+                .Include(u => u.Patient)
+                .FirstOrDefaultAsync(u => u.Id == userId, token);
+
+            if (user != null)
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync(token);
+                try
+                {
+                    if (user.Patient != null)
+                    {
+                        var patientId = user.Patient.Id;
+
+                        await _context.HospitalBeds
+                            .Where(x => x.PatientId == patientId)
+                            .ExecuteUpdateAsync(s => s.SetProperty(b => b.PatientId, (Guid?)null), token);
+                            
+                        await _context.MedicineOperationLogs
+                            .Where(x => x.PatientId == patientId)
+                            .ExecuteUpdateAsync(s => s.SetProperty(l => l.PatientId, (Guid?)null), token);
+
+                        await _context.PatientRelatives.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Allergies.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.MedicalProblems.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Encounters.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.LabResults.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Operations.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Vaccines.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.PatientDocuments.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.VitalSigns.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Appointments.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.BedPrescriptions.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.BedActionLogs.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.BedOccupancyHistories.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Notifications.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.Set<MedicalSystem.Domain.Models.Prescription>().Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+                        await _context.PatientMedications.Where(x => x.PatientId == patientId).ExecuteDeleteAsync(token);
+
+                        _context.Patients.Remove(user.Patient);
+                    }
+                    _context.Users.Remove(user);
+                    await _context.SaveChangesAsync(token);
+                    await transaction.CommitAsync(token);
+                }
+                catch
+                {
+                    await transaction.RollbackAsync(token);
+                    throw;
+                }
+            }
+        }
+
         public async Task<LoginResponseDto?> LoginAsync(string login, string password, CancellationToken token = default)
         {
             var user = await _context.Users
@@ -222,9 +281,10 @@ namespace MedicalSystem.API.Services
                 throw new InvalidOperationException($"Пользователь с email '{googleUser.Email}' уже зарегистрирован.");
 
             var userId = Guid.NewGuid();
-            var firstName = googleUser.GivenName ?? "";
-            var lastName = googleUser.FamilyName ?? "";
-            var displayName = $"{lastName} {firstName}".Trim();
+            var firstName = string.IsNullOrWhiteSpace(dto.FirstName) ? (googleUser.GivenName ?? "") : dto.FirstName;
+            var lastName = string.IsNullOrWhiteSpace(dto.LastName) ? (googleUser.FamilyName ?? "") : dto.LastName;
+            var middleName = dto.MiddleName ?? "";
+            var displayName = $"{lastName} {firstName} {middleName}".Trim();
 
             var user = new User
             {
@@ -249,7 +309,7 @@ namespace MedicalSystem.API.Services
                 Id = userId,
                 FirstName = firstName,
                 LastName = lastName,
-                MiddleName = "",
+                MiddleName = middleName,
                 Gender = parsedGender,
                 DateOfBirth = dto.DateOfBirth,
                 MedcardNum = new Random().Next(10000000, 99999999).ToString(),
@@ -352,6 +412,55 @@ namespace MedicalSystem.API.Services
             public string? FamilyName { get; set; }
         }
 
+
+        public async Task<(string DisplayName, string Code)> GenerateResetCodeAsync(string email, CancellationToken token = default)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == email, token);
+
+            if (user == null)
+                throw new ArgumentException("Пользователь с таким email не найден.");
+
+            var code = new Random().Next(100000, 999999).ToString();
+            user.ResetToken = code;
+            user.ResetTokenExpiry = DateTime.UtcNow.AddMinutes(15);
+
+            await _context.SaveChangesAsync(token);
+
+            return (user.DisplayName ?? user.Login, code);
+        }
+
+        public async Task<bool> VerifyResetCodeAsync(string email, string code, CancellationToken token = default)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == email, token);
+
+            if (user == null)
+                return false;
+
+            if (user.ResetToken != code || user.ResetTokenExpiry == null || user.ResetTokenExpiry < DateTime.UtcNow)
+                return false;
+
+            return true;
+        }
+
+        public async Task ResetPasswordAsync(string email, string code, string newPassword, CancellationToken token = default)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == email, token);
+
+            if (user == null)
+                throw new InvalidOperationException("Пользователь не найден.");
+
+            if (user.ResetToken != code || user.ResetTokenExpiry == null || user.ResetTokenExpiry < DateTime.UtcNow)
+                throw new InvalidOperationException("Недействительный или истекший код подтверждения.");
+
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+            user.ResetToken = null;
+            user.ResetTokenExpiry = null;
+
+            await _context.SaveChangesAsync(token);
+        }
 
         private string GenerateToken(User user)
         {

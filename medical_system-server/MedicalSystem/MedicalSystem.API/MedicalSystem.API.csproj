@@ -17,6 +17,7 @@
         </PackageReference>
         <PackageReference Include="Minio" Version="7.0.0" />
         <PackageReference Include="Scalar.AspNetCore" Version="2.14.14" />
+        <PackageReference Include="MailKit" Version="4.10.0" />
     </ItemGroup>
 
     <ItemGroup>

@@ -17,6 +17,10 @@ yarn-debug.log*
 .env
 .env.*.local
 
+# Application settings
+**/appsettings.json
+**/appsettings.Development.json
+
 # IDE and OS specific files
 .idea/
 .vscode/

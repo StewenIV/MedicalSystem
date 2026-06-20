@@ -143,3 +143,6 @@ export const fetchPatientExams = (): Promise<PatientExamDto[]> =>
 
 export const fetchPatientProfile = (): Promise<any> =>
   apiFetch('/api/patient-cabinet/profile')
+
+export const deleteAccount = (): Promise<{ message: string }> =>
+  apiFetch('/api/patient-cabinet/account', { method: 'DELETE' })

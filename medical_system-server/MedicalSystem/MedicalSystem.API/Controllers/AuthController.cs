@@ -15,11 +15,13 @@ namespace MedicalSystem.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly EmailService _emailService;
         private readonly IConfiguration _config;
 
-        public AuthController(AuthService authService, IConfiguration config)
+        public AuthController(AuthService authService, EmailService emailService, IConfiguration config)
         {
             _authService = authService;
+            _emailService = emailService;
             _config = config;
         }
 
@@ -47,10 +49,18 @@ namespace MedicalSystem.API.Controllers
 
         [HttpGet("me")]
         [Authorize]
-        public IActionResult Me()
+        public async Task<IActionResult> Me(CancellationToken token)
         {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier)
                          ?? User.FindFirstValue(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub);
+
+            if (!Guid.TryParse(userIdStr, out var userId))
+                return Unauthorized(new { message = "Некорректный ID пользователя." });
+
+            var userExists = await _authService.UserExistsAsync(userId, token);
+            if (!userExists)
+                return Unauthorized(new { message = "Пользователь был удален." });
+
             var login = User.FindFirstValue("login");
             var role = User.FindFirstValue(ClaimTypes.Role);
             var displayName = User.FindFirstValue("displayName");
@@ -58,7 +68,7 @@ namespace MedicalSystem.API.Controllers
 
             return Ok(new
             {
-                userId,
+                userId = userIdStr,
                 login,
                 role,
                 displayName,
@@ -171,6 +181,73 @@ namespace MedicalSystem.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = $"Внутренняя ошибка сервера при регистрации через Google: {ex.Message}" });
+            }
+        }
+
+        [HttpPost("forgot-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto dto, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email))
+                return BadRequest(new { message = "Email обязателен." });
+
+            try
+            {
+                var (displayName, code) = await _authService.GenerateResetCodeAsync(dto.Email, token);
+                await _emailService.SendResetCodeEmailAsync(dto.Email, displayName, code);
+                return Ok(new { message = "Код восстановления отправлен на вашу почту." });
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                var detail = ex.InnerException != null ? $"{ex.Message} Внутренняя ошибка: {ex.InnerException.Message}" : ex.Message;
+                return StatusCode(500, new { message = $"Ошибка при отправке письма: {detail}" });
+            }
+        }
+
+        [HttpPost("verify-reset-code")]
+        [AllowAnonymous]
+        public async Task<IActionResult> VerifyResetCode([FromBody] VerifyResetCodeRequestDto dto, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Code))
+                return BadRequest(new { message = "Email и код обязательны." });
+
+            var isValid = await _authService.VerifyResetCodeAsync(dto.Email, dto.Code, token);
+            if (!isValid)
+                return BadRequest(new { message = "Неверный или истекший код подтверждения." });
+
+            return Ok(new { message = "Код подтвержден успешно." });
+        }
+
+        [HttpPost("reset-password")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto dto, CancellationToken token)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Code) || string.IsNullOrWhiteSpace(dto.Password))
+                return BadRequest(new { message = "Все поля обязательны." });
+
+            if (dto.Password.Length < 8 || 
+                !System.Text.RegularExpressions.Regex.IsMatch(dto.Password, "[A-Z]") || 
+                !System.Text.RegularExpressions.Regex.IsMatch(dto.Password, "[0-9]"))
+            {
+                return BadRequest(new { message = "Пароль должен содержать минимум 8 символов, одну заглавную букву и одну цифру." });
+            }
+
+            try
+            {
+                await _authService.ResetPasswordAsync(dto.Email, dto.Code, dto.Password, token);
+                return Ok(new { message = "Пароль успешно изменен." });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Внутренняя ошибка сервера: {ex.Message}" });
             }
         }
     }

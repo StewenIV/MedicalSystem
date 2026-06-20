@@ -29,6 +29,11 @@ namespace MedicalSystem.Domain.Models
 
         public virtual Patient? Patient { get; set; }
 
+        [StringLength(100)]
+        public string? ResetToken { get; set; }
+
+        public DateTime? ResetTokenExpiry { get; set; }
+        
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     }
 }
