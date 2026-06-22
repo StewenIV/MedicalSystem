@@ -945,6 +945,7 @@ interface PatientCardPageProps {
   onSelectPatient?: (id: string) => void
   onNavigateToTemperatureSheet?: (id: string) => void
   onNavigateToWardRound?: (id: string) => void
+  onNavigateToDischarge?: (id: string) => void
 }
 
 interface PatientCardProps {
@@ -953,6 +954,8 @@ interface PatientCardProps {
   onSelectPatientFromPreview?: (id: string) => void
   onNavigateToTemperatureSheet?: (id: string) => void
   onNavigateToWardRound?: (id: string) => void
+  onNavigateToDischarge?: (id: string) => void
+  onLoaded?: () => void
 }
 
 enum TabsEnum {
@@ -972,13 +975,20 @@ const PatientCard: React.FC<PatientCardProps> = ({
   initialTab,
   onSelectPatientFromPreview,
   onNavigateToTemperatureSheet,
-  onNavigateToWardRound
+  onNavigateToWardRound,
+  onNavigateToDischarge,
+  onLoaded
 }) => {
   const { patients, updatePatient, deletePatient } = usePatientData()
 
   const [localPatient, setLocalPatient] = useState<any>(null)
   const [activeTab, setActiveTab] = useState<string>(initialTab || TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
+
+  const onLoadedRef = useRef(onLoaded)
+  useEffect(() => {
+    onLoadedRef.current = onLoaded
+  }, [onLoaded])
 
   useEffect(() => {
     if (initialTab) {
@@ -1016,6 +1026,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
               allergies: dto.allergies || [],
               relatives: dto.relatives || []
             })
+            onLoadedRef.current?.()
           })
           .catch(console.error)
       })
@@ -4215,7 +4226,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
 
             <HeaderInfoGrid style={{ marginTop: 0 }}>
               <InfoItem>
-                <span className="label">Лечащий врачБ</span>
+                <span className="label">Лечащий врач</span>
                 <span className="value">{localPatient.doctor}</span>
               </InfoItem>
               <InfoItem>
@@ -4241,15 +4252,96 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 marginLeft: 'auto',
                 flexShrink: 0,
                 display: 'flex',
+                flexDirection: 'column',
                 gap: 10,
-                alignItems: 'center'
+                alignItems: 'stretch'
               }}
             >
+              <div style={{ display: 'flex', gap: 10 }}>
+                {localPatient.status?.toLowerCase() === 'hospitalized' && onNavigateToDischarge && (
+                  <button
+                    id="btn-discharge"
+                    onClick={() => onNavigateToDischarge(localPatient.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
+                      gap: 8,
+                      padding: '10px 20px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #059669 0%, #10b981 100%)',
+                      color: 'white',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      boxShadow: '0 4px 14px rgba(5,150,105,0.35)',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => {
+                      const b = e.currentTarget as HTMLButtonElement
+                      b.style.transform = 'translateY(-1px)'
+                      b.style.boxShadow = '0 6px 20px rgba(5,150,105,0.45)'
+                    }}
+                    onMouseLeave={(e) => {
+                      const b = e.currentTarget as HTMLButtonElement
+                      b.style.transform = 'translateY(0)'
+                      b.style.boxShadow = '0 4px 14px rgba(5,150,105,0.35)'
+                    }}
+                  >
+                    <FileText size={16} />
+                    Выписать
+                  </button>
+                )}
+                {onNavigateToWardRound && (
+                  <button
+                    id="btn-ward-round"
+                    onClick={() => onNavigateToWardRound(localPatient.id)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flex: 1,
+                      gap: 8,
+                      padding: '10px 20px',
+                      borderRadius: 10,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
+                      color: 'white',
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, system-ui, sans-serif',
+                      boxShadow: '0 4px 14px rgba(29,78,216,0.35)',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap'
+                    }}
+                    onMouseEnter={(e) => {
+                      const b = e.currentTarget as HTMLButtonElement
+                      b.style.transform = 'translateY(-1px)'
+                      b.style.boxShadow = '0 6px 20px rgba(29,78,216,0.45)'
+                    }}
+                    onMouseLeave={(e) => {
+                      const b = e.currentTarget as HTMLButtonElement
+                      b.style.transform = 'translateY(0)'
+                      b.style.boxShadow = '0 4px 14px rgba(29,78,216,0.35)'
+                    }}
+                  >
+                    <Stethoscope size={16} />
+                    Провести осмотр
+                  </button>
+                )}
+              </div>
               <button
                 onClick={() => openModal('DELETE_PATIENT')}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
                   gap: 8,
                   padding: '10px 20px',
                   borderRadius: 10,
@@ -4275,42 +4367,6 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 <Trash2 size={16} />
                 Удалить пациента
               </button>
-              {onNavigateToWardRound && (
-                <button
-                  id="btn-ward-round"
-                  onClick={() => onNavigateToWardRound(localPatient.id)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '10px 20px',
-                    borderRadius: 10,
-                    border: 'none',
-                    background: 'linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%)',
-                    color: 'white',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    boxShadow: '0 4px 14px rgba(29,78,216,0.35)',
-                    transition: 'all 0.2s ease',
-                    whiteSpace: 'nowrap'
-                  }}
-                  onMouseEnter={(e) => {
-                    const b = e.currentTarget as HTMLButtonElement
-                    b.style.transform = 'translateY(-1px)'
-                    b.style.boxShadow = '0 6px 20px rgba(29,78,216,0.45)'
-                  }}
-                  onMouseLeave={(e) => {
-                    const b = e.currentTarget as HTMLButtonElement
-                    b.style.transform = 'translateY(0)'
-                    b.style.boxShadow = '0 4px 14px rgba(29,78,216,0.35)'
-                  }}
-                >
-                  <Stethoscope size={16} />
-                  Провести осмотр
-                </button>
-              )}
             </div>
           )}
         </PatientHeader>
@@ -4337,7 +4393,8 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   initialTab,
   onSelectPatient: externalOnSelect,
   onNavigateToTemperatureSheet,
-  onNavigateToWardRound
+  onNavigateToWardRound,
+  onNavigateToDischarge
 }) => {
   const { addPatient } = usePatientData()
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>(externalPatientId)
@@ -4354,26 +4411,19 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
     status: 'hospitalized'
   })
   const cardRef = useRef<HTMLDivElement>(null)
+  const shouldScrollRef = useRef(!!externalPatientId)
 
   useEffect(() => {
+    if (externalPatientId && externalPatientId !== selectedPatientId) {
+      shouldScrollRef.current = true
+    }
     setSelectedPatientId(externalPatientId)
-  }, [externalPatientId])
+  }, [externalPatientId, selectedPatientId])
 
   const handleSelectPatient = (id: string) => {
     setSelectedPatientId(id)
     externalOnSelect?.(id)
-    setTimeout(() => {
-      const element = cardRef.current
-
-      if (!element) return
-
-      const y = element.getBoundingClientRect().top + window.pageYOffset - 20
-
-      window.scrollTo({
-        top: y,
-        behavior: 'smooth'
-      })
-    }, 150)
+    shouldScrollRef.current = true
   }
 
   const handleBackToSearch = () => {
@@ -4483,6 +4533,21 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
             onSelectPatientFromPreview={handleSelectPatient}
             onNavigateToTemperatureSheet={onNavigateToTemperatureSheet}
             onNavigateToWardRound={onNavigateToWardRound}
+            onNavigateToDischarge={onNavigateToDischarge}
+            onLoaded={() => {
+              if (shouldScrollRef.current) {
+                shouldScrollRef.current = false
+                setTimeout(() => {
+                  const element = cardRef.current
+                  if (!element) return
+                  const y = element.getBoundingClientRect().top + window.pageYOffset - 20
+                  window.scrollTo({
+                    top: y,
+                    behavior: 'smooth'
+                  })
+                }, 100)
+              }
+            }}
           />
         </div>
       )}

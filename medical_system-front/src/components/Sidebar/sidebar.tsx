@@ -16,7 +16,8 @@ import {
   FlaskConical,
   UserCircle,
   FileText,
-  Bell
+  Bell,
+  UserCog
 } from 'lucide-react'
 
 import {
@@ -51,27 +52,9 @@ interface NavItem {
 
 const ALL_NAV_ITEMS: NavItem[] = [
   {
-    key: 'dashboard',
-    label: 'Дашборд',
-    icon: LayoutDashboard,
-    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
-  },
-  {
     key: 'patients',
     label: 'Пациенты',
     icon: Users,
-    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
-  },
-  {
-    key: 'temperature-sheet',
-    label: 'Температурный лист',
-    icon: Thermometer,
-    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
-  },
-  {
-    key: 'HospitalWorkplace',
-    label: 'Стационар',
-    icon: Calendar,
     roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
   },
   {
@@ -81,16 +64,28 @@ const ALL_NAV_ITEMS: NavItem[] = [
     roles: ['Doctor', 'ChiefDoctor']
   },
   {
+    key: 'temperature-sheet',
+    label: 'Температурный лист',
+    icon: Thermometer,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'discharge',
+    label: 'Выписка',
+    icon: FileUser,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
+    key: 'HospitalWorkplace',
+    label: 'Стационар',
+    icon: Calendar,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+  },
+  {
     key: 'beds-admin',
     label: 'Администрирование стационара',
     icon: Building2,
     roles: ['ChiefDoctor']
-  },
-  {
-    key: 'patient-card',
-    label: 'Карточка пациента',
-    icon: FileUser,
-    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
   },
   {
     key: 'medical-staff-schedule',
@@ -99,22 +94,16 @@ const ALL_NAV_ITEMS: NavItem[] = [
     roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
   },
   {
+    key: 'staff-admin',
+    label: 'Управление персоналом',
+    icon: UserCog,
+    roles: ['ChiefDoctor']
+  },
+  {
     key: 'medicines',
     label: 'Учёт медикаментов',
     icon: Pill,
     roles: ['Nurse', 'HeadNurse', 'ChiefDoctor']
-  },
-  {
-    key: 'reports',
-    label: 'Отчёты',
-    icon: BarChart3,
-    roles: ['ChiefDoctor']
-  },
-  {
-    key: 'settings',
-    label: 'Управление',
-    icon: Settings,
-    roles: ['ChiefDoctor']
   },
   {
     key: 'patient-dashboard',

@@ -39,6 +39,7 @@ interface PatientDataActions {
   addPatient: (dto: Partial<PatientCardDto>) => Promise<PatientCardDto>
   updatePatient: (id: string, dto: PatientCardDto) => Promise<void>
   deletePatient: (id: string) => Promise<void>
+  refreshPatients: () => Promise<void>
 }
 type PatientDataContextValue = PatientDataState & PatientDataActions
 
@@ -73,6 +74,23 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [inspections, setInspections] = useState<Record<string, SavedInspection[]>>({})
   const [drafts, setDrafts] = useState<Record<string, any>>({})
 
+  const refreshPatients = useCallback(async () => {
+    try {
+      const { fetchAllPatients } = await import('../api/patientsApi')
+      const data = await fetchAllPatients()
+      const mapped = data.map((dto: any) => ({
+        ...dto,
+        doctor: dto.doctorName,
+        department: dto.departmentName,
+        statusText: dto.statusText || 'Госпитализирован',
+        activeProblems: dto.medicalProblems?.map((m: any) => m.name) || []
+      }))
+      setPatients(mapped)
+    } catch (err) {
+      console.error('Failed to refresh patients:', err)
+    }
+  }, [])
+
   React.useEffect(() => {
     import('../api/authApi').then(({ decodeJwt, isTokenValid }) => {
       if (!isTokenValid()) return;
@@ -85,18 +103,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       const role = claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? claims.role;
       if (role === 'Patient') return; // Patients don't have access to all patients or encounters
 
-      import('../api/patientsApi').then(({ fetchAllPatients }) => {
-        fetchAllPatients().then((data) => {
-          const mapped = data.map((dto: any) => ({
-            ...dto,
-            doctor: dto.doctorName,
-            department: dto.departmentName,
-            statusText: dto.statusText || 'Госпитализирован',
-            activeProblems: dto.medicalProblems?.map((m: any) => m.name) || []
-          }))
-          setPatients(mapped)
-        }).catch(console.error)
-      })
+      refreshPatients()
 
       import('../api/encountersApi').then(({ fetchTodayEncounters }) => {
         fetchTodayEncounters().then((grouped) => {
@@ -104,7 +111,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         }).catch(console.error)
       })
     })
-  }, [])
+  }, [refreshPatients])
 
   const saveDraft = useCallback((key: string, draft: any) => {
     setDrafts(prev => ({ ...prev, [key]: draft }))
@@ -531,7 +538,8 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       getDraft,
       addPatient,
       updatePatient,
-      deletePatient
+      deletePatient,
+      refreshPatients
     }}>
       {children}
     </PatientDataContext.Provider>

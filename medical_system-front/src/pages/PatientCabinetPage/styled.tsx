@@ -1,4 +1,5 @@
 import styled, { keyframes, css } from 'styled-components'
+import Input from 'components/Input'
 
 const FONT = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
 const GRADIENT_ACCENT = 'linear-gradient(180deg, #2563eb 0%, #7c3aed 100%)'
@@ -916,6 +917,29 @@ export const InputField = styled.input`
   font-family: ${FONT};
   background: ${C.surface};
   padding: 10px 13px;
+  border-radius: 9px;
+  border: 1px solid ${C.borderMed};
+  transition: all 0.15s ease;
+  width: 100%;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: ${C.slate400};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${C.blue};
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.09);
+  }
+`
+
+export const PasswordInputField = styled(Input)`
+  font-size: 14px;
+  font-weight: 500;
+  color: ${C.slate900};
+  font-family: ${FONT};
+  background: ${C.surface};
   border-radius: 9px;
   border: 1px solid ${C.borderMed};
   transition: all 0.15s ease;

@@ -111,6 +111,7 @@ import {
   FieldLabel,
   FieldValueReadOnly,
   InputField,
+  PasswordInputField,
   SaveButton,
   SecondaryButton,
   FilterBar,
@@ -2007,7 +2008,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                   <FieldWrapper>
                     <FieldLabel>Текущий пароль</FieldLabel>
-                    <InputField
+                    <PasswordInputField
                       type="password"
                       placeholder="Введите текущий пароль"
                       value={oldPassword}
@@ -2021,7 +2022,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Новый пароль</FieldLabel>
-                    <InputField
+                    <PasswordInputField
                       type="password"
                       placeholder="Придумайте надёжный пароль"
                       value={newPassword}
@@ -2035,7 +2036,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                   </FieldWrapper>
                   <FieldWrapper>
                     <FieldLabel>Подтверждение пароля</FieldLabel>
-                    <InputField
+                    <PasswordInputField
                       type="password"
                       placeholder="Повторите новый пароль"
                       value={confirmPassword}

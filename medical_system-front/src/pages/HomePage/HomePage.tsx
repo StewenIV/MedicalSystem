@@ -78,6 +78,7 @@ import { mockTodayAppointments } from 'data/mockData'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { HospitalWorkplace } from 'pages/HospitalBedsPage'
 import { WardAdmin } from 'pages/BedsAdminPage'
+import StaffAdminPage from 'pages/StaffAdminPage/StaffAdminPage'
 import { default as PatientCard } from 'pages/PatientCard'
 import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
 import MedicinesPage from 'pages/MedicinesPage'
@@ -85,6 +86,7 @@ import { WardRoundPage, WardRoundsHub, PrimaryInspectionPage } from 'pages/WardR
 import { PatientDataProvider, usePatientData } from 'context/PatientDataContext'
 import LaboratoryPage from 'pages/LaboratoryPage'
 import PatientCabinetPage from 'pages/PatientCabinetPage'
+import DischargePage from 'pages/DischargePage'
 import { selectDisplayName, selectUserRole } from 'features/App/selectors'
 import { UserRole } from 'features/App/types'
 import { usePatientNotifications } from 'context/PatientNotificationsContext'
@@ -146,7 +148,7 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
   const [activeSection, setActiveSection] = useState<string>(() => {
     if (reduxRole === 'Patient') return 'patient-dashboard'
     if (reduxRole === 'LaboratoryEmployee') return 'laboratory'
-    return 'dashboard'
+    return 'patients'
   })
 
   React.useEffect(() => {
@@ -507,6 +509,8 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
 
                 {activeSection === 'beds-admin' && <WardAdmin />}
 
+                {activeSection === 'staff-admin' && <StaffAdminPage />}
+
                 {(activeSection === 'patients' || activeSection === 'patient-card') && (
                   <PatientCard
                     patientId={selectedPatientId}
@@ -521,6 +525,10 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                       setSelectedPatientId(id || undefined)
                     }}
                     onNavigateToWardRound={(id) => openWardRound(id || undefined)}
+                    onNavigateToDischarge={(id) => {
+                      setActiveSection('discharge')
+                      setSelectedPatientId(id)
+                    }}
                   />
                 )}
 
@@ -568,6 +576,16 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                 )}
 
                 {activeSection === 'medicines' && <MedicinesPage />}
+
+                {activeSection === 'discharge' && (
+                  <DischargePage
+                    patientId={selectedPatientId}
+                    onClose={() => {
+                      setActiveSection('patients')
+                      setSelectedPatientId(undefined)
+                    }}
+                  />
+                )}
 
                 {activeSection === 'schedule' && (
                   <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>
