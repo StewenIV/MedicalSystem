@@ -35,6 +35,14 @@ namespace MedicalSystem.API.Services
             return await _context.Users.AnyAsync(u => u.Id == userId, token);
         }
 
+        public async Task<User?> GetUserByIdAsync(Guid userId, CancellationToken token = default)
+        {
+            return await _context.Users
+                .Include(u => u.MedicalStaff)
+                .Include(u => u.Patient)
+                .FirstOrDefaultAsync(u => u.Id == userId, token);
+        }
+
         public async Task DeleteUserAndPatientAsync(Guid userId, CancellationToken token = default)
         {
             var user = await _context.Users
@@ -92,6 +100,8 @@ namespace MedicalSystem.API.Services
         public async Task<LoginResponseDto?> LoginAsync(string login, string password, CancellationToken token = default)
         {
             var user = await _context.Users
+                .Include(u => u.MedicalStaff)
+                .Include(u => u.Patient)
                 .FirstOrDefaultAsync(u => u.Login == login, token);
 
             if (user == null)
@@ -99,6 +109,13 @@ namespace MedicalSystem.API.Services
 
             if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
                 return null;
+
+            var patientName = user.Patient != null 
+                ? $"{user.Patient.LastName} {user.Patient.FirstName} {user.Patient.MiddleName}".Trim() 
+                : null;
+                
+            var actualDisplayName = user.MedicalStaff?.Name ?? patientName ?? user.DisplayName ?? user.Login;
+            user.DisplayName = actualDisplayName; 
 
             var jwtToken = GenerateToken(user);
 
@@ -108,7 +125,7 @@ namespace MedicalSystem.API.Services
                 Role = user.Role,
                 UserId = user.Id.ToString(),
                 Login = user.Login,
-                DisplayName = user.DisplayName,
+                DisplayName = actualDisplayName,
                 PatientId = user.PatientId?.ToString()
             };
         }

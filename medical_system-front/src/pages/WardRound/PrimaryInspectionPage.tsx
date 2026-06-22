@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { formatLocalDate, toBackendDateTimeString } from 'utils/dateUtils'
 import {
   Clock, Stethoscope, FileText, ClipboardList, FlaskConical,
   Pill as PillIcon, PenLine, Save, X, Check, Plus, Trash2,
@@ -366,7 +367,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   const inspType = form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр'
   
   const dateRu = form.inspectionDate
-    ? new Date(form.inspectionDate).toLocaleDateString('ru-RU')
+    ? formatLocalDate(form.inspectionDate)
     : form.inspectionDate
 
   parts.push(`${inspType} лечащего врача от ${dateRu}. Время: ${form.inspectionTime}.`)
@@ -411,7 +412,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   const bSuffix = isFemale ? 'больной' : 'больным'
 
   if (form.illnessStartDate) {
-    const startRu = new Date(form.illnessStartDate).toLocaleDateString('ru-RU')
+    const startRu = formatLocalDate(form.illnessStartDate)
     morbiParts.push(`Считает себя ${bSuffix} с ${startRu}.`)
   }
   
@@ -1002,7 +1003,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           name: form.primaryDiagnosis,
           isActive: true,
           diseaseStatus: 'Активное',
-          diagnosisDate: new Date().toISOString()
+          diagnosisDate: toBackendDateTimeString(new Date())
         })
       }
       if (form.comorbidities) {
@@ -1013,7 +1014,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               name: c.diagnosis,
               isActive: c.activity === 'Активное' || c.activity === 'active' || c.activity === 'Активно',
               diseaseStatus: c.activity || 'Активное',
-              diagnosisDate: c.diagnosisDate ? new Date(c.diagnosisDate).toISOString() : new Date().toISOString(),
+              diagnosisDate: c.diagnosisDate ? toBackendDateTimeString(c.diagnosisDate) : toBackendDateTimeString(new Date()),
               severity: c.severity || '',
               complications: c.complications || ''
             })
@@ -1025,14 +1026,14 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         id: a.id?.startsWith('alg-') || a.id?.startsWith('all-') || a.id?.startsWith('a-') ? '00000000-0000-0000-0000-000000000000' : a.id,
         name: a.name,
         reaction: a.reaction,
-        date: a.date ? new Date(a.date).toISOString() : null,
+        date: a.date ? toBackendDateTimeString(a.date) : null,
         comment: a.comment || ''
       }))
 
       const operations: any[] = (form.operations || []).map(o => ({
         id: o.id?.startsWith('op-') ? '00000000-0000-0000-0000-000000000000' : o.id,
         name: o.name,
-        date: o.date ? new Date(o.date).toISOString() : undefined,
+        date: o.date ? toBackendDateTimeString(o.date) : undefined,
         description: o.comment || '',
         diagnosis: o.diagnosis || '',
         result: o.result || '',
@@ -1052,7 +1053,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             form: p.form,
             route: p.route,
             regimen: p.frequency || p.regimen,
-            dateStart: original?.dateStart || new Date().toISOString(),
+            dateStart: original?.dateStart || toBackendDateTimeString(new Date()),
             doctorName: original?.doctorName || form.doctor,
             comment: p.comment || original?.comment || ''
           }
@@ -1061,7 +1062,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
       const checkedLabs = form.labTests.filter(t => t.checked)
       const labs: any[] = checkedLabs.map(t => ({
         id: '00000000-0000-0000-0000-000000000000',
-        date: new Date().toISOString(),
+        date: toBackendDateTimeString(new Date()),
         type: t.name,
         reason: form.inspectionType === 'primary' ? 'Первичный осмотр' : 'Повторный осмотр',
         doctorName: form.doctor,

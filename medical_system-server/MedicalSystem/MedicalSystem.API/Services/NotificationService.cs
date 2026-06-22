@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Services;
 using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
 using MedicalSystem.API.Hubs;
 
 namespace MedicalSystem.API.Services
@@ -38,6 +39,13 @@ namespace MedicalSystem.API.Services
             if (notification.PatientRecipientId.HasValue)
             {
                 await _hubContext.Clients.Group(notification.PatientRecipientId.Value.ToString())
+                    .SendAsync("ReceiveNotification", notification, cancellationToken);
+            }
+            if (notification.RecipientType == RecipientType.Staff && !notification.RecipientId.HasValue)
+            {
+                await _hubContext.Clients.Group("MedicalStaff")
+                    .SendAsync("ReceiveNotification", notification, cancellationToken);
+                await _hubContext.Clients.Group("LaboratoryEmployee")
                     .SendAsync("ReceiveNotification", notification, cancellationToken);
             }
         }

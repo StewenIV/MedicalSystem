@@ -167,6 +167,12 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? Reason { get; set; }
         public string? DoctorName { get; set; }
         public string? StatusText { get; set; }
+        public string? ResultData { get; set; }
+        public string? Comments { get; set; }
+        public string? PdfDocumentPath { get; set; }
+        public Guid? LaboratoryEmployeeId { get; set; }
+        public string? LaboratoryEmployeeName { get; set; }
+        public DateTime? DateUpdated { get; set; }
     }
 
     public class VaccineDto

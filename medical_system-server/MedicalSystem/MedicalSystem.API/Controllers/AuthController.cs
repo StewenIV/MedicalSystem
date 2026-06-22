@@ -57,14 +57,19 @@ namespace MedicalSystem.API.Controllers
             if (!Guid.TryParse(userIdStr, out var userId))
                 return Unauthorized(new { message = "Некорректный ID пользователя." });
 
-            var userExists = await _authService.UserExistsAsync(userId, token);
-            if (!userExists)
+            var user = await _authService.GetUserByIdAsync(userId, token);
+            if (user == null)
                 return Unauthorized(new { message = "Пользователь был удален." });
 
-            var login = User.FindFirstValue("login");
-            var role = User.FindFirstValue(ClaimTypes.Role);
-            var displayName = User.FindFirstValue("displayName");
-            var patientId = User.FindFirstValue("patientId");
+            var login = user.Login;
+            var role = user.Role;
+            
+            var patientName = user.Patient != null 
+                ? $"{user.Patient.LastName} {user.Patient.FirstName} {user.Patient.MiddleName}".Trim() 
+                : null;
+                
+            var displayName = user.MedicalStaff?.Name ?? patientName ?? user.DisplayName ?? user.Login;
+            var patientId = user.PatientId?.ToString();
 
             return Ok(new
             {

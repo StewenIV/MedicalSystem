@@ -11,8 +11,11 @@ export function mapNotification(n: any): PatientNotificationDto {
     severity: (n.severity ?? 'info').toLowerCase() as PatientNotificationDto['severity'],
     title: n.title ?? '',
     text: n.message ?? n.text ?? '',
+    details: n.details ?? '',
     time: n.createdAt ?? n.time ?? new Date().toISOString(),
     read: n.isRead ?? n.read ?? false,
+    patientId: n.patientId ?? undefined,
+    rawType: n.type ?? undefined
   }
 }
 

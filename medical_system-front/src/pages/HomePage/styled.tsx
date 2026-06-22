@@ -429,6 +429,7 @@ export const IconButton = styled.button`
 `
 
 export const SearchWrapper = styled.div<{ $open?: boolean }>`
+  position: relative;
   width: 100%;
   max-width: 480px;
   justify-self: center;
@@ -461,6 +462,60 @@ export const SearchIconButton = styled(IconButton)`
   @media (max-width: 640px) {
     display: flex;
   }
+`
+
+export const SearchDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  margin-top: 6px;
+  z-index: 100;
+  max-height: 320px;
+  overflow-y: auto;
+`
+
+export const SearchDropdownItem = styled.div`
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13.5px;
+  transition: background 0.15s;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background: #f3f4f6;
+  }
+`
+
+export const SearchDropdownItemName = styled.div`
+  font-weight: 600;
+  color: #1f2937;
+`
+
+export const SearchDropdownItemInfo = styled.div`
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+`
+
+export const SearchDropdownItemBadge = styled.span`
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 500;
 `
 
 export const Separator = styled.div`
@@ -591,14 +646,15 @@ export const NotificationItem = styled.div<{ read?: boolean }>`
   padding: 14px 16px;
   cursor: pointer;
   border-bottom: 1px solid #f1f5f9;
-  background: ${({ read }) => (read ? '#fafafa' : 'white')};
-  transition: background 0.15s;
+  background: ${({ read }) => (read ? 'white' : '#eff6ff')};
+  border-left: ${({ read }) => (read ? '4px solid transparent' : '4px solid #3b82f6')};
+  transition: background 0.15s, border-left-color 0.15s;
 
   &:last-child {
     border-bottom: none;
   }
   &:hover {
-    background: #f8faff;
+    background: ${({ read }) => (read ? '#f8faff' : '#e0f2fe')};
   }
 `
 

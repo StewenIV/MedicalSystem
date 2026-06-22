@@ -67,6 +67,18 @@ namespace MedicalSystem.App.Services
                             Message = $"Вам назначен новый анализ: {lab.Type}" + (string.IsNullOrWhiteSpace(lab.Reason) ? "" : $". Причина: {lab.Reason}"),
                             PatientRecipientId = patientId
                         }, token);
+
+                        await _notificationService.SendNotificationAsync(new Notification
+                        {
+                            Type = NotificationType.Referral,
+                            Severity = SeverityType.Info,
+                            Title = "Новое направление на исследование",
+                            RecipientType = RecipientType.Staff,
+                            RecipientId = null,
+                            Message = $"Пациенту {dto.LastName} {dto.FirstName} ({dto.RoomNumber ?? "без палаты"}) назначено исследование: {lab.Type}" + (string.IsNullOrWhiteSpace(lab.Reason) ? "" : $". Причина: {lab.Reason}"),
+                            PatientId = patientId,
+                            Details = lab.Id == Guid.Empty ? "" : lab.Id.ToString()
+                        }, token);
                     }
                 }
             }

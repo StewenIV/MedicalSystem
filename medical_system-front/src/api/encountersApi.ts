@@ -1,5 +1,6 @@
 import { apiFetch } from './bedsApi'
 import { SavedInspection } from 'pages/WardRound/types'
+import { parseBackendDateTime } from 'utils/dateUtils'
 
 export interface ServerEncounterDto {
   id: string
@@ -36,10 +37,11 @@ export const extractDoctorFromFormData = (formDataStr?: string | null): string |
 }
 
 export const mapServerEncounterToSavedInspection = (e: ServerEncounterDto): SavedInspection => {
-  const dt = new Date(e.dateTime)
+  const dt = parseBackendDateTime(e.dateTime) || new Date()
   
   const dateStr = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   const timeStr = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
+
 
   const doctorName = e.doctorName || extractDoctorFromFormData((e as any).formData)
 

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import { formatLocalDate, toBackendDateTimeString } from 'utils/dateUtils'
 import {
   Clock, Save, X, Check, Sparkles, ChevronLeft,
   Thermometer, Heart, Wind, Droplets, Activity,
@@ -95,7 +96,7 @@ function generateDailyText(form: DailyRoundFormState, patientName: string): stri
   const parts: string[] = []
 
   const dateRu = form.inspectionDate
-    ? new Date(form.inspectionDate).toLocaleDateString('ru-RU')
+    ? formatLocalDate(form.inspectionDate)
     : form.inspectionDate
 
   parts.push(`Осмотр лечащего врача от ${dateRu}. Время: ${form.inspectionTime}.`)
@@ -418,7 +419,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
             form: p.form,
             route: p.route,
             regimen: p.frequency || p.regimen,
-            dateStart: original?.dateStart || new Date().toISOString(),
+            dateStart: original?.dateStart || toBackendDateTimeString(new Date()),
             doctorName: original?.doctorName || form.doctor,
             comment: p.comment || original?.comment || ''
           }
@@ -691,7 +692,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                     >
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                         <span style={{ fontSize: 13, fontWeight: 600, color: isSelected ? '#1d4ed8' : '#1e293b', fontFamily: FONT }}>
-                          {new Date(`${insp.date}T00:00:00`).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {formatLocalDate(insp.date, { day: '2-digit', month: 'short', year: 'numeric' })}
                         </span>
                         <span style={{ fontSize: 11, color: '#94a3b8', fontFamily: FONT }}>{insp.time}</span>
                       </div>
@@ -712,7 +713,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
           {selectedRecord && (
             <div style={{ maxWidth: 900, width: '100%', margin: '0 auto 16px', padding: '12px 16px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ fontSize: 13, color: '#1e3a8a', fontFamily: FONT }}>
-                <strong>Режим просмотра:</strong> Вы просматриваете запись от {new Date(`${selectedRecord.date}T00:00:00`).toLocaleDateString('ru-RU')} {selectedRecord.time} (Врач: {selectedRecord.doctor})
+                <strong>Режим просмотра:</strong> Вы просматриваете запись от {formatLocalDate(selectedRecord.date)} {selectedRecord.time} (Врач: {selectedRecord.doctor})
               </div>
               <button
                 onClick={() => setSelectedHistoryId(null)}
@@ -1056,7 +1057,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                           <tr key={a.id} style={{ borderBottom: '1px solid #fff7ed' }}>
                             <td style={{ padding: '6px 8px', fontWeight: 600 }}>{a.name}</td>
                             <td style={{ padding: '6px 8px', color: '#dc2626' }}>{a.reaction}</td>
-                            <td style={{ padding: '6px 8px', color: '#64748b' }}>{a.date ? new Date(a.date).toLocaleDateString('ru-RU') : '—'}</td>
+                            <td style={{ padding: '6px 8px', color: '#64748b' }}>{a.date ? formatLocalDate(a.date) : '—'}</td>
                             <td style={{ padding: '6px 8px', color: '#64748b' }}>{a.comment || '—'}</td>
                           </tr>
                         ))}
@@ -1074,7 +1075,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({ patientId, onClose, onN
                       <div key={op.id} style={{ background: '#f8fafc', borderRadius: 8, padding: '10px 12px', marginBottom: 8 }}>
                         <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 4 }}>{op.name}</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, fontSize: 12, color: '#64748b' }}>
-                          <div><span style={{ fontWeight: 600 }}>Дата:</span> {op.date ? new Date(op.date).toLocaleDateString('ru-RU') : '—'}</div>
+                          <div><span style={{ fontWeight: 600 }}>Дата:</span> {op.date ? formatLocalDate(op.date) : '—'}</div>
                           {op.diagnosis && <div><span style={{ fontWeight: 600 }}>Диагноз:</span> {op.diagnosis}</div>}
                           {op.result && <div><span style={{ fontWeight: 600 }}>Результат:</span> {op.result}</div>}
                           {op.complications && <div><span style={{ fontWeight: 600 }}>Осложнения:</span> {op.complications}</div>}

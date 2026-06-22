@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
+import { formatLocalDate, formatLocalDateTime, toBackendDateString } from 'utils/dateUtils'
 import {
   Search,
   Plus,
@@ -195,20 +196,11 @@ const STATUS_LABELS: Record<MedicineStatus, string> = {
 }
 
 const formatDate = (date: string | null) => {
-  if (!date) return null
-  const d = new Date(date)
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return formatLocalDate(date)
 }
 
 const formatDateTime = (date: string) => {
-  const d = new Date(date)
-  return d.toLocaleString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  return formatLocalDateTime(date)
 }
 
 const genId = () => `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -287,14 +279,14 @@ const MedicinesPage: React.FC = () => {
 
   const [receiptForm, setReceiptForm] = useState({
     name: '',
-    date: new Date().toISOString().slice(0, 10),
+    date: toBackendDateString(new Date()),
     quantity: '',
     unit: '' as MedicineUnit | '',
     supplier: '',
     comment: ''
   })
   const [writeoffForm, setWriteoffForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: toBackendDateString(new Date()),
     quantity: '',
     reason: 'patient' as WriteOffReason,
     patientQuery: '',
@@ -455,7 +447,7 @@ const MedicinesPage: React.FC = () => {
     const active = medicines.filter((m) => !m.isArchived)
     const low = active.filter((m) => m.status === 'low').length
     const empty = active.filter((m) => m.status === 'empty').length
-    const today = new Date().toISOString().slice(0, 10)
+    const today = toBackendDateString(new Date())
     const todayOps = active.reduce(
       (acc, m) => acc + m.operationLog.filter((l) => l.date.startsWith(today)).length,
       0
@@ -473,7 +465,7 @@ const MedicinesPage: React.FC = () => {
     setReceiptForm((prev) => ({ ...prev, name: med.name, unit: med.unit }))
     setWriteoffForm((prev) => ({
       ...prev,
-      date: new Date().toISOString().slice(0, 10),
+      date: toBackendDateString(new Date()),
       quantity: '',
       reason: 'patient',
       patientQuery: '',
@@ -536,7 +528,7 @@ const MedicinesPage: React.FC = () => {
         selectedPatientId: '',
         selectedPatientName: '',
         comment: '',
-        date: new Date().toISOString().slice(0, 10)
+        date: toBackendDateString(new Date())
       }))
       setDrawerTab('overview')
       toast.success('Списание успешно записано!')
@@ -715,7 +707,7 @@ const MedicinesPage: React.FC = () => {
     const offsetY = (pdf.internal.pageSize.getHeight() - pdfH) / 2
 
     pdf.addImage(imgData, 'PNG', offsetX, offsetY, pdfW, pdfH)
-    pdf.save(`История_${selectedMedicine?.name}_${new Date().toLocaleDateString('ru-RU')}.pdf`)
+    pdf.save(`История_${selectedMedicine?.name}_${formatLocalDate(new Date())}.pdf`)
   } catch (e) {
     console.error('PDF export error', e)
   } finally {

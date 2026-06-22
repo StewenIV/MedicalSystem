@@ -1379,16 +1379,16 @@ export const NotificationCard = styled.div<{
 
   background: ${({ $read, $severity }) => {
     if ($read) return 'linear-gradient(180deg, #ffffff 0%, #fcfdff 100%)'
-    if ($severity === 'critical') return '#FFF5F5'
-    if ($severity === 'warning') return '#FFFDF0'
-    return '#FAFBFF'
+    if ($severity === 'critical') return '#fef2f2'
+    if ($severity === 'warning') return '#fffbeb'
+    return '#eff6ff'
   }};
   border: 1px solid
     ${({ $read, $severity }) => {
       if ($read) return '#e2e8f0'
-      if ($severity === 'critical') return '#FEB2B2'
-      if ($severity === 'warning') return '#FDE68A'
-      return C.blueMid
+      if ($severity === 'critical') return '#fca5a5'
+      if ($severity === 'warning') return '#fcd34d'
+      return '#93c5fd'
     }};
 
   &::before {

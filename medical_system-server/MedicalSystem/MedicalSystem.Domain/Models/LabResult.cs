@@ -12,7 +12,14 @@ namespace MedicalSystem.Domain.Models
         public string? StatusText { get; set; }
         public string? Reason { get; set; }
         
+        public string? ResultData { get; set; }
+        public string? Comments { get; set; }
+        public string? PdfDocumentPath { get; set; }
+        public Guid? LaboratoryEmployeeId { get; set; }
+        public DateTime? DateUpdated { get; set; }
+        
         public virtual Patient Patient { get; set; }
         public virtual MedicalStaff Doctor { get; set; }
+        public virtual MedicalStaff? LaboratoryEmployee { get; set; }
     }
 }

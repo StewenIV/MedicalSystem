@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react'
+import { formatLocalDate, toBackendDateString } from 'utils/dateUtils'
 import {
   Search,
   ClipboardList,
@@ -128,8 +129,8 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
     setPage(1)
   }, [query, filter])
 
-  const today = new Date().toLocaleDateString('ru-RU')
-  const todayISO = new Date().toISOString().split('T')[0]
+  const today = formatLocalDate(new Date())
+  const todayISO = toBackendDateString(new Date())
 
   const inpatients = useMemo(() => {
     return patients.filter(p =>
@@ -313,7 +314,8 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                     const inspToday = getInspections(p.id).filter(i => i.date === todayISO)
                     const isInspected = inspToday.length > 0
                     const lastInsp = inspToday[inspToday.length - 1]
-                    const admDate = p.history?.[0]?.dateTime?.split(' ')[0] ?? p.lastUpdated ?? '-'
+                    const rawDate = p.history?.[0]?.dateTime || p.lastUpdated
+                    const admDate = rawDate ? formatLocalDate(rawDate) : '-'
 
                     return (
                       <SearchTr

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.Domain.Enums;
+using MedicalSystem.Data.DbContext;
 
 namespace MedicalSystem.API.Controllers
 {
@@ -16,10 +17,12 @@ namespace MedicalSystem.API.Controllers
     public class NotificationsController : ControllerBase
     {
         private readonly INotificationStorage _notificationStorage;
+        private readonly MedicalSystemDbContext _context;
 
-        public NotificationsController(INotificationStorage notificationStorage)
+        public NotificationsController(INotificationStorage notificationStorage, MedicalSystemDbContext context)
         {
             _notificationStorage = notificationStorage;
+            _context = context;
         }
 
         [HttpGet]
@@ -38,7 +41,13 @@ namespace MedicalSystem.API.Controllers
             }
             else
             {
-                var notifs = await _notificationStorage.GetStaffNotificationsAsync(userId, token);
+                var targetId = userId;
+                var user = await _context.Users.FindAsync(new object[] { userId }, token);
+                if (user != null && user.MedicalStaffId.HasValue)
+                {
+                    targetId = user.MedicalStaffId.Value;
+                }
+                var notifs = await _notificationStorage.GetStaffNotificationsAsync(targetId, token);
                 return Ok(notifs.OrderByDescending(n => n.CreatedAt));
             }
         }
@@ -65,7 +74,13 @@ namespace MedicalSystem.API.Controllers
             }
             else
             {
-                await _notificationStorage.MarkAllAsReadByStaffAsync(userId, token);
+                var targetId = userId;
+                var user = await _context.Users.FindAsync(new object[] { userId }, token);
+                if (user != null && user.MedicalStaffId.HasValue)
+                {
+                    targetId = user.MedicalStaffId.Value;
+                }
+                await _notificationStorage.MarkAllAsReadByStaffAsync(targetId, token);
             }
 
             return Ok(new { message = "All marked as read" });

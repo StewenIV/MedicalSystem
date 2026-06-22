@@ -46,7 +46,7 @@ interface NavItem {
   key: string
   label: string
   icon: React.ElementType
-  roles: UserRole[] 
+  roles: UserRole[]
 }
 
 const ALL_NAV_ITEMS: NavItem[] = [
@@ -160,7 +160,7 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
 
   const navItems = useMemo(() => {
     if (!userRole) return []
-    return ALL_NAV_ITEMS.filter(item => item.roles.includes(userRole))
+    return ALL_NAV_ITEMS.filter((item) => item.roles.includes(userRole))
   }, [userRole])
 
   return (
@@ -180,11 +180,15 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
         <LogoTextBlock>
           <LogoTitle>Пульмонология</LogoTitle>
           <LogoSubtitle>
-            {userRole === 'Doctor' || userRole === 'ChiefDoctor' ? 'Панель врача'
-              : userRole === 'Nurse' || userRole === 'HeadNurse' ? 'Панель медсестры'
-              : userRole === 'LaboratoryEmployee' ? 'Панель лаборатории'
-              : userRole === 'Patient' ? 'Кабинет пациента'
-              : 'Медсистема'}
+            {userRole === 'Doctor' || userRole === 'ChiefDoctor'
+              ? 'Панель врача'
+              : userRole === 'Nurse' || userRole === 'HeadNurse'
+                ? 'Панель медсестры'
+                : userRole === 'LaboratoryEmployee'
+                  ? 'Панель лаборатории'
+                  : userRole === 'Patient'
+                    ? 'Кабинет пациента'
+                    : 'Медсистема'}
           </LogoSubtitle>
         </LogoTextBlock>
       </SidebarHeader>
@@ -239,4 +243,3 @@ export function AppSidebar({ activeSection, onSectionChange }: AppSidebarProps) 
     </Sidebar>
   )
 }
-

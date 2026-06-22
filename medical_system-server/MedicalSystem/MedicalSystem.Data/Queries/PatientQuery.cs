@@ -104,6 +104,7 @@ namespace MedicalSystem.Data.Queries
                 .Include(p => p.Operations)
                 .Include(p => p.Prescriptions).ThenInclude(r => r.Doctor)
                 .Include(p => p.LabResults).ThenInclude(l => l.Doctor)
+                .Include(p => p.LabResults).ThenInclude(l => l.LaboratoryEmployee)
                 .Include(p => p.Vaccines)
                 .Include(p => p.PatientDocuments)
                 .Include(p => p.VitalSigns)
@@ -255,7 +256,13 @@ namespace MedicalSystem.Data.Queries
                     Type = l.Type,
                     Reason = l.Reason,
                     DoctorName = l.Doctor != null ? (string.IsNullOrEmpty(l.Doctor.Position) ? l.Doctor.Name : $"{l.Doctor.Position} {l.Doctor.Name}") : null,
-                    StatusText = l.StatusText
+                    StatusText = l.StatusText,
+                    ResultData = l.ResultData,
+                    Comments = l.Comments,
+                    PdfDocumentPath = l.PdfDocumentPath,
+                    LaboratoryEmployeeId = l.LaboratoryEmployeeId,
+                    LaboratoryEmployeeName = l.LaboratoryEmployee != null ? l.LaboratoryEmployee.Name : null,
+                    DateUpdated = l.DateUpdated
                 }).ToList(),
 
                 Vaccines = patient.Vaccines.Select(v => new VaccineDto

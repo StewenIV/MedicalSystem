@@ -30,6 +30,7 @@ import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-
 import colors from 'consts/colors'
 import { toast } from 'react-toastify'
 import { showApiError } from 'utils/showApiError'
+import { toLocalDateTimeLocalString, toBackendDateTimeString } from 'utils/dateUtils'
 import {
   fetchAdminRooms,
   fetchAdminRoomById,
@@ -630,9 +631,7 @@ export function WardAdmin() {
 
   useEffect(() => {
     if (isTransferModalOpen) {
-      const now = new Date()
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-      setTransferDate(now.toISOString().slice(0, 16))
+      setTransferDate(toLocalDateTimeLocalString(new Date()))
     }
   }, [isTransferModalOpen])
 
@@ -868,7 +867,7 @@ export function WardAdmin() {
       lastName: nameParts[0] || 'Пациент',
       firstName: nameParts[1] || '',
       middleName: nameParts.slice(2).join(' ') || undefined,
-      dateOfBirth: new Date().toISOString(),
+      dateOfBirth: toBackendDateTimeString(new Date()),
       age: bed.patientAge ?? 0,
       gender: bed.patientGender ?? 'Unknown'
     }
@@ -915,9 +914,7 @@ export function WardAdmin() {
       bedId: bed.id,
       priority: room.priority
     })
-    const now = new Date()
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
-    setAssignDate(now.toISOString().slice(0, 16))
+    setAssignDate(toLocalDateTimeLocalString(new Date()))
     setAssignDoctor('')
     setDoctorOptions([])
     setDoctorSearchQuery('')
@@ -949,7 +946,7 @@ export function WardAdmin() {
         patientId: selectedPatientForAssign.id,
         notes: assignNotes,
         doctorId: assignDoctor || undefined,
-        admissionDateTime: assignDate ? new Date(assignDate).toISOString() : undefined
+        admissionDateTime: assignDate ? toBackendDateTimeString(assignDate) : undefined
       })
 
       await updateRoomPriority(assignBedData.roomId, assignBedData.priority)
@@ -971,8 +968,8 @@ export function WardAdmin() {
     try {
       const targetRoomId = transferRoom
       const transferDateTime = transferDate
-        ? new Date(transferDate).toISOString()
-        : new Date().toISOString()
+        ? toBackendDateTimeString(transferDate)
+        : toBackendDateTimeString(new Date())
 
       await transferPatient({
         patientId: selectedPatient.id,

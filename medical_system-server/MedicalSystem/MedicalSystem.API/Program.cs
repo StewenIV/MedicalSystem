@@ -203,6 +203,11 @@ using (var scope = app.Services.CreateScope())
 
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"BedActionLogs\" ADD COLUMN IF NOT EXISTS \"PerformedByName\" text NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Encounters\" ADD COLUMN IF NOT EXISTS \"FormData\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"LabResults\" ADD COLUMN IF NOT EXISTS \"ResultData\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"LabResults\" ADD COLUMN IF NOT EXISTS \"Comments\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"LabResults\" ADD COLUMN IF NOT EXISTS \"PdfDocumentPath\" text NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"LabResults\" ADD COLUMN IF NOT EXISTS \"LaboratoryEmployeeId\" uuid NULL;"); } catch { }
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"LabResults\" ADD COLUMN IF NOT EXISTS \"DateUpdated\" timestamp with time zone NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ADD COLUMN IF NOT EXISTS \"Title\" text NOT NULL DEFAULT '';"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ADD COLUMN IF NOT EXISTS \"PatientRecipientId\" uuid NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Notifications\" ADD COLUMN IF NOT EXISTS \"RecipientType\" text NOT NULL DEFAULT 'Staff';"); } catch { }

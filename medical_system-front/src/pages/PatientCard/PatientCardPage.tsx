@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { parseBackendDateTime, formatLocalDateTime, formatLocalTime, formatLocalDate, toBackendDateString, toBackendDateTimeString } from 'utils/dateUtils'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { Helmet } from 'react-helmet'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
@@ -253,25 +254,18 @@ const getBloodPressureSegments = (systolic: number, diastolic: number) => {
 }
 
 const formatChartDate = (iso: string) => {
-  if (!iso) return '—'
-  try {
-    const d = new Date(iso)
-    if (isNaN(d.getTime())) return iso
-    return d.toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return iso
-  }
+  return formatLocalDateTime(iso, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const buildChartData = (signs: any[]) => {
   const sorted = [...signs].sort((a, b) => {
-    const da = new Date(a.recordedAt || a.date || 0).getTime()
-    const db = new Date(b.recordedAt || b.date || 0).getTime()
+    const da = (parseBackendDateTime(a.recordedAt || a.date) || new Date(0)).getTime()
+    const db = (parseBackendDateTime(b.recordedAt || b.date) || new Date(0)).getTime()
     return da - db
   })
   
@@ -498,35 +492,11 @@ const getInitials = (firstName: string, lastName: string) => {
 }
 
 const formatDateHuman = (dateStr?: string) => {
-  if (!dateStr) return '—'
-
-  try {
-    const d = new Date(dateStr)
-
-    if (isNaN(d.getTime())) return dateStr
-
-    return d.toLocaleDateString('ru-RU')
-  } catch {
-    return dateStr
-  }
+  return formatLocalDate(dateStr)
 }
 
 const formatDateHumanWithTime = (dateStr?: string) => {
-  if (!dateStr) return '—'
-  try {
-    const d = new Date(dateStr)
-    if (isNaN(d.getTime())) return dateStr
-
-    return d.toLocaleString('ru-RU', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return dateStr
-  }
+  return formatLocalDateTime(dateStr)
 }
 
 const getUniqueDoctors = (patientsList: any[]): SelectOption[] => {
@@ -971,6 +941,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
 interface PatientCardPageProps {
   patientId?: string
   initialSearchQuery?: string
+  initialTab?: string
   onSelectPatient?: (id: string) => void
   onNavigateToTemperatureSheet?: (id: string) => void
   onNavigateToWardRound?: (id: string) => void
@@ -978,6 +949,7 @@ interface PatientCardPageProps {
 
 interface PatientCardProps {
   patientId?: string
+  initialTab?: string
   onSelectPatientFromPreview?: (id: string) => void
   onNavigateToTemperatureSheet?: (id: string) => void
   onNavigateToWardRound?: (id: string) => void
@@ -997,6 +969,7 @@ enum TabsEnum {
 
 const PatientCard: React.FC<PatientCardProps> = ({
   patientId,
+  initialTab,
   onSelectPatientFromPreview,
   onNavigateToTemperatureSheet,
   onNavigateToWardRound
@@ -1004,8 +977,14 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const { patients, updatePatient, deletePatient } = usePatientData()
 
   const [localPatient, setLocalPatient] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState<string>(TabsEnum.Overview)
+  const [activeTab, setActiveTab] = useState<string>(initialTab || TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab)
+    }
+  }, [initialTab])
 
   const loadPatientDetails = useCallback(() => {
     if (patientId) {
@@ -1013,8 +992,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
         Promise.all([fetchPatientCard(patientId), fetchPatientVitals(patientId).catch(() => [])])
           .then(([dto, vitalsData]) => {
             const sortedVitals = [...vitalsData].sort((a, b) => {
-              const da = new Date(a.recordedAt || a.date || 0).getTime()
-              const db = new Date(b.recordedAt || b.date || 0).getTime()
+              const da = (parseBackendDateTime(a.recordedAt || a.date) || new Date(0)).getTime()
+              const db = (parseBackendDateTime(b.recordedAt || b.date) || new Date(0)).getTime()
               return da - db
             })
             setLocalPatient({
@@ -1164,7 +1143,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     }
 
     try {
-      updatedData.lastUpdated = new Date().toISOString()
+      updatedData.lastUpdated = toBackendDateTimeString(new Date())
       await updatePatient(localPatient.id, updatedData)
       loadPatientDetails()
       toast.success('Данные пациента успешно сохранены')
@@ -1197,7 +1176,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
       setFormData((p: any) => ({
         ...p,
         name: file.name,
-        date: new Date().toISOString().slice(0, 10),
+        date: toBackendDateString(new Date()),
         filePath: result.objectName,
         url: `${process.env.REACT_APP_API_URL ?? ''}${result.url}`
       }))
@@ -2924,12 +2903,34 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         </span>
                       </td>
                       <td>
-                        <ActionButton $variant="ghost" onClick={() => openModal('VIEW_LAB', lab)}>
+                        <ActionButton
+                          $variant="ghost"
+                          title="Просмотреть"
+                          onClick={() => {
+                            if (lab.pdfDocumentPath) {
+                              openModal('VIEW_DOCUMENT', {
+                                name: `Результат анализа: ${lab.type}`,
+                                url: `${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(lab.pdfDocumentPath)}`
+                              })
+                            } else {
+                              openModal('VIEW_LAB', lab)
+                            }
+                          }}
+                        >
                           <Eye size={14} />
                         </ActionButton>
                         <ActionButton
                           $variant="ghost"
-                          onClick={() => console.log()}
+                          title="Скачать PDF"
+                          onClick={() => {
+                            if (lab.pdfDocumentPath) {
+                              downloadFileFromServer(`Результат анализа - ${lab.type}.pdf`, lab.pdfDocumentPath)
+                            } else {
+                              toast.warning('PDF-документ исследования еще не сформирован')
+                            }
+                          }}
+                          disabled={!lab.pdfDocumentPath}
+                          style={{ opacity: lab.pdfDocumentPath ? 1 : 0.5, cursor: lab.pdfDocumentPath ? 'pointer' : 'not-allowed' }}
                         >
                           <Download size={14} />
                         </ActionButton>
@@ -4214,7 +4215,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
 
             <HeaderInfoGrid style={{ marginTop: 0 }}>
               <InfoItem>
-                <span className="label">Лечащий врач</span>
+                <span className="label">Лечащий врачБ</span>
                 <span className="value">{localPatient.doctor}</span>
               </InfoItem>
               <InfoItem>
@@ -4333,6 +4334,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
 const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
   patientId: externalPatientId,
   initialSearchQuery = '',
+  initialTab,
   onSelectPatient: externalOnSelect,
   onNavigateToTemperatureSheet,
   onNavigateToWardRound
@@ -4477,6 +4479,7 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
           </button>
           <PatientCard
             patientId={selectedPatientId}
+            initialTab={initialTab}
             onSelectPatientFromPreview={handleSelectPatient}
             onNavigateToTemperatureSheet={onNavigateToTemperatureSheet}
             onNavigateToWardRound={onNavigateToWardRound}

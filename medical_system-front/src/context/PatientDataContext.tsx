@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 import { mockPatients, Patient } from 'data/mockData'
 import { SavedInspection } from 'pages/WardRound/types'
 import { PatientCardDto, AllergyDto, OperationDto, MedicalProblemDto, PrescriptionDto, LabDto } from 'api/patientsApi'
+import { toBackendDateTimeString } from 'utils/dateUtils'
 
 interface PatientDataState {
   patients: Patient[]
@@ -221,16 +222,8 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         backendType = 'Первичный осмотр'
       }
 
-      let dt = new Date()
-      if (entry.dateTime) {
-        const parsed = Date.parse(entry.dateTime.replace(' ', 'T'))
-        if (!isNaN(parsed)) {
-          dt = new Date(parsed)
-        }
-      }
-
       const reqPayload = {
-        dateTime: dt.toISOString(),
+        dateTime: toBackendDateTimeString(entry.dateTime) || new Date().toISOString(),
         type: backendType,
         conclusion: entry.conclusion ?? '',
         complaints: entry.complaints ?? '',
@@ -292,16 +285,8 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         backendType = 'Первичный осмотр'
       }
 
-      let dt = new Date()
-      if (entry.dateTime) {
-        const parsed = Date.parse(entry.dateTime.replace(' ', 'T'))
-        if (!isNaN(parsed)) {
-          dt = new Date(parsed)
-        }
-      }
-
       const reqPayload = {
-        dateTime: dt.toISOString(),
+        dateTime: toBackendDateTimeString(entry.dateTime) || new Date().toISOString(),
         type: backendType,
         conclusion: entry.conclusion ?? '',
         complaints: entry.complaints ?? '',

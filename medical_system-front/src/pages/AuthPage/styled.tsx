@@ -72,7 +72,7 @@ export const Tab = styled.button<{ active: boolean }>`
 export const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
 `
 export const InputGroup = styled.div`
   display: flex;
@@ -112,6 +112,7 @@ export const CheckboxRow = styled.div`
 
 export const SubmitButton = styled(AppButton)`
   padding: 12px;
+  margin: 20px 0 10px 0;
 `
 export const Divider = styled.div`
   display: flex;

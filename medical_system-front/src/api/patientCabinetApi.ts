@@ -10,6 +10,8 @@ export interface PatientNotificationDto {
   details?: string
   time: string
   read: boolean
+  patientId?: string
+  rawType?: string
 }
 
 export interface PatientDocumentDto {
@@ -105,7 +107,6 @@ export const updatePatientRelative = (id: string, dto: RelativeFormData): Promis
 export const deletePatientRelative = (id: string): Promise<{ message: string }> =>
   apiFetch(`/api/patient-cabinet/relatives/${id}`, { method: 'DELETE' })
 
-// Keep for backward compatibility if still used
 export const updateTrustedPerson = (dto: TrustedPersonFormData): Promise<{ message: string }> =>
   apiFetch('/api/patient-cabinet/profile/trusted', {
     method: 'PUT',

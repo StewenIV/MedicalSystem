@@ -19,6 +19,9 @@ namespace MedicalSystem.Data.DataGeneration
             {
                 logger.LogInformation("Проверка и заполнение базы данных...");
                 
+                // Clear existing obsolete lab results
+                await context.LabResults.ExecuteDeleteAsync();
+                
                 await context.Database.ExecuteSqlRawAsync(
                     "UPDATE \"Patients\" SET \"Gender\" = 'Мужской' WHERE \"Gender\" = 'Male'; " +
                     "UPDATE \"Patients\" SET \"Gender\" = 'Женский' WHERE \"Gender\" = 'Female';");
@@ -107,7 +110,7 @@ namespace MedicalSystem.Data.DataGeneration
                 }
 
                 var patientMedications = await GetOrCreateAsync(context, context.PatientMedications, () => TestDataGenerator.GeneratePatientMedications(600, patients, medicines, medicalStaff));
-                var labResults = await GetOrCreateAsync(context, context.LabResults, () => TestDataGenerator.GenerateLabResults(1000, patients, medicalStaff));
+                var labResults = new List<LabResult>();
                 var operations = await GetOrCreateAsync(context, context.Operations, () => TestDataGenerator.GenerateOperations(50, patients));
                 var vaccines = await GetOrCreateAsync(context, context.Vaccines, () => TestDataGenerator.GenerateVaccines(300, patients));
                 var patientDocuments = await GetOrCreateAsync(context, context.PatientDocuments, () => TestDataGenerator.GeneratePatientDocuments(400, patients));

@@ -48,6 +48,7 @@ import {
   deleteAccount
 } from 'api/patientCabinetApi'
 import { downloadFileFromServer } from 'api/filesApi'
+import { formatLocalDate, formatLocalDateTime, formatLocalTime, toBackendDateString } from 'utils/dateUtils'
 import { getPhoneFormat } from 'utils/phoneFormat'
 import {
   generalSchema,
@@ -440,9 +441,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           setFirstName(data.firstName || '')
           setLastName(data.lastName || '')
           setMiddleName(data.middleName || '')
-          setDateOfBirth(
-            data.dateOfBirth ? new Date(data.dateOfBirth).toISOString().split('T')[0] : ''
-          )
+          setDateOfBirth(toBackendDateString(data.dateOfBirth))
           setGender(data.gender === 'Female' ? '1' : '0')
           setMaritalStatus(data.maritalStatus || '')
 
@@ -846,7 +845,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           </span>
           <span>
             Последний вход:{' '}
-            {new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            {formatLocalTime(new Date())}
           </span>
         </WelcomeMeta>
       </Header>
@@ -1249,15 +1248,13 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                     )}
                     <NotifTimeBlock>
                       <span>
-                        {n.time
-                          ? new Date(n.time).toLocaleString('ru-RU', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })
-                          : ''}
+                        {formatLocalDateTime(n.time, {
+                          day: '2-digit',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
                       </span>
                       {!n.read && (
                         <span
@@ -2172,7 +2169,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <div>
                   <strong>Дата рождения:</strong>{' '}
                   {patientData?.dateOfBirth
-                    ? new Date(patientData.dateOfBirth).toLocaleDateString('ru-RU')
+                    ? formatLocalDate(patientData.dateOfBirth)
                     : '15.03.1985'}
                 </div>
                 <div>
@@ -2396,7 +2393,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <div>
                   <strong>Дата рождения:</strong>{' '}
                   {patientData?.dateOfBirth
-                    ? new Date(patientData.dateOfBirth).toLocaleDateString('ru-RU')
+                    ? formatLocalDate(patientData.dateOfBirth)
                     : '15.03.1985'}
                 </div>
                 <div>

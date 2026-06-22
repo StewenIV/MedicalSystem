@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { formatLocalTime, formatLocalDate } from 'utils/dateUtils'
 
 import {
   GlobalStyle,
@@ -116,15 +117,7 @@ import {
 
 
 const formatLogTime = (timeStr: string) => {
-  if (timeStr.includes('-') || timeStr.includes('T')) {
-    try {
-      const date = new Date(timeStr)
-      if (!isNaN(date.getTime())) {
-        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-      }
-    } catch (e) {}
-  }
-  return timeStr
+  return formatLocalTime(timeStr)
 }
 
 function useCounter(target: number, duration = 1000) {
@@ -378,7 +371,7 @@ function PatientDetailPanel({ bed }: { bed: BedDto | null }) {
                 </PatientName>
                 <PatientMeta>
                   {bed.patientAge} лет
-                  {bed.admissionDate && ` · Поступил(а): ${new Date(bed.admissionDate).toLocaleDateString('ru-RU')}`}
+                  {bed.admissionDate && ` · Поступил(а): ${formatLocalDate(bed.admissionDate)}`}
                 </PatientMeta>
                 {bed.doctorName && (
                   <PatientMeta style={{ marginTop: 2 }}>
@@ -559,7 +552,7 @@ function PatientModal({ bed, onClose }: { bed: BedDto | null; onClose: () => voi
               </div>
               <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>
                 {bed.patientAge} лет · Палата {bed.roomNumber}, Койка {bed.bedNumber}
-                {bed.admissionDate && ` · Поступил(а): ${new Date(bed.admissionDate).toLocaleDateString('ru-RU')}`}
+                {bed.admissionDate && ` · Поступил(а): ${formatLocalDate(bed.admissionDate)}`}
               </div>
               {bed.doctorName && (
                 <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>

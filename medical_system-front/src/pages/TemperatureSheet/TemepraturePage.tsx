@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { parseBackendDateTime, formatLocalDateTime } from 'utils/dateUtils'
 import {
   Thermometer,
   Activity,
@@ -211,19 +212,12 @@ const getBloodPressureSegments = (systolic: number, diastolic: number) => {
 }
 
 const formatChartDate = (iso: string) => {
-  if (!iso) return '—'
-  try {
-    const d = new Date(iso)
-    if (isNaN(d.getTime())) return iso
-    return d.toLocaleString('ru-RU', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return iso
-  }
+  return formatLocalDateTime(iso, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 const CustomTempDot = (props: any) => {
@@ -360,7 +354,7 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
       ])
       const sorted = [...vitalsData]
         .map(mapServerVital)
-        .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
+        .sort((a, b) => (parseBackendDateTime(a.recordedAt) || new Date(0)).getTime() - (parseBackendDateTime(b.recordedAt) || new Date(0)).getTime())
       setVitals(sorted)
       setServerWarnings(warningsData)
       setServerTrends(trendsData)
@@ -401,8 +395,8 @@ const TemperaturePage: React.FC<NurseWorkplaceProps> = ({ patientId }) => {
     const set = new Set<string>()
     const fmt = new Intl.DateTimeFormat('ru-RU', { month: 'long' })
     vitals.forEach(v => {
-      const d = new Date(v.recordedAt)
-      if (!isNaN(d.getTime())) {
+      const d = parseBackendDateTime(v.recordedAt)
+      if (d && !isNaN(d.getTime())) {
         const m = fmt.format(d)
         set.add(m.charAt(0).toUpperCase() + m.slice(1))
       }
