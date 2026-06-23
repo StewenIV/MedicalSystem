@@ -46,7 +46,10 @@ export const getInitialPrimaryState = (
 ): PrimaryFormState => {
   const vitals = formatVitalsForForm(patientId)
   const bp = parseBP(vitals.bp)
-  const prescriptionMeds = (patient as any)?.prescriptions ?? []
+  const prescriptionMeds =
+    (patient as any)?.prescriptions && (patient as any).prescriptions.length > 0
+      ? (patient as any).prescriptions
+      : (patient as any)?.currentMeds ?? []
   return {
     inspectionDate: todayISO(),
     inspectionTime: timeISO(),
@@ -190,7 +193,10 @@ export const getInitialDailyState = (
 ): DailyRoundFormState => {
   const vitals = formatVitalsForForm(patientId)
   const bp = parseBP(vitals.bp)
-  const prescriptionMeds = (patient as any)?.prescriptions ?? []
+  const prescriptionMeds =
+    (patient as any)?.prescriptions && (patient as any).prescriptions.length > 0
+      ? (patient as any).prescriptions
+      : (patient as any)?.currentMeds ?? []
   return {
     inspectionDate: todayISO(),
     inspectionTime: timeISO(),

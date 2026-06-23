@@ -14,6 +14,7 @@ import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-
 import CreatableSelect from 'react-select/creatable'
 import { z } from 'zod'
 import { PatternFormat } from 'react-number-format'
+import CustomInput from 'components/Input'
 import { getPhoneFormat } from 'utils/phoneFormat'
 import { paths } from 'routes/helpers'
 import {
@@ -1814,60 +1815,38 @@ const PatientCard: React.FC<PatientCardProps> = ({
       const min = f.min ?? undefined
       const max = f.max ?? undefined
 
-      const handleNumberChange = (increment: number) => {
-        let current = parseFloat(val) || (min ?? 0)
-        current += increment * step
-        if (min !== undefined && current < min) current = min
-        if (max !== undefined && current > max) current = max
-        current = parseFloat(current.toFixed(step < 1 ? 1 : 0))
-        setFormData((p: any) => ({ ...p, [f.name]: String(current) }))
-      }
+      const err = (() => {
+         const v = formData[f.name]
+         if (v === '' || v === undefined || v === null) return undefined
+         const num = Number(v)
+         if (isNaN(num)) return 'Введите число'
+         if (min !== undefined && num < min) return `Диапазон: от ${min}`
+         if (max !== undefined && num > max) return `Диапазон: до ${max}`
+         return undefined
+      })()
 
       return (
         <FormGroup key={f.name}>
           {labelNode}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ActionButton
-              $variant="ghost"
-              onClick={() => handleNumberChange(-1)}
-              type="button"
-              style={{ width: '40px', height: '40px', padding: 0 }}
-            >
-              <MinusIcon size={16} />
-            </ActionButton>
-            <Input
-              value={val}
-              onChange={(e) => {
-                let raw = e.target.value
-                if (raw === '') {
-                  setFormData((p: any) => ({ ...p, [f.name]: '' }))
-                  return
-                }
-                let num = parseFloat(raw)
-                if (!isNaN(num)) {
-                  if (min !== undefined && num < min) num = min
-                  if (max !== undefined && num > max) num = max
-                  setFormData((p: any) => ({ ...p, [f.name]: String(num) }))
-                } else {
-                  setFormData((p: any) => ({ ...p, [f.name]: raw }))
-                }
-              }}
-              type="number"
-              step={step}
-              min={min}
-              max={max}
-              placeholder={`${labelText}...`}
-              style={{ flex: 1, textAlign: 'center' }}
-            />
-            <ActionButton
-              $variant="ghost"
-              onClick={() => handleNumberChange(1)}
-              type="button"
-              style={{ width: '40px', height: '40px', padding: 0 }}
-            >
-              <Plus size={16} />
-            </ActionButton>
-          </div>
+          <CustomInput
+            value={val}
+            onChange={(e) => {
+              let raw = e.target.value
+              setFormData((p: any) => ({ ...p, [f.name]: raw }))
+            }}
+            type="number"
+            step={step}
+            min={min}
+            max={max}
+            placeholder={
+              f.name === 'temp' ? '36.6' :
+              f.name === 'hr' ? '80' :
+              f.name === 'resp' ? '16' :
+              f.name === 'spo2' ? '98' :
+              `${labelText}...`
+            }
+            error={err}
+          />
         </FormGroup>
       )
     }
@@ -1881,21 +1860,17 @@ const PatientCard: React.FC<PatientCardProps> = ({
         setFormData((p: any) => ({ ...p, [f.name]: `${newSys}/${newDia}` }))
       }
 
-      const handleSysChange = (increment: number) => {
-        let current = typeof sys === 'number' ? sys : 120
-        current += increment
-        if (current < 40) current = 40
-        if (current > 250) current = 250
-        updateBp(current, dia)
+      const getBpError = (bpVal: string | number, min: number, max: number) => {
+        if (bpVal === '' || bpVal === undefined || bpVal === null) return undefined
+        const num = Number(bpVal)
+        if (isNaN(num)) return 'Введите число'
+        if (num < min) return `Диапазон: от ${min}`
+        if (num > max) return `Диапазон: до ${max}`
+        return undefined
       }
 
-      const handleDiaChange = (increment: number) => {
-        let current = typeof dia === 'number' ? dia : 80
-        current += increment
-        if (current < 20) current = 20
-        if (current > 150) current = 150
-        updateBp(sys, current)
-      }
+      const sysErr = getBpError(sys, 40, 250)
+      const diaErr = getBpError(dia, 20, 150)
 
       return (
         <FormGroup key={f.name}>
@@ -1903,68 +1878,38 @@ const PatientCard: React.FC<PatientCardProps> = ({
           <div style={{ display: 'flex', gap: '16px' }}>
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <span style={{ fontSize: '12px', color: '#64748b' }}>Систолическое</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ActionButton
-                  $variant="ghost"
-                  onClick={() => handleSysChange(-1)}
-                  type="button"
-                  style={{ width: '40px', height: '40px', padding: 0 }}
-                >
-                  <MinusIcon size={16} />
-                </ActionButton>
-                <Input
-                  value={sys}
-                  onChange={(e) => {
-                    const raw = e.target.value
-                    if (raw === '') updateBp('', dia)
-                    else updateBp(parseInt(raw, 10) || 120, dia)
-                  }}
-                  type="number"
-                  placeholder="120"
-                  style={{ flex: 1, textAlign: 'center' }}
-                />
-                <ActionButton
-                  $variant="ghost"
-                  onClick={() => handleSysChange(1)}
-                  type="button"
-                  style={{ width: '40px', height: '40px', padding: 0 }}
-                >
-                  <Plus size={16} />
-                </ActionButton>
-              </div>
+              <CustomInput
+                value={sys}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  if (raw === '') updateBp('', dia)
+                  else updateBp(raw, dia)
+                }}
+                type="number"
+                placeholder="120"
+                error={sysErr}
+                step={1}
+                min={40}
+                max={250}
+              />
             </div>
 
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <span style={{ fontSize: '12px', color: '#64748b' }}>Диастолическое</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ActionButton
-                  $variant="ghost"
-                  onClick={() => handleDiaChange(-1)}
-                  type="button"
-                  style={{ width: '40px', height: '40px', padding: 0 }}
-                >
-                  <MinusIcon size={16} />
-                </ActionButton>
-                <Input
-                  value={dia}
-                  onChange={(e) => {
-                    const raw = e.target.value
-                    if (raw === '') updateBp(sys, '')
-                    else updateBp(sys, parseInt(raw, 10) || 80)
-                  }}
-                  type="number"
-                  placeholder="80"
-                  style={{ flex: 1, textAlign: 'center' }}
-                />
-                <ActionButton
-                  $variant="ghost"
-                  onClick={() => handleDiaChange(1)}
-                  type="button"
-                  style={{ width: '40px', height: '40px', padding: 0 }}
-                >
-                  <Plus size={16} />
-                </ActionButton>
-              </div>
+              <CustomInput
+                value={dia}
+                onChange={(e) => {
+                  const raw = e.target.value
+                  if (raw === '') updateBp(sys, '')
+                  else updateBp(sys, raw)
+                }}
+                type="number"
+                placeholder="80"
+                error={diaErr}
+                step={1}
+                min={20}
+                max={150}
+              />
             </div>
           </div>
         </FormGroup>

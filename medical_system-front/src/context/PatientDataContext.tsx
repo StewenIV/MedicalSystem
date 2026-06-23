@@ -473,8 +473,39 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         ...prev,
         [patientId]: data,
       }))
+
+      const { fetchPatientCard } = await import('../api/patientsApi')
+      const dto = await fetchPatientCard(patientId)
+      setPatients(prev =>
+        prev.map(p =>
+          p.id?.toLowerCase() === patientId?.toLowerCase()
+            ? {
+                ...p,
+                ...dto,
+                doctor: dto.doctorName || p.doctor,
+                department: dto.departmentName || p.department,
+                statusText: dto.statusText || p.statusText || 'Госпитализирован',
+                activeProblems: dto.medicalProblems?.map((m: any) => m.name) || p.activeProblems || [],
+                contacts: dto.contacts || p.contacts || {},
+                passport: dto.passport || p.passport || {},
+                work: dto.work || p.work || {},
+                other: dto.other || p.other || {},
+                vitals: dto.vitals || p.vitals || {},
+                currentMeds: dto.currentMeds || p.currentMeds || [],
+                history: dto.history || p.history || [],
+                vaccines: dto.vaccines || p.vaccines || [],
+                operations: dto.operations || p.operations || [],
+                documents: dto.documents || p.documents || [],
+                labs: dto.labs || p.labs || [],
+                allergies: dto.allergies || p.allergies || [],
+                relatives: dto.relatives || p.relatives || [],
+                prescriptions: dto.prescriptions || p.prescriptions || []
+              }
+            : p
+        )
+      )
     } catch (err) {
-      console.error('Failed to load patient encounters:', err)
+      console.error('Failed to load patient encounters or card:', err)
     }
   }, [])
   const addPatient = useCallback(async (dto: Partial<PatientCardDto>) => {

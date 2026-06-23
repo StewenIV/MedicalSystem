@@ -25,7 +25,6 @@ namespace MedicalSystem.Data.Storages
             {
                 var user = await _context.Users
                     .Include(u => u.MedicalStaff)
-                    .ThenInclude(ms => ms.Position)
                     .FirstOrDefaultAsync(u => u.Id == performedByUserId.Value, token);
                 if (user != null)
                 {
