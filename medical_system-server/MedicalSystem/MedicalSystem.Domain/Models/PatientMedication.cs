@@ -27,7 +27,7 @@ namespace MedicalSystem.Domain.Models
         [StringLength(100, ErrorMessage = "Длина пути введения не должна превышать 100 символов")]
         public string? Route { get; set; }
 
-        [StringLength(200, ErrorMessage = "Длина режима приёма не должна превышать 200 символов")]
+        [StringLength(200, ErrorMessage = "Длина режима приема не должна превышать 200 символов")]
         public string? Regimen { get; set; }
 
         [StringLength(500, ErrorMessage = "Длина комментария не должна превышать 500 символов")]

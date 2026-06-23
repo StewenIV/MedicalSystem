@@ -51,12 +51,10 @@ interface ResetPasswordPageProps {
 }
 
 const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
-  const [step, setStep] = useState<'email' | 'code' | 'password' | 'success'>(
-    'email'
-  )
+  const [step, setStep] = useState<'email' | 'code' | 'password' | 'success'>('email')
 
   const navigate = useNavigate()
- 
+
   const [email, setEmail] = useState('')
   const [code, setCode] = useState('')
   const [password, setPassword] = useState('')
@@ -215,7 +213,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
       setConfirmPassword('')
     } else if (step === 'email') {
       navigate(paths.auth)
-    } else if (step === 'code'){
+    } else if (step === 'code') {
       setStep('email')
     }
   }
@@ -233,11 +231,11 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
   }
 
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return 
+    if (!/^\d*$/.test(value)) return
 
     const newOtpValues = [...otpValues]
-    newOtpValues[index] = value.slice(-1) 
-    
+    newOtpValues[index] = value.slice(-1)
+
     setOtpValues(newOtpValues)
     setCode(newOtpValues.join(''))
     setError('')
@@ -247,52 +245,42 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
     }
   }
 
-  const handleOtpKeyDown = (
-    index: number,
-    e: KeyboardEvent<HTMLInputElement>
-  ) => {
+  const handleOtpKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace') {
+      e.preventDefault()
 
-   if (e.key === 'Backspace') {
-     e.preventDefault()
+      if (otpValues[index]) {
+        const newOtpValues = [...otpValues]
+        newOtpValues[index] = ''
+        setOtpValues(newOtpValues)
+        setCode(newOtpValues.join(''))
+      } else if (index > 0) {
+        const newOtpValues = [...otpValues]
+        newOtpValues[index - 1] = ''
+        setOtpValues(newOtpValues)
+        setCode(newOtpValues.join(''))
 
-     if (otpValues[index]) {
-       const newOtpValues = [...otpValues]
-       newOtpValues[index] = ''
-       setOtpValues(newOtpValues)
-       setCode(newOtpValues.join(''))
-     } else if (index > 0) {
-       const newOtpValues = [...otpValues]
-       newOtpValues[index - 1] = ''
-       setOtpValues(newOtpValues)
-       setCode(newOtpValues.join(''))
+        otpRefs.current[index - 1]?.focus()
+      }
+    }
 
-       otpRefs.current[index - 1]?.focus()
-     }
-   }
+    if (e.key === 'ArrowLeft' && index > 0) {
+      e.preventDefault()
+      otpRefs.current[index - 1]?.focus()
+    }
 
-   if (e.key === 'ArrowLeft' && index > 0) {
-     e.preventDefault()
-     otpRefs.current[index - 1]?.focus()
-   }
-
-   if (e.key === 'ArrowRight' && index < 5) {
-     e.preventDefault()
-     otpRefs.current[index + 1]?.focus()
-   }
+    if (e.key === 'ArrowRight' && index < 5) {
+      e.preventDefault()
+      otpRefs.current[index + 1]?.focus()
+    }
   }
 
   const handleOtpPaste = (e: ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault()
-    const pastedData = e.clipboardData
-      .getData('text')
-      .replace(/\D/g, '')
-      .slice(0, 6)
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6)
 
     if (pastedData) {
-      const newOtpValues = pastedData
-        .split('')
-        .concat(Array(6).fill(''))
-        .slice(0, 6)
+      const newOtpValues = pastedData.split('').concat(Array(6).fill('')).slice(0, 6)
       setOtpValues(newOtpValues)
       setCode(newOtpValues.join(''))
 
@@ -308,24 +296,16 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
   const emailError = touched.email ? fieldErrors.email : ''
   const isEmailValid = !emailError && email.length > 0
   const passwordError = touched.password ? fieldErrors.password : ''
-  const confirmPasswordError = touched.confirmPassword
-    ? fieldErrors.confirmPassword
-    : ''
+  const confirmPasswordError = touched.confirmPassword ? fieldErrors.confirmPassword : ''
 
   const isPasswordValid =
-    !passwordError &&
-    !confirmPasswordError &&
-    password.length > 0 &&
-    confirmPassword.length > 0
+    !passwordError && !confirmPasswordError && password.length > 0 && confirmPassword.length > 0
 
   return (
     <>
       <Helmet>
         <title>Сброс пароля</title>
-        <meta
-          name="description"
-          content="Страница для сброса пароля в системе ЕМИС MedFlow"
-        />
+        <meta name="description" content="Страница для сброса пароля в системе ЕМИС MedFlow" />
       </Helmet>
 
       <Container>
@@ -355,8 +335,8 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
             >
               <TitleForm>Восстановление пароля</TitleForm>
               <SubTitleForm>
-                Введите email адрес, указанный при регистрации. Мы отправим вам
-                код для восстановления пароля.
+                Введите email адрес, указанный при регистрации. Мы отправим вам код для
+                восстановления пароля.
               </SubTitleForm>
 
               {error && (
@@ -402,11 +382,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                 )}
               </InputGroup>
 
-              <Button
-                type="submit"
-                onClick={handleSendEmail}
-                disabled={isLoading || !isEmailValid}
-              >
+              <Button type="submit" onClick={handleSendEmail} disabled={isLoading || !isEmailValid}>
                 {isLoading ? (
                   <>
                     <Loader2 size={18} className="spin" />
@@ -435,8 +411,8 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
             >
               <TitleForm>Введите код подтверждения</TitleForm>
               <SubTitleForm>
-                Мы отправили 6-значный код на вашу почту{' '}
-                <strong>{email}</strong>. Проверьте папку «Входящие» или «Спам».
+                Мы отправили 6-значный код на вашу почту <strong>{email}</strong>. Проверьте папку
+                «Входящие» или «Спам».
               </SubTitleForm>
 
               <InfoBox>
@@ -447,8 +423,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                     Ваш разовый код: <strong>578202</strong>
                   </p>
                   <small>
-                    Вводите этот код только на официальном сайте. Не делитесь им
-                    ни с кем.
+                    Вводите этот код только на официальном сайте. Не делитесь им ни с кем.
                   </small>
                 </div>
               </InfoBox>
@@ -534,9 +509,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
               }}
             >
               <TitleForm>Создайте новый пароль</TitleForm>
-              <SubTitleForm>
-                Пароль должен быть надёжным и отличаться от предыдущего.
-              </SubTitleForm>
+              <SubTitleForm>Пароль должен быть надежным и отличаться от предыдущего.</SubTitleForm>
 
               {error && (
                 <ErrorBox>
@@ -569,11 +542,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
 
                 <PasswordRequirements>
                   <RequirementItem $valid={password.length >= 8}>
-                    {password.length >= 8 ? (
-                      <CheckCircle2 size={14} />
-                    ) : (
-                      <div className="circle" />
-                    )}
+                    {password.length >= 8 ? <CheckCircle2 size={14} /> : <div className="circle" />}
                     Минимум 8 символов
                   </RequirementItem>
                   <RequirementItem $valid={/[A-Z]/.test(password)}>
@@ -617,9 +586,7 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                       setConfirmPassword(e.target.value)
                       setError('')
                     }}
-                    onBlur={() =>
-                      setTouched({ ...touched, confirmPassword: true })
-                    }
+                    onBlur={() => setTouched({ ...touched, confirmPassword: true })}
                     disabled={isLoading}
                   />
                 </div>
@@ -629,20 +596,15 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
                     {confirmPasswordError}
                   </FieldError>
                 )}
-                {!confirmPasswordError &&
-                  confirmPassword &&
-                  password === confirmPassword && (
-                    <FieldSuccess>
-                      <CheckCircle2 size={14} />
-                      Пароли совпадают
-                    </FieldSuccess>
-                  )}
+                {!confirmPasswordError && confirmPassword && password === confirmPassword && (
+                  <FieldSuccess>
+                    <CheckCircle2 size={14} />
+                    Пароли совпадают
+                  </FieldSuccess>
+                )}
               </InputGroup>
 
-              <Button
-                onClick={handleResetPassword}
-                disabled={isLoading || !isPasswordValid}
-              >
+              <Button onClick={handleResetPassword} disabled={isLoading || !isPasswordValid}>
                 {isLoading ? (
                   <>
                     <Loader2 size={18} className="spin" />
@@ -658,8 +620,8 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
 
               <SecurityNotice>
                 <p>
-                  💡 <strong>Совет:</strong> Используйте уникальный пароль,
-                  который вы не используете на других сайтах.
+                  💡 <strong>Совет:</strong> Используйте уникальный пароль, который вы не
+                  используете на других сайтах.
                 </p>
               </SecurityNotice>
             </form>
@@ -670,10 +632,10 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
               <div className="icon-wrapper">
                 <CheckCircle2 size={48} />
               </div>
-              <TitleForm>Пароль успешно изменён!</TitleForm>
+              <TitleForm>Пароль успешно изменен!</TitleForm>
               <SubTitleForm>
-                Ваш новый пароль был успешно сохранён. Теперь вы можете
-                использовать его для входа в систему.
+                Ваш новый пароль был успешно сохранен. Теперь вы можете использовать его для входа в
+                систему.
               </SubTitleForm>
 
               <Button
@@ -703,9 +665,9 @@ const ResetPasswordPage: React.FC<ResetPasswordPageProps> = ({ onLogin }) => {
 
         <SecurityNoteWrapper>
           <SecurityNoteText>
-            <span>🔒</span> Мы никогда не попросим вас сообщить ваш пароль по
-            email или телефону. Если вы получили подозрительное письмо, не
-            переходите по ссылкам и сообщите в службу поддержки.
+            <span>🔒</span> Мы никогда не попросим вас сообщить ваш пароль по email или телефону.
+            Если вы получили подозрительное письмо, не переходите по ссылкам и сообщите в службу
+            поддержки.
           </SecurityNoteText>
         </SecurityNoteWrapper>
       </Container>

@@ -86,7 +86,9 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
   const { patients, updatePatient, refreshPatients } = usePatientData()
 
   const [selectedPatientId, setSelectedPatientId] = useState<string>('')
-  const [dischargeVariant, setDischargeVariant] = useState<SelectOption | null>(DISCHARGE_VARIANTS[1]) // Improvement by default
+  const [dischargeVariant, setDischargeVariant] = useState<SelectOption | null>(
+    DISCHARGE_VARIANTS[1]
+  ) // Improvement by default
   const [dischargeDateTime, setDischargeDateTime] = useState<string>(() => {
     const now = new Date()
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
@@ -117,11 +119,13 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
 
   // Fetch beds on mount to search for patient bed assignment later
   useEffect(() => {
-    fetchBeds().then((resp) => {
-      if (resp && resp.beds) {
-        setBeds(resp.beds)
-      }
-    }).catch(console.error)
+    fetchBeds()
+      .then((resp) => {
+        if (resp && resp.beds) {
+          setBeds(resp.beds)
+        }
+      })
+      .catch(console.error)
   }, [])
 
   // Hook when patientId is passed from patient card or when selectedPatient changes
@@ -166,7 +170,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       text += `Клинический диагноз при выписке: ${finalDiagnosis}\n\n`
     }
 
-    text += `Жалобы при поступлении: кашель, затруднённое дыхание, одышка, общая слабость.\n`
+    text += `Жалобы при поступлении: кашель, затрудненное дыхание, одышка, общая слабость.\n`
     text += `За время госпитализации проведена комплексная консервативная терапия.\n`
 
     const vitals = (selectedPatient as any).vitals
@@ -194,7 +198,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
         text += `   - ${med.name} ${med.dose || ''} ${med.form || ''} (${med.regimen || 'согласно схеме'})\n`
       })
     } else {
-      text += `3. Рекомендован приём поливитаминов, симптоматическое лечение.\n`
+      text += `3. Рекомендован прием поливитаминов, симптоматическое лечение.\n`
     }
 
     setRecommendations(text)
@@ -210,7 +214,8 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
     setLoading(true)
     try {
       // 1. Create the Discharge Encounter
-      const formattedDateTime = toBackendDateTimeString(dischargeDateTime) || new Date().toISOString()
+      const formattedDateTime =
+        toBackendDateTimeString(dischargeDateTime) || new Date().toISOString()
       const encounterPayload = {
         dateTime: formattedDateTime,
         type: 'Выписка',
@@ -260,10 +265,8 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       <DischargeHeader>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <ClipboardList size={28} style={{ color: '#2563eb', flexShrink: 0 }} />
-          <div>
-            <DischargeTitle>
-              Выписка пациента из пульмонологического отделения
-            </DischargeTitle>
+          <div style={{ padding: 12 }}>
+            <DischargeTitle>Выписка пациента из пульмонологического отделения</DischargeTitle>
             <DischargeSubtitle>
               Зафиксируйте исход госпитализации, составьте выписной эпикриз и освободите койко-место
             </DischargeSubtitle>
@@ -272,7 +275,10 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       </DischargeHeader>
 
       <FormCard>
-        <form onSubmit={handleDischargeSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <form
+          onSubmit={handleDischargeSubmit}
+          style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
+        >
           <FormGrid>
             <FormGroup>
               <Label htmlFor="patient-select">Пациент</Label>
@@ -377,10 +383,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Label htmlFor="epicrisis">Выписной эпикриз / Анамнез и ход лечения</Label>
               {selectedPatient && (
-                <AutoGenerateBtn
-                  type="button"
-                  onClick={handleAutoGenerateEpicrisis}
-                >
+                <AutoGenerateBtn type="button" onClick={handleAutoGenerateEpicrisis}>
                   <Wand2 size={14} />
                   Сформировать по умолчанию
                 </AutoGenerateBtn>
@@ -399,10 +402,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Label htmlFor="recommendations">Рекомендации при выписке</Label>
               {selectedPatient && (
-                <AutoGenerateBtn
-                  type="button"
-                  onClick={handleAutoGenerateRecommendations}
-                >
+                <AutoGenerateBtn type="button" onClick={handleAutoGenerateRecommendations}>
                   <Wand2 size={14} />
                   Сформировать по назначениям
                 </AutoGenerateBtn>

@@ -295,7 +295,7 @@ export const mockPatients: Patient[] = [
         name: 'Хронический гастрит',
         diagnosisDate: '2015-11-20',
         diseaseStatus: 'Хроническое',
-        severity: 'Лёгкая',
+        severity: 'Легкая',
         description: 'Хронический поверхностный гастрит',
         complications: 'Нет'
       }
@@ -387,7 +387,7 @@ export const mockPatients: Patient[] = [
       organization: 'ООО "МедиаГрупп"',
       address: 'г. Москва, ул. Тверская, 12'
     },
-    activeProblems: ['Бронхиальная астма, лёгкое персистирующее течение'],
+    activeProblems: ['Бронхиальная астма, легкое персистирующее течение'],
     labs: [
       {
         type: 'Спирометрия',
@@ -484,7 +484,7 @@ export const mockPatients: Patient[] = [
     work: {
       profession: 'Бухгалтер',
       organization: 'АО "Финансгрупп"',
-      address: 'г. Москва, Садовая-Самотёчная, 5'
+      address: 'г. Москва, Садовая-Самотечная, 5'
     },
     activeProblems: ['Декомпенсация сахарного диабета 2 типа', 'Ожирение 1 степени'],
     labs: [
@@ -602,7 +602,7 @@ export const mockPatients: Patient[] = [
     },
     passport: {
       seriesNumber: '4508 321654',
-      issuedBy: 'УМВД Савёловского района г. Москвы',
+      issuedBy: 'УМВД Савеловского района г. Москвы',
       dateIssued: '2008-11-03'
     },
     maritalStatus: 'Замужем',
@@ -650,7 +650,7 @@ export const mockPatients: Patient[] = [
         conclusion: 'ВСД смешанного типа, умеренно выраженная',
         complaints: 'Головокружение, сердцебиение при стрессе',
         objective: 'АД лабильное, ЧСС 71',
-        recommendations: 'Приём магния, режим труда и отдыха'
+        recommendations: 'Прием магния, режим труда и отдыха'
       }
     ],
     vaccines: [
@@ -808,7 +808,7 @@ export const mockPatients: Patient[] = [
     dateOfBirth: '1995-02-27',
     age: 30,
     allergies: [
-      { name: 'Пыльца берёзы', reaction: 'Ринит, конъюнктивит', date: '2015-04-10', comment: '' }
+      { name: 'Пыльца березы', reaction: 'Ринит, конъюнктивит', date: '2015-04-10', comment: '' }
     ],
     documents: [],
     medcardNum: 'МК-60835',
@@ -888,11 +888,11 @@ export const mockPatients: Patient[] = [
     history: [
       {
         dateTime: '2026-01-12 14:00',
-        type: 'Первичный приём',
+        type: 'Первичный прием',
         doctor: 'Белова О.Р.',
         conclusion: 'Обострение хронического тонзиллита',
         complaints: 'Боль в горле, субфебрилитет 3 дня',
-        objective: 'Миндалины увеличены, гиперемированы, налёт',
+        objective: 'Миндалины увеличены, гиперемированы, налет',
         recommendations: 'Антибиотикотерапия, местное лечение'
       }
     ],
@@ -944,7 +944,7 @@ export const mockPatients: Patient[] = [
       issuedBy: 'ОВД Гагаринского района г. Москвы',
       dateIssued: '2001-01-15'
     },
-    maritalStatus: 'Разведён',
+    maritalStatus: 'Разведен',
     other: {
       language: 'Русский',
       nationality: 'Русский',
@@ -999,7 +999,7 @@ export const mockPatients: Patient[] = [
     history: [
       {
         dateTime: '2026-04-17 16:00',
-        type: 'Первичный приём',
+        type: 'Первичный прием',
         doctor: 'Ершов М.П.',
         conclusion: 'Поясничный остеохондроз, обострение',
         complaints: 'Боли в пояснице, иррадиация в левую ногу',
@@ -1111,7 +1111,7 @@ export const mockPatients: Patient[] = [
         conclusion: 'Обострение хронического пиелонефрита',
         complaints: 'Боли в пояснице, лихорадка до 38.2, дизурия',
         objective: 'Симптом Пастернацкого положительный справа',
-        recommendations: 'Антибиотикотерапия, обильное питьё, УЗИ'
+        recommendations: 'Антибиотикотерапия, обильное питье, УЗИ'
       }
     ],
     vaccines: [
@@ -1173,7 +1173,7 @@ export const mockPatients: Patient[] = [
     work: {
       profession: 'Студент',
       organization: 'МГУ им. М.В. Ломоносова',
-      address: 'г. Москва, Воробьёвы горы, 1'
+      address: 'г. Москва, Воробьевы горы, 1'
     },
     activeProblems: ['Обострение хронического гастродуоденита'],
     labs: [
@@ -1222,7 +1222,7 @@ export const mockPatients: Patient[] = [
     history: [
       {
         dateTime: '2026-01-14 10:00',
-        type: 'Первичный приём',
+        type: 'Первичный прием',
         doctor: 'Зимина С.А.',
         conclusion: 'Гастродуоденит, обострение. H. pylori +',
         complaints: 'Боли в эпигастрии, тошнота после еды',
@@ -1250,7 +1250,7 @@ export const mockPatients: Patient[] = [
     gender: 'Женский',
     dateOfBirth: '1983-08-05',
     age: 42,
-    allergies: [{ name: 'Мёд', reaction: 'Крапивница', date: '2017-08-14', comment: '' }],
+    allergies: [{ name: 'Мед', reaction: 'Крапивница', date: '2017-08-14', comment: '' }],
     documents: [],
     medcardNum: 'МК-01249',
     historyNum: 'ИБ-2025-41',
@@ -1393,7 +1393,7 @@ export const mockPatients: Patient[] = [
       organization: '',
       address: ''
     },
-    activeProblems: ['ХОБЛ, стадия III (тяжёлая)', 'Эмфизема лёгких'],
+    activeProblems: ['ХОБЛ, стадия III (тяжелая)', 'Эмфизема легких'],
     labs: [
       {
         type: 'Спирометрия (ОФВ1)',
@@ -1420,7 +1420,7 @@ export const mockPatients: Patient[] = [
     ],
     operations: [
       {
-        name: 'Резекция правого лёгкого',
+        name: 'Резекция правого легкого',
         date: '2010-01-01',
         diagnosis: '—',
         description: 'Подробности не указаны',
@@ -1447,7 +1447,7 @@ export const mockPatients: Patient[] = [
         complications: 'Нет'
       },
       {
-        name: 'Лёгочная гипертензия',
+        name: 'Легочная гипертензия',
         diagnosisDate: '',
         diseaseStatus: 'Хроническое',
         severity: 'Умеренная',
@@ -1679,7 +1679,7 @@ export const mockPatients: Patient[] = [
     history: [
       {
         dateTime: '2026-01-13 09:00',
-        type: 'Первичный приём',
+        type: 'Первичный прием',
         doctor: 'Воронова Д.А.',
         conclusion: 'Острый гнойный гайморит двусторонний',
         complaints: 'Заложенность носа, гнойные выделения, головная боль 5 дней',
@@ -1946,7 +1946,7 @@ export const mockHospitalBeds: HospitalBed[] = [
     roomNumber: '101',
     bedNumber: 1,
     patientId: 'P001',
-    bedNote: 'Контроль АД каждые 2 часа. При подъёме выше 180/110 — вызов дежурного врача.',
+    bedNote: 'Контроль АД каждые 2 часа. При подъеме выше 180/110 — вызов дежурного врача.',
     patientName: 'Иван',
     patientLastName: 'Петров',
     patientMiddleName: 'Сергеевич',
@@ -2142,7 +2142,7 @@ export interface PatientDetail {
 
 export const patientDetails: Record<string, PatientDetail> = {
   P001: {
-    doctorNote: 'Контроль АД каждые 2 часа. При подъёме выше 180/110 — вызов дежурного врача.',
+    doctorNote: 'Контроль АД каждые 2 часа. При подъеме выше 180/110 — вызов дежурного врача.',
     prescriptions: [
       { id: 1, name: 'Эналаприл', dose: '10мг', time: '08:00', done: true },
       { id: 2, name: 'Амлодипин', dose: '5мг', time: '12:00', done: false },
@@ -2290,7 +2290,7 @@ export const mockNotifications: Notification[] = [
     type: 'appointment-reminder',
     patientName: 'Иванова Мария Александровна',
     patientId: 'P002',
-    message: 'Приём начнётся через 1 час',
+    message: 'Прием начнется через 1 час',
     time: '14:00',
     read: false
   },
@@ -2312,7 +2312,7 @@ export const mockNotifications: Notification[] = [
     type: 'appointment-reminder',
     patientName: 'Петров Иван Сергеевич',
     patientId: 'P001',
-    message: 'Приём начнётся через 1 час',
+    message: 'Прием начнется через 1 час',
     time: '16:00',
     read: false
   }
@@ -2877,7 +2877,7 @@ export const mockMedicines: Medicine[] = [
     operationLog: [
       { id: 'LOG-001-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 100, balanceAfter: 100, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановое пополнение', supplier: 'ООО «МедФарм»' },
       { id: 'LOG-001-2', date: '2026-05-05T10:30:00', type: 'writeoff', quantity: 30, balanceAfter: 70, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Назначение пациентам', reason: 'patient', patientId: 'P001', patientName: 'Петров Иван Сергеевич' },
-      { id: 'LOG-001-3', date: '2026-05-10T14:00:00', type: 'writeoff', quantity: 22, balanceAfter: 48, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пероральный приём', reason: 'patient', patientId: 'P003', patientName: 'Смирнов Алексей Дмитриевич' },
+      { id: 'LOG-001-3', date: '2026-05-10T14:00:00', type: 'writeoff', quantity: 22, balanceAfter: 48, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пероральный прием', reason: 'patient', patientId: 'P003', patientName: 'Смирнов Алексей Дмитриевич' },
       { id: 'LOG-001-4', date: '2026-05-15T09:00:00', type: 'receipt', quantity: 100, balanceAfter: 148, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ООО «МедФарм»' },
       { id: 'LOG-001-5', date: '2026-05-22T09:15:00', type: 'writeoff', quantity: 100, balanceAfter: 48, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Курс лечения', reason: 'patient' },
     ]
@@ -2900,7 +2900,7 @@ export const mockMedicines: Medicine[] = [
   },
   {
     id: 'MED-003', name: 'Морфин 10 мг/мл',
-    description: 'Наркотический анальгетик. Применяется для купирования сильных болевых синдромов. Строгий учёт, хранение под замком.',
+    description: 'Наркотический анальгетик. Применяется для купирования сильных болевых синдромов. Строгий учет, хранение под замком.',
     category: 'Анальгетики', unit: 'амп.', currentBalance: 0, minBalance: 5,
     totalReceived: 20, totalWrittenOff: 20, lastReceiptDate: '2026-04-20', lastWriteOffDate: '2026-05-21',
     lastReceiptFrom: 'ГУП «Фармация»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
@@ -2910,7 +2910,7 @@ export const mockMedicines: Medicine[] = [
       { id: 'LOG-003-2', date: '2026-05-01T22:00:00', type: 'writeoff', quantity: 2, balanceAfter: 8, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Обезболивание', reason: 'im' },
       { id: 'LOG-003-3', date: '2026-05-10T08:00:00', type: 'receipt', quantity: 10, balanceAfter: 18, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ГУП «Фармация»' },
       { id: 'LOG-003-4', date: '2026-05-15T01:00:00', type: 'writeoff', quantity: 8, balanceAfter: 10, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Послеоперационное обезболивание', reason: 'im' },
-      { id: 'LOG-003-5', date: '2026-05-21T20:00:00', type: 'writeoff', quantity: 10, balanceAfter: 0, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Курс завершён', reason: 'patient' },
+      { id: 'LOG-003-5', date: '2026-05-21T20:00:00', type: 'writeoff', quantity: 10, balanceAfter: 0, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Курс завершен', reason: 'patient' },
     ]
   },
   {
@@ -2930,7 +2930,7 @@ export const mockMedicines: Medicine[] = [
   },
   {
     id: 'MED-005', name: 'Дексаметазон 4 мг/мл',
-    description: 'Глюкокортикостероид. Применяется при воспалительных, аллергических заболеваниях, отёках мозга.',
+    description: 'Глюкокортикостероид. Применяется при воспалительных, аллергических заболеваниях, отеках мозга.',
     category: 'Гормоны', unit: 'амп.', currentBalance: 12, minBalance: 8,
     totalReceived: 80, totalWrittenOff: 68, lastReceiptDate: '2026-05-12', lastWriteOffDate: '2026-05-21',
     lastReceiptFrom: 'ООО «ФармМедПлюс»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
@@ -2939,7 +2939,7 @@ export const mockMedicines: Medicine[] = [
       { id: 'LOG-005-1', date: '2026-05-01T09:00:00', type: 'receipt', quantity: 40, balanceAfter: 40, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ООО «ФармМедПлюс»' },
       { id: 'LOG-005-2', date: '2026-05-07T12:00:00', type: 'writeoff', quantity: 18, balanceAfter: 22, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Противовоспалительная терапия', reason: 'im' },
       { id: 'LOG-005-3', date: '2026-05-12T10:00:00', type: 'receipt', quantity: 40, balanceAfter: 62, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение', supplier: 'ООО «ФармМедПлюс»' },
-      { id: 'LOG-005-4', date: '2026-05-17T09:00:00', type: 'writeoff', quantity: 25, balanceAfter: 37, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Лечение отёка', reason: 'iv' },
+      { id: 'LOG-005-4', date: '2026-05-17T09:00:00', type: 'writeoff', quantity: 25, balanceAfter: 37, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Лечение отека', reason: 'iv' },
       { id: 'LOG-005-5', date: '2026-05-21T15:30:00', type: 'writeoff', quantity: 25, balanceAfter: 12, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Назначение пациенту', reason: 'patient', patientId: 'P001', patientName: 'Петров Иван Сергеевич' },
     ]
   },
@@ -2990,7 +2990,7 @@ export const mockMedicines: Medicine[] = [
   },
   {
     id: 'MED-009', name: 'Цефтриаксон 1 г',
-    description: 'Цефалоспориновый антибиотик III поколения. Применяется при тяжёлых инфекциях.',
+    description: 'Цефалоспориновый антибиотик III поколения. Применяется при тяжелых инфекциях.',
     category: 'Антибиотики', unit: 'фл.', currentBalance: 0, minBalance: 10,
     totalReceived: 50, totalWrittenOff: 50, lastReceiptDate: '2026-05-05', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'АО «АнтибиоМед»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
@@ -3020,22 +3020,22 @@ export const mockMedicines: Medicine[] = [
   },
   {
     id: 'MED-011', name: 'Фуросемид 40 мг',
-    description: 'Петлевой диуретик. Применяется при отёках сердечного и почечного происхождения, артериальной гипертензии.',
+    description: 'Петлевой диуретик. Применяется при отеках сердечного и почечного происхождения, артериальной гипертензии.',
     category: 'Кардио', unit: 'табл.', currentBalance: 18, minBalance: 15,
     totalReceived: 100, totalWrittenOff: 82, lastReceiptDate: '2026-05-12', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
     lastUpdated: '2026-05-22T10:00:00', status: 'norm', isArchived: false,
     operationLog: [
       { id: 'LOG-011-1', date: '2026-05-01T08:00:00', type: 'receipt', quantity: 50, balanceAfter: 50, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Плановая поставка', supplier: 'ЗАО «КардиоФарм»' },
-      { id: 'LOG-011-2', date: '2026-05-08T09:00:00', type: 'writeoff', quantity: 24, balanceAfter: 26, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Терапия отёков', reason: 'patient' },
+      { id: 'LOG-011-2', date: '2026-05-08T09:00:00', type: 'writeoff', quantity: 24, balanceAfter: 26, performedBy: 'Сидорова Е.П.', performedById: 'STAFF-02', comment: 'Терапия отеков', reason: 'patient' },
       { id: 'LOG-011-3', date: '2026-05-12T08:00:00', type: 'receipt', quantity: 50, balanceAfter: 76, performedBy: 'Иванова И.И.', performedById: 'STAFF-01', comment: 'Пополнение', supplier: 'ЗАО «КардиоФарм»' },
-      { id: 'LOG-011-4', date: '2026-05-18T11:00:00', type: 'writeoff', quantity: 38, balanceAfter: 38, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Регулярный приём', reason: 'patient' },
+      { id: 'LOG-011-4', date: '2026-05-18T11:00:00', type: 'writeoff', quantity: 38, balanceAfter: 38, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Регулярный прием', reason: 'patient' },
       { id: 'LOG-011-5', date: '2026-05-22T10:00:00', type: 'writeoff', quantity: 20, balanceAfter: 18, performedBy: 'Козлова Н.И.', performedById: 'STAFF-03', comment: 'Назначение пациентам', reason: 'patient' },
     ]
   },
   {
     id: 'MED-012', name: 'Кетамин 500 мг/10 мл',
-    description: 'Анестетик общего действия для краткосрочного наркоза и премедикации. Требует строгого учёта.',
+    description: 'Анестетик общего действия для краткосрочного наркоза и премедикации. Требует строгого учета.',
     category: 'Анальгетики', unit: 'амп.', currentBalance: 8, minBalance: 5,
     totalReceived: 30, totalWrittenOff: 22, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-19',
     lastReceiptFrom: 'ГУП «Фармация»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',

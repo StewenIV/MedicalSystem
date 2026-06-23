@@ -205,6 +205,62 @@ const formatDateTime = (date: string) => {
 
 const genId = () => `LOG-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 
+function useCounter(target: number, duration = 1000) {
+  const [value, setValue] = useState(0)
+  const raf = useRef<number | null>(null)
+
+  const animate = (start: number, end: number, dur: number) => {
+    if (raf.current) cancelAnimationFrame(raf.current)
+    let startTs: number | null = null
+
+    const step = (ts: number) => {
+      if (!startTs) startTs = ts
+      const progress = Math.min((ts - startTs) / dur, 1)
+      setValue(Math.floor(progress * (end - start) + start))
+      if (progress < 1) raf.current = requestAnimationFrame(step)
+    }
+
+    raf.current = requestAnimationFrame(step)
+  }
+
+  useEffect(() => {
+    animate(0, target, duration)
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+    }
+  }, [target])
+
+  return { value, replay: () => animate(0, target, Math.round(duration * 0.8)) }
+}
+
+function AnimatedMedStatCard({
+  targetValue,
+  color,
+  bg,
+  icon,
+  label,
+  sub
+}: {
+  targetValue: number
+  color: string
+  bg: string
+  icon: React.ReactNode
+  label: string
+  sub: string
+}) {
+  const { value, replay } = useCounter(targetValue, 1000)
+  return (
+    <StatCard $color={color} onMouseEnter={replay}>
+      <StatIcon $bg={bg} $color={color}>
+        {icon}
+      </StatIcon>
+      <StatLabel>{label}</StatLabel>
+      <StatValue>{value}</StatValue>
+      <StatSub>{sub}</StatSub>
+    </StatCard>
+  )
+}
+
 const MedicinesPage: React.FC = () => {
   const [medicines, setMedicines] = useState<Medicine[]>([])
   const [patients, setPatients] = useState<any[]>([])
@@ -217,9 +273,16 @@ const MedicinesPage: React.FC = () => {
           let logType: any = 'adjustment'
           if (log.type) {
             const lower = log.type.toLowerCase()
-            if (lower === 'получено' || lower === 'receipt' || lower === 'поступление') logType = 'receipt'
-            else if (lower === 'списано' || lower === 'writeoff' || lower === 'списание') logType = 'writeoff'
-            else if (lower === 'откорректировано' || lower === 'adjustment' || lower === 'корректировка') logType = 'adjustment'
+            if (lower === 'получено' || lower === 'receipt' || lower === 'поступление')
+              logType = 'receipt'
+            else if (lower === 'списано' || lower === 'writeoff' || lower === 'списание')
+              logType = 'writeoff'
+            else if (
+              lower === 'откорректировано' ||
+              lower === 'adjustment' ||
+              lower === 'корректировка'
+            )
+              logType = 'adjustment'
           }
           return {
             ...log,
@@ -232,9 +295,16 @@ const MedicinesPage: React.FC = () => {
           lastOp = opLog[0].type
         } else if (m.lastOperation) {
           const lower = m.lastOperation.toLowerCase()
-          if (lower === 'получено' || lower === 'receipt' || lower === 'поступление') lastOp = 'receipt'
-          else if (lower === 'списано' || lower === 'writeoff' || lower === 'списание') lastOp = 'writeoff'
-          else if (lower === 'откорректировано' || lower === 'adjustment' || lower === 'корректировка') lastOp = 'adjustment'
+          if (lower === 'получено' || lower === 'receipt' || lower === 'поступление')
+            lastOp = 'receipt'
+          else if (lower === 'списано' || lower === 'writeoff' || lower === 'списание')
+            lastOp = 'writeoff'
+          else if (
+            lower === 'откорректировано' ||
+            lower === 'adjustment' ||
+            lower === 'корректировка'
+          )
+            lastOp = 'adjustment'
         }
 
         return {
@@ -643,83 +713,87 @@ const MedicinesPage: React.FC = () => {
   }, [patients, writeoffForm.patientQuery])
 
   const handleHistoryExport = async () => {
-  if (!historyExportRef.current) return
-  setIsExporting(true)
+    if (!historyExportRef.current) return
+    setIsExporting(true)
 
-  const scrollContainers: { el: HTMLElement; overflow: string; overflowX: string }[] = []
-  let node: HTMLElement | null = historyExportRef.current.parentElement
-  while (node) {
-    const style = window.getComputedStyle(node)
-    if (
-      style.overflow === 'auto' || style.overflow === 'hidden' || style.overflow === 'scroll' ||
-      style.overflowX === 'auto' || style.overflowX === 'hidden' || style.overflowX === 'scroll'
-    ) {
-      scrollContainers.push({
-        el: node,
-        overflow: node.style.overflow,
-        overflowX: node.style.overflowX
+    const scrollContainers: { el: HTMLElement; overflow: string; overflowX: string }[] = []
+    let node: HTMLElement | null = historyExportRef.current.parentElement
+    while (node) {
+      const style = window.getComputedStyle(node)
+      if (
+        style.overflow === 'auto' ||
+        style.overflow === 'hidden' ||
+        style.overflow === 'scroll' ||
+        style.overflowX === 'auto' ||
+        style.overflowX === 'hidden' ||
+        style.overflowX === 'scroll'
+      ) {
+        scrollContainers.push({
+          el: node,
+          overflow: node.style.overflow,
+          overflowX: node.style.overflowX
+        })
+        node.style.overflow = 'visible'
+        node.style.overflowX = 'visible'
+      }
+      node = node.parentElement
+    }
+
+    const refEl = historyExportRef.current
+    const prevWidth = refEl.style.width
+    const prevOverflow = refEl.style.overflow
+    refEl.style.width = refEl.scrollWidth + 'px'
+    refEl.style.overflow = 'visible'
+
+    try {
+      const canvas = await html2canvas(refEl, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        width: refEl.scrollWidth,
+        height: refEl.scrollHeight,
+        windowWidth: refEl.scrollWidth
       })
-      node.style.overflow = 'visible'
-      node.style.overflowX = 'visible'
+
+      const imgData = canvas.toDataURL('image/png')
+
+      const A4_W = 297
+      const A4_H = 210
+      const imgW = canvas.width
+      const imgH = canvas.height
+      const ratio = imgW / imgH
+
+      let pdfW = A4_W
+      let pdfH = A4_W / ratio
+      if (pdfH > A4_H) {
+        pdfH = A4_H
+        pdfW = A4_H * ratio
+      }
+
+      const { jsPDF } = await import('jspdf')
+      const pdf = new jsPDF({
+        orientation: ratio >= 1 ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      })
+
+      const offsetX = (pdf.internal.pageSize.getWidth() - pdfW) / 2
+      const offsetY = (pdf.internal.pageSize.getHeight() - pdfH) / 2
+
+      pdf.addImage(imgData, 'PNG', offsetX, offsetY, pdfW, pdfH)
+      pdf.save(`История_${selectedMedicine?.name}_${formatLocalDate(new Date())}.pdf`)
+    } catch (e) {
+      console.error('PDF export error', e)
+    } finally {
+      refEl.style.width = prevWidth
+      refEl.style.overflow = prevOverflow
+      scrollContainers.forEach(({ el, overflow, overflowX }) => {
+        el.style.overflow = overflow
+        el.style.overflowX = overflowX
+      })
+      setIsExporting(false)
     }
-    node = node.parentElement
   }
-
-  const refEl = historyExportRef.current
-  const prevWidth = refEl.style.width
-  const prevOverflow = refEl.style.overflow
-  refEl.style.width = refEl.scrollWidth + 'px'
-  refEl.style.overflow = 'visible'
-
-  try {
-    const canvas = await html2canvas(refEl, {
-      scale: 2,
-      useCORS: true,
-      logging: false,
-      width: refEl.scrollWidth,
-      height: refEl.scrollHeight,
-      windowWidth: refEl.scrollWidth,
-    })
-
-    const imgData = canvas.toDataURL('image/png')
-
-    const A4_W = 297
-    const A4_H = 210
-    const imgW = canvas.width
-    const imgH = canvas.height
-    const ratio = imgW / imgH
-
-    let pdfW = A4_W
-    let pdfH = A4_W / ratio
-    if (pdfH > A4_H) {
-      pdfH = A4_H
-      pdfW = A4_H * ratio
-    }
-
-    const { jsPDF } = await import('jspdf')
-    const pdf = new jsPDF({
-      orientation: ratio >= 1 ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: 'a4'
-    })
-
-    const offsetX = (pdf.internal.pageSize.getWidth() - pdfW) / 2
-    const offsetY = (pdf.internal.pageSize.getHeight() - pdfH) / 2
-
-    pdf.addImage(imgData, 'PNG', offsetX, offsetY, pdfW, pdfH)
-    pdf.save(`История_${selectedMedicine?.name}_${formatLocalDate(new Date())}.pdf`)
-  } catch (e) {
-    console.error('PDF export error', e)
-  } finally {
-    refEl.style.width = prevWidth
-    refEl.style.overflow = prevOverflow
-    scrollContainers.forEach(({ el, overflow, overflowX }) => {
-      el.style.overflow = overflow
-      el.style.overflowX = overflowX
-    })
-    setIsExporting(false)
-  }
-}
 
   const openEditModal = () => {
     if (!selectedMedicine) return
@@ -740,18 +814,18 @@ const MedicinesPage: React.FC = () => {
     return <CheckCircle size={11} />
   }
 
-const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
-  if (type === 'receipt') return <TrendingUp size={11} />
-  if (type === 'writeoff') return <TrendingDown size={11} />
-  if (type === 'adjustment') return <RefreshCw size={11} />
-  return null
-}
+  const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
+    if (type === 'receipt') return <TrendingUp size={11} />
+    if (type === 'writeoff') return <TrendingDown size={11} />
+    if (type === 'adjustment') return <RefreshCw size={11} />
+    return null
+  }
 
   return (
     <PageContainer>
       <Header>
         <HeaderLeft>
-          <HeaderTitle>Учёт медикаментов</HeaderTitle>
+          <HeaderTitle>Учет медикаментов</HeaderTitle>
           <HeaderSubtitle>
             Контроль движения препаратов отделения · поступление, списание, остатки
           </HeaderSubtitle>
@@ -759,38 +833,38 @@ const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
       </Header>
 
       <StatsGrid>
-        <StatCard $color="#2563eb">
-          <StatIcon $bg="#eff6ff" $color="#2563eb">
-            <Package size={20} />
-          </StatIcon>
-          <StatLabel>Препаратов</StatLabel>
-          <StatValue>{stats.total}</StatValue>
-          <StatSub>В активном учёте</StatSub>
-        </StatCard>
-        <StatCard $color="#f59e0b">
-          <StatIcon $bg="#fffbeb" $color="#d97706">
-            <AlertTriangle size={20} />
-          </StatIcon>
-          <StatLabel>Мало остатка</StatLabel>
-          <StatValue>{stats.low}</StatValue>
-          <StatSub>Требуют внимания</StatSub>
-        </StatCard>
-        <StatCard $color="#ef4444">
-          <StatIcon $bg="#fef2f2" $color="#dc2626">
-            <AlertCircle size={20} />
-          </StatIcon>
-          <StatLabel>Отсутствует</StatLabel>
-          <StatValue>{stats.empty}</StatValue>
-          <StatSub>Требует пополнения</StatSub>
-        </StatCard>
-        <StatCard $color="#10b981">
-          <StatIcon $bg="#ecfdf5" $color="#059669">
-            <Activity size={20} />
-          </StatIcon>
-          <StatLabel>Операций сегодня</StatLabel>
-          <StatValue>{stats.todayOps}</StatValue>
-          <StatSub>Все типы операций</StatSub>
-        </StatCard>
+        <AnimatedMedStatCard
+          targetValue={stats.total}
+          color="#2563eb"
+          bg="#eff6ff"
+          icon={<Package size={20} />}
+          label="Препаратов"
+          sub="В активном учете"
+        />
+        <AnimatedMedStatCard
+          targetValue={stats.low}
+          color="#f59e0b"
+          bg="#fffbeb"
+          icon={<AlertTriangle size={20} />}
+          label="Мало остатка"
+          sub="Требуют внимания"
+        />
+        <AnimatedMedStatCard
+          targetValue={stats.empty}
+          color="#ef4444"
+          bg="#fef2f2"
+          icon={<AlertCircle size={20} />}
+          label="Отсутствует"
+          sub="Требует пополнения"
+        />
+        <AnimatedMedStatCard
+          targetValue={stats.todayOps}
+          color="#10b981"
+          bg="#ecfdf5"
+          icon={<Activity size={20} />}
+          label="Операций сегодня"
+          sub="Все типы операций"
+        />
       </StatsGrid>
 
       <ControlBar>
@@ -925,7 +999,7 @@ const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
               setPage(1)
             }}
           >
-            Только завершённые
+            Только завершенные
           </FilterToggle>
         </ControlCenter>
 
@@ -1808,7 +1882,7 @@ const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
               <div>
                 <ModalTitle>Добавить препарат</ModalTitle>
                 <p style={{ margin: '4px 0 0', fontSize: 13, color: '#94a3b8' }}>
-                  Новый препарат в базу учёта
+                  Новый препарат в базу учета
                 </p>
               </div>
               <CloseBtn onClick={() => setShowAddModal(false)}>
@@ -2040,7 +2114,7 @@ const OpIcon = ({ type }: { type: OperationType | null | undefined }) => {
                   </ConfirmDeleteText>
                   <ConfirmDeleteText>
                     Вы можете перевести препарат в статус <strong>«Архивный»</strong> — он исчезнет
-                    из активного учёта, но история операций сохранится.
+                    из активного учета, но история операций сохранится.
                   </ConfirmDeleteText>
                 </>
               )}

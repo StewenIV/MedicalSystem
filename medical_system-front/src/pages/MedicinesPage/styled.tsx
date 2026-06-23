@@ -122,24 +122,42 @@ export const HeaderTitle = styled.h1`
 
 export const HeaderSubtitle = styled.p`
   font-family: ${FONT_STACK};
-  margin: 0;
-  padding-left: 10px;
-  font-size: 13px;
-  font-weight: 400;
-  color: #94a3b8;
-  letter-spacing: 0.015em;
-  line-height: 1.55;
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px; height: 4px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #93c5fd, #818cf8);
-    vertical-align: middle;
-    margin-right: 8px;
-    margin-bottom: 2px;
-    opacity: 0.7;
-  }
+   margin: 4px 0 0;
+   padding-left: 10px;
+   font-size: 13px;
+   font-weight: 400;
+   color: #94a3b8;
+   letter-spacing: 0.015em;
+   line-height: 1.55;
+   transition: color 0.2s ease;
+ 
+   &::before {
+     content: '';
+     display: inline-block;
+     width: 4px;
+     height: 4px;
+     border-radius: 50%;
+     background: linear-gradient(135deg, #93c5fd, #818cf8);
+     vertical-align: middle;
+     margin-right: 8px;
+     margin-bottom: 2px;
+     opacity: 0.7;
+     transition: opacity 0.2s ease, transform 0.2s ease;
+   }
+ 
+   ${Header}:hover & {
+     color: #64748b;
+ 
+     &::before {
+       opacity: 1;
+       transform: scale(1.3);
+     }
+   }
+ 
+   @media (max-width: 600px) {
+     padding-left: 0;
+     font-size: 12px;
+   }
 `
 
 export const StatsGrid = styled.div`

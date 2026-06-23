@@ -70,12 +70,6 @@ const ALL_NAV_ITEMS: NavItem[] = [
     roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
   },
   {
-    key: 'discharge',
-    label: 'Выписка',
-    icon: FileUser,
-    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
-  },
-  {
     key: 'HospitalWorkplace',
     label: 'Стационар',
     icon: Calendar,
@@ -101,7 +95,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   },
   {
     key: 'medicines',
-    label: 'Учёт медикаментов',
+    label: 'Учет медикаментов',
     icon: Pill,
     roles: ['Nurse', 'HeadNurse', 'ChiefDoctor']
   },
@@ -140,6 +134,12 @@ const ALL_NAV_ITEMS: NavItem[] = [
     label: 'Лаборатория',
     icon: FlaskConical,
     roles: ['LaboratoryEmployee']
+  },
+  {
+    key: 'discharge',
+    label: 'Выписка',
+    icon: FileUser,
+    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
   }
 ]
 

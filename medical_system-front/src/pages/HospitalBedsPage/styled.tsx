@@ -172,7 +172,7 @@ export const HeaderRow = styled.div`
   display: flex;
   flex-direction: column;
   align-items: start;
-  padding: 10px;
+  padding: 5px;
 `
 
 export const HeaderLeft = styled.div`
@@ -319,10 +319,10 @@ export const StatCard = styled.div<{ $accent?: boolean }>`
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   border: 1px solid ${(p) => (p.$accent ? 'transparent' : 'rgba(191, 219, 254, 0.4)')};
   border-radius: 12px;
-  padding: 14px 16px;
+  padding: 10px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
   width: 100%;
   height: 100%;
   transition: all 0.2s ease;

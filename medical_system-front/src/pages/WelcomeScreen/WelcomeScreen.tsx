@@ -1,12 +1,4 @@
-import {
-  Heart,
-  CheckCircle,
-  Shield,
-  Clock,
-  Users,
-  FileText,
-  TrendingUp
-} from 'lucide-react'
+import { Heart, CheckCircle, Shield, Clock, Users, FileText, TrendingUp } from 'lucide-react'
 import { Helmet } from 'react-helmet'
 import { useNavigate } from 'react-router-dom'
 import { paths } from 'routes/helpers'
@@ -44,10 +36,7 @@ const WelcomeScreen: React.FC = () => {
     <>
       <Helmet>
         <title>Пульмонология - Главная</title>
-        <meta
-          name="description"
-          content="Единая медицинская информационная система"
-        />
+        <meta name="description" content="Единая медицинская информационная система" />
       </Helmet>
 
       <WelcomeScreenContainer>
@@ -170,7 +159,7 @@ const WelcomeScreen: React.FC = () => {
             <CardTitle>Аналитика</CardTitle>
             <List>
               <ListItem>
-                <CheckCircle /> Отчёты
+                <CheckCircle /> Отчеты
               </ListItem>
               <ListItem>
                 <CheckCircle /> Статистика врачей
@@ -191,7 +180,7 @@ const WelcomeScreen: React.FC = () => {
             <CardTitle>Управление учреждением</CardTitle>
             <List>
               <ListItem>
-                <CheckCircle /> Учёт палат
+                <CheckCircle /> Учет палат
               </ListItem>
               <ListItem>
                 <CheckCircle /> Графики дежурств

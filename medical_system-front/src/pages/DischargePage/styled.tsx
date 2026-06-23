@@ -74,6 +74,7 @@ export const DischargeContainer = styled.div`
 `
 
 export const DischargeHeader = styled.div`
+  max-height: 300px;
   padding: 20px 24px 18px;
   border: 1px solid rgba(191, 219, 254, 0.7);
   background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
@@ -128,7 +129,7 @@ export const DischargeHeader = styled.div`
 
 export const DischargeTitle = styled.h1`
   margin: 0;
-  font-size: 20px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.2;
@@ -140,28 +141,43 @@ export const DischargeTitle = styled.h1`
 `
 
 export const DischargeSubtitle = styled.p`
-  margin: 6px 0 0;
-  padding-left: 10px;
-  font-size: 13px;
-  font-weight: 400;
-  color: #94a3b8;
-  letter-spacing: 0.015em;
-  line-height: 1.55;
-  display: flex;
-  align-items: center;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #93c5fd, #818cf8);
-    vertical-align: middle;
-    margin-right: 8px;
-    margin-bottom: 2px;
-    opacity: 0.7;
-  }
+   font-family: ${FONT_STACK};
+    margin: 4px 0 0;
+    padding-left: 10px;
+    font-size: 13px;
+    font-weight: 400;
+    color: #94a3b8;
+    letter-spacing: 0.015em;
+    line-height: 1.55;
+    transition: color 0.2s ease;
+  
+    &::before {
+      content: '';
+      display: inline-block;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #93c5fd, #818cf8);
+      vertical-align: middle;
+      margin-right: 8px;
+      margin-bottom: 2px;
+      opacity: 0.7;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+  
+    ${DischargeHeader}:hover & {
+      color: #64748b;
+  
+      &::before {
+        opacity: 1;
+        transform: scale(1.3);
+      }
+    }
+  
+    @media (max-width: 600px) {
+      padding-left: 0;
+      font-size: 12px;
+    }
 `
 
 export const FormCard = styled.div`

@@ -182,7 +182,7 @@ namespace MedicalSystem.API.Controllers
             {
                 var userId = GetUserId();
                 await _cabinetService.ChangePasswordAsync(userId, dto, token);
-                return Ok(new { message = "Пароль успешно изменён." });
+                return Ok(new { message = "Пароль успешно изменен." });
             }
             catch (InvalidOperationException ex)
             {

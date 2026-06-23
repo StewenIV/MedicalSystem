@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { formatLocalDate, toBackendDateString } from 'utils/dateUtils'
 import {
   Search,
@@ -47,16 +47,10 @@ import {
   SearchPaginationInfo,
   SearchPageSizeSelect,
   SearchPaginationBtns,
-  SearchPageBtn,
+  SearchPageBtn
 } from 'pages/PatientCard/styled'
 
-import {
-  StatsGrid,
-  StatCard,
-  StatIcon,
-  StatLabel,
-  StatValue,
-} from 'pages/MedicinesPage/styled'
+import { StatsGrid, StatCard, StatIcon, StatLabel, StatValue } from 'pages/MedicinesPage/styled'
 
 import styled from 'styled-components'
 
@@ -70,7 +64,11 @@ export const ActionButton = styled.button<{ $variant?: 'primary' | 'ghost' }>`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'SF Pro Display', 'Inter', -apple-system, sans-serif;
+  font-family:
+    'SF Pro Display',
+    'Inter',
+    -apple-system,
+    sans-serif;
   white-space: nowrap;
 
   ${({ $variant }) =>
@@ -97,8 +95,6 @@ export const ActionButton = styled.button<{ $variant?: 'primary' | 'ghost' }>`
       `}
 `
 
-
-
 interface WardRoundsHubProps {
   onStartPrimary: (patientId: string) => void
   onStartDaily: (patientId: string) => void
@@ -107,17 +103,68 @@ interface WardRoundsHubProps {
 
 type FilterType = 'all' | 'today' | 'inspected' | 'waiting'
 
-
 const getInitials = (firstName?: string, lastName?: string) => {
   if (!firstName && !lastName) return 'П'
   return `${lastName?.[0] || ''}${firstName?.[0] || ''}`.toUpperCase()
 }
 
+function useCounter(target: number, duration = 1000) {
+  const [value, setValue] = useState(0)
+  const raf = useRef<number | null>(null)
+
+  const animate = (start: number, end: number, dur: number) => {
+    if (raf.current) cancelAnimationFrame(raf.current)
+    let startTs: number | null = null
+
+    const step = (ts: number) => {
+      if (!startTs) startTs = ts
+      const progress = Math.min((ts - startTs) / dur, 1)
+      setValue(Math.floor(progress * (end - start) + start))
+      if (progress < 1) raf.current = requestAnimationFrame(step)
+    }
+
+    raf.current = requestAnimationFrame(step)
+  }
+
+  useEffect(() => {
+    animate(0, target, duration)
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+    }
+  }, [target])
+
+  return { value, replay: () => animate(0, target, Math.round(duration * 0.8)) }
+}
+
+function AnimatedWardStatCard({
+  targetValue,
+  color,
+  bg,
+  icon,
+  label
+}: {
+  targetValue: number
+  color: string
+  bg: string
+  icon: React.ReactNode
+  label: string
+}) {
+  const { value, replay } = useCounter(targetValue, 1000)
+  return (
+    <StatCard $color={color} onMouseEnter={replay}>
+      <StatIcon $bg={bg} $color={color}>
+        {icon}
+      </StatIcon>
+      <StatLabel>{label}</StatLabel>
+      <StatValue>{value}</StatValue>
+    </StatCard>
+  )
+}
 
 const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
   onStartPrimary,
   onStartDaily,
-  onOpenPatient,
+  onOpenPatient
 }) => {
   const { patients, getInspections } = usePatientData()
   const [query, setQuery] = useState('')
@@ -133,16 +180,17 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
   const todayISO = toBackendDateString(new Date())
 
   const inpatients = useMemo(() => {
-    return patients.filter(p =>
-      p.status === 'Hospitalized' ||
-      p.status === 'Outpatient' ||
-      p.statusText?.toLowerCase().includes('госпитализ')
+    return patients.filter(
+      (p) =>
+        p.status === 'Hospitalized' ||
+        p.status === 'Outpatient' ||
+        p.statusText?.toLowerCase().includes('госпитализ')
     )
   }, [patients])
 
   const getIsInspectedToday = (patientId: string) => {
     const insp = getInspections(patientId)
-    return insp.some(i => i.date === todayISO)
+    return insp.some((i) => i.date === todayISO)
   }
 
   const filtered = useMemo(() => {
@@ -150,15 +198,16 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
 
     if (query.trim()) {
       const q = query.toLowerCase()
-      list = list.filter(p =>
-        `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase().includes(q) ||
-        (p.medcardNum ?? '').toLowerCase().includes(q) ||
-        p.id.includes(q)
+      list = list.filter(
+        (p) =>
+          `${p.lastName} ${p.firstName} ${p.middleName}`.toLowerCase().includes(q) ||
+          (p.medcardNum ?? '').toLowerCase().includes(q) ||
+          p.id.includes(q)
       )
     }
 
-    if (filter === 'inspected') list = list.filter(p => getIsInspectedToday(p.id))
-    if (filter === 'waiting') list = list.filter(p => !getIsInspectedToday(p.id))
+    if (filter === 'inspected') list = list.filter((p) => getIsInspectedToday(p.id))
+    if (filter === 'waiting') list = list.filter((p) => !getIsInspectedToday(p.id))
 
     return list
   }, [inpatients, query, filter, todayISO])
@@ -175,57 +224,66 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
     setPage(newPage)
   }
 
-  const inspectedToday = inpatients.filter(p => getIsInspectedToday(p.id)).length
-  const criticalCount = inpatients.filter(p => p.status === 'critical').length
+  const inspectedToday = inpatients.filter((p) => getIsInspectedToday(p.id)).length
+  const criticalCount = inpatients.filter((p) => p.status === 'critical').length
   const waitingCount = inpatients.length - inspectedToday
 
   return (
-    <SearchPageWrapper style={{ padding: 24, height: '100%', overflow: 'auto', background: '#f3f4f6' }}>
+    <SearchPageWrapper
+      style={{ padding: 24, height: '100%', overflow: 'auto', background: '#f3f4f6' }}
+    >
       <SearchCard style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <SearchCardHeader>
           <SearchCardTitle>Обходы пациентов</SearchCardTitle>
-          <SearchCardSubtitle>
-            {today} · Отделение пульмонологии
-          </SearchCardSubtitle>
+          <SearchCardSubtitle>{today} · Отделение пульмонологии</SearchCardSubtitle>
         </SearchCardHeader>
 
         <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(238, 242, 247, 0.9)' }}>
           <StatsGrid>
-            <StatCard $color="#3b82f6">
-              <StatIcon $bg="#eff6ff" $color="#3b82f6">
-                <Users size={20} />
-              </StatIcon>
-              <StatLabel>Всего пациентов</StatLabel>
-              <StatValue>{inpatients.length}</StatValue>
-            </StatCard>
-            
-            <StatCard $color="#10b981">
-              <StatIcon $bg="#f0fdf4" $color="#10b981">
-                <UserCheck size={20} />
-              </StatIcon>
-              <StatLabel>Осмотрено сегодня</StatLabel>
-              <StatValue>{inspectedToday}</StatValue>
-            </StatCard>
-            
-            <StatCard $color="#f59e0b">
-              <StatIcon $bg="#fffbeb" $color="#f59e0b">
-                <Clock size={20} />
-              </StatIcon>
-              <StatLabel>Ожидают осмотра</StatLabel>
-              <StatValue>{waitingCount}</StatValue>
-            </StatCard>
-            
-            <StatCard $color="#ef4444">
-              <StatIcon $bg="#fef2f2" $color="#ef4444">
-                <AlertTriangle size={20} />
-              </StatIcon>
-              <StatLabel>Критических</StatLabel>
-              <StatValue>{criticalCount}</StatValue>
-            </StatCard>
+            <AnimatedWardStatCard
+              targetValue={inpatients.length}
+              color="#3b82f6"
+              bg="#eff6ff"
+              icon={<Users size={20} />}
+              label="Всего пациентов"
+            />
+
+            <AnimatedWardStatCard
+              targetValue={inspectedToday}
+              color="#10b981"
+              bg="#f0fdf4"
+              icon={<UserCheck size={20} />}
+              label="Осмотрено сегодня"
+            />
+
+            <AnimatedWardStatCard
+              targetValue={waitingCount}
+              color="#f59e0b"
+              bg="#fffbeb"
+              icon={<Clock size={20} />}
+              label="Ожидают осмотра"
+            />
+
+            <AnimatedWardStatCard
+              targetValue={criticalCount}
+              color="#ef4444"
+              bg="#fef2f2"
+              icon={<AlertTriangle size={20} />}
+              label="Критических"
+            />
           </StatsGrid>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '18px 24px', borderBottom: '1px solid rgba(238, 242, 247, 0.9)', background: '#fafbff' }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            padding: '18px 24px',
+            borderBottom: '1px solid rgba(238, 242, 247, 0.9)',
+            background: '#fafbff'
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <FilterLabel style={{ minHeight: 'auto', margin: 0 }}>
               <SlidersHorizontal size={13} />
@@ -255,20 +313,20 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
             <FilterLabel style={{ minHeight: 'auto', margin: 0 }}>Фильтры:</FilterLabel>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              <ActionButton 
-                $variant={filter === 'all' ? 'primary' : 'ghost'} 
+              <ActionButton
+                $variant={filter === 'all' ? 'primary' : 'ghost'}
                 onClick={() => setFilter('all')}
               >
                 Все пациенты
               </ActionButton>
-              <ActionButton 
-                $variant={filter === 'waiting' ? 'primary' : 'ghost'} 
+              <ActionButton
+                $variant={filter === 'waiting' ? 'primary' : 'ghost'}
                 onClick={() => setFilter('waiting')}
               >
                 <Circle size={14} /> Ждут осмотра
               </ActionButton>
-              <ActionButton 
-                $variant={filter === 'inspected' ? 'primary' : 'ghost'} 
+              <ActionButton
+                $variant={filter === 'inspected' ? 'primary' : 'ghost'}
                 onClick={() => setFilter('inspected')}
               >
                 <CheckCircle2 size={14} /> Осмотрены
@@ -278,14 +336,27 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
 
           {filter !== 'all' && (
             <div style={{ marginTop: 8 }}>
-              <ActionButton $variant="ghost" onClick={() => setFilter('all')} style={{ color: '#ef4444' }}>
+              <ActionButton
+                $variant="ghost"
+                onClick={() => setFilter('all')}
+                style={{ color: '#ef4444' }}
+              >
                 <X size={14} /> Сбросить фильтр
               </ActionButton>
             </div>
           )}
         </div>
 
-        <SearchTableWrap style={{ flex: 1, margin: 0, borderRadius: 0, border: 'none', borderTop: '1px solid rgba(191, 219, 254, 0.78)', boxShadow: 'none' }}>
+        <SearchTableWrap
+          style={{
+            flex: 1,
+            margin: 0,
+            borderRadius: 0,
+            border: 'none',
+            borderTop: '1px solid rgba(191, 219, 254, 0.78)',
+            boxShadow: 'none'
+          }}
+        >
           <SearchTableViewport>
             <SearchTable>
               <SearchThead>
@@ -310,22 +381,18 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                     </td>
                   </tr>
                 ) : (
-                  paginatedPatients.map(p => {
-                    const inspToday = getInspections(p.id).filter(i => i.date === todayISO)
+                  paginatedPatients.map((p) => {
+                    const inspToday = getInspections(p.id).filter((i) => i.date === todayISO)
                     const isInspected = inspToday.length > 0
                     const lastInsp = inspToday[inspToday.length - 1]
                     const rawDate = p.history?.[0]?.dateTime || p.lastUpdated
                     const admDate = rawDate ? formatLocalDate(rawDate) : '-'
 
                     return (
-                      <SearchTr
-                        key={p.id}
-                      >
+                      <SearchTr key={p.id}>
                         <SearchTdBold>
                           <PatientNameCell>
-                            <PatientAvatar>
-                              {getInitials(p.firstName, p.lastName)}
-                            </PatientAvatar>
+                            <PatientAvatar>{getInitials(p.firstName, p.lastName)}</PatientAvatar>
                             <div>
                               <div>
                                 {p.lastName} {p.firstName}
@@ -341,25 +408,40 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                                 {p.age} лет · {p.gender} · МК: {p.medcardNum}
                               </div>
                               {isInspected && lastInsp && (
-                                <div style={{ fontSize: 11, color: '#059669', marginTop: 4, fontWeight: 600 }}>
-                                  ✓ Осмотрен в {lastInsp.time} ({lastInsp.type === 'primary' ? 'первичный' : 'ежедневный'})
+                                <div
+                                  style={{
+                                    fontSize: 11,
+                                    color: '#059669',
+                                    marginTop: 4,
+                                    fontWeight: 600
+                                  }}
+                                >
+                                  ✓ Осмотрен в {lastInsp.time} (
+                                  {lastInsp.type === 'primary' ? 'первичный' : 'ежедневный'})
                                 </div>
                               )}
                             </div>
                           </PatientNameCell>
                         </SearchTdBold>
-                        
-                        <SearchTd style={{ fontSize: 12, lineHeight: 1.4, maxWidth: 200, whiteSpace: 'normal' }}>
+
+                        <SearchTd
+                          style={{
+                            fontSize: 12,
+                            lineHeight: 1.4,
+                            maxWidth: 200,
+                            whiteSpace: 'normal'
+                          }}
+                        >
                           {p.activeProblems?.[0] ?? '-'}
                         </SearchTd>
-                        
+
                         <SearchTd>
                           <div style={{ fontWeight: 600 }}>302 / 3</div>
                           <div style={{ color: '#94a3b8', fontSize: 12 }}>{p.department}</div>
                         </SearchTd>
-                        
+
                         <SearchTdMuted>{admDate}</SearchTdMuted>
-                        
+
                         <SearchTd>
                           {isInspected ? (
                             <StatusPill $status="hospitalized">
@@ -371,12 +453,15 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                             </StatusPill>
                           )}
                         </SearchTd>
-                        
+
                         <SearchTd style={{ textAlign: 'right' }}>
                           <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
                             <ActionButton
                               $variant="primary"
-                              onClick={(e) => { e.stopPropagation(); onStartPrimary(p.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onStartPrimary(p.id)
+                              }}
                               title="Первичный / повторный осмотр"
                               style={{ padding: '6px 12px', fontSize: 12 }}
                             >
@@ -384,9 +469,18 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                               <span className="hidden sm:inline">Первичный</span>
                             </ActionButton>
                             <ActionButton
-                              onClick={(e) => { e.stopPropagation(); onStartDaily(p.id); }}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onStartDaily(p.id)
+                              }}
                               title="Ежедневный обход"
-                              style={{ padding: '6px 12px', fontSize: 12, background: '#10b981', color: 'white', borderColor: '#059669' }}
+                              style={{
+                                padding: '6px 12px',
+                                fontSize: 12,
+                                background: '#10b981',
+                                color: 'white',
+                                borderColor: '#059669'
+                              }}
                             >
                               <Calendar size={14} />
                               <span className="hidden sm:inline">Ежедневный</span>

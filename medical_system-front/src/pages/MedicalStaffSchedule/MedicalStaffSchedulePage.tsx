@@ -99,6 +99,62 @@ import {
 } from './styled'
 import { fetchMonthSchedule, updateShift, ServerStaffScheduleDto, ServerShiftDto } from 'api/scheduleApi'
 
+function useCounter(target: number, duration = 1000) {
+  const [value, setValue] = useState(0)
+  const raf = useRef<number | null>(null)
+
+  const animate = (start: number, end: number, dur: number) => {
+    if (raf.current) cancelAnimationFrame(raf.current)
+    let startTs: number | null = null
+
+    const step = (ts: number) => {
+      if (!startTs) startTs = ts
+      const progress = Math.min((ts - startTs) / dur, 1)
+      setValue(Math.floor(progress * (end - start) + start))
+      if (progress < 1) raf.current = requestAnimationFrame(step)
+    }
+
+    raf.current = requestAnimationFrame(step)
+  }
+
+  useEffect(() => {
+    animate(0, target, duration)
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+    }
+  }, [target])
+
+  return { value, replay: () => animate(0, target, Math.round(duration * 0.8)) }
+}
+
+function AnimatedScheduleStatCard({
+  targetValue,
+  color,
+  bg,
+  icon,
+  label,
+  sub
+}: {
+  targetValue: number;
+  color: string;
+  bg: string;
+  icon: React.ReactNode;
+  label: string;
+  sub: string;
+}) {
+  const { value, replay } = useCounter(targetValue, 1000)
+  return (
+    <StatCard $color={color} onMouseEnter={replay}>
+      <StatIcon $bg={bg} $color={color}>
+        {icon}
+      </StatIcon>
+      <StatLabel>{label}</StatLabel>
+      <StatValue>{value}</StatValue>
+      <StatSub>{sub}</StatSub>
+    </StatCard>
+  )
+}
+
 export interface Shift {
   day: number
   type: 'day' | 'night' | 'day-off'
@@ -650,30 +706,38 @@ const MedicalStaffSchedulePage: React.FC<MedicalStaffSchedulePageProps> = ({
       </Header>
 
       <StatsGrid>
-        <StatCard $color="#3b82f6">
-          <StatIcon $bg="#eff6ff"><Users size={20} /></StatIcon>
-          <StatLabel>Сотрудников</StatLabel>
-          <StatValue>{filteredSchedule.length}</StatValue>
-          <StatSub>В выбранной выборке</StatSub>
-        </StatCard>
-        <StatCard $color="#10b981">
-          <StatIcon $bg="#ecfdf5"><CalendarDays size={20} /></StatIcon>
-          <StatLabel>Всего смен</StatLabel>
-          <StatValue>{stats.totalShifts}</StatValue>
-          <StatSub>За {monthNames[displayMonth].toLowerCase()}</StatSub>
-        </StatCard>
-        <StatCard $color="#8b5cf6">
-          <StatIcon $bg="#f5f3ff"><Moon size={20} /></StatIcon>
-          <StatLabel>Ночных дежурств</StatLabel>
-          <StatValue>{stats.totalNightShifts}</StatValue>
-          <StatSub>{Math.round((stats.totalNightShifts / Math.max(stats.totalShifts, 1)) * 100)}% от всех смен</StatSub>
-        </StatCard>
-        <StatCard $color="#f59e0b">
-          <StatIcon $bg="#fffbeb"><Clock size={20} /></StatIcon>
-          <StatLabel>Отработанных часов</StatLabel>
-          <StatValue>{stats.totalHours}</StatValue>
-          <StatSub>Суммарно по всем</StatSub>
-        </StatCard>
+        <AnimatedScheduleStatCard
+          targetValue={filteredSchedule.length}
+          color="#3b82f6"
+          bg="#eff6ff"
+          icon={<Users size={20} />}
+          label="Сотрудников"
+          sub="В выбранной выборке"
+        />
+        <AnimatedScheduleStatCard
+          targetValue={stats.totalShifts}
+          color="#10b981"
+          bg="#ecfdf5"
+          icon={<CalendarDays size={20} />}
+          label="Всего смен"
+          sub={`За ${monthNames[displayMonth].toLowerCase()}`}
+        />
+        <AnimatedScheduleStatCard
+          targetValue={stats.totalNightShifts}
+          color="#8b5cf6"
+          bg="#f5f3ff"
+          icon={<Moon size={20} />}
+          label="Ночных дежурств"
+          sub={`${Math.round((stats.totalNightShifts / Math.max(stats.totalShifts, 1)) * 100)}% от всех смен`}
+        />
+        <AnimatedScheduleStatCard
+          targetValue={stats.totalHours}
+          color="#f59e0b"
+          bg="#fffbeb"
+          icon={<Clock size={20} />}
+          label="Отработанных часов"
+          sub="Суммарно по всем"
+        />
       </StatsGrid>
 
       <Toolbar>

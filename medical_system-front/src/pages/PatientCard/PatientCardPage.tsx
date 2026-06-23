@@ -1,6 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { parseBackendDateTime, formatLocalDateTime, formatLocalTime, formatLocalDate, toBackendDateString, toBackendDateTimeString } from 'utils/dateUtils'
+import {
+  parseBackendDateTime,
+  formatLocalDateTime,
+  formatLocalTime,
+  formatLocalDate,
+  toBackendDateString,
+  toBackendDateTimeString
+} from 'utils/dateUtils'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { Helmet } from 'react-helmet'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
@@ -268,15 +275,37 @@ const buildChartData = (signs: any[]) => {
     const db = (parseBackendDateTime(b.recordedAt || b.date) || new Date(0)).getTime()
     return da - db
   })
-  
+
   return sorted.map((v) => {
-    const pulse = v.pulse !== undefined && v.pulse !== null ? Number(v.pulse) : (v.hr ? Number(v.hr) : undefined)
-    const temperature = v.temperature !== undefined && v.temperature !== null ? Number(v.temperature) : (v.temp ? Number(v.temp) : undefined)
-    const respiratoryRate = v.respiratoryRate !== undefined && v.respiratoryRate !== null ? Number(v.respiratoryRate) : (v.resp ? Number(v.resp) : undefined)
-    const spo2 = v.spO2 !== undefined && v.spO2 !== null ? Number(v.spO2) : (v.spo2 !== undefined && v.spo2 !== null ? Number(v.spo2) : undefined)
-    
-    let bps = v.bloodPressureSystolic !== undefined && v.bloodPressureSystolic !== null ? Number(v.bloodPressureSystolic) : undefined
-    let bpd = v.bloodPressureDiastolic !== undefined && v.bloodPressureDiastolic !== null ? Number(v.bloodPressureDiastolic) : undefined
+    const pulse =
+      v.pulse !== undefined && v.pulse !== null ? Number(v.pulse) : v.hr ? Number(v.hr) : undefined
+    const temperature =
+      v.temperature !== undefined && v.temperature !== null
+        ? Number(v.temperature)
+        : v.temp
+          ? Number(v.temp)
+          : undefined
+    const respiratoryRate =
+      v.respiratoryRate !== undefined && v.respiratoryRate !== null
+        ? Number(v.respiratoryRate)
+        : v.resp
+          ? Number(v.resp)
+          : undefined
+    const spo2 =
+      v.spO2 !== undefined && v.spO2 !== null
+        ? Number(v.spO2)
+        : v.spo2 !== undefined && v.spo2 !== null
+          ? Number(v.spo2)
+          : undefined
+
+    let bps =
+      v.bloodPressureSystolic !== undefined && v.bloodPressureSystolic !== null
+        ? Number(v.bloodPressureSystolic)
+        : undefined
+    let bpd =
+      v.bloodPressureDiastolic !== undefined && v.bloodPressureDiastolic !== null
+        ? Number(v.bloodPressureDiastolic)
+        : undefined
     if (v.bp && typeof v.bp === 'string') {
       const parts = v.bp.split('/')
       if (parts.length === 2) {
@@ -287,7 +316,7 @@ const buildChartData = (signs: any[]) => {
 
     const ps = getPulseSegments(pulse || 0)
     const bp = getBloodPressureSegments(bps || 0, bpd || 0)
-    
+
     return {
       ...v,
       temperature,
@@ -461,9 +490,9 @@ const MARITAL_STATUS_OPTIONS: SelectOption[] = [
   { value: 'Вдовец/Вдова', label: 'Вдовец/Вдова' }
 ]
 const SEVERITY_OPTIONS: SelectOption[] = [
-  { value: 'Лёгкая', label: 'Лёгкая' },
+  { value: 'Легкая', label: 'Легкая' },
   { value: 'Умеренная', label: 'Умеренная' },
-  { value: 'Тяжёлая', label: 'Тяжёлая' },
+  { value: 'Тяжелая', label: 'Тяжелая' },
   { value: 'Критическая', label: 'Критическая' }
 ]
 const VACCINE_OPTIONS: Array<{ label: string; disease: string; validity: string }> = [
@@ -475,7 +504,7 @@ const VACCINE_OPTIONS: Array<{ label: string; disease: string; validity: string 
   { label: 'АДС-М', disease: 'Дифтерия, столбняк', validity: '10 лет' },
   { label: 'ЖКВ', disease: 'Корь, краснуха, паротит', validity: 'Пожизненно' },
   { label: 'Полиорикс', disease: 'Полиомиелит', validity: '10 лет' },
-  { label: 'БЦЖ', disease: 'Туберкулёз', validity: '7-10 лет' },
+  { label: 'БЦЖ', disease: 'Туберкулез', validity: '7-10 лет' },
   { label: 'Другое', disease: '', validity: '' }
 ]
 const VACCINE_SELECT_OPTIONS: SelectOption[] = VACCINE_OPTIONS.map((v) => ({
@@ -1108,12 +1137,22 @@ const PatientCard: React.FC<PatientCardProps> = ({
 
         const { postVitalSign } = await import('../../api/vitalSignsApi')
         await postVitalSign(localPatient.id, {
-          temperature: formData.temp != null && formData.temp !== '' ? parseFloat(String(formData.temp).replace(',', '.')) : null,
+          temperature:
+            formData.temp != null && formData.temp !== ''
+              ? parseFloat(String(formData.temp).replace(',', '.'))
+              : null,
           bloodPressureSystolic: bps,
           bloodPressureDiastolic: bpd,
-          pulse: formData.hr != null && formData.hr !== '' ? parseInt(String(formData.hr), 10) : null,
-          spO2: formData.spo2 != null && formData.spo2 !== '' ? parseInt(String(formData.spo2), 10) : null,
-          respiratoryRate: formData.resp != null && formData.resp !== '' ? parseInt(String(formData.resp), 10) : null
+          pulse:
+            formData.hr != null && formData.hr !== '' ? parseInt(String(formData.hr), 10) : null,
+          spO2:
+            formData.spo2 != null && formData.spo2 !== ''
+              ? parseInt(String(formData.spo2), 10)
+              : null,
+          respiratoryRate:
+            formData.resp != null && formData.resp !== ''
+              ? parseInt(String(formData.resp), 10)
+              : null
         })
 
         toast.success('Показатели успешно внесены в историю')
@@ -1223,7 +1262,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const SELECT_FIELDS: Record<string, { options: SelectOption[]; placeholder: string }> = {
     form: { options: DRUG_FORMS, placeholder: 'Форма выпуска...' },
     route: { options: DRUG_ROUTES, placeholder: 'Путь введения...' },
-    regimen: { options: DRUG_REGIMENS, placeholder: 'Режим приёма...' },
+    regimen: { options: DRUG_REGIMENS, placeholder: 'Режим приема...' },
     dose: { options: DRUG_DOSES, placeholder: 'Дозировка...' },
     relation: { options: RELATION_OPTIONS, placeholder: 'Кем приходится...' },
     diseaseStatus: { options: DISEASE_STATUS_OPTIONS, placeholder: 'Статус заболевания...' },
@@ -1277,7 +1316,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
     dose: 'Дозировка',
     form: 'Форма выпуска',
     route: 'Путь введения',
-    regimen: 'Режим приёма',
+    regimen: 'Режим приема',
     doctor: 'Врач',
     comment: 'Комментарий',
     dateStart: 'Дата начала',
@@ -1366,12 +1405,6 @@ const PatientCard: React.FC<PatientCardProps> = ({
           type: 'select',
           options: ['Холост/Не замужем', 'Женат/Замужем', 'В разводе', 'Вдовец/Вдова']
         },
-        {
-          name: 'status',
-          label: 'Статус',
-          type: 'select',
-          options: ['hospitalized', 'outpatient', 'discharged']
-        }
       ]
     },
     EDIT_NESTED_passport: {
@@ -1415,7 +1448,14 @@ const PatientCard: React.FC<PatientCardProps> = ({
     EDIT_NESTED_vitals: {
       title: 'Внести показатели',
       fields: [
-        { name: 'temp', label: 'Температура (°C)', type: 'number', min: 35.0, max: 42.0, step: 0.1 },
+        {
+          name: 'temp',
+          label: 'Температура (°C)',
+          type: 'number',
+          min: 35.0,
+          max: 42.0,
+          step: 0.1
+        },
         { name: 'bp', label: 'АД (мм рт. ст.)', type: 'text' },
         { name: 'hr', label: 'ЧСС (уд/мин)', type: 'number', min: 40, max: 200, step: 1 },
         { name: 'resp', label: 'Частота дыхания', type: 'number', min: 10, max: 40, step: 1 },
@@ -1512,7 +1552,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         { name: 'name', label: 'Препарат' },
         { name: 'dose', label: 'Дозировка' },
         { name: 'form', label: 'Форма выпуска' },
-        { name: 'regimen', label: 'Режим приёма' }
+        { name: 'regimen', label: 'Режим приема' }
       ]
     },
     EDIT_LIST_currentMeds: {
@@ -1521,7 +1561,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         { name: 'name', label: 'Препарат' },
         { name: 'dose', label: 'Дозировка' },
         { name: 'form', label: 'Форма выпуска' },
-        { name: 'regimen', label: 'Режим приёма' }
+        { name: 'regimen', label: 'Режим приема' }
       ]
     },
     DELETE_LIST_currentMeds: { title: 'Удалить лекарство', text: 'Удалить эту запись?' },
@@ -1580,7 +1620,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         { name: 'dose', label: 'Дозировка' },
         { name: 'form', label: 'Форма выпуска' },
         { name: 'route', label: 'Путь введения' },
-        { name: 'regimen', label: 'Режим приёма' },
+        { name: 'regimen', label: 'Режим приема' },
         { name: 'dateStart', label: 'Дата начала', type: 'date' },
         { name: 'dateEnd', label: 'Дата окончания', type: 'date' },
         { name: 'doctor', label: 'Врач' },
@@ -1594,7 +1634,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         { name: 'dose', label: 'Дозировка' },
         { name: 'form', label: 'Форма выпуска' },
         { name: 'route', label: 'Путь введения' },
-        { name: 'regimen', label: 'Режим приёма' },
+        { name: 'regimen', label: 'Режим приема' },
         { name: 'dateStart', label: 'Дата начала', type: 'date' },
         { name: 'dateEnd', label: 'Дата окончания', type: 'date' },
         { name: 'doctor', label: 'Врач' },
@@ -1787,9 +1827,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
         <FormGroup key={f.name}>
           {labelNode}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ActionButton 
-              $variant="ghost" 
-              onClick={() => handleNumberChange(-1)} 
+            <ActionButton
+              $variant="ghost"
+              onClick={() => handleNumberChange(-1)}
               type="button"
               style={{ width: '40px', height: '40px', padding: 0 }}
             >
@@ -1800,8 +1840,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
               onChange={(e) => {
                 let raw = e.target.value
                 if (raw === '') {
-                   setFormData((p: any) => ({ ...p, [f.name]: '' }))
-                   return
+                  setFormData((p: any) => ({ ...p, [f.name]: '' }))
+                  return
                 }
                 let num = parseFloat(raw)
                 if (!isNaN(num)) {
@@ -1819,9 +1859,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
               placeholder={`${labelText}...`}
               style={{ flex: 1, textAlign: 'center' }}
             />
-            <ActionButton 
-              $variant="ghost" 
-              onClick={() => handleNumberChange(1)} 
+            <ActionButton
+              $variant="ghost"
+              onClick={() => handleNumberChange(1)}
               type="button"
               style={{ width: '40px', height: '40px', padding: 0 }}
             >
@@ -1864,9 +1904,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <span style={{ fontSize: '12px', color: '#64748b' }}>Систолическое</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ActionButton 
-                  $variant="ghost" 
-                  onClick={() => handleSysChange(-1)} 
+                <ActionButton
+                  $variant="ghost"
+                  onClick={() => handleSysChange(-1)}
                   type="button"
                   style={{ width: '40px', height: '40px', padding: 0 }}
                 >
@@ -1883,9 +1923,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                   placeholder="120"
                   style={{ flex: 1, textAlign: 'center' }}
                 />
-                <ActionButton 
-                  $variant="ghost" 
-                  onClick={() => handleSysChange(1)} 
+                <ActionButton
+                  $variant="ghost"
+                  onClick={() => handleSysChange(1)}
                   type="button"
                   style={{ width: '40px', height: '40px', padding: 0 }}
                 >
@@ -1897,9 +1937,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <span style={{ fontSize: '12px', color: '#64748b' }}>Диастолическое</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ActionButton 
-                  $variant="ghost" 
-                  onClick={() => handleDiaChange(-1)} 
+                <ActionButton
+                  $variant="ghost"
+                  onClick={() => handleDiaChange(-1)}
                   type="button"
                   style={{ width: '40px', height: '40px', padding: 0 }}
                 >
@@ -1916,9 +1956,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                   placeholder="80"
                   style={{ flex: 1, textAlign: 'center' }}
                 />
-                <ActionButton 
-                  $variant="ghost" 
-                  onClick={() => handleDiaChange(1)} 
+                <ActionButton
+                  $variant="ghost"
+                  onClick={() => handleDiaChange(1)}
                   type="button"
                   style={{ width: '40px', height: '40px', padding: 0 }}
                 >
@@ -2062,21 +2102,32 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 {Object.entries(modalConfig.data || {})
                   .filter(([k, v]) => {
                     const lowerKey = k.toLowerCase()
-                    return lowerKey !== 'id' &&
-                           lowerKey !== 'filepath' &&
-                           lowerKey !== 'url' &&
-                           lowerKey !== 'patientid' &&
-                           lowerKey !== 'index' &&
-                           lowerKey !== 'formdata' &&
-                           v !== null &&
-                           v !== undefined
+                    return (
+                      lowerKey !== 'id' &&
+                      lowerKey !== 'filepath' &&
+                      lowerKey !== 'url' &&
+                      lowerKey !== 'patientid' &&
+                      lowerKey !== 'index' &&
+                      lowerKey !== 'formdata' &&
+                      v !== null &&
+                      v !== undefined
+                    )
                   })
                   .map(([k, v]) => {
                     let displayValue = String(v)
                     const lowerKey = k.toLowerCase()
-                    if (lowerKey === 'date' || lowerKey === 'datetime' || lowerKey.includes('date') || lowerKey.includes('time')) {
+                    if (
+                      lowerKey === 'date' ||
+                      lowerKey === 'datetime' ||
+                      lowerKey.includes('date') ||
+                      lowerKey.includes('time')
+                    ) {
                       const strVal = String(v)
-                      if (strVal.includes('T') && !strVal.endsWith('T00:00:00') && !strVal.endsWith('T00:00:00.000')) {
+                      if (
+                        strVal.includes('T') &&
+                        !strVal.endsWith('T00:00:00') &&
+                        !strVal.endsWith('T00:00:00.000')
+                      ) {
                         displayValue = formatDateHumanWithTime(strVal)
                       } else {
                         displayValue = formatDateHuman(strVal)
@@ -2131,7 +2182,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 >
                   <Upload size={32} style={{ color: '#94a3b8', marginBottom: 8 }} />
                   <div style={{ fontWeight: 600, color: '#374151' }}>
-                    {docUploading ? 'Загрузка файла в хранилище...' : (docFile ? docFile.name : 'Перетащите PDF сюда или нажмите для выбора')}
+                    {docUploading
+                      ? 'Загрузка файла в хранилище...'
+                      : docFile
+                        ? docFile.name
+                        : 'Перетащите PDF сюда или нажмите для выбора'}
                   </div>
                   <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
                     Только PDF файлы
@@ -2163,7 +2218,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
               Закрыть
             </ActionButton>
             {!isView && !isPatientPreview && (
-              <ActionButton $variant={isDelete ? 'danger' : 'primary'} onClick={handleSave} disabled={docUploading}>
+              <ActionButton
+                $variant={isDelete ? 'danger' : 'primary'}
+                onClick={handleSave}
+                disabled={docUploading}
+              >
                 {isDelete ? 'Удалить' : 'Сохранить'}
               </ActionButton>
             )}
@@ -2200,9 +2259,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const getStatusColor = (statusText?: string) => {
     if (!statusText) return { bg: '#f1f5f9', text: '#475569' }
     const text = statusText.toLowerCase()
-    if (text.includes('зелен') || text.includes('зелён') || text.includes('норма'))
+    if (text.includes('зелен') || text.includes('зелен') || text.includes('норма'))
       return { bg: '#dcfce7', text: '#166534' }
-    if (text.includes('желт') || text.includes('жёлт') || text.includes('вниман'))
+    if (text.includes('желт') || text.includes('желт') || text.includes('вниман'))
       return { bg: '#fef08a', text: '#854d0e' }
     if (text.includes('красн') || text.includes('критич')) return { bg: '#fee2e2', text: '#991b1b' }
     return { bg: '#f1f5f9', text: '#475569' }
@@ -2404,7 +2463,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Дата выдачи</span>
-                  <span className="value">{formatDateHuman(localPatient.passport?.dateIssued) || 'Не указано'}</span>
+                  <span className="value">
+                    {formatDateHuman(localPatient.passport?.dateIssued) || 'Не указано'}
+                  </span>
                 </InfoItem>
               </HeaderInfoGrid>
             </SectionCard>
@@ -2478,7 +2539,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Дата смерти</span>
-                  <span className="value">{formatDateHuman(localPatient.other?.dateOfDeath) || '—'}</span>
+                  <span className="value">
+                    {formatDateHuman(localPatient.other?.dateOfDeath) || '—'}
+                  </span>
                 </InfoItem>
                 <InfoItem>
                   <span className="label">Причина смерти</span>
@@ -2696,7 +2759,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                             <td>
                               <strong>{typeof op === 'string' ? op : op.name}</strong>
                             </td>
-                            <td>{typeof op === 'object' ? formatDateHuman(op.date) || '—' : '—'}</td>
+                            <td>
+                              {typeof op === 'object' ? formatDateHuman(op.date) || '—' : '—'}
+                            </td>
                             <td>{typeof op === 'object' ? op.diagnosis || '—' : '—'}</td>
                             <td>{typeof op === 'object' ? op.result || '—' : '—'}</td>
                             <td>{typeof op === 'object' ? op.complications || 'Нет' : '—'}</td>
@@ -2761,7 +2826,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           </td>
                           <td>{typeof prob === 'object' ? prob.diseaseStatus || '—' : '—'}</td>
                           <td>{typeof prob === 'object' ? prob.severity || '—' : '—'}</td>
-                          <td>{typeof prob === 'object' ? formatDateHuman(prob.diagnosisDate) || '—' : '—'}</td>
+                          <td>
+                            {typeof prob === 'object'
+                              ? formatDateHuman(prob.diagnosisDate) || '—'
+                              : '—'}
+                          </td>
                           <td>{typeof prob === 'object' ? prob.complications || 'Нет' : '—'}</td>
                           <td>
                             <ActionButton
@@ -2935,13 +3004,19 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           title="Скачать PDF"
                           onClick={() => {
                             if (lab.pdfDocumentPath) {
-                              downloadFileFromServer(`Результат анализа - ${lab.type}.pdf`, lab.pdfDocumentPath)
+                              downloadFileFromServer(
+                                `Результат анализа - ${lab.type}.pdf`,
+                                lab.pdfDocumentPath
+                              )
                             } else {
                               toast.warning('PDF-документ исследования еще не сформирован')
                             }
                           }}
                           disabled={!lab.pdfDocumentPath}
-                          style={{ opacity: lab.pdfDocumentPath ? 1 : 0.5, cursor: lab.pdfDocumentPath ? 'pointer' : 'not-allowed' }}
+                          style={{
+                            opacity: lab.pdfDocumentPath ? 1 : 0.5,
+                            cursor: lab.pdfDocumentPath ? 'pointer' : 'not-allowed'
+                          }}
                         >
                           <Download size={14} />
                         </ActionButton>
@@ -3201,7 +3276,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           }}
                         />
 
-                        <Tooltip isAnimationActive={false} formatter={(value, name, entry) => {
+                        <Tooltip
+                          isAnimationActive={false}
+                          formatter={(value, name, entry) => {
                             const row = entry.payload as any
                             const dataKey = entry.dataKey as string
 
@@ -3214,17 +3291,26 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                 text
                               )
 
-                            const tempHigh = row.temperature != null && row.temperature > NORMAL_RANGES.temperature.max
-                            const tempLow = row.temperature != null && row.temperature < NORMAL_RANGES.temperature.min
+                            const tempHigh =
+                              row.temperature != null &&
+                              row.temperature > NORMAL_RANGES.temperature.max
+                            const tempLow =
+                              row.temperature != null &&
+                              row.temperature < NORMAL_RANGES.temperature.min
                             const tempAlert = tempHigh
                               ? '⚠ ↑ выше нормы'
                               : tempLow
                                 ? '⚠ ↓ ниже нормы'
                                 : ''
-                            const tempValue = row.temperature != null ? `${Number(row.temperature).toFixed(1)} °C` : '—'
+                            const tempValue =
+                              row.temperature != null
+                                ? `${Number(row.temperature).toFixed(1)} °C`
+                                : '—'
 
-                            const pulseHigh = row.pulse != null && row.pulse > NORMAL_RANGES.pulse.max
-                            const pulseLow = row.pulse != null && row.pulse < NORMAL_RANGES.pulse.min
+                            const pulseHigh =
+                              row.pulse != null && row.pulse > NORMAL_RANGES.pulse.max
+                            const pulseLow =
+                              row.pulse != null && row.pulse < NORMAL_RANGES.pulse.min
                             const pulseAlert = pulseHigh
                               ? '↑ выше нормы'
                               : pulseLow
@@ -3233,13 +3319,17 @@ const PatientCard: React.FC<PatientCardProps> = ({
                             const pulseValue = row.pulse != null ? `${row.pulse} уд/мин` : '—'
 
                             const bpsHigh =
-                              row.bloodPressureSystolic != null && row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
+                              row.bloodPressureSystolic != null &&
+                              row.bloodPressureSystolic > NORMAL_RANGES.bloodPressureSystolic.max
                             const bpsLow =
-                              row.bloodPressureSystolic != null && row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
+                              row.bloodPressureSystolic != null &&
+                              row.bloodPressureSystolic < NORMAL_RANGES.bloodPressureSystolic.min
                             const bpdHigh =
-                              row.bloodPressureDiastolic != null && row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
+                              row.bloodPressureDiastolic != null &&
+                              row.bloodPressureDiastolic > NORMAL_RANGES.bloodPressureDiastolic.max
                             const bpdLow =
-                              row.bloodPressureDiastolic != null && row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
+                              row.bloodPressureDiastolic != null &&
+                              row.bloodPressureDiastolic < NORMAL_RANGES.bloodPressureDiastolic.min
 
                             const bpAlerts: string[] = []
                             if (bpsHigh) bpAlerts.push('↑ сист.')
@@ -3248,7 +3338,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                             if (bpdLow) bpAlerts.push('↓ диаст.')
                             const bpAlertText =
                               bpAlerts.length > 0 ? `⚠ ${bpAlerts.join(', ')}` : ''
-                            const bpValue = row.bloodPressureSystolic != null && row.bloodPressureDiastolic != null
+                            const bpValue =
+                              row.bloodPressureSystolic != null &&
+                              row.bloodPressureDiastolic != null
                                 ? `${row.bloodPressureSystolic}/${row.bloodPressureDiastolic} мм рт. ст.`
                                 : '—'
 
@@ -3570,7 +3662,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
                         <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
                         <XAxis dataKey="name" />
 
-                        <Tooltip isAnimationActive={false} formatter={(value, name, entry) => {
+                        <Tooltip
+                          isAnimationActive={false}
+                          formatter={(value, name, entry) => {
                             const row = entry.payload as any
                             const dataKey = entry.dataKey as string
 
@@ -3590,18 +3684,22 @@ const PatientCard: React.FC<PatientCardProps> = ({
                               : spo2Low
                                 ? '⚠ ↓ ниже нормы'
                                 : ''
-                            const spo2Value = row.spo2 != null ? `${Number(row.spo2).toFixed(1)} %` : '—'
+                            const spo2Value =
+                              row.spo2 != null ? `${Number(row.spo2).toFixed(1)} %` : '—'
 
                             const respiratoryRateHigh =
-                              row.respiratoryRate != null && row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
+                              row.respiratoryRate != null &&
+                              row.respiratoryRate > NORMAL_RANGES.respiratoryRate.max
                             const respiratoryRateLow =
-                              row.respiratoryRate != null && row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
+                              row.respiratoryRate != null &&
+                              row.respiratoryRate < NORMAL_RANGES.respiratoryRate.min
                             const respiratoryRateAlert = respiratoryRateHigh
                               ? '⚠ ↑ выше нормы'
                               : respiratoryRateLow
                                 ? '⚠ ↓ ниже нормы'
                                 : ''
-                            const respiratoryRateValue = row.respiratoryRate != null ? `${row.respiratoryRate} дых/мин` : '—'
+                            const respiratoryRateValue =
+                              row.respiratoryRate != null ? `${row.respiratoryRate} дых/мин` : '—'
 
                             if (dataKey === 'spo2') {
                               return [formatAlert(spo2Value, spo2Alert), 'SpO₂ (%)']
@@ -3786,7 +3884,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
           'Первичный осмотр': { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
           'Ежедневный обход': { color: '#0ea5e9', bg: '#e0f2fe', icon: <Stethoscope size={18} /> },
           'Ежедневный осмотр': { color: '#0ea5e9', bg: '#e0f2fe', icon: <Stethoscope size={18} /> },
-          'Primary Inspection': { color: '#2563eb', bg: '#dbeafe', icon: <Stethoscope size={18} /> },
+          'Primary Inspection': {
+            color: '#2563eb',
+            bg: '#dbeafe',
+            icon: <Stethoscope size={18} />
+          },
           'Daily Round': { color: '#0ea5e9', bg: '#e0f2fe', icon: <Stethoscope size={18} /> },
           Консультация: { color: '#7c3aed', bg: '#ede9fe', icon: <User size={18} /> },
           Процедура: { color: '#059669', bg: '#d1fae5', icon: <Syringe size={18} /> },
@@ -3815,8 +3917,18 @@ const PatientCard: React.FC<PatientCardProps> = ({
             </h3>
 
             {history.length === 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 10, justifyContent: 'center', padding: '48px 0', color: '#94a3b8' }}>
-                <Clock size={20} style={{opacity: 0.4 }} />
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  justifyContent: 'center',
+                  padding: '48px 0',
+                  color: '#94a3b8'
+                }}
+              >
+                <Clock size={20} style={{ opacity: 0.4 }} />
                 <p style={{ margin: 0 }}>История обращений пуста</p>
               </div>
             ) : (
@@ -3947,7 +4059,10 @@ const PatientCard: React.FC<PatientCardProps> = ({
                                 </div>
                                 <div style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>
                                   <User size={12} style={{ display: 'inline', marginRight: 4 }} />
-                                  {h.doctorName || extractDoctorFromFormData(h.formData) || h.doctor || 'Врач не указан'}
+                                  {h.doctorName ||
+                                    extractDoctorFromFormData(h.formData) ||
+                                    h.doctor ||
+                                    'Врач не указан'}
                                 </div>
                               </div>
                               <div
@@ -4139,9 +4254,13 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           onClick={() => {
                             const docWithUrl = {
                               ...d,
-                              url: d.url || (d.filePath ? `${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(d.filePath)}` : '')
-                            };
-                            openModal('VIEW_DOCUMENT', docWithUrl);
+                              url:
+                                d.url ||
+                                (d.filePath
+                                  ? `${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(d.filePath)}`
+                                  : '')
+                            }
+                            openModal('VIEW_DOCUMENT', docWithUrl)
                           }}
                         >
                           <Eye size={14} />
@@ -4150,11 +4269,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
                           $variant="ghost"
                           onClick={() => {
                             if (d.filePath) {
-                              downloadFileFromServer(d.name, d.filePath);
+                              downloadFileFromServer(d.name, d.filePath)
                             } else if (d.url) {
-                              window.open(d.url, '_blank');
+                              window.open(d.url, '_blank')
                             } else {
-                              alert('Файл недоступен для скачивания');
+                              alert('Файл недоступен для скачивания')
                             }
                           }}
                         >
@@ -4218,9 +4337,56 @@ const PatientCard: React.FC<PatientCardProps> = ({
               </InfoItem>
               <InfoItem>
                 <span className="label">Статус</span>
-                <StatusBadge $status={localPatient.status as any}>
-                  {localPatient.statusText}
-                </StatusBadge>
+                <Select
+                  options={STATUS_OPTIONS}
+                  styles={{
+                    ...selectStyles,
+                    control: (base: any, state: any) => ({
+                      ...base,
+                      minHeight: '30px',
+                      height: '30px',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: 'none',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      background: state.isFocused ? '#ffffff' : '#f8fafc',
+                      color: '#0f172a',
+                      minWidth: '140px'
+                    }),
+                    singleValue: (base: any) => ({
+                      ...base,
+                      color: '#0f172a'
+                    })
+                  }}
+                  components={selectComponents}
+                  value={
+                    STATUS_OPTIONS.find((o) => o.value === localPatient.status) ||
+                    STATUS_OPTIONS.find((o) => o.label === localPatient.statusText) || {
+                      value: localPatient.status,
+                      label: localPatient.statusText
+                    }
+                  }
+                  onChange={async (opt: any) => {
+                    const newStatusValue = opt?.value || 'hospitalized'
+                    const foundOption = STATUS_OPTIONS.find((o) => o.value === newStatusValue)
+                    const newStatusText = foundOption ? foundOption.label : newStatusValue
+
+                    const updatedData = {
+                      ...localPatient,
+                      status: newStatusValue,
+                      statusText: newStatusText
+                    }
+                    setLocalPatient(updatedData as any)
+                    try {
+                      const { updatePatientCard } = await import('../../api/patientsApi')
+                      await updatePatientCard(localPatient.id, updatedData as any)
+                    } catch (e) {
+                      console.error(e)
+                    }
+                  }}
+                />
               </InfoItem>
             </HeaderInfoGrid>
 
@@ -4453,8 +4619,10 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
     }
 
     try {
+      const foundStatus = STATUS_OPTIONS.find((o) => o.value === addFormData.status)
       const payload = {
         ...addFormData,
+        statusText: foundStatus ? foundStatus.label : 'Госпитализован',
         contacts: { country: 'Приднестровская Молдавская Республика' },
         other: { language: 'Русский', nationality: 'Русский' }
       }
@@ -4717,6 +4885,21 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
                     />
                   </FormGroup>
                   <FormGroup>
+                    <Label>Статус</Label>
+                    <Select
+                      options={STATUS_OPTIONS}
+                      styles={selectStyles}
+                      components={selectComponents}
+                      value={
+                        STATUS_OPTIONS.find((o) => o.value === addFormData.status) ||
+                        STATUS_OPTIONS.find((o) => o.value === 'hospitalized')
+                      }
+                      onChange={(opt: any) =>
+                        setAddFormData((p) => ({ ...p, status: opt?.value || 'hospitalized' }))
+                      }
+                    />
+                  </FormGroup>
+                  <FormGroup>
                     <Label>Номер медкарты (необязательно)</Label>
                     <Input
                       value={addFormData.medcardNum}
@@ -4756,4 +4939,3 @@ const PatientCardPageWrapper: React.FC<PatientCardPageProps> = ({
 
 export { PatientSearchPanel, PatientCard }
 export default PatientCardPageWrapper
-

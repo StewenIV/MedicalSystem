@@ -48,7 +48,12 @@ import {
   deleteAccount
 } from 'api/patientCabinetApi'
 import { downloadFileFromServer } from 'api/filesApi'
-import { formatLocalDate, formatLocalDateTime, formatLocalTime, toBackendDateString } from 'utils/dateUtils'
+import {
+  formatLocalDate,
+  formatLocalDateTime,
+  formatLocalTime,
+  toBackendDateString
+} from 'utils/dateUtils'
 import { getPhoneFormat } from 'utils/phoneFormat'
 import {
   generalSchema,
@@ -278,6 +283,68 @@ interface PatientCabinetPageProps {
   onSectionChange?: (section: string) => void
 }
 
+function useCounter(target: number, duration = 1000) {
+  const [value, setValue] = useState(0)
+  const raf = useRef<number | null>(null)
+
+  const animate = (start: number, end: number, dur: number) => {
+    if (raf.current) cancelAnimationFrame(raf.current)
+    let startTs: number | null = null
+
+    const step = (ts: number) => {
+      if (!startTs) startTs = ts
+      const progress = Math.min((ts - startTs) / dur, 1)
+      setValue(Math.floor(progress * (end - start) + start))
+      if (progress < 1) raf.current = requestAnimationFrame(step)
+    }
+
+    raf.current = requestAnimationFrame(step)
+  }
+
+  useEffect(() => {
+    animate(0, target, duration)
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+    }
+  }, [target])
+
+  return { value, replay: () => animate(0, target, Math.round(duration * 0.8)) }
+}
+
+function AnimatedPatientStatCard({
+  targetValue,
+  color,
+  bg,
+  icon,
+  label,
+  sub,
+  onClick,
+  style
+}: {
+  targetValue: number
+  color: string
+  bg: string
+  icon: React.ReactNode
+  label: string
+  sub: string
+  onClick?: () => void
+  style?: React.CSSProperties
+}) {
+  const { value, replay } = useCounter(targetValue, 1000)
+  return (
+    <StatCard $color={color} $bg={bg} onMouseEnter={replay} onClick={onClick} style={style}>
+      <StatHeader>
+        <StatLabel>{label}</StatLabel>
+        <StatIcon $bg={bg} $color={color}>
+          {icon}
+        </StatIcon>
+      </StatHeader>
+      <StatValue>{value}</StatValue>
+      <StatSub>{sub}</StatSub>
+    </StatCard>
+  )
+}
+
 function LoadingSpinner() {
   return (
     <div
@@ -401,7 +468,9 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [trustedName, setTrustedName] = useState('')
   const [trustedPhone, setTrustedPhone] = useState('')
   const [trustedRelation, setTrustedRelation] = useState('')
-  const [otherRelatives, setOtherRelatives] = useState<{id: string; name: string; relation: string; phone: string}[]>([])
+  const [otherRelatives, setOtherRelatives] = useState<
+    { id: string; name: string; relation: string; phone: string }[]
+  >([])
   const [profilePic, setProfilePic] = useState<string | null>(null)
 
   const [profileErrors, setProfileErrors] = useState<Record<string, string>>({})
@@ -668,7 +737,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         }
       }
 
-      toast.success('Профиль успешно обновлён')
+      toast.success('Профиль успешно обновлен')
 
       if (userId) {
         const data = await fetchPatientProfile()
@@ -698,7 +767,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
     setLoading(true)
     try {
       await changePatientPassword({ oldPassword, newPassword, confirmPassword })
-      toast.success('Пароль успешно изменён')
+      toast.success('Пароль успешно изменен')
       setIsPasswordModalOpen(false)
       setOldPassword('')
       setNewPassword('')
@@ -844,10 +913,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           <span>
             Медкарта: <strong>{patientData?.medcardNum || '—'}</strong>
           </span>
-          <span>
-            Последний вход:{' '}
-            {formatLocalTime(new Date())}
-          </span>
+          <span>Последний вход: {formatLocalTime(new Date())}</span>
         </WelcomeMeta>
       </Header>
 
@@ -876,43 +942,34 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           </WelcomeBanner>
 
           <StatsGrid>
-            <StatCard $color="#2563EB" $bg="#EFF6FF">
-              <StatHeader>
-                <StatLabel>Готовых анализов</StatLabel>
-                <StatIcon $bg="#EFF6FF" $color="#2563EB">
-                  <Activity size={17} />
-                </StatIcon>
-              </StatHeader>
-              <StatValue>{examsList.filter((e) => e.status === 'ready').length}</StatValue>
-              <StatSub>Из {examsList.length} исследований</StatSub>
-            </StatCard>
+            <AnimatedPatientStatCard
+              targetValue={examsList.filter((e) => e.status === 'ready').length}
+              color="#2563EB"
+              bg="#EFF6FF"
+              icon={<Activity size={17} />}
+              label="Готовых анализов"
+              sub={`Из ${examsList.length} исследований`}
+            />
 
-            <StatCard $color="#059669" $bg="#ECFDF5">
-              <StatHeader>
-                <StatLabel>Документов</StatLabel>
-                <StatIcon $bg="#ECFDF5" $color="#059669">
-                  <FileText size={17} />
-                </StatIcon>
-              </StatHeader>
-              <StatValue>{docsList.length}</StatValue>
-              <StatSub>Выписки, справки, заключения</StatSub>
-            </StatCard>
+            <AnimatedPatientStatCard
+              targetValue={docsList.length}
+              color="#059669"
+              bg="#ECFDF5"
+              icon={<FileText size={17} />}
+              label="Документов"
+              sub="Выписки, справки, заключения"
+            />
 
-            <StatCard
-              $color="#D97706"
-              $bg="#FFFBEB"
-              style={{ cursor: 'pointer' }}
+            <AnimatedPatientStatCard
+              targetValue={unreadCount}
+              color="#D97706"
+              bg="#FFFBEB"
+              icon={<Bell size={17} />}
+              label="Непрочитанных"
+              sub="Нажмите, чтобы просмотреть"
               onClick={() => onSectionChange('patient-notifications')}
-            >
-              <StatHeader>
-                <StatLabel>Непрочитанных</StatLabel>
-                <StatIcon $bg="#FFFBEB" $color="#D97706">
-                  <Bell size={17} />
-                </StatIcon>
-              </StatHeader>
-              <StatValue>{unreadCount}</StatValue>
-              <StatSub>Нажмите, чтобы просмотреть</StatSub>
-            </StatCard>
+              style={{ cursor: 'pointer' }}
+            />
 
             <StatCard $color="#7C3AED" $bg="#F5F3FF">
               <StatHeader>
@@ -1383,7 +1440,14 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             </SecondaryButton>
 
             <SecondaryButton
-              style={{ width: '100%', justifyContent: 'center', marginTop: '10px', color: '#ef4444', borderColor: '#fee2e2', backgroundColor: '#fef2f2' }}
+              style={{
+                width: '100%',
+                justifyContent: 'center',
+                marginTop: '10px',
+                color: '#ef4444',
+                borderColor: '#fee2e2',
+                backgroundColor: '#fef2f2'
+              }}
               onClick={() => setIsDeleteModalOpen(true)}
             >
               <User size={14} style={{ marginRight: 7 }} />
@@ -1690,16 +1754,50 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 </FieldsGrid>
 
                 {otherRelatives.length > 0 && (
-                  <div style={{ marginTop: 12, padding: 16, backgroundColor: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 12 }}>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 16,
+                      backgroundColor: '#f8fafc',
+                      borderRadius: 8,
+                      border: '1px solid #e2e8f0'
+                    }}
+                  >
+                    <div
+                      style={{ fontSize: 13, fontWeight: 600, color: '#475569', marginBottom: 12 }}
+                    >
                       Дополнительные доверенные лица (добавлены врачом):
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {otherRelatives.map(rel => (
-                        <div key={rel.id} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, fontSize: 14, color: '#1e293b' }}>
-                          <div><span style={{color: '#64748b', fontSize: 12, display: 'block'}}>ФИО</span>{rel.name}</div>
-                          <div><span style={{color: '#64748b', fontSize: 12, display: 'block'}}>Степень родства</span>{rel.relation}</div>
-                          <div><span style={{color: '#64748b', fontSize: 12, display: 'block'}}>Телефон</span>{rel.phone}</div>
+                      {otherRelatives.map((rel) => (
+                        <div
+                          key={rel.id}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr 1fr',
+                            gap: 16,
+                            fontSize: 14,
+                            color: '#1e293b'
+                          }}
+                        >
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>
+                              ФИО
+                            </span>
+                            {rel.name}
+                          </div>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>
+                              Степень родства
+                            </span>
+                            {rel.relation}
+                          </div>
+                          <div>
+                            <span style={{ color: '#64748b', fontSize: 12, display: 'block' }}>
+                              Телефон
+                            </span>
+                            {rel.phone}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -2024,7 +2122,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                     <FieldLabel>Новый пароль</FieldLabel>
                     <PasswordInputField
                       type="password"
-                      placeholder="Придумайте надёжный пароль"
+                      placeholder="Придумайте надежный пароль"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                     />
@@ -2072,8 +2170,8 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             </ModalHeader>
             <div style={{ padding: '24px 24px 0 24px' }}>
               <p style={{ margin: 0, fontSize: 14, color: '#334155', lineHeight: 1.5 }}>
-                Вы уверены, что хотите полностью удалить свой аккаунт? Это действие необратимо.
-                Все ваши данные будут стерты.
+                Вы уверены, что хотите полностью удалить свой аккаунт? Это действие необратимо. Все
+                ваши данные будут стерты.
               </p>
             </div>
             <ModalFooter style={{ marginTop: 24 }}>

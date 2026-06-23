@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   SlidersHorizontal,
@@ -422,6 +422,44 @@ const getPatientPrimaryPhone = (patient: SearchPatientDto) =>
 
 const getPatientRecordNumber = (patient: SearchPatientDto) =>
   patient.numberCard || patient.medicalRecordNumber
+
+function useCounter(target: number, duration = 1000) {
+  const [value, setValue] = useState(0)
+  const raf = useRef<number | null>(null)
+
+  const animate = (start: number, end: number, dur: number) => {
+    if (raf.current) cancelAnimationFrame(raf.current)
+    let startTs: number | null = null
+
+    const step = (ts: number) => {
+      if (!startTs) startTs = ts
+      const progress = Math.min((ts - startTs) / dur, 1)
+      setValue(Math.floor(progress * (end - start) + start))
+      if (progress < 1) raf.current = requestAnimationFrame(step)
+    }
+
+    raf.current = requestAnimationFrame(step)
+  }
+
+  useEffect(() => {
+    animate(0, target, duration)
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current)
+    }
+  }, [target])
+
+  return { value, replay: () => animate(0, target, Math.round(duration * 0.8)) }
+}
+
+function AnimatedStatBadge({ label, targetValue }: { label: string; targetValue: number }) {
+  const { value, replay } = useCounter(targetValue, 1000)
+  return (
+    <StatBadge onMouseEnter={replay}>
+      <StatBadgeLabel>{label}</StatBadgeLabel>
+      <StatBadgeValue>{value}</StatBadgeValue>
+    </StatBadge>
+  )
+}
 
 export function WardAdmin() {
   const [rooms, setRooms] = useState<Room[]>([])
@@ -1028,14 +1066,8 @@ export function WardAdmin() {
 
         <CardContent>
           <StatsBadgesRow>
-            <StatBadge>
-              <StatBadgeLabel>Всего палат</StatBadgeLabel>
-              <StatBadgeValue>{rooms.length}</StatBadgeValue>
-            </StatBadge>
-            <StatBadge>
-              <StatBadgeLabel>Всего коек</StatBadgeLabel>
-              <StatBadgeValue>{totalBeds}</StatBadgeValue>
-            </StatBadge>
+            <AnimatedStatBadge label="Всего палат" targetValue={rooms.length} />
+            <AnimatedStatBadge label="Всего коек" targetValue={totalBeds} />
           </StatsBadgesRow>
         </CardContent>
       </StyledCard>

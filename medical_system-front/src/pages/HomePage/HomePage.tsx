@@ -82,7 +82,12 @@ import StaffAdminPage from 'pages/StaffAdminPage/StaffAdminPage'
 import { default as PatientCard } from 'pages/PatientCard'
 import MedicalStaffSchedulePage from 'pages/MedicalStaffSchedule'
 import MedicinesPage from 'pages/MedicinesPage'
-import { WardRoundPage, WardRoundsHub, PrimaryInspectionPage } from 'pages/WardRound'
+import {
+  WardRoundPage,
+  WardRoundsHub,
+  PrimaryInspectionPage,
+  WardRoundPatientContainer
+} from 'pages/WardRound'
 import { PatientDataProvider, usePatientData } from 'context/PatientDataContext'
 import LaboratoryPage from 'pages/LaboratoryPage'
 import PatientCabinetPage from 'pages/PatientCabinetPage'
@@ -276,79 +281,81 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
         <meta name="description" content="Панель врача" />
       </Helmet>
 
-        <HomePageContainer>
-          <SidebarProvider
-            style={
-              {
-                '--sidebar-width': '20rem',
-                '--sidebar-width-mobile': '20rem'
-              } as React.CSSProperties
-            }
-          >
-            <AppSidebar
-              activeSection={activeSection}
-              onSectionChange={(s) => {
-                if (s === 'ward-round') {
-                  openWardRoundHub()
-                } else {
-                  setActiveSection(s)
-                }
-              }}
-            />
+      <HomePageContainer>
+        <SidebarProvider
+          style={
+            {
+              '--sidebar-width': '20rem',
+              '--sidebar-width-mobile': '20rem'
+            } as React.CSSProperties
+          }
+        >
+          <AppSidebar
+            activeSection={activeSection}
+            onSectionChange={(s) => {
+              if (s === 'ward-round') {
+                openWardRoundHub()
+              } else {
+                setActiveSection(s)
+              }
+            }}
+          />
 
-            <SidebarInset className="overflow-x-hidden min-w-0">
-              <Header>
-                <HeaderInner>
-                  <Flex style={{ alignItems: 'center' }}>
-                    <SidebarTrigger className="rounded-lg" />
-                    {reduxRole === 'Patient' && (
-                      <PatientInfoWrapper>
-                        <PatientInfoItem>
-                          <PatientInfoDot $color="#3b82f6" />
-                          <PatientInfoLabel>Лечащий врач:</PatientInfoLabel>{' '}
-                          <span>{patientProfile?.doctorName || 'Загрузка...'}</span>
-                        </PatientInfoItem>
-                        <PatientInfoItem>
-                          <PatientInfoDot $color="#8b5cf6" />
-                          <PatientInfoLabel>Палата:</PatientInfoLabel>{' '}
-                          <span>
-                            {patientProfile
-                              ? patientProfile.roomNumber
-                                ? `${patientProfile.roomNumber} (Койка ${patientProfile.bedNumber || 1})`
-                                : 'Не назначена'
-                              : 'Загрузка...'}
-                          </span>
-                        </PatientInfoItem>
-                      </PatientInfoWrapper>
-                    )}
-                  </Flex>
+          <SidebarInset className="overflow-x-hidden min-w-0">
+            <Header>
+              <HeaderInner>
+                <Flex style={{ alignItems: 'center' }}>
+                  <SidebarTrigger className="rounded-lg" />
+                  {reduxRole === 'Patient' && (
+                    <PatientInfoWrapper>
+                      <PatientInfoItem>
+                        <PatientInfoDot $color="#3b82f6" />
+                        <PatientInfoLabel>Лечащий врач:</PatientInfoLabel>{' '}
+                        <span>{patientProfile?.doctorName || 'Загрузка...'}</span>
+                      </PatientInfoItem>
+                      <PatientInfoItem>
+                        <PatientInfoDot $color="#8b5cf6" />
+                        <PatientInfoLabel>Палата:</PatientInfoLabel>{' '}
+                        <span>
+                          {patientProfile
+                            ? patientProfile.roomNumber
+                              ? `${patientProfile.roomNumber} (Койка ${patientProfile.bedNumber || 1})`
+                              : 'Не назначена'
+                            : 'Загрузка...'}
+                        </span>
+                      </PatientInfoItem>
+                    </PatientInfoWrapper>
+                  )}
+                </Flex>
 
-                  {reduxRole !== 'Patient' && reduxRole !== 'LaboratoryEmployee' && (
-                    <>
-                      <SearchWrapper $open={searchOpen} ref={searchWrapperRef}>
-                        <Input
-                          type="search"
-                          placeholder="Поиск по ФИО, № медкарты или № истории болезни"
-                          icon={<Search size={16} />}
-                          value={headerSearchQuery}
-                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                            setHeaderSearchQuery(e.target.value)
-                            setShowDropdown(true)
-                          }}
-                          onFocus={() => setShowDropdown(true)}
-                          onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
-                            if (e.key === 'Enter') handleHeaderSearch()
-                          }}
-                        />
-                        {showDropdown && headerSearchQuery && filteredPatients.length > 0 && (
-                          <SearchDropdown>
-                            {filteredPatients.map((p) => (
-                              <SearchDropdownItem
-                                key={p.id}
-                                onClick={() => handleDropdownPatientClick(p.id)}
-                              >
-                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                  <div style={{
+                {reduxRole !== 'Patient' && reduxRole !== 'LaboratoryEmployee' && (
+                  <>
+                    <SearchWrapper $open={searchOpen} ref={searchWrapperRef}>
+                      <Input
+                        type="search"
+                        placeholder="Поиск по ФИО, № медкарты или № истории болезни"
+                        icon={<Search size={16} />}
+                        value={headerSearchQuery}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                          setHeaderSearchQuery(e.target.value)
+                          setShowDropdown(true)
+                        }}
+                        onFocus={() => setShowDropdown(true)}
+                        onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                          if (e.key === 'Enter') handleHeaderSearch()
+                        }}
+                        style={{ borderRadius: '14px' }}
+                      />
+                      {showDropdown && headerSearchQuery && filteredPatients.length > 0 && (
+                        <SearchDropdown>
+                          {filteredPatients.map((p) => (
+                            <SearchDropdownItem
+                              key={p.id}
+                              onClick={() => handleDropdownPatientClick(p.id)}
+                            >
+                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                <div
+                                  style={{
                                     width: '36px',
                                     height: '36px',
                                     borderRadius: '50%',
@@ -360,373 +367,367 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                                     fontWeight: 600,
                                     fontSize: '13px',
                                     flexShrink: 0
-                                  }}>
-                                    {getInitials(p.firstName, p.lastName)}
-                                  </div>
-                                  <div>
-                                    <SearchDropdownItemName>
-                                      {p.lastName} {p.firstName} {p.middleName}
-                                    </SearchDropdownItemName>
-                                    <SearchDropdownItemInfo>
-                                      {p.age} {pluralize(p.age, ['год', 'года', 'лет'])}, {(p.gender as any) === 'Male' || (p.gender as any) === '0' || (p.gender as any) === 0 || (p.gender as any) === 'Мужской' ? 'М' : 'Ж'} 
-                                      {' • '} Карта: {p.medcardNum || '—'} 
-                                      {' • '} Врач: {p.doctor || '—'}
-                                      {' • '} Палата: {(p as any).roomNumber || '—'}
-                                    </SearchDropdownItemInfo>
-                                  </div>
+                                  }}
+                                >
+                                  {getInitials(p.firstName, p.lastName)}
                                 </div>
-                                <SearchDropdownItemBadge>
-                                  {p.statusText || 'Пациент'}
-                                </SearchDropdownItemBadge>
-                              </SearchDropdownItem>
-                            ))}
-                          </SearchDropdown>
-                        )}
-                      </SearchWrapper>
+                                <div>
+                                  <SearchDropdownItemName>
+                                    {p.lastName} {p.firstName} {p.middleName}
+                                  </SearchDropdownItemName>
+                                  <SearchDropdownItemInfo>
+                                    {p.age} {pluralize(p.age, ['год', 'года', 'лет'])},{' '}
+                                    {(p.gender as any) === 'Male' ||
+                                    (p.gender as any) === '0' ||
+                                    (p.gender as any) === 0 ||
+                                    (p.gender as any) === 'Мужской'
+                                      ? 'М'
+                                      : 'Ж'}
+                                    {' • '} Карта: {p.medcardNum || '—'}
+                                    {' • '} Врач: {p.doctor || '—'}
+                                    {' • '} Палата: {(p as any).roomNumber || '—'}
+                                  </SearchDropdownItemInfo>
+                                </div>
+                              </div>
+                              <SearchDropdownItemBadge>
+                                {p.statusText || 'Пациент'}
+                              </SearchDropdownItemBadge>
+                            </SearchDropdownItem>
+                          ))}
+                        </SearchDropdown>
+                      )}
+                    </SearchWrapper>
 
-                      <SearchIconButton
+                    <SearchIconButton
+                      onClick={() => {
+                        if (searchOpen && headerSearchQuery.trim()) {
+                          handleHeaderSearch()
+                        } else {
+                          setSearchOpen((prev) => !prev)
+                        }
+                      }}
+                    >
+                      <Search size={18} />
+                    </SearchIconButton>
+                  </>
+                )}
+
+                <FlexRight>
+                  <DateLabel>
+                    <Clock size={15} />
+                    <span>{formatDate()}</span>
+                  </DateLabel>
+
+                  {reduxRole !== 'Patient' && (
+                    <IconButton onClick={() => setNotificationsOpen(true)}>
+                      <Bell size={20} />
+                      {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
+                    </IconButton>
+                  )}
+
+                  <Separator />
+
+                  <AccountInfo>
+                    <AccountText>
+                      <AccountName>{displayName || 'Пользователь'}</AccountName>
+                      <AccountRole>
+                        {reduxRole === 'Doctor'
+                          ? 'Врач'
+                          : reduxRole === 'Nurse'
+                            ? 'Медицинская сестра'
+                            : reduxRole === 'HeadNurse'
+                              ? 'Старшая медицинская сестра'
+                              : reduxRole === 'ChiefDoctor'
+                                ? 'Главный врач'
+                                : reduxRole === 'LaboratoryEmployee'
+                                  ? 'Лаборатория'
+                                  : reduxRole === 'Patient'
+                                    ? 'Пациент'
+                                    : 'Сотрудник'}
+                      </AccountRole>
+                    </AccountText>
+                    <AccountAvatar>
+                      {(displayName || 'П')
+                        .split(' ')
+                        .slice(0, 2)
+                        .map((w) => w[0])
+                        .join('')
+                        .toUpperCase()}
+                    </AccountAvatar>
+                  </AccountInfo>
+
+                  <IconButton onClick={onLogout}>
+                    <LogOut size={20} />
+                  </IconButton>
+                </FlexRight>
+              </HeaderInner>
+            </Header>
+
+            <Main>
+              {activeSection === 'dashboard' && (
+                <>
+                  <SectionTitle style={{ marginTop: 24 }}>Добрый день!</SectionTitle>
+
+                  <Grid>
+                    <Card>
+                      <CardHeader>Сегодняшние приемы</CardHeader>
+                      <CardBody>
+                        {mockTodayAppointments.map((a) => (
+                          <AppointmentRow
+                            key={a.id}
+                            $clickable={a.status !== 'Свободно'}
+                            onClick={() => {
+                              if (a.status !== 'Свободно') openPatientCard(a.patientId)
+                            }}
+                          >
+                            <div>
+                              <strong>{a.time}</strong>
+                              {' — '}
+                              {a.patientName || 'Свободно'}
+                            </div>
+                            <Flex style={{ gap: 12 }}>
+                              <StatusBadge status={a.status}>{a.status}</StatusBadge>
+                              {a.status !== 'Свободно' && <ChevronRight size={16} />}
+                            </Flex>
+                          </AppointmentRow>
+                        ))}
+                      </CardBody>
+                    </Card>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                      <Card>
+                        <CardHeader>Календарь</CardHeader>
+                        <CardBody>19 20 21 22 23 24 25</CardBody>
+                      </Card>
+                    </div>
+                  </Grid>
+                </>
+              )}
+
+              {activeSection === 'temperature-sheet' && (
+                <TemperaturePage
+                  onNavigate={onNavigate}
+                  onLogout={onLogout}
+                  userRole={userRole}
+                  patientId={selectedPatientId}
+                />
+              )}
+
+              {activeSection === 'HospitalWorkplace' && (
+                <HospitalWorkplace
+                  onNavigate={onNavigate}
+                  onLogout={onLogout}
+                  userRole={userRole}
+                />
+              )}
+
+              {activeSection === 'beds-admin' && <WardAdmin />}
+
+              {activeSection === 'staff-admin' && <StaffAdminPage />}
+
+              {(activeSection === 'patients' || activeSection === 'patient-card') && (
+                <PatientCard
+                  patientId={selectedPatientId}
+                  initialSearchQuery={searchQuery}
+                  initialTab={selectedPatientInitialTab}
+                  onSelectPatient={(id) => {
+                    setSelectedPatientId(id || undefined)
+                    setSelectedPatientInitialTab(undefined)
+                  }}
+                  onNavigateToTemperatureSheet={(id: string) => {
+                    setActiveSection('temperature-sheet')
+                    setSelectedPatientId(id || undefined)
+                  }}
+                  onNavigateToWardRound={(id) => openWardRound(id || undefined)}
+                  onNavigateToDischarge={(id) => {
+                    setActiveSection('discharge')
+                    setSelectedPatientId(id)
+                  }}
+                />
+              )}
+
+              {activeSection === 'ward-round' && (
+                <>
+                  {wardRoundType === 'hub' && (
+                    <WardRoundsHub
+                      onStartPrimary={openPrimary}
+                      onStartDaily={openDaily}
+                      onOpenPatient={(id) => {
+                        setSelectedPatientId(id)
+                        setActiveSection('patients')
+                      }}
+                    />
+                  )}
+                  {wardRoundType !== 'hub' && wardRoundPatientId && (
+                    <WardRoundPatientContainer
+                      patientId={wardRoundPatientId}
+                      initialType={wardRoundType}
+                      onClose={openWardRoundHub}
+                      onNavigateToTemperatureSheet={(id: string) => {
+                        setActiveSection('temperature-sheet')
+                        setSelectedPatientId(id)
+                      }}
+                    />
+                  )}
+                </>
+              )}
+
+              {activeSection === 'medical-staff-schedule' && (
+                <MedicalStaffSchedulePage
+                  onNavigate={onNavigate}
+                  onLogout={onLogout}
+                  userRole={userRole}
+                />
+              )}
+
+              {activeSection === 'medicines' && <MedicinesPage />}
+
+              {activeSection === 'discharge' && (
+                <DischargePage
+                  patientId={selectedPatientId}
+                  onClose={() => {
+                    setActiveSection('patients')
+                    setSelectedPatientId(undefined)
+                  }}
+                />
+              )}
+
+              {activeSection === 'schedule' && (
+                <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>
+              )}
+              {activeSection === 'documents' && (
+                <SectionTitle style={{ marginTop: 24 }}>Документы</SectionTitle>
+              )}
+              {activeSection === 'reports' && (
+                <SectionTitle style={{ marginTop: 24 }}>Отчеты</SectionTitle>
+              )}
+              {activeSection === 'settings' && (
+                <SectionTitle style={{ marginTop: 24 }}>Управление</SectionTitle>
+              )}
+              {(activeSection === 'patient-dashboard' ||
+                activeSection === 'patient-exams' ||
+                activeSection === 'patient-docs' ||
+                activeSection === 'patient-notifications' ||
+                activeSection === 'patient-profile') && (
+                <PatientCabinetPage
+                  activeSection={activeSection}
+                  onSectionChange={setActiveSection}
+                />
+              )}
+              {activeSection === 'laboratory' && (
+                <LaboratoryPage
+                  initialLabResultId={selectedLabResultId}
+                  onClearInitialId={() => setSelectedLabResultId(undefined)}
+                />
+              )}
+            </Main>
+          </SidebarInset>
+
+          {isNotificationsOpen && (
+            <>
+              <Backdrop onClick={() => setNotificationsOpen(false)} />
+              <NotificationPanel>
+                <CardHeader>
+                  <FlexBetween style={{ width: '100%' }}>
+                    <div>
+                      Уведомления
+                      {unreadCount > 0 && (
+                        <span style={{ marginLeft: 8, color: '#94a3b8', fontSize: 13 }}>
+                          ({unreadCount} новых)
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={() => patientNotifCtx.markAllRead()}
+                          style={{
+                            background: 'none',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: 8,
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            cursor: 'pointer',
+                            color: '#475569'
+                          }}
+                        >
+                          Прочитать все
+                        </button>
+                      )}
+                      <IconButton onClick={() => setNotificationsOpen(false)}>
+                        <X size={17} />
+                      </IconButton>
+                    </div>
+                  </FlexBetween>
+                </CardHeader>
+
+                <CardBody style={{ maxHeight: 'calc(80vh - 80px)', overflowY: 'auto' }}>
+                  {patientNotifCtx.loading ? (
+                    <EmptyNotifications>
+                      <p>Загрузка...</p>
+                    </EmptyNotifications>
+                  ) : patientNotifCtx.notifications.length === 0 ? (
+                    <EmptyNotifications>
+                      <Bell size={44} />
+                      <p>Нет уведомлений</p>
+                    </EmptyNotifications>
+                  ) : (
+                    patientNotifCtx.notifications.map((n) => (
+                      <NotificationItem
+                        key={n.id}
+                        read={n.read}
                         onClick={() => {
-                          if (searchOpen && headerSearchQuery.trim()) {
-                            handleHeaderSearch()
+                          if (reduxRole === 'Patient') {
+                            handlePatientNotifClick(n.id)
                           } else {
-                            setSearchOpen((prev) => !prev)
+                            handleNotifClick(n)
                           }
                         }}
                       >
-                        <Search size={18} />
-                      </SearchIconButton>
-                    </>
-                  )}
-
-                  <FlexRight>
-                    <DateLabel>
-                      <Clock size={15} />
-                      <span>{formatDate()}</span>
-                    </DateLabel>
-
-                    {reduxRole !== 'Patient' && (
-                      <IconButton onClick={() => setNotificationsOpen(true)}>
-                        <Bell size={20} />
-                        {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
-                      </IconButton>
-                    )}
-
-                    <Separator />
-
-                    <AccountInfo>
-                      <AccountText>
-                        <AccountName>{displayName || 'Пользователь'}</AccountName>
-                        <AccountRole>
-                          {reduxRole === 'Doctor'
-                            ? 'Врач'
-                            : reduxRole === 'Nurse'
-                              ? 'Медицинская сестра'
-                              : reduxRole === 'HeadNurse'
-                                ? 'Старшая медицинская сестра'
-                                : reduxRole === 'ChiefDoctor'
-                                  ? 'Главный врач'
-                                  : reduxRole === 'LaboratoryEmployee'
-                                    ? 'Лаборатория'
-                                    : reduxRole === 'Patient'
-                                      ? 'Пациент'
-                                      : 'Сотрудник'}
-                        </AccountRole>
-                      </AccountText>
-                      <AccountAvatar>
-                        {(displayName || 'П')
-                          .split(' ')
-                          .slice(0, 2)
-                          .map((w) => w[0])
-                          .join('')
-                          .toUpperCase()}
-                      </AccountAvatar>
-                    </AccountInfo>
-
-                    <IconButton onClick={onLogout}>
-                      <LogOut size={20} />
-                    </IconButton>
-                  </FlexRight>
-                </HeaderInner>
-              </Header>
-
-              <Main>
-                {activeSection === 'dashboard' && (
-                  <>
-                    <SectionTitle style={{ marginTop: 24 }}>Добрый день!</SectionTitle>
-
-                    <Grid>
-                      <Card>
-                        <CardHeader>Сегодняшние приёмы</CardHeader>
-                        <CardBody>
-                          {mockTodayAppointments.map((a) => (
-                            <AppointmentRow
-                              key={a.id}
-                              $clickable={a.status !== 'Свободно'}
-                              onClick={() => {
-                                if (a.status !== 'Свободно') openPatientCard(a.patientId)
-                              }}
-                            >
-                              <div>
-                                <strong>{a.time}</strong>
-                                {' — '}
-                                {a.patientName || 'Свободно'}
-                              </div>
-                              <Flex style={{ gap: 12 }}>
-                                <StatusBadge status={a.status}>{a.status}</StatusBadge>
-                                {a.status !== 'Свободно' && <ChevronRight size={16} />}
-                              </Flex>
-                            </AppointmentRow>
-                          ))}
-                        </CardBody>
-                      </Card>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                        <Card>
-                          <CardHeader>Календарь</CardHeader>
-                          <CardBody>19 20 21 22 23 24 25</CardBody>
-                        </Card>
-                      </div>
-                    </Grid>
-                  </>
-                )}
-
-                {activeSection === 'temperature-sheet' && (
-                  <TemperaturePage
-                    onNavigate={onNavigate}
-                    onLogout={onLogout}
-                    userRole={userRole}
-                    patientId={selectedPatientId}
-                  />
-                )}
-
-                {activeSection === 'HospitalWorkplace' && (
-                  <HospitalWorkplace
-                    onNavigate={onNavigate}
-                    onLogout={onLogout}
-                    userRole={userRole}
-                  />
-                )}
-
-                {activeSection === 'beds-admin' && <WardAdmin />}
-
-                {activeSection === 'staff-admin' && <StaffAdminPage />}
-
-                {(activeSection === 'patients' || activeSection === 'patient-card') && (
-                  <PatientCard
-                    patientId={selectedPatientId}
-                    initialSearchQuery={searchQuery}
-                    initialTab={selectedPatientInitialTab}
-                    onSelectPatient={(id) => {
-                      setSelectedPatientId(id || undefined)
-                      setSelectedPatientInitialTab(undefined)
-                    }}
-                    onNavigateToTemperatureSheet={(id: string) => {
-                      setActiveSection('temperature-sheet')
-                      setSelectedPatientId(id || undefined)
-                    }}
-                    onNavigateToWardRound={(id) => openWardRound(id || undefined)}
-                    onNavigateToDischarge={(id) => {
-                      setActiveSection('discharge')
-                      setSelectedPatientId(id)
-                    }}
-                  />
-                )}
-
-                {activeSection === 'ward-round' && (
-                  <>
-                    {wardRoundType === 'hub' && (
-                      <WardRoundsHub
-                        onStartPrimary={openPrimary}
-                        onStartDaily={openDaily}
-                        onOpenPatient={(id) => {
-                          setSelectedPatientId(id)
-                          setActiveSection('patients')
-                        }}
-                      />
-                    )}
-                    {wardRoundType === 'primary' && wardRoundPatientId && (
-                      <PrimaryInspectionPage
-                        patientId={wardRoundPatientId}
-                        onClose={openWardRoundHub}
-                        onNavigateToTemperatureSheet={(id: string) => {
-                          setActiveSection('temperature-sheet')
-                          setSelectedPatientId(id)
-                        }}
-                      />
-                    )}
-                    {wardRoundType === 'daily' && wardRoundPatientId && (
-                      <WardRoundPage
-                        patientId={wardRoundPatientId}
-                        onClose={openWardRoundHub}
-                        onNavigateToTemperatureSheet={(id: string) => {
-                          setActiveSection('temperature-sheet')
-                          setSelectedPatientId(id)
-                        }}
-                      />
-                    )}
-                  </>
-                )}
-
-                {activeSection === 'medical-staff-schedule' && (
-                  <MedicalStaffSchedulePage
-                    onNavigate={onNavigate}
-                    onLogout={onLogout}
-                    userRole={userRole}
-                  />
-                )}
-
-                {activeSection === 'medicines' && <MedicinesPage />}
-
-                {activeSection === 'discharge' && (
-                  <DischargePage
-                    patientId={selectedPatientId}
-                    onClose={() => {
-                      setActiveSection('patients')
-                      setSelectedPatientId(undefined)
-                    }}
-                  />
-                )}
-
-                {activeSection === 'schedule' && (
-                  <SectionTitle style={{ marginTop: 24 }}>Расписание</SectionTitle>
-                )}
-                {activeSection === 'documents' && (
-                  <SectionTitle style={{ marginTop: 24 }}>Документы</SectionTitle>
-                )}
-                {activeSection === 'reports' && (
-                  <SectionTitle style={{ marginTop: 24 }}>Отчёты</SectionTitle>
-                )}
-                {activeSection === 'settings' && (
-                  <SectionTitle style={{ marginTop: 24 }}>Управление</SectionTitle>
-                )}
-                {(activeSection === 'patient-dashboard' ||
-                  activeSection === 'patient-exams' ||
-                  activeSection === 'patient-docs' ||
-                  activeSection === 'patient-notifications' ||
-                  activeSection === 'patient-profile') && (
-                  <PatientCabinetPage
-                    activeSection={activeSection}
-                    onSectionChange={setActiveSection}
-                  />
-                )}
-                {activeSection === 'laboratory' && (
-                  <LaboratoryPage
-                    initialLabResultId={selectedLabResultId}
-                    onClearInitialId={() => setSelectedLabResultId(undefined)}
-                  />
-                )}
-              </Main>
-            </SidebarInset>
-
-            {isNotificationsOpen && (
-              <>
-                <Backdrop onClick={() => setNotificationsOpen(false)} />
-                <NotificationPanel>
-                  <CardHeader>
-                    <FlexBetween style={{ width: '100%' }}>
-                      <div>
-                        Уведомления
-                        {unreadCount > 0 && (
-                          <span style={{ marginLeft: 8, color: '#94a3b8', fontSize: 13 }}>
-                            ({unreadCount} новых)
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {unreadCount > 0 && (
-                          <button
-                            onClick={() => patientNotifCtx.markAllRead()}
-                            style={{
-                              background: 'none',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: 8,
-                              padding: '4px 10px',
-                              fontSize: 12,
-                              cursor: 'pointer',
-                              color: '#475569'
-                            }}
-                          >
-                            Прочитать все
-                          </button>
-                        )}
-                        <IconButton onClick={() => setNotificationsOpen(false)}>
-                          <X size={17} />
-                        </IconButton>
-                      </div>
-                    </FlexBetween>
-                  </CardHeader>
-
-                  <CardBody style={{ maxHeight: 'calc(80vh - 80px)', overflowY: 'auto' }}>
-                    {patientNotifCtx.loading ? (
-                      <EmptyNotifications>
-                        <p>Загрузка...</p>
-                      </EmptyNotifications>
-                    ) : patientNotifCtx.notifications.length === 0 ? (
-                      <EmptyNotifications>
-                        <Bell size={44} />
-                        <p>Нет уведомлений</p>
-                      </EmptyNotifications>
-                    ) : (
-                      patientNotifCtx.notifications.map((n) => (
-                        <NotificationItem
-                          key={n.id}
-                          read={n.read}
-                          onClick={() => {
-                            if (reduxRole === 'Patient') {
-                              handlePatientNotifClick(n.id)
-                            } else {
-                              handleNotifClick(n)
+                        <NotificationContent>
+                          <NotificationIconWrapper
+                            severity={
+                              n.severity === 'critical'
+                                ? 'critical'
+                                : n.severity === 'warning'
+                                  ? 'warning'
+                                  : 'info'
                             }
-                          }}
-                        >
-                          <NotificationContent>
-                            <NotificationIconWrapper
-                              severity={
-                                n.severity === 'critical'
-                                  ? 'critical'
-                                  : n.severity === 'warning'
-                                    ? 'warning'
-                                    : 'info'
-                              }
-                            >
-                              {n.type === 'medical' ? (
-                                <AlertCircle size={18} />
-                              ) : (
-                                <Clock size={18} />
-                              )}
-                            </NotificationIconWrapper>
-                            <NotificationBody>
-                              <NotificationHeader>
-                                <div style={{ flex: 1 }}>
-                                  {n.severity && n.severity !== 'info' && (
-                                    <SeverityBadge severity={n.severity as 'critical' | 'warning'}>
-                                      {n.severity === 'critical' ? 'Критично' : 'Внимание'}
-                                    </SeverityBadge>
-                                  )}
-                                  <NotificationTitle>{n.title}</NotificationTitle>
-                                </div>
-                                <NotificationTime>
-                                  {formatLocalDateTime(n.time, {
-                                    day: '2-digit',
-                                    month: 'short',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </NotificationTime>
-                              </NotificationHeader>
-                              {n.text && <NotificationDetails>{n.text}</NotificationDetails>}
-                            </NotificationBody>
-                          </NotificationContent>
-                        </NotificationItem>
-                      ))
-                    )}
-                  </CardBody>
-                </NotificationPanel>
-              </>
-            )}
-          </SidebarProvider>
-        </HomePageContainer>
-      </>
+                          >
+                            {n.type === 'medical' ? <AlertCircle size={18} /> : <Clock size={18} />}
+                          </NotificationIconWrapper>
+                          <NotificationBody>
+                            <NotificationHeader>
+                              <div style={{ flex: 1 }}>
+                                {n.severity && n.severity !== 'info' && (
+                                  <SeverityBadge severity={n.severity as 'critical' | 'warning'}>
+                                    {n.severity === 'critical' ? 'Критично' : 'Внимание'}
+                                  </SeverityBadge>
+                                )}
+                                <NotificationTitle>{n.title}</NotificationTitle>
+                              </div>
+                              <NotificationTime>
+                                {formatLocalDateTime(n.time, {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </NotificationTime>
+                            </NotificationHeader>
+                            {n.text && <NotificationDetails>{n.text}</NotificationDetails>}
+                          </NotificationBody>
+                        </NotificationContent>
+                      </NotificationItem>
+                    ))
+                  )}
+                </CardBody>
+              </NotificationPanel>
+            </>
+          )}
+        </SidebarProvider>
+      </HomePageContainer>
+    </>
   )
 }
 

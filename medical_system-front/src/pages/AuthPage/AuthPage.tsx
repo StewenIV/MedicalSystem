@@ -38,9 +38,7 @@ const AuthPage: React.FC = () => {
   const dispatch = useAppDispatch()
   const [searchParams] = useSearchParams()
   const roleFromUrl = searchParams.get('role') as 'staff' | 'patient' | null
-  const [selectedRole, setSelectedRole] = useState<'staff' | 'patient'>(
-    roleFromUrl || 'staff'
-  )
+  const [selectedRole, setSelectedRole] = useState<'staff' | 'patient'>(roleFromUrl || 'staff')
 
   useEffect(() => {
     if (roleFromUrl && (roleFromUrl === 'staff' || roleFromUrl === 'patient')) {
@@ -53,10 +51,13 @@ const AuthPage: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-
   const [googleClient, setGoogleClient] = useState<any>(null)
   const [googleToken, setGoogleToken] = useState<string | null>(null)
-  const [newGoogleUser, setNewGoogleUser] = useState<{ email: string; firstName: string; lastName: string } | null>(null)
+  const [newGoogleUser, setNewGoogleUser] = useState<{
+    email: string
+    firstName: string
+    lastName: string
+  } | null>(null)
   const [googleRegData, setGoogleRegData] = useState({
     gender: 'Male',
     dateOfBirth: '',
@@ -68,13 +69,14 @@ const AuthPage: React.FC = () => {
   const [googleErrors, setGoogleErrors] = useState<Record<string, string>>({})
 
   useEffect(() => {
-    authApi.getGoogleConfig()
-      .then(config => {
+    authApi
+      .getGoogleConfig()
+      .then((config) => {
         if (config.clientId) {
           loadGoogleScript(config.clientId)
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Error fetching Google config:', err)
       })
   }, [])
@@ -126,7 +128,7 @@ const AuthPage: React.FC = () => {
           firstName: response.firstName,
           lastName: response.lastName
         })
-        setGoogleRegData(prev => ({
+        setGoogleRegData((prev) => ({
           ...prev,
           firstName: response.firstName || '',
           lastName: response.lastName || '',
@@ -140,13 +142,16 @@ const AuthPage: React.FC = () => {
           throw new Error('Не удалось декодировать токен авторизации.')
         }
 
-        dispatch(setUserInfo({
-          userId: decodedToken.sub ?? '',
-          userLogin: decodedToken.login ?? '',  
-          displayName: decodedToken.displayName ?? null,
-          role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? decodedToken.role) as UserRole,
-          patientId: decodedToken.patientId ?? null
-        }))
+        dispatch(
+          setUserInfo({
+            userId: decodedToken.sub ?? '',
+            userLogin: decodedToken.login ?? '',
+            displayName: decodedToken.displayName ?? null,
+            role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+              decodedToken.role) as UserRole,
+            patientId: decodedToken.patientId ?? null
+          })
+        )
         navigate(paths.home)
         toast.success(`Добро пожаловать, ${decodedToken.displayName ?? decodedToken.login}!`)
       }
@@ -170,9 +175,9 @@ const AuthPage: React.FC = () => {
     if (!googleToken) return
 
     const errs: Record<string, string> = {}
-    
-    const singleWordRegex = /^[А-Яа-яЁё]+(-[А-Яа-яЁё]+)?$/i
-    
+
+    const singleWordRegex = /^[А-Яа-яее]+(-[А-Яа-яее]+)?$/i
+
     if (!googleRegData.lastName.trim()) {
       errs.lastName = 'Укажите фамилию'
     } else if (!singleWordRegex.test(googleRegData.lastName.trim())) {
@@ -221,15 +226,20 @@ const AuthPage: React.FC = () => {
         throw new Error('Не удалось декодировать токен авторизации.')
       }
 
-      dispatch(setUserInfo({
-        userId: decodedToken.sub ?? '',
-        userLogin: decodedToken.login ?? '',  
-        displayName: decodedToken.displayName ?? null,
-        role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? decodedToken.role) as UserRole,
-        patientId: decodedToken.patientId ?? null
-      }))
+      dispatch(
+        setUserInfo({
+          userId: decodedToken.sub ?? '',
+          userLogin: decodedToken.login ?? '',
+          displayName: decodedToken.displayName ?? null,
+          role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+            decodedToken.role) as UserRole,
+          patientId: decodedToken.patientId ?? null
+        })
+      )
       navigate(paths.home)
-      toast.success(`Регистрация завершена! Добро пожаловать, ${decodedToken.displayName ?? decodedToken.login}!`)
+      toast.success(
+        `Регистрация завершена! Добро пожаловать, ${decodedToken.displayName ?? decodedToken.login}!`
+      )
     } catch (err: any) {
       toast.error(err.message || 'Ошибка регистрации через Google.')
     } finally {
@@ -255,13 +265,16 @@ const AuthPage: React.FC = () => {
         throw new Error('Не удалось декодировать токен авторизации.')
       }
 
-      dispatch(setUserInfo({
-        userId: decodedToken.sub ?? '',
-        userLogin: decodedToken.login ?? '',  
-        displayName: decodedToken.displayName ?? null,
-        role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? decodedToken.role) as UserRole,
-        patientId: decodedToken.patientId ?? null
-      }))
+      dispatch(
+        setUserInfo({
+          userId: decodedToken.sub ?? '',
+          userLogin: decodedToken.login ?? '',
+          displayName: decodedToken.displayName ?? null,
+          role: (decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ??
+            decodedToken.role) as UserRole,
+          patientId: decodedToken.patientId ?? null
+        })
+      )
       navigate(paths.home)
       toast.success(`Добро пожаловать, ${decodedToken.displayName ?? decodedToken.login}!`)
     } catch (err: any) {
@@ -281,7 +294,12 @@ const AuthPage: React.FC = () => {
       <PageWrapper>
         {newGoogleUser ? (
           <Card>
-            <BackButton onClick={() => { setNewGoogleUser(null); setGoogleToken(null); }}>
+            <BackButton
+              onClick={() => {
+                setNewGoogleUser(null)
+                setGoogleToken(null)
+              }}
+            >
               Назад{' '}
             </BackButton>
 
@@ -296,12 +314,7 @@ const AuthPage: React.FC = () => {
             <Form onSubmit={handleGoogleRegisterSubmit}>
               <InputGroup>
                 <label>Email</label>
-                <Input
-                  icon={<Mail size={18} />}
-                  type="text"
-                  value={newGoogleUser.email}
-                  disabled
-                />
+                <Input icon={<Mail size={18} />} type="text" value={newGoogleUser.email} disabled />
               </InputGroup>
 
               <InputGroup>
@@ -342,7 +355,8 @@ const AuthPage: React.FC = () => {
                   value={googleRegData.middleName}
                   onChange={(e) => {
                     setGoogleRegData({ ...googleRegData, middleName: e.target.value })
-                    if (googleErrors.middleName) setGoogleErrors({ ...googleErrors, middleName: '' })
+                    if (googleErrors.middleName)
+                      setGoogleErrors({ ...googleErrors, middleName: '' })
                   }}
                   error={googleErrors.middleName}
                   placeholder="Иванович"
@@ -375,7 +389,9 @@ const AuthPage: React.FC = () => {
                   icon={<Calendar size={18} />}
                   type="date"
                   value={googleRegData.dateOfBirth}
-                  onChange={(e) => setGoogleRegData({ ...googleRegData, dateOfBirth: e.target.value })}
+                  onChange={(e) =>
+                    setGoogleRegData({ ...googleRegData, dateOfBirth: e.target.value })
+                  }
                   error={googleErrors.dateOfBirth}
                   disabled={isLoading}
                 />
@@ -387,7 +403,10 @@ const AuthPage: React.FC = () => {
                   allowEmptyFormatting
                   value={googleRegData.phone}
                   onValueChange={(values: any) =>
-                    setGoogleRegData({ ...googleRegData, phone: values.value ? values.formattedValue : '' })
+                    setGoogleRegData({
+                      ...googleRegData,
+                      phone: values.value ? values.formattedValue : ''
+                    })
                   }
                   customInput={Input}
                   error={googleErrors.phone}
@@ -402,8 +421,8 @@ const AuthPage: React.FC = () => {
               <SubmitButton type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                    {' '}Сохранение...
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />{' '}
+                    Сохранение...
                   </>
                 ) : (
                   'Завершить регистрацию'
@@ -413,9 +432,7 @@ const AuthPage: React.FC = () => {
           </Card>
         ) : (
           <Card>
-            <BackButton onClick={() => navigate(paths.welcome)}>
-              Назад{' '}
-            </BackButton>
+            <BackButton onClick={() => navigate(paths.welcome)}>Назад </BackButton>
 
             <Logo>
               <div>
@@ -425,16 +442,10 @@ const AuthPage: React.FC = () => {
               <p>Вход в систему</p>
             </Logo>
             <Tabs>
-              <Tab
-                active={selectedRole === 'staff'}
-                onClick={() => setSelectedRole('staff')}
-              >
+              <Tab active={selectedRole === 'staff'} onClick={() => setSelectedRole('staff')}>
                 Для персонала
               </Tab>
-              <Tab
-                active={selectedRole === 'patient'}
-                onClick={() => setSelectedRole('patient')}
-              >
+              <Tab active={selectedRole === 'patient'} onClick={() => setSelectedRole('patient')}>
                 Для пациентов
               </Tab>
             </Tabs>
@@ -480,8 +491,7 @@ const AuthPage: React.FC = () => {
               <SubmitButton type="submit" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                    {' '}Вход...
+                    <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Вход...
                   </>
                 ) : (
                   'Войти'
@@ -507,10 +517,7 @@ const AuthPage: React.FC = () => {
               {selectedRole === 'patient' && (
                 <RegisterBlock>
                   <p>Нет учетной записи?</p>
-                  <button
-                    type="button"
-                    onClick={() => navigate(paths.registration)}
-                  >
+                  <button type="button" onClick={() => navigate(paths.registration)}>
                     Зарегистрироваться как пациент
                     <ArrowRight size={16} />
                   </button>
