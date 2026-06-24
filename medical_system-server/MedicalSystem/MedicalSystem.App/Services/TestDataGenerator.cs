@@ -281,7 +281,7 @@ namespace MedicalSystem.App.Services
                 .RuleFor(pm => pm.Name, (f, pm) => medicines.First(m => m.Id == pm.MedicineId).Name)
                 .RuleFor(pm => pm.Dose, (f, pm) => {
                     var medicine = medicines.First(m => m.Id == pm.MedicineId);
-                    return Truncate($"{System.Math.Round(f.Random.Decimal(0.5m, 3.0m), 1)} {medicine.Unit.ToString().ToLower()}", 50);
+                    return Truncate($"{System.Math.Round(f.Random.Decimal(0.5m, 3.0m), 1)} {MedicineEnumMapper.ToFrontend(medicine.Unit)}", 50);
                 })
                 .RuleFor(pm => pm.Regimen, f => Truncate("2 раза в день", 200))
                 .RuleFor(pm => pm.Status, f => f.PickRandom<MedicationStatus>())

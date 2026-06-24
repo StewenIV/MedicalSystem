@@ -28,19 +28,27 @@ namespace MedicalSystem.App.Services
         {
             MedicineUnit.Ml => "мл",
             MedicineUnit.Mg => "мг",
-            MedicineUnit.Tablet => "табл.",
-            MedicineUnit.Ampule => "амп.",
-            MedicineUnit.Vial => "фл.",
+            MedicineUnit.Tablet => "таблетки",
+            MedicineUnit.Capsule => "капсулы",
+            MedicineUnit.Ampule => "ампулы",
+            MedicineUnit.Vial => "флаконы",
             _ => "ед."
         };
 
-        public static MedicineUnit ToBackendUnit(string unit) => unit switch
+        public static MedicineUnit ToBackendUnit(string unit) => unit?.ToLower() switch
         {
             "мл" => MedicineUnit.Ml,
             "мг" => MedicineUnit.Mg,
+            "таблетки" => MedicineUnit.Tablet,
             "табл." => MedicineUnit.Tablet,
+            "табл" => MedicineUnit.Tablet,
+            "капсулы" => MedicineUnit.Capsule,
+            "ампулы" => MedicineUnit.Ampule,
             "амп." => MedicineUnit.Ampule,
+            "амп" => MedicineUnit.Ampule,
+            "флаконы" => MedicineUnit.Vial,
             "фл." => MedicineUnit.Vial,
+            "фл" => MedicineUnit.Vial,
             _ => MedicineUnit.Unit
         };
 

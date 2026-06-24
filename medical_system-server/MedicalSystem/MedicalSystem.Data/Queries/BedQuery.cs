@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MedicalSystem.App.Contracts.Dtos;
 using MedicalSystem.App.Contracts.Query;
+using MedicalSystem.App.Services;
 using MedicalSystem.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
 using MedicalSystem.Domain.Enums;
@@ -327,7 +328,7 @@ namespace MedicalSystem.Data.Queries
                 .Select(m => new MedicationInStockDto 
                 { 
                     Name = m.Name, 
-                    Qty = $"{Math.Round(m.CurrentBalance, 2)} {m.Unit.ToString().ToLower()}" 
+                    Qty = $"{Math.Round(m.CurrentBalance, 2)} {MedicineEnumMapper.ToFrontend(m.Unit)}" 
                 })
                 .ToList();
 

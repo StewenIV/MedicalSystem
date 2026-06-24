@@ -1,7 +1,8 @@
-﻿namespace MedicalSystem.API.DTOs
+namespace MedicalSystem.API.DTOs
 {
     public class PrescriptionDTO
     {
+        public System.Guid? MedicineId { get; set; }
         public string Drug { get; set; }
         public string Dose { get; set; }
         public string Form { get; set; }

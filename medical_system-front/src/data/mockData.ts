@@ -2824,7 +2824,7 @@ export function getStaffScheduleForMonth(staffId: string, month: number, year: n
 }
 
 export type MedicineCategory = 'Антибиотики' | 'Анальгетики' | 'Гормоны' | 'Кардио' | 'Антисептики' | 'Прочее'
-export type MedicineUnit = 'мл' | 'мг' | 'табл.' | 'амп.' | 'фл.' | 'ед.'
+export type MedicineUnit = 'мл' | 'мг' | 'таблетки' | 'капсулы' | 'ампулы' | 'флаконы' | 'ед.'
 export type MedicineStatus = 'norm' | 'low' | 'empty'
 export type OperationType = 'receipt' | 'writeoff' | 'adjustment'
 export type WriteOffReason = 'patient' | 'iv' | 'im' | 'drip' | 'adjustment' | 'other'
@@ -2870,7 +2870,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-001', name: 'Амоксициллин 500 мг',
     description: 'Антибиотик широкого спектра действия. Применяется при инфекциях дыхательных путей, мочевыводящих путей, кожи и мягких тканей.',
-    category: 'Антибиотики', unit: 'табл.', currentBalance: 48, minBalance: 20,
+    category: 'Антибиотики', unit: 'таблетки', currentBalance: 48, minBalance: 20,
     totalReceived: 200, totalWrittenOff: 152, lastReceiptDate: '2026-05-15', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'ООО «МедФарм»', lastOperation: 'writeoff', lastChangedBy: 'Иванова И.И.',
     lastUpdated: '2026-05-22T09:15:00', status: 'norm', isArchived: false,
@@ -2885,7 +2885,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-002', name: 'Натрия хлорид 0.9% 500 мл',
     description: 'Изотонический солевой раствор для в/в инфузий. Используется как растворитель и для поддержания водно-электролитного баланса.',
-    category: 'Прочее', unit: 'фл.', currentBalance: 6, minBalance: 10,
+    category: 'Прочее', unit: 'флаконы', currentBalance: 6, minBalance: 10,
     totalReceived: 60, totalWrittenOff: 54, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'АО «СолюшнФарм»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
     lastUpdated: '2026-05-22T11:40:00', status: 'low', isArchived: false,
@@ -2901,7 +2901,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-003', name: 'Морфин 10 мг/мл',
     description: 'Наркотический анальгетик. Применяется для купирования сильных болевых синдромов. Строгий учет, хранение под замком.',
-    category: 'Анальгетики', unit: 'амп.', currentBalance: 0, minBalance: 5,
+    category: 'Анальгетики', unit: 'ампулы', currentBalance: 0, minBalance: 5,
     totalReceived: 20, totalWrittenOff: 20, lastReceiptDate: '2026-04-20', lastWriteOffDate: '2026-05-21',
     lastReceiptFrom: 'ГУП «Фармация»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
     lastUpdated: '2026-05-21T20:00:00', status: 'empty', isArchived: false,
@@ -2916,7 +2916,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-004', name: 'Гепарин 5000 ЕД/мл',
     description: 'Антикоагулянт прямого действия. Применяется для профилактики и лечения тромбозов и тромбоэмболий.',
-    category: 'Кардио', unit: 'амп.', currentBalance: 35, minBalance: 15,
+    category: 'Кардио', unit: 'ампулы', currentBalance: 35, minBalance: 15,
     totalReceived: 100, totalWrittenOff: 65, lastReceiptDate: '2026-05-18', lastWriteOffDate: '2026-05-20',
     lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'receipt', lastChangedBy: 'Иванова И.И.',
     lastUpdated: '2026-05-18T10:00:00', status: 'norm', isArchived: false,
@@ -2931,7 +2931,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-005', name: 'Дексаметазон 4 мг/мл',
     description: 'Глюкокортикостероид. Применяется при воспалительных, аллергических заболеваниях, отеках мозга.',
-    category: 'Гормоны', unit: 'амп.', currentBalance: 12, minBalance: 8,
+    category: 'Гормоны', unit: 'ампулы', currentBalance: 12, minBalance: 8,
     totalReceived: 80, totalWrittenOff: 68, lastReceiptDate: '2026-05-12', lastWriteOffDate: '2026-05-21',
     lastReceiptFrom: 'ООО «ФармМедПлюс»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
     lastUpdated: '2026-05-21T15:30:00', status: 'norm', isArchived: false,
@@ -2961,7 +2961,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-007', name: 'Парацетамол 500 мг',
     description: 'Жаропонижающее и анальгезирующее средство. Широко применяется при болях и повышенной температуре.',
-    category: 'Анальгетики', unit: 'табл.', currentBalance: 4, minBalance: 30,
+    category: 'Анальгетики', unit: 'таблетки', currentBalance: 4, minBalance: 30,
     totalReceived: 300, totalWrittenOff: 296, lastReceiptDate: '2026-05-01', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'ООО «МедФарм»', lastOperation: 'writeoff', lastChangedBy: 'Иванова И.И.',
     lastUpdated: '2026-05-22T12:00:00', status: 'low', isArchived: false,
@@ -2991,7 +2991,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-009', name: 'Цефтриаксон 1 г',
     description: 'Цефалоспориновый антибиотик III поколения. Применяется при тяжелых инфекциях.',
-    category: 'Антибиотики', unit: 'фл.', currentBalance: 0, minBalance: 10,
+    category: 'Антибиотики', unit: 'флаконы', currentBalance: 0, minBalance: 10,
     totalReceived: 50, totalWrittenOff: 50, lastReceiptDate: '2026-05-05', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'АО «АнтибиоМед»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
     lastUpdated: '2026-05-22T16:00:00', status: 'empty', isArchived: false,
@@ -3006,7 +3006,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-010', name: 'Метопролол 50 мг',
     description: 'Кардиоселективный бета-адреноблокатор. Применяется при артериальной гипертензии, ИБС, тахикардии.',
-    category: 'Кардио', unit: 'табл.', currentBalance: 90, minBalance: 20,
+    category: 'Кардио', unit: 'таблетки', currentBalance: 90, minBalance: 20,
     totalReceived: 200, totalWrittenOff: 110, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-20',
     lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
     lastUpdated: '2026-05-20T09:00:00', status: 'norm', isArchived: false,
@@ -3021,7 +3021,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-011', name: 'Фуросемид 40 мг',
     description: 'Петлевой диуретик. Применяется при отеках сердечного и почечного происхождения, артериальной гипертензии.',
-    category: 'Кардио', unit: 'табл.', currentBalance: 18, minBalance: 15,
+    category: 'Кардио', unit: 'таблетки', currentBalance: 18, minBalance: 15,
     totalReceived: 100, totalWrittenOff: 82, lastReceiptDate: '2026-05-12', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'ЗАО «КардиоФарм»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
     lastUpdated: '2026-05-22T10:00:00', status: 'norm', isArchived: false,
@@ -3036,7 +3036,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-012', name: 'Кетамин 500 мг/10 мл',
     description: 'Анестетик общего действия для краткосрочного наркоза и премедикации. Требует строгого учета.',
-    category: 'Анальгетики', unit: 'амп.', currentBalance: 8, minBalance: 5,
+    category: 'Анальгетики', unit: 'ампулы', currentBalance: 8, minBalance: 5,
     totalReceived: 30, totalWrittenOff: 22, lastReceiptDate: '2026-05-10', lastWriteOffDate: '2026-05-19',
     lastReceiptFrom: 'ГУП «Фармация»', lastOperation: 'writeoff', lastChangedBy: 'Козлова Н.И.',
     lastUpdated: '2026-05-19T13:00:00', status: 'norm', isArchived: false,
@@ -3051,7 +3051,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-013', name: 'Глюкоза 5% 400 мл',
     description: 'Раствор для инфузий. Источник углеводного питания, применяется при гипогликемии и для разведения лекарств.',
-    category: 'Прочее', unit: 'фл.', currentBalance: 22, minBalance: 10,
+    category: 'Прочее', unit: 'флаконы', currentBalance: 22, minBalance: 10,
     totalReceived: 80, totalWrittenOff: 58, lastReceiptDate: '2026-05-18', lastWriteOffDate: '2026-05-21',
     lastReceiptFrom: 'АО «СолюшнФарм»', lastOperation: 'receipt', lastChangedBy: 'Иванова И.И.',
     lastUpdated: '2026-05-18T11:00:00', status: 'norm', isArchived: false,
@@ -3066,7 +3066,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-014', name: 'Но-шпа 40 мг',
     description: 'Спазмолитик. Применяется при спазмах гладкой мускулатуры органов брюшной полости, желчевыводящих путей.',
-    category: 'Анальгетики', unit: 'табл.', currentBalance: 120, minBalance: 30,
+    category: 'Анальгетики', unit: 'таблетки', currentBalance: 120, minBalance: 30,
     totalReceived: 400, totalWrittenOff: 280, lastReceiptDate: '2026-05-14', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'ООО «МедФарм»', lastOperation: 'writeoff', lastChangedBy: 'Иванова И.И.',
     lastUpdated: '2026-05-22T13:00:00', status: 'norm', isArchived: false,
@@ -3081,7 +3081,7 @@ export const mockMedicines: Medicine[] = [
   {
     id: 'MED-015', name: 'Сальбутамол 100 мкг/доза',
     description: 'Бронходилататор короткого действия. Применяется для купирования приступов бронхиальной астмы.',
-    category: 'Прочее', unit: 'фл.', currentBalance: 3, minBalance: 5,
+    category: 'Прочее', unit: 'флаконы', currentBalance: 3, minBalance: 5,
     totalReceived: 30, totalWrittenOff: 27, lastReceiptDate: '2026-05-08', lastWriteOffDate: '2026-05-22',
     lastReceiptFrom: 'ООО «ФармМедПлюс»', lastOperation: 'writeoff', lastChangedBy: 'Сидорова Е.П.',
     lastUpdated: '2026-05-22T15:00:00', status: 'low', isArchived: false,

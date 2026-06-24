@@ -148,6 +148,7 @@ namespace MedicalSystem.App.Contracts.Dtos
     public class PrescriptionDto
     {
         public Guid Id { get; set; }
+        public Guid? MedicineId { get; set; }
         public string Drug { get; set; }
         public string? Dose { get; set; }
         public string? Form { get; set; }

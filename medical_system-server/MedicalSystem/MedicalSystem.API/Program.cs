@@ -201,6 +201,7 @@ using (var scope = app.Services.CreateScope())
     {
         // await context.Database.MigrateAsync();
 
+        try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Prescription\" ADD COLUMN IF NOT EXISTS \"MedicineId\" uuid NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"BedActionLogs\" ADD COLUMN IF NOT EXISTS \"PerformedByName\" text NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Encounters\" ADD COLUMN IF NOT EXISTS \"FormData\" text NULL;"); } catch { }
         try { await context.Database.ExecuteSqlRawAsync("ALTER TABLE \"LabResults\" ADD COLUMN IF NOT EXISTS \"ResultData\" text NULL;"); } catch { }

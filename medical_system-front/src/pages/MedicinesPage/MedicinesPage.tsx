@@ -172,7 +172,7 @@ const CATEGORIES: MedicineCategory[] = [
   'Антисептики',
   'Прочее'
 ]
-const UNITS: MedicineUnit[] = ['мл', 'мг', 'табл.', 'амп.', 'фл.', 'ед.']
+const UNITS: MedicineUnit[] = ['мл', 'мг', 'таблетки', 'капсулы', 'ампулы', 'флаконы', 'ед.']
 
 const OP_LABELS: Record<OperationType, string> = {
   receipt: 'Поступление',
@@ -380,7 +380,7 @@ const MedicinesPage: React.FC = () => {
     name: '',
     description: '',
     category: 'Прочее' as MedicineCategory,
-    unit: 'табл.' as MedicineUnit,
+    unit: 'таблетки' as MedicineUnit,
     initialBalance: '',
     minBalance: ''
   })
@@ -651,7 +651,7 @@ const MedicinesPage: React.FC = () => {
         name: '',
         description: '',
         category: 'Прочее',
-        unit: 'табл.',
+        unit: 'таблетки',
         initialBalance: '',
         minBalance: ''
       })

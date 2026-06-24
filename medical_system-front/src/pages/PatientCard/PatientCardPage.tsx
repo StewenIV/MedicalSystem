@@ -1012,6 +1012,14 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const { patients, updatePatient, deletePatient } = usePatientData()
 
   const [localPatient, setLocalPatient] = useState<any>(null)
+  const [medicines, setMedicines] = useState<any[]>([])
+
+  useEffect(() => {
+    import('../../api/medicinesApi').then(({ fetchAllMedicines }) => {
+      fetchAllMedicines().then(setMedicines).catch(console.error)
+    })
+  }, [])
+
   const [activeTab, setActiveTab] = useState<string>(initialTab || TabsEnum.Overview)
   const [expandedHistory, setExpandedHistory] = useState<number | null>(null)
 
@@ -1191,6 +1199,19 @@ const PatientCard: React.FC<PatientCardProps> = ({
     } else if (type.startsWith('ADD_STR_')) {
       const listName = type.replace('ADD_STR_', '')
       updatedData[listName] = [...(updatedData[listName] || []), formData.value]
+    }
+
+    if (updatedData.prescriptions) {
+      updatedData.prescriptions = updatedData.prescriptions.map((p: any) => ({
+        ...p,
+        doctorName: p.doctorName || p.doctor
+      }))
+    }
+    if (updatedData.labs) {
+      updatedData.labs = updatedData.labs.map((l: any) => ({
+        ...l,
+        doctorName: l.doctorName || l.doctor
+      }))
     }
 
     try {
@@ -1673,6 +1694,14 @@ const PatientCard: React.FC<PatientCardProps> = ({
   }
 
   const renderField = (f: ModalField) => {
+    const parseDose = (str: string) => {
+      if (!str) return { num: '', unit: '' }
+      const match = str.trim().match(/^([\d.,]+)\s*(.*)$/)
+      if (match) {
+        return { num: match[1], unit: match[2] || '' }
+      }
+      return { num: str, unit: '' }
+    }
     const isOptional = f.optional || f.name === 'causeOfDeath'
     const labelText = f.label || FIELD_LABELS[f.name] || f.name
     const labelNode = (
@@ -1720,6 +1749,83 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 validity: found?.validity || p.validity
               }))
             }}
+          />
+        </FormGroup>
+      )
+    }
+
+    if (f.name === 'drug' && (modalConfig.type === 'ADD_LIST_prescriptions' || modalConfig.type === 'EDIT_LIST_prescriptions')) {
+      const opts = medicines.map((m) => ({ value: m.id, label: m.name, unit: m.unit }))
+      const selectValue = opts.find((o) => o.label === formData.drug || o.value === formData.medicineId) || null
+      return (
+        <FormGroup key={f.name}>
+          {labelNode}
+          <Select
+            options={opts}
+            styles={selectStyles}
+            components={selectComponents}
+            placeholder="Выберите препарат..."
+            value={selectValue}
+            onChange={(opt: any) => {
+              setFormData((p: any) => {
+                const parsed = parseDose(p.dose || '')
+                const newUnit = opt ? opt.unit : ''
+                const newDose = parsed.num ? `${parsed.num} ${newUnit}`.trim() : ''
+                return {
+                  ...p,
+                  drug: opt ? opt.label : '',
+                  medicineId: opt ? opt.value : '',
+                  form: newUnit,
+                  dose: newDose
+                }
+              })
+            }}
+          />
+        </FormGroup>
+      )
+    }
+
+    if (f.name === 'dose' && (modalConfig.type === 'ADD_LIST_prescriptions' || modalConfig.type === 'EDIT_LIST_prescriptions')) {
+      const parsed = parseDose(formData.dose || '')
+      const currentUnit = formData.form || parsed.unit || ''
+      return (
+        <FormGroup key={f.name}>
+          {labelNode}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div style={{ flex: 1 }}>
+              <CustomInput
+                type="number"
+                step="0.1"
+                min="0"
+                placeholder="Введите дозировку (число)..."
+                value={parsed.num}
+                onChange={(e) => {
+                  const num = e.target.value
+                  setFormData((p: any) => ({
+                    ...p,
+                    dose: currentUnit ? `${num} ${currentUnit}`.trim() : num
+                  }))
+                }}
+              />
+            </div>
+            {currentUnit && (
+              <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                {currentUnit}
+              </span>
+            )}
+          </div>
+        </FormGroup>
+      )
+    }
+
+    if (f.name === 'form' && (modalConfig.type === 'ADD_LIST_prescriptions' || modalConfig.type === 'EDIT_LIST_prescriptions')) {
+      return (
+        <FormGroup key={f.name}>
+          {labelNode}
+          <CustomInput
+            value={formData[f.name] || ''}
+            disabled
+            placeholder="Определяется автоматически..."
           />
         </FormGroup>
       )

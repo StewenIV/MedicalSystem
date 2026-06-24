@@ -43,6 +43,12 @@ namespace MedicalSystem.Data.DbContext
                 .WithMany()
                 .HasForeignKey(u => u.PatientId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<Prescription>()
+                .HasOne(p => p.Medicine)
+                .WithMany()
+                .HasForeignKey(p => p.MedicineId)
+                .OnDelete(DeleteBehavior.SetNull);
         }
     }
 }

@@ -125,6 +125,7 @@ export interface MedicalProblemDto {
 
 export interface PrescriptionDto {
   id: string;
+  medicineId?: string;
   drug: string;
   dose?: string;
   form?: string;

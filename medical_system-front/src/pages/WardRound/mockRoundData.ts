@@ -6,6 +6,17 @@ import {
 } from './types'
 import { Patient, formatVitalsForForm } from 'data/mockData'
 
+export const parseDoseString = (doseStr: string) => {
+  if (!doseStr) return { dose: '', unit: '' }
+  const match = doseStr.trim().match(/^([\d.,]+)\s*(.*)$/)
+  if (match) {
+    return {
+      dose: match[1],
+      unit: match[2] || ''
+    }
+  }
+  return { dose: doseStr, unit: '' }
+}
 
 const now = () => new Date()
 
@@ -167,18 +178,22 @@ export const getInitialPrimaryState = (
     complicationsDiagnosis: '',
     concomitantDiagnosis: '',
 
-    prescriptions: prescriptionMeds.map((m: any, i: number) => ({
-      id: m.id?.startsWith('00000000') ? `presc-${i}` : m.id || `presc-${i}`,
-      drug: m.drug ?? m.name ?? '',
-      dose: m.dose ?? '',
-      unit: 'мг',
-      route: m.route ?? 'перорально',
-      frequency: m.regimen ?? m.frequency ?? '',
-      form: m.form ?? '',
-      regimen: m.regimen ?? m.frequency ?? '',
-      comment: m.comment ?? '',
-      action: 'keep' as const,
-    })),
+    prescriptions: prescriptionMeds.map((m: any, i: number) => {
+      const parsed = parseDoseString(m.dose ?? '')
+      return {
+        id: m.id?.startsWith('00000000') ? `presc-${i}` : m.id || `presc-${i}`,
+        medicineId: m.medicineId,
+        drug: m.drug ?? m.name ?? '',
+        dose: parsed.dose,
+        unit: parsed.unit || m.form || 'таблетки',
+        route: m.route ?? 'перорально',
+        frequency: m.regimen ?? m.frequency ?? '',
+        form: m.form ?? '',
+        regimen: m.regimen ?? m.frequency ?? '',
+        comment: m.comment ?? '',
+        action: 'keep' as const,
+      }
+    }),
 
     labTests: DEFAULT_LAB_TESTS.map(t => ({ ...t })),
 
@@ -237,18 +252,22 @@ export const getInitialDailyState = (
     dynamicsComment: '',
 
     treatmentDecision: 'keep',
-    prescriptions: prescriptionMeds.map((m: any, i: number) => ({
-      id: m.id?.startsWith('00000000') ? `presc-${i}` : m.id || `presc-${i}`,
-      drug: m.drug ?? m.name ?? '',
-      dose: m.dose ?? '',
-      unit: 'мг',
-      route: m.route ?? 'перорально',
-      frequency: m.regimen ?? m.frequency ?? '',
-      form: m.form ?? '',
-      regimen: m.regimen ?? m.frequency ?? '',
-      comment: m.comment ?? '',
-      action: 'keep' as const,
-    })),
+    prescriptions: prescriptionMeds.map((m: any, i: number) => {
+      const parsed = parseDoseString(m.dose ?? '')
+      return {
+        id: m.id?.startsWith('00000000') ? `presc-${i}` : m.id || `presc-${i}`,
+        medicineId: m.medicineId,
+        drug: m.drug ?? m.name ?? '',
+        dose: parsed.dose,
+        unit: parsed.unit || m.form || 'таблетки',
+        route: m.route ?? 'перорально',
+        frequency: m.regimen ?? m.frequency ?? '',
+        form: m.form ?? '',
+        regimen: m.regimen ?? m.frequency ?? '',
+        comment: m.comment ?? '',
+        action: 'keep' as const,
+      }
+    }),
 
     allergyStatus: patient?.allergies && patient.allergies.length > 0 ? 'has' : 'none',
     allergies: patient?.allergies?.map((a: any, i: number) => ({

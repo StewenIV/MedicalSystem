@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import Select from 'react-select'
 import { formatLocalDate, toBackendDateTimeString } from 'utils/dateUtils'
 import {
   Clock,
@@ -939,6 +940,32 @@ interface PrimaryInspectionPageProps {
   onRegisterActions?: (actions: any) => void
 }
 
+const selectStyles = {
+  control: (base: any, state: any) => ({
+    ...base,
+    minHeight: '38px',
+    borderRadius: '8px',
+    borderColor: state.isFocused ? '#2563eb' : '#cbd5e1',
+    boxShadow: state.isFocused ? '0 0 0 2px rgba(37,99,235,0.2)' : 'none',
+    backgroundColor: '#ffffff',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    cursor: 'pointer'
+  }),
+  valueContainer: (base: any) => ({ ...base, padding: '0 8px 0 10px' }),
+  placeholder: (base: any) => ({ ...base, color: '#94a3b8' }),
+  input: (base: any) => ({ ...base, color: '#1f2937' }),
+  singleValue: (base: any) => ({ ...base, color: '#1f2937' }),
+  menu: (base: any) => ({
+    ...base,
+    marginTop: '4px',
+    borderRadius: '8px',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+    zIndex: 9999
+  })
+}
+
 const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   patientId,
   onClose,
@@ -960,6 +987,14 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   } = usePatientData()
   const patient = getPatient(patientId)
   const currentUserDisplayName = useSelector(selectDisplayName)
+
+  const [medicines, setMedicines] = useState<any[]>([])
+
+  useEffect(() => {
+    import('api/medicinesApi').then(({ fetchAllMedicines }) => {
+      fetchAllMedicines().then(setMedicines).catch(console.error)
+    })
+  }, [])
 
   const loadedPatientIdRef = useRef<string | null>(null)
   const [editingEncounterId, setEditingEncounterId] = useState<string | null>(null)
@@ -1091,7 +1126,8 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
       form: newPresc.form ?? '',
       regimen: newPresc.regimen ?? '',
       comment: newPresc.comment ?? '',
-      action: 'new'
+      action: 'new',
+      medicineId: newPresc.medicineId
     }
     setForm((prev) => ({ ...prev, prescriptions: [...prev.prescriptions, p] }))
     setNewPresc({})
@@ -1210,7 +1246,8 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             regimen: p.frequency || p.regimen,
             dateStart: original?.dateStart || toBackendDateTimeString(new Date()),
             doctorName: original?.doctorName || form.doctor,
-            comment: p.comment || original?.comment || ''
+            comment: p.comment || original?.comment || '',
+            medicineId: p.medicineId || original?.medicineId
           }
         })
 
@@ -1276,7 +1313,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
 
         newMap.forEach((newMed, id) => {
           if (id.startsWith('np-') || !oldMap.has(id)) {
-            added.push(`${newMed.drug} ${newMed.dose}${newMed.unit}`)
+            added.push(`${newMed.drug} ${newMed.dose} ${newMed.unit}`)
           }
         })
 
@@ -3977,11 +4014,24 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
 
             <div style={{ marginBottom: 12 }}>
               <label style={s.label}>Препарат *</label>
-              <input
-                style={s.input}
-                placeholder="Цефтриаксон"
-                value={newPresc.drug ?? ''}
-                onChange={(e) => setNewPresc((p) => ({ ...p, drug: e.target.value }))}
+              <Select
+                options={medicines.map((m) => ({ value: m.id, label: m.name, unit: m.unit }))}
+                styles={selectStyles}
+                placeholder="Выберите препарат..."
+                value={
+                  newPresc.drug
+                    ? { value: newPresc.medicineId, label: newPresc.drug }
+                    : null
+                }
+                onChange={(opt: any) => {
+                  setNewPresc((p) => ({
+                    ...p,
+                    drug: opt ? opt.label : '',
+                    medicineId: opt ? opt.value : '',
+                    form: opt ? opt.unit : '',
+                    unit: opt ? opt.unit : ''
+                  }))
+                }}
               />
             </div>
 
@@ -3995,23 +4045,12 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             >
               <div>
                 <label style={s.label}>Форма</label>
-                <select
-                  style={{ ...s.input, appearance: 'auto' as any }}
+                <input
+                  style={s.input}
+                  disabled
+                  placeholder="Авто..."
                   value={newPresc.form ?? ''}
-                  onChange={(e) => setNewPresc((p) => ({ ...p, form: e.target.value }))}
-                >
-                  <option value="">Выбрать...</option>
-                  <option>Таблетки</option>
-                  <option>Капсулы</option>
-                  <option>р-р д/ин.</option>
-                  <option>р-р д/инф.</option>
-                  <option>Порошок</option>
-                  <option>Суспензия</option>
-                  <option>Капли</option>
-                  <option>Мазь</option>
-                  <option>Аэрозоль</option>
-                  <option>Суппозиторий</option>
-                </select>
+                />
               </div>
               <div>
                 <label style={s.label}>Доза</label>
@@ -4027,19 +4066,12 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               </div>
               <div>
                 <label style={s.label}>Единицы</label>
-                <select
-                  style={{ ...s.input, appearance: 'auto' as any }}
-                  value={newPresc.unit ?? 'мг'}
-                  onChange={(e) => setNewPresc((p) => ({ ...p, unit: e.target.value }))}
-                >
-                  <option>мг</option>
-                  <option>г</option>
-                  <option>мл</option>
-                  <option>ЕД</option>
-                  <option>МЕ</option>
-                  <option>мкг</option>
-                  <option>%</option>
-                </select>
+                <input
+                  style={s.input}
+                  disabled
+                  placeholder="Авто..."
+                  value={newPresc.unit ?? ''}
+                />
               </div>
             </div>
 

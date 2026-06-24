@@ -5,6 +5,7 @@ namespace MedicalSystem.Domain.Enums
         Ml,
         Mg,
         Tablet,
+        Capsule,
         Ampule,
         Vial,
         Unit

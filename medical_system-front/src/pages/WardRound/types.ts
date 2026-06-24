@@ -88,6 +88,7 @@ export type PrescriptionAction = 'keep' | 'adjust' | 'cancel' | 'new'
 
 export interface RoundPrescription {
   id: string
+  medicineId?: string
   drug: string
   dose: string
   unit: string     

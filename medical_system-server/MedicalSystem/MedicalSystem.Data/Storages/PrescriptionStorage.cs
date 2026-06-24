@@ -69,7 +69,7 @@ namespace MedicalSystem.Data.Storages
                     PerformedById = performedStaffId,
                     PerformedByName = doneByText,
                     Action = deduct ? $"Выполнено назначение: {prescription.Name}" : $"Отменено назначение: {prescription.Name}",
-                    Amount = deduct ? $"-{amountToDeduct} {medicine.Unit.ToString().ToLower()}" : $"+{amountToDeduct} {medicine.Unit.ToString().ToLower()}",
+                    Amount = deduct ? $"-{amountToDeduct} {MedicalSystem.App.Services.MedicineEnumMapper.ToFrontend(medicine.Unit)}" : $"+{amountToDeduct} {MedicalSystem.App.Services.MedicineEnumMapper.ToFrontend(medicine.Unit)}",
                     PerformedAt = System.DateTime.UtcNow
                 };
                 _context.BedActionLogs.Add(log);

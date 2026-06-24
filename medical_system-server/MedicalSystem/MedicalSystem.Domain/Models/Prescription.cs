@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace MedicalSystem.Domain.Models
@@ -32,6 +32,9 @@ namespace MedicalSystem.Domain.Models
 
         public Guid? DoctorId { get; set; }
         public virtual MedicalStaff Doctor { get; set; }
+
+        public Guid? MedicineId { get; set; }
+        public virtual Medicine? Medicine { get; set; }
 
         [StringLength(500)]
         public string Comment { get; set; }

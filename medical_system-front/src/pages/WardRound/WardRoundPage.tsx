@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react'
+import Select from 'react-select'
 import { formatLocalDate, toBackendDateTimeString } from 'utils/dateUtils'
 import {
   Clock,
@@ -386,6 +387,32 @@ interface DailyRoundPageProps {
   ) => void
 }
 
+const selectStyles = {
+  control: (base: any, state: any) => ({
+    ...base,
+    minHeight: '38px',
+    borderRadius: '8px',
+    borderColor: state.isFocused ? '#2563eb' : '#cbd5e1',
+    boxShadow: state.isFocused ? '0 0 0 2px rgba(37,99,235,0.2)' : 'none',
+    backgroundColor: '#ffffff',
+    fontSize: '14px',
+    fontFamily: 'inherit',
+    cursor: 'pointer'
+  }),
+  valueContainer: (base: any) => ({ ...base, padding: '0 8px 0 10px' }),
+  placeholder: (base: any) => ({ ...base, color: '#94a3b8' }),
+  input: (base: any) => ({ ...base, color: '#1f2937' }),
+  singleValue: (base: any) => ({ ...base, color: '#1f2937' }),
+  menu: (base: any) => ({
+    ...base,
+    marginTop: '4px',
+    borderRadius: '8px',
+    border: '1px solid #e5e7eb',
+    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+    zIndex: 9999
+  })
+}
+
 const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
   patientId,
   onClose,
@@ -417,6 +444,14 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
     }
     return initial
   })
+  const [medicines, setMedicines] = useState<any[]>([])
+
+  useEffect(() => {
+    import('api/medicinesApi').then(({ fetchAllMedicines }) => {
+      fetchAllMedicines().then(setMedicines).catch(console.error)
+    })
+  }, [])
+
   const [toastMsg, setToastMsg] = useState<{
     text: string
     type: 'success' | 'info' | 'error'
@@ -595,7 +630,8 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
             regimen: p.frequency || p.regimen,
             dateStart: original?.dateStart || toBackendDateTimeString(new Date()),
             doctorName: original?.doctorName || form.doctor,
-            comment: p.comment || original?.comment || ''
+            comment: p.comment || original?.comment || '',
+            medicineId: p.medicineId || original?.medicineId
           }
         })
 
@@ -623,9 +659,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
         newPrescs: RoundPrescription[],
         decision: string
       ) => {
-        if (decision === 'keep') return 'Не изменились.'
-        if (oldMeds.length === 0 && newPrescs.length === 0) return 'Назначений нет.'
-
         const oldMap = new Map(oldMeds.map((m, i) => [`med-${i}`, m]))
         const newMap = new Map(newPrescs.map((p) => [p.id, p]))
 
@@ -653,7 +686,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
 
         newMap.forEach((newMed, id) => {
           if (id.startsWith('np-') || !oldMap.has(id)) {
-            added.push(`${newMed.drug} ${newMed.dose}${newMed.unit}`)
+            added.push(`${newMed.drug} ${newMed.dose} ${newMed.unit}`)
           }
         })
 
@@ -662,7 +695,11 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
         if (removed.length) parts.push(`Убрано: ${removed.join(', ')}`)
         if (changed.length) parts.push(`Изменено: ${changed.join('; ')}`)
 
-        if (parts.length === 0) return 'Не изменились.'
+        if (parts.length === 0) {
+          if (decision === 'keep') return 'Не изменились.'
+          if (oldMeds.length === 0 && newPrescs.length === 0) return 'Назначений нет.'
+          return 'Не изменились.'
+        }
         return parts.join('.\n')
       }
 
@@ -775,7 +812,8 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
       form: newPresc.form ?? '',
       regimen: newPresc.regimen ?? '',
       comment: newPresc.comment,
-      action: 'new'
+      action: 'new',
+      medicineId: newPresc.medicineId
     }
     setForm((prev) => ({ ...prev, prescriptions: [...prev.prescriptions, p] }))
     setNewPresc({})
@@ -2620,11 +2658,24 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
 
             <div style={{ marginBottom: 12 }}>
               <label style={label}>Препарат *</label>
-              <input
-                style={inputStyle}
-                placeholder="Цефтриаксон"
-                value={newPresc.drug ?? ''}
-                onChange={(e) => setNewPresc((p) => ({ ...p, drug: e.target.value }))}
+              <Select
+                options={medicines.map((m) => ({ value: m.id, label: m.name, unit: m.unit }))}
+                styles={selectStyles}
+                placeholder="Выберите препарат..."
+                value={
+                  newPresc.drug
+                    ? { value: newPresc.medicineId, label: newPresc.drug }
+                    : null
+                }
+                onChange={(opt: any) => {
+                  setNewPresc((p) => ({
+                    ...p,
+                    drug: opt ? opt.label : '',
+                    medicineId: opt ? opt.value : '',
+                    form: opt ? opt.unit : '',
+                    unit: opt ? opt.unit : ''
+                  }))
+                }}
               />
             </div>
 
@@ -2638,22 +2689,12 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
             >
               <div>
                 <label style={label}>Форма</label>
-                <select
-                  style={{ ...inputStyle, appearance: 'auto' as any }}
+                <input
+                  style={inputStyle}
+                  disabled
+                  placeholder="Авто..."
                   value={newPresc.form ?? ''}
-                  onChange={(e) => setNewPresc((p) => ({ ...p, form: e.target.value }))}
-                >
-                  <option value="">Выбрать...</option>
-                  <option>Таблетки</option>
-                  <option>Капсулы</option>
-                  <option>р-р д/ин.</option>
-                  <option>р-р д/инф.</option>
-                  <option>Порошок</option>
-                  <option>Суспензия</option>
-                  <option>Капли</option>
-                  <option>Мазь</option>
-                  <option>Аэрозоль</option>
-                </select>
+                />
               </div>
               <div>
                 <label style={label}>Доза</label>
@@ -2669,17 +2710,12 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
               </div>
               <div>
                 <label style={label}>Единицы</label>
-                <select
-                  style={{ ...inputStyle, appearance: 'auto' as any }}
-                  value={newPresc.unit ?? 'мг'}
-                  onChange={(e) => setNewPresc((p) => ({ ...p, unit: e.target.value }))}
-                >
-                  <option>мг</option>
-                  <option>г</option>
-                  <option>мл</option>
-                  <option>ЕД</option>
-                  <option>мкг</option>
-                </select>
+                <input
+                  style={inputStyle}
+                  disabled
+                  placeholder="Авто..."
+                  value={newPresc.unit ?? ''}
+                />
               </div>
             </div>
 

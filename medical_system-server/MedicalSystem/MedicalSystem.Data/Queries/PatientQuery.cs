@@ -238,6 +238,7 @@ namespace MedicalSystem.Data.Queries
                 Prescriptions = patient.Prescriptions.Select(pr => new PrescriptionDto
                 {
                     Id = pr.Id,
+                    MedicineId = pr.MedicineId,
                     Drug = pr.Drug,
                     Dose = pr.Dose,
                     Form = pr.Form,
