@@ -13,6 +13,7 @@ import {
   User,
   ArrowRight,
   UserPlus,
+  UserMinus,
   X,
   Building,
   BedDouble,
@@ -235,6 +236,25 @@ const PRIORITY_LABELS: Record<number, string> = {
   3: 'Средний',
   4: 'Высокий',
   5: 'Критичный'
+}
+
+const PRIORITY_MAP: Record<string | number, number> = {
+  Low: 1,
+  Normal: 2,
+  Medium: 3,
+  High: 4,
+  Critical: 5,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5
+}
+
+export const parsePriority = (priority: any): number => {
+  if (typeof priority === 'number') return priority
+  if (!priority) return 1
+  return PRIORITY_MAP[priority] ?? parseInt(priority, 10) ?? 1
 }
 
 const ROOM_TYPES: RoomType[] = ['Обычная', 'Реанимация', 'Изолятор']
@@ -461,7 +481,11 @@ function AnimatedStatBadge({ label, targetValue }: { label: string; targetValue:
   )
 }
 
-export function WardAdmin() {
+interface WardAdminProps {
+  onNavigateToDischarge?: (patientId: string) => void
+}
+
+export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [floors, setFloors] = useState<number[]>([])
@@ -475,7 +499,7 @@ export function WardAdmin() {
         number: r.number,
         type: mapRoomTypeToLocal(r.type),
         gender: mapRoomGenderToLocal(r.gender),
-        priority: r.priority,
+        priority: parsePriority(r.priority),
         bedsCount: r.bedsCount,
         beds: []
       }))
@@ -501,7 +525,7 @@ export function WardAdmin() {
       setEditorFloor(details.floor)
       setEditorType(mapRoomTypeToLocal(details.type))
       setEditorGender(mapRoomGenderToLocal(details.gender))
-      setEditorPriority(details.priority)
+      setEditorPriority(parsePriority(details.priority))
       setEditorBeds(
         details.beds.map((b) => ({
           id: b.id,
@@ -803,6 +827,23 @@ export function WardAdmin() {
     setEditorBeds((prev) => prev.filter((bed) => bed.id !== id))
   }
 
+  const handleFreeBed = async (bed: BedEntry) => {
+    if (!bed.id) return
+    if (!window.confirm(`Выселить пациента ${bed.patientName || ''} и освободить койку?`)) return
+    try {
+      await freeAdminBed(bed.id, {
+        reason: 'Административное освобождение койки',
+        notes: 'Освобождено через панель администратора',
+        date: toBackendDateTimeString(new Date())
+      })
+      toast.success('Пациент выселен, койка свободна!')
+      await loadRoomsFromServer()
+      if (selectedId) await loadRoomData(selectedId)
+    } catch (e: any) {
+      showApiError(e, 'Ошибка при освобождении койки')
+    }
+  }
+
   const saveRoom = async () => {
     try {
       const bedsPayload = editorBeds.map((b) => {
@@ -950,7 +991,7 @@ export function WardAdmin() {
       room: room.number,
       bedNumber: bed.bedNumber ?? 0,
       bedId: bed.id,
-      priority: room.priority
+      priority: parsePriority(room.priority)
     })
     setAssignDate(toLocalDateTimeLocalString(new Date()))
     setAssignDoctor('')
@@ -1402,6 +1443,29 @@ export function WardAdmin() {
                       )}
                     </BedInfo>
                     <BedStatus>{bed.status}</BedStatus>
+                    {bed.status === 'Занято' && (
+                      <>
+                        <ActionIconBtn
+                          title="Выписать пациента"
+                          onClick={() => {
+                            if (onNavigateToDischarge && bed.patientId) {
+                              onNavigateToDischarge(bed.patientId)
+                            } else {
+                              toast.warning('Выписка недоступна')
+                            }
+                          }}
+                        >
+                          <FileText size={13} />
+                        </ActionIconBtn>
+                        <ActionIconBtn
+                          $danger
+                          title="Освободить койку (убрать пациента с койки)"
+                          onClick={() => handleFreeBed(bed)}
+                        >
+                          <UserMinus size={13} />
+                        </ActionIconBtn>
+                      </>
+                    )}
                     {bed.status === 'Свободно' && (
                       <ActionIconBtn
                         $userplus={true}

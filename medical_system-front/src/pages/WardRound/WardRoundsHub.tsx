@@ -417,7 +417,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                                   }}
                                 >
                                   ✓ Осмотрен в {lastInsp.time} (
-                                  {lastInsp.type === 'primary' ? 'первичный' : 'ежедневный'})
+                                  {lastInsp.type === 'primary' ? 'первичный' : lastInsp.type === 'discharge' ? 'выписка' : 'ежедневный'})
                                 </div>
                               )}
                             </div>
@@ -436,7 +436,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                         </SearchTd>
 
                         <SearchTd>
-                          <div style={{ fontWeight: 600 }}>302 / 3</div>
+                           <div style={{ fontWeight: 600 }}>302 / 3</div>
                           <div style={{ color: '#94a3b8', fontSize: 12 }}>{p.department}</div>
                         </SearchTd>
 

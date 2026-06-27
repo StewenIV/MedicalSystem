@@ -8,6 +8,7 @@ interface PatientDataState {
   patients: Patient[]
   inspections: Record<string, SavedInspection[]>  
   drafts: Record<string, any> 
+  loading?: boolean
 }
 interface PatientDataActions {
   saveInspection: (patientId: string, inspection: SavedInspection) => void
@@ -73,8 +74,10 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
   const [patients, setPatients] = useState<any[]>([])
   const [inspections, setInspections] = useState<Record<string, SavedInspection[]>>({})
   const [drafts, setDrafts] = useState<Record<string, any>>({})
+  const [loading, setLoading] = useState(false)
 
   const refreshPatients = useCallback(async () => {
+    setLoading(true)
     try {
       const { fetchAllPatients } = await import('../api/patientsApi')
       const data = await fetchAllPatients()
@@ -86,8 +89,18 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         activeProblems: dto.medicalProblems?.map((m: any) => m.name) || []
       }))
       setPatients(mapped)
+
+      try {
+        const { fetchTodayEncounters } = await import('../api/encountersApi')
+        const grouped = await fetchTodayEncounters()
+        setInspections(grouped)
+      } catch (err) {
+        console.error('Failed to refresh encounters:', err)
+      }
     } catch (err) {
       console.error('Failed to refresh patients:', err)
+    } finally {
+      setLoading(false)
     }
   }, [])
 
@@ -554,6 +567,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
     <PatientDataContext.Provider value={{
       patients,
       inspections,
+      loading,
       saveInspection,
       updatePatientVitals,
       updatePatientDiagnosis,

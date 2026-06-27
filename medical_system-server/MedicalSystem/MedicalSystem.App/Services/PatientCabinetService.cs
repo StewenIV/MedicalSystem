@@ -115,10 +115,44 @@ namespace MedicalSystem.App.Services
                 date = l.Date.HasValue ? l.Date.Value.ToString("dd.MM.yyyy") : "—",
                 resultDate = l.Date.HasValue ? l.Date.Value.ToString("dd.MM.yyyy") : "—",
                 type = "lab",
-                status = "ready",
+                status = GetExamStatusKey(l.StatusText),
+                statusText = GetExamStatusText(l.StatusText),
                 doctor = l.Doctor?.Name,
+                filePath = l.PdfDocumentPath,
                 details = l.StatusText
             }).ToList();
+        }
+
+        private static string GetExamStatusKey(string? statusText)
+        {
+            return NormalizeExamStatusText(statusText) switch
+            {
+                "Назначено" => "assigned",
+                "В работе" => "processing",
+                "Выполнено" => "completed",
+                _ => "assigned"
+            };
+        }
+
+        private static string GetExamStatusText(string? statusText)
+        {
+            return NormalizeExamStatusText(statusText);
+        }
+
+        private static string NormalizeExamStatusText(string? statusText)
+        {
+            var value = statusText?.Trim();
+
+            return value switch
+            {
+                null or "" => "Назначено",
+                "Назначено" => "Назначено",
+                "В работе" => "В работе",
+                "Завершено" => "Выполнено",
+                "Выполнено" => "Выполнено",
+                "Готово" => "Выполнено",
+                _ => value
+            };
         }
 
         private static PatientNotificationDto MapToPatientNotificationDto(Notification n)

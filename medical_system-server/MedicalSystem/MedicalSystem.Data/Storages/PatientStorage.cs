@@ -233,16 +233,65 @@ namespace MedicalSystem.Data.Storages
 
                 if (dto.Relatives != null)
                 {
-                    await _context.PatientRelatives.Where(r => r.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingRelatives = await _context.PatientRelatives.Where(r => r.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Relatives.Select(r => r.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingRelatives.Where(r => !incomingIds.Contains(r.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.PatientRelatives.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Relatives)
-                        _context.PatientRelatives.Add(new PatientRelative { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Relation = d.Relation, Phone = d.Phone });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingRelatives.FirstOrDefault(r => r.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = d.Name;
+                                existing.Relation = d.Relation;
+                                existing.Phone = d.Phone;
+                                _context.PatientRelatives.Update(existing);
+                            }
+                            else
+                            {
+                                _context.PatientRelatives.Add(new PatientRelative { Id = d.Id, PatientId = patientId, Name = d.Name, Relation = d.Relation, Phone = d.Phone });
+                            }
+                        }
+                        else
+                        {
+                            _context.PatientRelatives.Add(new PatientRelative { Id = Guid.NewGuid(), PatientId = patientId, Name = d.Name, Relation = d.Relation, Phone = d.Phone });
+                        }
+                    }
                 }
 
                 if (dto.Allergies != null)
                 {
-                    await _context.Allergies.Where(a => a.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingAllergies = await _context.Allergies.Where(a => a.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Allergies.Select(a => a.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingAllergies.Where(a => !incomingIds.Contains(a.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.Allergies.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Allergies)
-                        _context.Allergies.Add(new Allergy { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Reaction = d.Reaction, Date = d.Date, Comment = d.Comment });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingAllergies.FirstOrDefault(a => a.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = d.Name;
+                                existing.Reaction = d.Reaction;
+                                existing.Date = d.Date;
+                                existing.Comment = d.Comment;
+                                _context.Allergies.Update(existing);
+                            }
+                            else
+                            {
+                                _context.Allergies.Add(new Allergy { Id = d.Id, PatientId = patientId, Name = d.Name, Reaction = d.Reaction, Date = d.Date, Comment = d.Comment });
+                            }
+                        }
+                        else
+                        {
+                            _context.Allergies.Add(new Allergy { Id = Guid.NewGuid(), PatientId = patientId, Name = d.Name, Reaction = d.Reaction, Date = d.Date, Comment = d.Comment });
+                        }
+                    }
                 }
 
                 // For PatientMedications, do a differential update instead of ExecuteDeleteAsync to avoid violating foreign key constraints for active prescriptions.
@@ -253,8 +302,8 @@ namespace MedicalSystem.Data.Storages
                 var incomingMeds = dto.CurrentMeds ?? new List<MedicalSystem.App.Contracts.Dtos.MedicationDto>();
 
                 // 1. Identify items to delete
-                var incomingIds = incomingMeds.Select(m => m.Id).Where(id => id != Guid.Empty).ToHashSet();
-                var medsToDelete = existingMeds.Where(m => !incomingIds.Contains(m.Id)).ToList();
+                var incomingMedsIds = incomingMeds.Select(m => m.Id).Where(id => id != Guid.Empty).ToHashSet();
+                var medsToDelete = existingMeds.Where(m => !incomingMedsIds.Contains(m.Id)).ToList();
                 
                 if (medsToDelete.Any())
                 {
@@ -316,44 +365,240 @@ namespace MedicalSystem.Data.Storages
 
                 if (dto.Operations != null)
                 {
-                    await _context.Operations.Where(o => o.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingOperations = await _context.Operations.Where(o => o.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Operations.Select(o => o.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingOperations.Where(o => !incomingIds.Contains(o.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.Operations.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Operations)
-                        _context.Operations.Add(new Operation { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Date = d.Date, Diagnosis = d.Diagnosis, Description = d.Description, Complications = d.Complications, Implants = d.Implants, Result = d.Result });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingOperations.FirstOrDefault(o => o.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = d.Name;
+                                existing.Date = d.Date;
+                                existing.Diagnosis = d.Diagnosis;
+                                existing.Description = d.Description;
+                                existing.Complications = d.Complications;
+                                existing.Implants = d.Implants;
+                                existing.Result = d.Result;
+                                _context.Operations.Update(existing);
+                            }
+                            else
+                            {
+                                _context.Operations.Add(new Operation { Id = d.Id, PatientId = patientId, Name = d.Name, Date = d.Date, Diagnosis = d.Diagnosis, Description = d.Description, Complications = d.Complications, Implants = d.Implants, Result = d.Result });
+                            }
+                        }
+                        else
+                        {
+                            _context.Operations.Add(new Operation { Id = Guid.NewGuid(), PatientId = patientId, Name = d.Name, Date = d.Date, Diagnosis = d.Diagnosis, Description = d.Description, Complications = d.Complications, Implants = d.Implants, Result = d.Result });
+                        }
+                    }
                 }
 
                 if (dto.MedicalProblems != null)
                 {
-                    await _context.MedicalProblems.Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingProblems = await _context.MedicalProblems.Where(p => p.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.MedicalProblems.Select(p => p.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingProblems.Where(p => !incomingIds.Contains(p.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.MedicalProblems.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.MedicalProblems)
-                        _context.MedicalProblems.Add(new MedicalProblem { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, DiagnosisDate = d.DiagnosisDate, DiseaseStatus = d.DiseaseStatus, Severity = d.Severity, Description = d.Description, Complications = d.Complications, IsActive = d.IsActive });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingProblems.FirstOrDefault(p => p.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = d.Name;
+                                existing.DiagnosisDate = d.DiagnosisDate;
+                                existing.DiseaseStatus = d.DiseaseStatus;
+                                existing.Severity = d.Severity;
+                                existing.Description = d.Description;
+                                existing.Complications = d.Complications;
+                                existing.IsActive = d.IsActive;
+                                _context.MedicalProblems.Update(existing);
+                            }
+                            else
+                            {
+                                _context.MedicalProblems.Add(new MedicalProblem { Id = d.Id, PatientId = patientId, Name = d.Name, DiagnosisDate = d.DiagnosisDate, DiseaseStatus = d.DiseaseStatus, Severity = d.Severity, Description = d.Description, Complications = d.Complications, IsActive = d.IsActive });
+                            }
+                        }
+                        else
+                        {
+                            _context.MedicalProblems.Add(new MedicalProblem { Id = Guid.NewGuid(), PatientId = patientId, Name = d.Name, DiagnosisDate = d.DiagnosisDate, DiseaseStatus = d.DiseaseStatus, Severity = d.Severity, Description = d.Description, Complications = d.Complications, IsActive = d.IsActive });
+                        }
+                    }
                 }
 
                 if (dto.Prescriptions != null)
                 {
-                    await _context.Set<Prescription>().Where(p => p.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingPrescriptions = await _context.Set<Prescription>().Where(p => p.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Prescriptions.Select(p => p.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingPrescriptions.Where(p => !incomingIds.Contains(p.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.Set<Prescription>().RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Prescriptions)
-                        _context.Set<Prescription>().Add(new Prescription { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, MedicineId = d.MedicineId, Drug = d.Drug, Dose = d.Dose ?? "", Form = d.Form ?? "", Route = d.Route ?? "", Regimen = d.Regimen ?? "", DateStart = d.DateStart ?? DateTime.UtcNow, DateEnd = d.DateEnd, Comment = d.Comment ?? "", DoctorId = ResolveDoctorId(d.DoctorName) });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingPrescriptions.FirstOrDefault(p => p.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.MedicineId = d.MedicineId;
+                                existing.Drug = d.Drug;
+                                existing.Dose = d.Dose ?? "";
+                                existing.Form = d.Form ?? "";
+                                existing.Route = d.Route ?? "";
+                                existing.Regimen = d.Regimen ?? "";
+                                existing.DateStart = d.DateStart ?? DateTime.UtcNow;
+                                existing.DateEnd = d.DateEnd;
+                                existing.Comment = d.Comment ?? "";
+                                existing.DoctorId = ResolveDoctorId(d.DoctorName);
+                                _context.Set<Prescription>().Update(existing);
+                            }
+                            else
+                            {
+                                _context.Set<Prescription>().Add(new Prescription { Id = d.Id, PatientId = patientId, MedicineId = d.MedicineId, Drug = d.Drug, Dose = d.Dose ?? "", Form = d.Form ?? "", Route = d.Route ?? "", Regimen = d.Regimen ?? "", DateStart = d.DateStart ?? DateTime.UtcNow, DateEnd = d.DateEnd, Comment = d.Comment ?? "", DoctorId = ResolveDoctorId(d.DoctorName) });
+                            }
+                        }
+                        else
+                        {
+                            _context.Set<Prescription>().Add(new Prescription { Id = Guid.NewGuid(), PatientId = patientId, MedicineId = d.MedicineId, Drug = d.Drug, Dose = d.Dose ?? "", Form = d.Form ?? "", Route = d.Route ?? "", Regimen = d.Regimen ?? "", DateStart = d.DateStart ?? DateTime.UtcNow, DateEnd = d.DateEnd, Comment = d.Comment ?? "", DoctorId = ResolveDoctorId(d.DoctorName) });
+                        }
+                    }
                 }
 
                 if (dto.Labs != null)
                 {
-                    await _context.LabResults.Where(l => l.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingLabs = await _context.LabResults.Where(l => l.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Labs.Select(l => l.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingLabs.Where(l => !incomingIds.Contains(l.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.LabResults.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Labs)
-                        _context.LabResults.Add(new LabResult { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Date = d.Date ?? DateTime.UtcNow, Type = d.Type, Reason = d.Reason, StatusText = d.StatusText, DoctorId = ResolveDoctorId(d.DoctorName) });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingLabs.FirstOrDefault(l => l.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Date = d.Date ?? DateTime.UtcNow;
+                                existing.Type = d.Type;
+                                existing.Reason = d.Reason;
+                                existing.StatusText = d.StatusText;
+                                existing.DoctorId = ResolveDoctorId(d.DoctorName);
+                                // ResultData, Comments, PdfDocumentPath, LaboratoryEmployeeId, DateUpdated are kept untouched!
+                                _context.LabResults.Update(existing);
+                            }
+                            else
+                            {
+                                _context.LabResults.Add(new LabResult 
+                                { 
+                                    Id = d.Id, 
+                                    PatientId = patientId, 
+                                    Date = d.Date ?? DateTime.UtcNow, 
+                                    Type = d.Type, 
+                                    Reason = d.Reason, 
+                                    StatusText = d.StatusText, 
+                                    DoctorId = ResolveDoctorId(d.DoctorName),
+                                    ResultData = d.ResultData,
+                                    Comments = d.Comments,
+                                    PdfDocumentPath = d.PdfDocumentPath,
+                                    LaboratoryEmployeeId = d.LaboratoryEmployeeId,
+                                    DateUpdated = d.DateUpdated
+                                });
+                            }
+                        }
+                        else
+                        {
+                            _context.LabResults.Add(new LabResult 
+                            { 
+                                Id = Guid.NewGuid(), 
+                                PatientId = patientId, 
+                                Date = d.Date ?? DateTime.UtcNow, 
+                                Type = d.Type, 
+                                Reason = d.Reason, 
+                                StatusText = d.StatusText, 
+                                DoctorId = ResolveDoctorId(d.DoctorName) 
+                            });
+                        }
+                    }
                 }
 
                 if (dto.Vaccines != null)
                 {
-                    await _context.Vaccines.Where(v => v.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingVaccines = await _context.Vaccines.Where(v => v.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Vaccines.Select(v => v.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingVaccines.Where(v => !incomingIds.Contains(v.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.Vaccines.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Vaccines)
-                        _context.Vaccines.Add(new Vaccine { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Disease = d.Disease, Date = d.Date, Validity = d.Validity, Manufacturer = d.Manufacturer, Series = d.Series });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingVaccines.FirstOrDefault(v => v.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = d.Name;
+                                existing.Disease = d.Disease;
+                                existing.Date = d.Date;
+                                existing.Validity = d.Validity;
+                                existing.Manufacturer = d.Manufacturer;
+                                existing.Series = d.Series;
+                                _context.Vaccines.Update(existing);
+                            }
+                            else
+                            {
+                                _context.Vaccines.Add(new Vaccine { Id = d.Id, PatientId = patientId, Name = d.Name, Disease = d.Disease, Date = d.Date, Validity = d.Validity, Manufacturer = d.Manufacturer, Series = d.Series });
+                            }
+                        }
+                        else
+                        {
+                            _context.Vaccines.Add(new Vaccine { Id = Guid.NewGuid(), PatientId = patientId, Name = d.Name, Disease = d.Disease, Date = d.Date, Validity = d.Validity, Manufacturer = d.Manufacturer, Series = d.Series });
+                        }
+                    }
                 }
 
                 if (dto.Documents != null)
                 {
-                    await _context.PatientDocuments.Where(d => d.PatientId == patientId).ExecuteDeleteAsync(token);
+                    var existingDocs = await _context.PatientDocuments.Where(d => d.PatientId == patientId).ToListAsync(token);
+                    var incomingIds = dto.Documents.Select(d => d.Id).Where(id => id != Guid.Empty).ToHashSet();
+                    var itemsToDelete = existingDocs.Where(d => !incomingIds.Contains(d.Id)).ToList();
+                    if (itemsToDelete.Any()) _context.PatientDocuments.RemoveRange(itemsToDelete);
+
                     foreach (var d in dto.Documents)
-                        _context.PatientDocuments.Add(new PatientDocument { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Date = d.Date, FilePath = d.FilePath });
+                    {
+                        if (d.Id != Guid.Empty)
+                        {
+                            var existing = existingDocs.FirstOrDefault(doc => doc.Id == d.Id);
+                            if (existing != null)
+                            {
+                                existing.Name = d.Name;
+                                existing.Date = d.Date;
+                                existing.FilePath = d.FilePath;
+                                // DocumentType, Content, DoctorName are kept untouched!
+                                _context.PatientDocuments.Update(existing);
+                            }
+                            else
+                            {
+                                _context.PatientDocuments.Add(new PatientDocument 
+                                { 
+                                    Id = d.Id, 
+                                    PatientId = patientId, 
+                                    Name = d.Name, 
+                                    Date = d.Date, 
+                                    FilePath = d.FilePath 
+                                });
+                            }
+                        }
+                        else
+                        {
+                            _context.PatientDocuments.Add(new PatientDocument { Id = Guid.NewGuid(), PatientId = patientId, Name = d.Name, Date = d.Date, FilePath = d.FilePath });
+                        }
+                    }
                 }
 
                 await _context.SaveChangesAsync(token);

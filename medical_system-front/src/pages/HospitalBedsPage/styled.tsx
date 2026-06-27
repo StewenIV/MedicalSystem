@@ -1190,3 +1190,19 @@ export const ModalLogEntry = styled.div`
   border-radius: 10px;
   padding: 12px 14px;
 `
+
+export const PriorityWrap = styled.div`
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+`
+
+export const PriorityBar = styled.div<{ $filled: boolean }>`
+  width: 4px;
+  height: 12px;
+  border-radius: 999px;
+  background: ${(p) =>
+    p.$filled ? 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)' : 'rgba(191, 219, 254, 0.35)'};
+  box-shadow: ${(p) => (p.$filled ? '0 1px 3px rgba(37, 99, 235, 0.25)' : 'none')};
+`

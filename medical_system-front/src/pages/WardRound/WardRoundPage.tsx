@@ -511,19 +511,23 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
       try {
         const parsed = JSON.parse(selectedRecord.formData)
         setForm(parsed)
+        setShowResult(Boolean(parsed.generatedText))
       } catch (err) {
         console.error('Failed to parse formData', err)
       }
     } else if (selectedHistoryId === null) {
       const draft = getDraft(`${patientId}-daily`)
-      if (draft) setForm(draft)
-      else {
+      if (draft) {
+        setForm(draft)
+        setShowResult(Boolean((draft as DailyRoundFormState).generatedText))
+      } else {
         const initial = getInitialDailyState(patientId, patient)
         if (currentUserDisplayName) {
           initial.doctor = currentUserDisplayName
           initial.doctorDisplayName = currentUserDisplayName
         }
         setForm(initial)
+        setShowResult(false)
       }
     }
   }, [selectedHistoryId, selectedRecord, patientId, patient, getDraft, currentUserDisplayName])
@@ -2662,11 +2666,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
                 options={medicines.map((m) => ({ value: m.id, label: m.name, unit: m.unit }))}
                 styles={selectStyles}
                 placeholder="Выберите препарат..."
-                value={
-                  newPresc.drug
-                    ? { value: newPresc.medicineId, label: newPresc.drug }
-                    : null
-                }
+                value={newPresc.drug ? { value: newPresc.medicineId, label: newPresc.drug } : null}
                 onChange={(opt: any) => {
                   setNewPresc((p) => ({
                     ...p,

@@ -229,7 +229,6 @@ export const TabBadge = styled.span`
   line-height: 1.6;
 `
 
-
 // ─── WELCOME BANNER ──────────────────────────────────────────────────────────
 
 export const WelcomeBanner = styled.div`
@@ -374,12 +373,12 @@ export const WelcomeTitle = styled.h2`
 `
 
 export const WelcomeSubtitle = styled.p`
-font-family: ${FONT_STACK};
+  font-family: ${FONT_STACK};
   margin: 6px 0 0;
   padding-left: 10px;
   font-size: 14px;
   font-weight: 500;
-   color: #64748b;
+  color: #64748b;
   letter-spacing: 0.015em;
   line-height: 1.6;
   max-width: 650px;
@@ -410,7 +409,7 @@ font-family: ${FONT_STACK};
     }
   }
 
-   @media (max-width: 768px) {
+  @media (max-width: 768px) {
     padding-left: 0;
     font-size: 12px;
     line-height: 1.45;
@@ -515,14 +514,10 @@ export const DashboardRow = styled.div`
 `
 
 export const DashboardCard = styled.div`
-position: relative;
+  position: relative;
   overflow: hidden;
 
-  background: linear-gradient(
-    180deg,
-    #ffffff 0%,
-    #fcfdff 100%
-  );
+  background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
 
   border: 1px solid #e2e8f0;
   border-radius: 18px;
@@ -543,12 +538,7 @@ position: relative;
     position: absolute;
     inset: 0;
 
-    background:
-      radial-gradient(
-        circle at top right,
-        rgba(59,130,246,0.06),
-        transparent 45%
-      );
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
 
     pointer-events: none;
   }
@@ -563,7 +553,7 @@ position: relative;
 `
 
 export const CardHeader = styled.div`
-   position: relative;
+  position: relative;
 
   display: flex;
   justify-content: space-between;
@@ -571,13 +561,7 @@ export const CardHeader = styled.div`
 
   padding: 18px 22px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #f8faff 0%,
-      #ffffff 65%,
-      #eef4ff 100%
-    );
+  background: linear-gradient(135deg, #f8faff 0%, #ffffff 65%, #eef4ff 100%);
 
   border-bottom: 1px solid #eef2f7;
 
@@ -626,12 +610,7 @@ export const CardLinkButton = styled.button`
 
   border: 1px solid #dbeafe;
 
-  background:
-    linear-gradient(
-      180deg,
-      #ffffff,
-      #f8fbff
-    );
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
 
   color: #2563eb;
 
@@ -642,15 +621,14 @@ export const CardLinkButton = styled.button`
   align-items: center;
   gap: 6px;
 
-  transition: all .2s ease;
+  transition: all 0.2s ease;
 
   &:hover {
     background: #eff6ff;
 
     transform: translateX(2px);
 
-    box-shadow:
-      0 4px 12px rgba(37,99,235,.15);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
   }
 `
 
@@ -669,24 +647,18 @@ export const SimpleItem = styled.div`
 
   border-radius: 14px;
 
-  background:
-    linear-gradient(
-      180deg,
-      #ffffff,
-      #fafcff
-    );
+  background: linear-gradient(180deg, #ffffff, #fafcff);
 
   border: 1px solid #eef2f7;
 
-  transition: all .2s ease;
+  transition: all 0.2s ease;
 
   &:hover {
     transform: translateX(4px);
 
     border-color: #dbeafe;
 
-    box-shadow:
-      0 6px 18px rgba(37,99,235,.08);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.08);
   }
 
   &:not(:last-child) {
@@ -702,7 +674,7 @@ export const ItemLabel = styled.div`
 `
 
 export const ItemName = styled.span`
-    font-size: 14px;
+  font-size: 14px;
   font-weight: 700;
 
   color: #0f172a;
@@ -715,21 +687,21 @@ export const ItemName = styled.span`
 `
 
 export const ItemDate = styled.span`
-font-size: 12px;
+  font-size: 12px;
 
   color: #94a3b8;
 
   display: flex;
   align-items: center;
   gap: 6px;
-  
+
   &::before {
-  content: '';
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #93c5fd;
-}
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #93c5fd;
+  }
 `
 
 export const ProfileLayout = styled.div`
@@ -748,7 +720,9 @@ export const ProfileSidebarCard = styled.aside`
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.05);
   padding: 24px 20px;
   display: flex;
   flex-direction: column;
@@ -756,18 +730,22 @@ export const ProfileSidebarCard = styled.aside`
   gap: 18px;
   text-align: center;
   height: fit-content;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top right, rgba(59,130,246,0.06), transparent 45%);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
     pointer-events: none;
   }
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 18px 35px rgba(37, 99, 235, 0.08);
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.06),
+      0 18px 35px rgba(37, 99, 235, 0.08);
   }
 `
 
@@ -849,23 +827,29 @@ export const ProfileMainCard = styled.div`
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.05);
   padding: 26px 28px;
   display: flex;
   flex-direction: column;
   gap: 24px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top right, rgba(59,130,246,0.06), transparent 45%);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
     pointer-events: none;
   }
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 18px 35px rgba(37, 99, 235, 0.08);
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.06),
+      0 18px 35px rgba(37, 99, 235, 0.08);
   }
 `
 
@@ -1012,7 +996,9 @@ export const FilterBar = styled.div`
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.05);
   display: flex;
   gap: 10px;
   padding: 12px 16px;
@@ -1023,7 +1009,7 @@ export const FilterBar = styled.div`
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top right, rgba(59,130,246,0.06), transparent 45%);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
     pointer-events: none;
   }
 `
@@ -1096,19 +1082,25 @@ export const TableWrapper = styled.div`
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.05);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.05);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top right, rgba(59,130,246,0.06), transparent 45%);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
     pointer-events: none;
   }
 
   &:hover {
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 18px 35px rgba(37, 99, 235, 0.08);
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.06),
+      0 18px 35px rgba(37, 99, 235, 0.08);
   }
 `
 
@@ -1165,6 +1157,19 @@ export const StatusBadge = styled.span<{ $status: string }>`
 
   ${({ $status }) => {
     switch ($status) {
+      case 'assigned':
+        return css`
+          background: ${C.amberLight};
+          color: ${C.amber};
+          &::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            display: inline-block;
+          }
+        `
       case 'ready':
       case 'completed':
         return css`
@@ -1283,25 +1288,31 @@ export const DocCard = styled.div`
   background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
   border: 1px solid #e2e8f0;
   border-radius: 18px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.05);
   padding: 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   cursor: default;
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top right, rgba(59,130,246,0.06), transparent 45%);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
     pointer-events: none;
   }
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 18px 35px rgba(37, 99, 235, 0.08);
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.06),
+      0 18px 35px rgba(37, 99, 235, 0.08);
   }
 `
 
@@ -1397,9 +1408,13 @@ export const NotificationCard = styled.div<{
   display: flex;
   align-items: flex-start;
   gap: 20px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   cursor: ${({ $read }) => ($read ? 'default' : 'pointer')};
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 10px 24px rgba(15, 23, 42, 0.05);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 10px 24px rgba(15, 23, 42, 0.05);
 
   background: ${({ $read, $severity }) => {
     if ($read) return 'linear-gradient(180deg, #ffffff 0%, #fcfdff 100%)'
@@ -1419,7 +1434,7 @@ export const NotificationCard = styled.div<{
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at top right, rgba(59,130,246,0.06), transparent 45%);
+    background: radial-gradient(circle at top right, rgba(59, 130, 246, 0.06), transparent 45%);
     pointer-events: none;
   }
 
@@ -1444,7 +1459,9 @@ export const NotificationCard = styled.div<{
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06), 0 18px 35px rgba(37, 99, 235, 0.08);
+    box-shadow:
+      0 4px 12px rgba(15, 23, 42, 0.06),
+      0 18px 35px rgba(37, 99, 235, 0.08);
     border-color: ${({ $read, $severity }) => {
       if ($read) return C.borderMed
       if ($severity === 'critical') return '#FC8181'

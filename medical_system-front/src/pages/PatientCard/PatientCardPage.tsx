@@ -6,7 +6,8 @@ import {
   formatLocalTime,
   formatLocalDate,
   toBackendDateString,
-  toBackendDateTimeString
+  toBackendDateTimeString,
+  toLocalDateTimeLocalString
 } from 'utils/dateUtils'
 import TemperaturePage from 'pages/TemperatureSheet'
 import { Helmet } from 'react-helmet'
@@ -35,6 +36,7 @@ import {
   SlidersHorizontal,
   RotateCcw,
   ChevronLeft,
+  Loader2,
   ChevronRight,
   Users,
   Thermometer,
@@ -561,7 +563,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   cardRef,
   initialQuery = ''
 }) => {
-  const { patients } = usePatientData()
+  const { patients, loading, refreshPatients } = usePatientData()
 
   const [query, setQuery] = useState(initialQuery)
   const [doctor, setDoctor] = useState<SelectOption | null>(null)
@@ -600,6 +602,10 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
   }, [initialQuery])
 
   useEffect(() => {
+    refreshPatients?.()
+  }, [refreshPatients])
+
+  useEffect(() => {
     return () => {
       if (clickTimeoutRef.current) {
         clearTimeout(clickTimeoutRef.current)
@@ -629,7 +635,7 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
       }
       return true
     })
-  }, [query, doctor, status, gender, room])
+  }, [query, doctor, status, gender, room, patients])
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
   const safePage = Math.min(page, totalPages)
@@ -829,7 +835,17 @@ const PatientSearchPanel: React.FC<PatientSearchPanelProps> = ({
                 </tr>
               </SearchThead>
               <tbody>
-                {paged.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={6}>
+                      <SearchEmptyState>
+                        <Loader2 className="animate-spin" size={48} style={{ animation: 'spin 1s linear infinite' }} />
+                        <p>Загрузка пациентов...</p>
+                        <span>Пожалуйста, подождите</span>
+                      </SearchEmptyState>
+                    </td>
+                  </tr>
+                ) : paged.length === 0 ? (
                   <tr>
                     <td colSpan={6}>
                       <SearchEmptyState>
@@ -1098,6 +1114,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
       if (!initialData.nationality) {
         initialData.nationality = 'Русский'
       }
+    } else if (type === 'ADD_LIST_prescriptions') {
+      const now = new Date();
+      const tzOffset = now.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
+      initialData.dateStart = localISOTime;
     }
     setFormData(initialData)
   }
@@ -1204,7 +1225,9 @@ const PatientCard: React.FC<PatientCardProps> = ({
     if (updatedData.prescriptions) {
       updatedData.prescriptions = updatedData.prescriptions.map((p: any) => ({
         ...p,
-        doctorName: p.doctorName || p.doctor
+        doctorName: p.doctorName || p.doctor,
+        dateStart: toBackendDateTimeString(p.dateStart) || null,
+        dateEnd: toBackendDateString(p.dateEnd) || null
       }))
     }
     if (updatedData.labs) {
@@ -1279,7 +1302,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
       })
     })
     return Array.from(docs).map((d) => ({ value: d, label: d }))
-  }, [])
+  }, [patients])
 
   const SELECT_FIELDS: Record<string, { options: SelectOption[]; placeholder: string }> = {
     form: { options: DRUG_FORMS, placeholder: 'Форма выпуска...' },
@@ -1643,7 +1666,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         { name: 'form', label: 'Форма выпуска' },
         { name: 'route', label: 'Путь введения' },
         { name: 'regimen', label: 'Режим приема' },
-        { name: 'dateStart', label: 'Дата начала', type: 'date' },
+        { name: 'dateStart', label: 'Дата начала', type: 'datetime-local' },
         { name: 'dateEnd', label: 'Дата окончания', type: 'date' },
         { name: 'doctor', label: 'Врач' },
         { name: 'comment', label: 'Комментарий' }
@@ -1657,7 +1680,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
         { name: 'form', label: 'Форма выпуска' },
         { name: 'route', label: 'Путь введения' },
         { name: 'regimen', label: 'Режим приема' },
-        { name: 'dateStart', label: 'Дата начала', type: 'date' },
+        { name: 'dateStart', label: 'Дата начала', type: 'datetime-local' },
         { name: 'dateEnd', label: 'Дата окончания', type: 'date' },
         { name: 'doctor', label: 'Врач' },
         { name: 'comment', label: 'Комментарий' }
@@ -1726,6 +1749,8 @@ const PatientCard: React.FC<PatientCardProps> = ({
     let val = formData[f.name] || ''
     if (f.type === 'date' && val && typeof val === 'string') {
       val = val.substring(0, 10)
+    } else if (f.type === 'datetime-local' && val) {
+      val = toLocalDateTimeLocalString(val)
     }
 
     if (f.name === 'name' && modalConfig.type.includes('vaccine')) {
@@ -2062,14 +2087,23 @@ const PatientCard: React.FC<PatientCardProps> = ({
       validity: 'Срок',
       manufacturer: 'Производитель',
       series: 'Серия',
-      url: 'Файл'
+      url: 'Файл',
+      laboratoryEmployeeName: 'Лаборант',
+      resultData: 'Результат',
+      comments: 'Комментарий'
     }
 
     return createPortal(
       <ModalOverlay onClick={closeModal}>
         <ModalContent
           onClick={(e) => e.stopPropagation()}
-          style={{ maxWidth: isPatientPreview ? 640 : isDocView ? 900 : 520 }}
+          style={{
+            maxWidth: isPatientPreview
+              ? 640
+              : isDocView || (modalConfig.type === 'VIEW_LAB' && modalConfig.data?.pdfDocumentPath)
+                ? 900
+                : 520
+          }}
         >
           <ModalHeader>
             <h2>{def.title || (isPatientPreview ? 'Быстрый просмотр' : 'Просмотр')}</h2>
@@ -2149,59 +2183,96 @@ const PatientCard: React.FC<PatientCardProps> = ({
               })()}
             {isDelete && <p style={{ fontSize: 15, color: '#334155' }}>{def.text}</p>}
             {isView && !isPatientPreview && (
-              <div style={{ display: 'grid', gap: 12 }}>
-                {Object.entries(modalConfig.data || {})
-                  .filter(([k, v]) => {
-                    const lowerKey = k.toLowerCase()
-                    return (
-                      lowerKey !== 'id' &&
-                      lowerKey !== 'filepath' &&
-                      lowerKey !== 'url' &&
-                      lowerKey !== 'patientid' &&
-                      lowerKey !== 'index' &&
-                      lowerKey !== 'formdata' &&
-                      v !== null &&
-                      v !== undefined
-                    )
-                  })
-                  .map(([k, v]) => {
-                    let displayValue = String(v)
-                    const lowerKey = k.toLowerCase()
-                    if (
-                      lowerKey === 'date' ||
-                      lowerKey === 'datetime' ||
-                      lowerKey.includes('date') ||
-                      lowerKey.includes('time')
-                    ) {
-                      const strVal = String(v)
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: "column",
+                  gap: 16
+                }}
+              >
+                <div
+                  style={{
+                    flex:
+                      modalConfig.type === 'VIEW_LAB' && modalConfig.data?.pdfDocumentPath
+                        ? '1 1 350px'
+                        : 'none',
+                    display: 'grid',
+                    gap: 12
+                  }}
+                >
+                  {Object.entries(modalConfig.data || {})
+                    .filter(([k, v]) => {
+                      const lowerKey = k.toLowerCase()
+                      return (
+                        lowerKey !== 'id' &&
+                        lowerKey !== 'filepath' &&
+                        lowerKey !== 'url' &&
+                        lowerKey !== 'patientid' &&
+                        lowerKey !== 'index' &&
+                        lowerKey !== 'formdata' &&
+                        !lowerKey.endsWith('id') &&
+                        !lowerKey.includes('path') &&
+                        !lowerKey.includes('created') &&
+                        !lowerKey.includes('updated') &&
+                        v !== null &&
+                        v !== undefined &&
+                        v !== ''
+                      )
+                    })
+                    .map(([k, v]) => {
+                      let displayValue = String(v)
+                      const lowerKey = k.toLowerCase()
                       if (
-                        strVal.includes('T') &&
-                        !strVal.endsWith('T00:00:00') &&
-                        !strVal.endsWith('T00:00:00.000')
+                        lowerKey === 'date' ||
+                        lowerKey === 'datetime' ||
+                        lowerKey.includes('date') ||
+                        lowerKey.includes('time')
                       ) {
-                        displayValue = formatDateHumanWithTime(strVal)
-                      } else {
-                        displayValue = formatDateHuman(strVal)
+                        const strVal = String(v)
+                        if (
+                          strVal.includes('T') &&
+                          !strVal.endsWith('T00:00:00') &&
+                          !strVal.endsWith('T00:00:00.000')
+                        ) {
+                          displayValue = formatDateHumanWithTime(strVal)
+                        } else {
+                          displayValue = formatDateHuman(strVal)
+                        }
                       }
-                    }
-                    return (
-                      <div
-                        key={k}
-                        style={{
-                          display: 'flex',
-                          gap: 8,
-                          padding: '8px 12px',
-                          background: '#f8fafc',
-                          borderRadius: 8
-                        }}
-                      >
-                        <strong style={{ color: '#475569', minWidth: 120 }}>
-                          {VIEW_LABELS[k] || k}:
-                        </strong>
-                        <span>{displayValue}</span>
-                      </div>
-                    )
-                  })}
+                      return (
+                        <div
+                          key={k}
+                          style={{
+                            display: 'flex',
+                            gap: 8,
+                            padding: '8px 12px',
+                            background: '#f8fafc',
+                            borderRadius: 8
+                          }}
+                        >
+                          <strong style={{ color: '#475569', minWidth: 120 }}>
+                            {VIEW_LABELS[k] || FIELD_LABELS[k] || k}:
+                          </strong>
+                          <span>{displayValue}</span>
+                        </div>
+                      )
+                    })}
+                </div>
+                {modalConfig.type === 'VIEW_LAB' && modalConfig.data?.pdfDocumentPath && (
+                  <div
+                    style={{
+                      flex: '1 1 500px',
+                      borderLeft: '1px solid #e2e8f0',
+                      paddingLeft: 16
+                    }}
+                  >
+                    <iframe
+                      src={`${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(modalConfig.data.pdfDocumentPath)}`}
+                      title="Результат анализа"
+                      style={{ width: '100%', height: 500, border: 'none', borderRadius: 8 }}
+                    />
+                  </div>
+                )}
               </div>
             )}
             {isDocView && modalConfig.data?.url && (
@@ -2349,7 +2420,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
               <h3>Активные проблемы</h3>
               <ul style={{ margin: 0, paddingLeft: 20, color: '#1e293b' }}>
                 {localPatient.activeProblems?.map((prob: string, i: number) => (
-                  <li key={i}>{prob}</li>
+                  <li key={i}>{i + 1}. {prob}</li>
                 )) || <span style={{ color: '#94a3b8' }}>Нет активных проблем</span>}
               </ul>
             </SectionCard>
@@ -2943,7 +3014,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
                 <tbody>
                   {localPatient.prescriptions?.map((pr: any, i: number) => (
                     <tr key={i}>
-                      <td>{formatDateHuman(pr.dateStart) || '01.10.2023'}</td>
+                      <td>{formatDateHumanWithTime(pr.dateStart) || '01.10.2023'}</td>
                       <td>{formatDateHuman(pr.dateEnd) || '10.10.2023'}</td>
                       <td>
                         <strong>{pr.drug}</strong>
@@ -3036,41 +3107,18 @@ const PatientCard: React.FC<PatientCardProps> = ({
                       <td>
                         <ActionButton
                           $variant="ghost"
-                          title="Просмотреть"
-                          onClick={() => {
-                            if (lab.pdfDocumentPath) {
-                              openModal('VIEW_DOCUMENT', {
-                                name: `Результат анализа: ${lab.type}`,
-                                url: `${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(lab.pdfDocumentPath)}`
-                              })
-                            } else {
-                              openModal('VIEW_LAB', lab)
-                            }
-                          }}
+                          onClick={() => openModal('VIEW_LAB', lab)}
                         >
                           <Eye size={14} />
                         </ActionButton>
-                        <ActionButton
-                          $variant="ghost"
-                          title="Скачать PDF"
-                          onClick={() => {
-                            if (lab.pdfDocumentPath) {
-                              downloadFileFromServer(
-                                `Результат анализа - ${lab.type}.pdf`,
-                                lab.pdfDocumentPath
-                              )
-                            } else {
-                              toast.warning('PDF-документ исследования еще не сформирован')
-                            }
-                          }}
-                          disabled={!lab.pdfDocumentPath}
-                          style={{
-                            opacity: lab.pdfDocumentPath ? 1 : 0.5,
-                            cursor: lab.pdfDocumentPath ? 'pointer' : 'not-allowed'
-                          }}
-                        >
-                          <Download size={14} />
-                        </ActionButton>
+                        {lab.pdfDocumentPath && (
+                          <ActionButton
+                            $variant="ghost"
+                            onClick={() => downloadFileFromServer(`${lab.type}.pdf`, lab.pdfDocumentPath)}
+                          >
+                            <Download size={14} />
+                          </ActionButton>
+                        )}
                       </td>
                     </tr>
                   )) || (

@@ -155,7 +155,11 @@ namespace MedicalSystem.Data.Queries
         public async Task<RoomConfigDto> GetRoomConfigAsync(CancellationToken token)
         {
             var rooms = await _context.Rooms.AsNoTracking().ToListAsync(token);
-            var config = rooms.ToDictionary(r => r.RoomNumber, r => new GenderConfig { Gender = r.Gender.ToString().ToLower() });
+            var config = rooms.ToDictionary(r => r.RoomNumber, r => new GenderConfig 
+            { 
+                Gender = r.Gender.ToString().ToLower(),
+                Priority = (int)r.Priority
+            });
             return new RoomConfigDto { Rooms = config };
         }
 

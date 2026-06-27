@@ -96,7 +96,9 @@ import {
   ModalMedCard,
   ModalMedName,
   ModalMedQty,
-  ModalLogEntry
+  ModalLogEntry,
+  PriorityWrap,
+  PriorityBar
 } from './styled'
 
 import { Icon } from 'pages/img/imageBedsPage'
@@ -936,6 +938,11 @@ const [triggers, setTriggers] = useState({
                             {room.beds.filter((b) => b.status !== 'free').length}/{room.beds.length}{' '}
                             занято
                           </WardMeta>
+                          <PriorityWrap title={`Приоритет обслуживания: ${roomsConfig[room.id]?.priority || 1}`}>
+                            {[1, 2, 3, 4, 5].map((level) => (
+                              <PriorityBar key={level} $filled={level <= (roomsConfig[room.id]?.priority || 1)} />
+                            ))}
+                          </PriorityWrap>
                         </div>
 
                         {urgency !== 'normal' && (
@@ -970,7 +977,7 @@ const [triggers, setTriggers] = useState({
                             }}
                           >
                             <Icon.BedIcon />
-                            Палата {bed.bedNumber}
+                            Койка {bed.bedNumber}
                           </BedChip>
                         ))}
                       </BedsRow>

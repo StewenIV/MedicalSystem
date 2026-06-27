@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace MedicalSystem.App.Contracts.Dtos
@@ -11,6 +11,7 @@ namespace MedicalSystem.App.Contracts.Dtos
     public class GenderConfig
     {
         public string Gender { get; set; }
+        public int Priority { get; set; }
     }
 
     public class FloorsDto

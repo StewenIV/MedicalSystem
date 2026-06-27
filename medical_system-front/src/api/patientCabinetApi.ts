@@ -1,5 +1,13 @@
 import { apiFetch } from './bedsApi'
-import type { GeneralFormData, ContactsFormData, OtherFormData, WorkFormData, RelativeFormData, TrustedPersonFormData, ChangePasswordFormData } from '../lib/validators/patientCabinet'
+import type {
+  GeneralFormData,
+  ContactsFormData,
+  OtherFormData,
+  WorkFormData,
+  RelativeFormData,
+  TrustedPersonFormData,
+  ChangePasswordFormData
+} from '../lib/validators/patientCabinet'
 
 export interface PatientNotificationDto {
   id: string
@@ -30,12 +38,13 @@ export interface PatientExamDto {
   date: string
   resultDate: string
   type: 'lab' | 'imaging' | 'functional' | 'other'
-  status: 'ready' | 'processing'
+  status: 'assigned' | 'processing' | 'completed'
+  statusText: string
+  filePath?: string
   doctor?: string
   details?: string
   parameters?: { name: string; value: string; norm: string; unit: string }[]
 }
-
 
 export const updatePatientGeneralInfo = (dto: GeneralFormData): Promise<{ message: string }> =>
   apiFetch('/api/patient-cabinet/profile/general', {
@@ -46,8 +55,8 @@ export const updatePatientGeneralInfo = (dto: GeneralFormData): Promise<{ messag
       middleName: dto.middleName ?? '',
       dateOfBirth: dto.dateOfBirth,
       gender: Number(dto.gender),
-      maritalStatus: dto.maritalStatus ?? '',
-    }),
+      maritalStatus: dto.maritalStatus ?? ''
+    })
   })
 
 export const updatePatientContacts = (dto: ContactsFormData): Promise<{ message: string }> =>
@@ -61,8 +70,8 @@ export const updatePatientContacts = (dto: ContactsFormData): Promise<{ message:
       city: dto.city ?? '',
       region: dto.region ?? '',
       zip: dto.zip ?? '',
-      country: dto.country ?? '',
-    }),
+      country: dto.country ?? ''
+    })
   })
 
 export const updatePatientOtherInfo = (dto: OtherFormData): Promise<{ message: string }> =>
@@ -70,8 +79,8 @@ export const updatePatientOtherInfo = (dto: OtherFormData): Promise<{ message: s
     method: 'PUT',
     body: JSON.stringify({
       language: dto.language ?? '',
-      nationality: dto.nationality ?? '',
-    }),
+      nationality: dto.nationality ?? ''
+    })
   })
 
 export const updatePatientWorkInfo = (dto: WorkFormData): Promise<{ message: string }> =>
@@ -80,8 +89,8 @@ export const updatePatientWorkInfo = (dto: WorkFormData): Promise<{ message: str
     body: JSON.stringify({
       profession: dto.profession ?? '',
       organization: dto.organization ?? '',
-      address: dto.address ?? '',
-    }),
+      address: dto.address ?? ''
+    })
   })
 
 export const addPatientRelative = (dto: RelativeFormData): Promise<{ message: string }> =>
@@ -90,18 +99,21 @@ export const addPatientRelative = (dto: RelativeFormData): Promise<{ message: st
     body: JSON.stringify({
       name: dto.name,
       relation: dto.relation ?? '',
-      phone: dto.phone ?? '',
-    }),
+      phone: dto.phone ?? ''
+    })
   })
 
-export const updatePatientRelative = (id: string, dto: RelativeFormData): Promise<{ message: string }> =>
+export const updatePatientRelative = (
+  id: string,
+  dto: RelativeFormData
+): Promise<{ message: string }> =>
   apiFetch(`/api/patient-cabinet/relatives/${id}`, {
     method: 'PUT',
     body: JSON.stringify({
       name: dto.name,
       relation: dto.relation ?? '',
-      phone: dto.phone ?? '',
-    }),
+      phone: dto.phone ?? ''
+    })
   })
 
 export const deletePatientRelative = (id: string): Promise<{ message: string }> =>
@@ -113,8 +125,8 @@ export const updateTrustedPerson = (dto: TrustedPersonFormData): Promise<{ messa
     body: JSON.stringify({
       name: dto.name,
       relation: dto.relation ?? '',
-      phone: dto.phone ?? '',
-    }),
+      phone: dto.phone ?? ''
+    })
   })
 
 export const changePatientPassword = (dto: ChangePasswordFormData): Promise<{ message: string }> =>
@@ -123,8 +135,8 @@ export const changePatientPassword = (dto: ChangePasswordFormData): Promise<{ me
     body: JSON.stringify({
       oldPassword: dto.oldPassword,
       newPassword: dto.newPassword,
-      confirmPassword: dto.confirmPassword,
-    }),
+      confirmPassword: dto.confirmPassword
+    })
   })
 
 export const fetchPatientNotifications = (): Promise<PatientNotificationDto[]> =>
@@ -142,8 +154,7 @@ export const fetchPatientDocuments = (): Promise<PatientDocumentDto[]> =>
 export const fetchPatientExams = (): Promise<PatientExamDto[]> =>
   apiFetch('/api/patient-cabinet/exams')
 
-export const fetchPatientProfile = (): Promise<any> =>
-  apiFetch('/api/patient-cabinet/profile')
+export const fetchPatientProfile = (): Promise<any> => apiFetch('/api/patient-cabinet/profile')
 
 export const deleteAccount = (): Promise<{ message: string }> =>
   apiFetch('/api/patient-cabinet/account', { method: 'DELETE' })

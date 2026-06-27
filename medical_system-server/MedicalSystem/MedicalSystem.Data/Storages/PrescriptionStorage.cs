@@ -1,5 +1,6 @@
 using MedicalSystem.App.Contracts.Storage;
 using MedicalSystem.Domain.Models;
+using MedicalSystem.Domain.Enums;
 using MedicalSystem.Data.DbContext;
 using Microsoft.EntityFrameworkCore;
 
@@ -40,6 +41,15 @@ namespace MedicalSystem.Data.Storages
                 }
             }
 
+            if (!performedStaffId.HasValue)
+            {
+                var fallbackStaff = await _context.MedicalStaff.FirstOrDefaultAsync(token);
+                if (fallbackStaff != null)
+                {
+                    performedStaffId = fallbackStaff.Id;
+                }
+            }
+
             if (prescription?.PatientMedication?.Medicine != null)
             {
                 var medicine = prescription.PatientMedication.Medicine;
@@ -56,11 +66,22 @@ namespace MedicalSystem.Data.Storages
                 if (deduct)
                 {
                     medicine.CurrentBalance -= amountToDeduct;
+                    if (medicine.CurrentBalance < 0m) medicine.CurrentBalance = 0m;
                 }
                 else
                 {
                     medicine.CurrentBalance += amountToDeduct;
                 }
+
+                // Update medicine status based on new balance
+                medicine.Status = medicine.CurrentBalance <= 0m
+                    ? MedicineStatus.Empty
+                    : (medicine.CurrentBalance < medicine.MinBalance ? MedicineStatus.Low : MedicineStatus.Norm);
+
+                // Update last changes fields on medicine entity
+                medicine.LastChangedById = performedStaffId;
+                medicine.LastUpdated = System.DateTime.UtcNow;
+                medicine.LastOperation = deduct ? OperationType.Writeoff : OperationType.Adjustment;
 
                 var log = new BedActionLog
                 {
@@ -73,6 +94,25 @@ namespace MedicalSystem.Data.Storages
                     PerformedAt = System.DateTime.UtcNow
                 };
                 _context.BedActionLogs.Add(log);
+
+                // Add MedicineOperationLog to synchronize with medicinespage
+                var opLog = new MedicineOperationLog
+                {
+                    Id = System.Guid.NewGuid(),
+                    MedicineId = medicine.Id,
+                    PerformedAt = System.DateTime.UtcNow,
+                    Type = deduct ? OperationType.Writeoff : OperationType.Adjustment,
+                    Quantity = amountToDeduct,
+                    BalanceAfter = medicine.CurrentBalance,
+                    PerformedById = performedStaffId ?? System.Guid.Empty,
+                    Comment = deduct
+                        ? "Списано автоматически при выполнении назначения в листе обхода."
+                        : "Отмена выполнения назначения в листе обхода.",
+                    Reason = deduct ? WriteOffReason.Patient : WriteOffReason.Adjustment,
+                    PatientId = prescription.PatientId,
+                    PrescriptionId = prescription.PatientMedicationId
+                };
+                _context.MedicineOperationLogs.Add(opLog);
 
                 await _context.SaveChangesAsync(token);
             }

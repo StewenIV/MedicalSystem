@@ -45,9 +45,17 @@ export const mapServerEncounterToSavedInspection = (e: ServerEncounterDto): Save
 
   const doctorName = e.doctorName || extractDoctorFromFormData((e as any).formData)
 
+  let uiType: 'primary' | 'daily' | 'discharge' = 'daily'
+  const typeLower = e.type?.toLowerCase() || ''
+  if (typeLower.includes('первич') || typeLower.includes('primary')) {
+    uiType = 'primary'
+  } else if (typeLower.includes('выписк') || typeLower.includes('discharge')) {
+    uiType = 'discharge'
+  }
+
   return {
     id: e.id,
-    type: e.type === 'Primary Inspection' || e.type === 'Первичный осмотр' ? 'primary' : 'daily',
+    type: uiType,
     date: dateStr,
     time: timeStr,
     doctor: doctorName ?? '',
@@ -56,7 +64,7 @@ export const mapServerEncounterToSavedInspection = (e: ServerEncounterDto): Save
     complaints: e.complaints ?? undefined,
     objective: e.objective ?? undefined,
     recommendations: e.recommendations ?? undefined,
-    formData: (e as any).formData ?? undefined,
+    formData: e.formData ?? undefined,
   }
 }
 

@@ -36,7 +36,7 @@ const WelcomeScreen: React.FC = () => {
     <>
       <Helmet>
         <title>Пульмонология - Главная</title>
-        <meta name="description" content="Единая медицинская информационная система" />
+        <meta name="description" content="Медицинская информационная система" />
       </Helmet>
 
       <WelcomeScreenContainer>
@@ -45,7 +45,7 @@ const WelcomeScreen: React.FC = () => {
             <Heart size={48} />
           </Logo>
           <Title>Пульмонология</Title>
-          <Subtitle>Единая медицинская информационная система пульмонологии</Subtitle>
+          <Subtitle>Медицинская информационная система пульмонологии</Subtitle>
           <Description>
             <span>Цифровизация здравоохранения для </span>
             <span>эффективной работы медицинского персонала </span>
@@ -102,10 +102,10 @@ const WelcomeScreen: React.FC = () => {
                 <CheckCircle /> Безопасное хранение
               </ListItem>
               <ListItem>
-                <CheckCircle /> Доступ из любого отделения
+                <CheckCircle /> Доступ для врачей
               </ListItem>
               <ListItem>
-                <CheckCircle /> Соответствие GDPR
+                <CheckCircle /> Защита данных
               </ListItem>
             </List>
           </Card>
@@ -117,16 +117,16 @@ const WelcomeScreen: React.FC = () => {
             <CardTitle>Для пациентов</CardTitle>
             <List>
               <ListItem>
-                <CheckCircle /> Онлайн-запись 24/7
+                <CheckCircle /> Просмотр результатов анализов
               </ListItem>
               <ListItem>
                 <CheckCircle /> Анализы и обследования
               </ListItem>
               <ListItem>
-                <CheckCircle /> История посещений
+                <CheckCircle /> Уведомления
               </ListItem>
               <ListItem>
-                <CheckCircle /> Напоминания
+                <CheckCircle /> Просмотр статусов исследований
               </ListItem>
             </List>
           </Card>

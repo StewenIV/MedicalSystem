@@ -1329,7 +1329,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                   ГУ БЕНДЕРСКАЯ ЦЕНТРАЛЬНАЯ ГОРОДСКАЯ БОЛЬНИЦА
                 </S.PrintHospitalName>
                 <S.PrintDepartmentName>Клинико-диагностическая лаборатория</S.PrintDepartmentName>
-                <S.PrintAddress>Адрес: ПМР, г. Бендеры, ул. Дружбы, 4</S.PrintAddress>
+                <S.PrintAddress>Адрес: ПМР, г. Бендеры, ул. Бендерского Восстания, 146</S.PrintAddress>
               </div>
               <S.PrintDateInfo>
                 <div>

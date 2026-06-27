@@ -144,6 +144,11 @@ export interface LabDto {
   reason?: string;
   doctorName?: string;
   statusText?: string;
+  resultData?: string;
+  comments?: string;
+  pdfDocumentPath?: string;
+  laboratoryEmployeeName?: string;
+  dateUpdated?: string;
 }
 
 export interface VaccineDto {
@@ -172,6 +177,7 @@ export interface HistoryEntryDto {
   objective?: string;
   conclusion?: string;
   recommendations?: string;
+  formData?: string;
 }
 
 export const fetchPatientCard = (id: string): Promise<PatientCardDto> => {

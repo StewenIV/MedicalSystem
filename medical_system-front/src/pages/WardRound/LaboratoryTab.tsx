@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { FlaskConical, ClipboardList, Plus, Check, FileText, Calendar, AlertCircle } from 'lucide-react'
+import {
+  FlaskConical,
+  ClipboardList,
+  Plus,
+  Check,
+  FileText,
+  Calendar,
+  AlertCircle
+} from 'lucide-react'
 import { usePatientData } from 'context/PatientDataContext'
 import { useSelector } from 'react-redux'
 import { selectDisplayName } from 'features/App/selectors'
@@ -23,11 +31,11 @@ const DEFAULT_TESTS = [
   { id: 'ct', name: 'КТ ОГК', category: 'instrumental' },
   { id: 'mri', name: 'МРТ', category: 'instrumental' },
   { id: 'echo', name: 'ЭхоКГ', category: 'instrumental' },
-  { id: 'broncho', name: 'Бронхоскопия', category: 'instrumental' },
+  { id: 'broncho', name: 'Бронхоскопия', category: 'instrumental' }
 ]
 
 export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
-  const { getPatient, updatePatientRoundData, refreshPatients } = usePatientData()
+  const { getPatient, updatePatientRoundData, loadPatientEncounters } = usePatientData()
   const patient = getPatient(patientId)
   const currentUserDisplayName = useSelector(selectDisplayName)
 
@@ -51,7 +59,16 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
 
   if (!patient) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontFamily: FONT }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          color: '#94a3b8',
+          fontFamily: FONT
+        }}
+      >
         Пациент не найден
       </div>
     )
@@ -60,8 +77,8 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
   const isMobile = windowWidth < 992
 
   const toggleTest = (name: string) => {
-    setSelectedTests(prev =>
-      prev.includes(name) ? prev.filter(t => t !== name) : [...prev, name]
+    setSelectedTests((prev) =>
+      prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]
     )
   }
 
@@ -74,11 +91,11 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
     setLoading(true)
     try {
       const doctor = currentUserDisplayName || patient.doctor || 'Лечащий врач'
-      const newLabs = selectedTests.map(testName => ({
+      const newLabs = selectedTests.map((testName) => ({
         id: '00000000-0000-0000-0000-000000000000',
         type: testName,
         date: new Date().toISOString(),
-        statusText: 'Новое',
+        statusText: 'Назначено',
         doctorName: doctor,
         reason: reason.trim()
       }))
@@ -88,15 +105,17 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
         id: l.id || '00000000-0000-0000-0000-000000000000',
         type: l.type || '',
         date: l.date,
-        statusText: l.statusText || 'Новое',
+        statusText: l.statusText || 'Назначено',
         doctorName: l.doctorName || l.doctor || 'Лечащий врач',
         reason: l.reason || ''
       }))
 
       const updatedLabs = [...existingLabs, ...newLabs]
 
-      await updatePatientRoundData(patientId, undefined, undefined, undefined, { labs: updatedLabs })
-      await refreshPatients()
+      await updatePatientRoundData(patientId, undefined, undefined, undefined, {
+        labs: updatedLabs
+      })
+      await loadPatientEncounters(patientId)
 
       setSelectedTests([])
       setReason('')
@@ -133,7 +152,7 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
     height: isMobile ? 'auto' : '100%',
     background: '#f3f4f6',
     fontFamily: FONT,
-    overflow: isMobile ? 'visible' : 'hidden',
+    overflow: isMobile ? 'visible' : 'hidden'
   }
 
   const sidebarStyle: React.CSSProperties = {
@@ -146,14 +165,14 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
     flexDirection: 'column',
     overflowY: isMobile ? 'visible' : 'auto',
     padding: '24px',
-    boxSizing: 'border-box',
+    boxSizing: 'border-box'
   }
 
   const mainStyle: React.CSSProperties = {
     flex: 1,
     padding: isMobile ? '16px' : '24px 32px',
     overflowY: isMobile ? 'visible' : 'auto',
-    boxSizing: 'border-box',
+    boxSizing: 'border-box'
   }
 
   const sectionHeader: React.CSSProperties = {
@@ -165,7 +184,7 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
     marginTop: '16px',
     marginBottom: '10px',
     paddingBottom: '4px',
-    borderBottom: '1px solid #f1f5f9',
+    borderBottom: '1px solid #f1f5f9'
   }
 
   const checkBtn = (checked: boolean) => ({
@@ -181,34 +200,46 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
     fontWeight: 500,
     cursor: 'pointer',
     fontFamily: FONT,
-    transition: 'all 0.12s',
+    transition: 'all 0.12s'
   })
 
   return (
     <div style={containerStyle}>
       {/* SIDEBAR - NEW REFERRAL FORM */}
       <div style={sidebarStyle}>
-        <h3 style={{ fontSize: '15px', fontWeight: 700, margin: '0 0 16px 0', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3
+          style={{
+            fontSize: '15px',
+            fontWeight: 700,
+            margin: '0 0 16px 0',
+            color: '#0f172a',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
           <FlaskConical size={18} color="#2563eb" /> Назначить исследования
         </h3>
 
         <div style={sectionHeader}>Лаборатория</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }}>
-          {DEFAULT_TESTS.filter(t => t.category === 'lab').map(t => {
+          {DEFAULT_TESTS.filter((t) => t.category === 'lab').map((t) => {
             const checked = selectedTests.includes(t.name)
             return (
               <button key={t.id} style={checkBtn(checked)} onClick={() => toggleTest(t.name)}>
-                <span style={{
-                  width: '14px',
-                  height: '14px',
-                  borderRadius: '3px',
-                  border: `1.5px solid ${checked ? '#3b82f6' : '#cbd5e1'}`,
-                  background: checked ? '#3b82f6' : 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
+                <span
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '3px',
+                    border: `1.5px solid ${checked ? '#3b82f6' : '#cbd5e1'}`,
+                    background: checked ? '#3b82f6' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
                   {checked && <Check size={10} color="white" />}
                 </span>
                 {t.name}
@@ -219,21 +250,23 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
 
         <div style={sectionHeader}>Инструментальные</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '20px' }}>
-          {DEFAULT_TESTS.filter(t => t.category === 'instrumental').map(t => {
+          {DEFAULT_TESTS.filter((t) => t.category === 'instrumental').map((t) => {
             const checked = selectedTests.includes(t.name)
             return (
               <button key={t.id} style={checkBtn(checked)} onClick={() => toggleTest(t.name)}>
-                <span style={{
-                  width: '14px',
-                  height: '14px',
-                  borderRadius: '3px',
-                  border: `1.5px solid ${checked ? '#3b82f6' : '#cbd5e1'}`,
-                  background: checked ? '#3b82f6' : 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
+                <span
+                  style={{
+                    width: '14px',
+                    height: '14px',
+                    borderRadius: '3px',
+                    border: `1.5px solid ${checked ? '#3b82f6' : '#cbd5e1'}`,
+                    background: checked ? '#3b82f6' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
                   {checked && <Check size={10} color="white" />}
                 </span>
                 {t.name}
@@ -243,7 +276,15 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
         </div>
 
         <div style={{ marginBottom: '20px' }}>
-          <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '5px' }}>
+          <label
+            style={{
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#64748b',
+              display: 'block',
+              marginBottom: '5px'
+            }}
+          >
             Показания / Примечание
           </label>
           <textarea
@@ -258,11 +299,11 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
               resize: 'none',
               height: '80px',
               boxSizing: 'border-box',
-              background: 'white',
+              background: 'white'
             }}
             placeholder="Обоснование назначения..."
             value={reason}
-            onChange={e => setReason(e.target.value)}
+            onChange={(e) => setReason(e.target.value)}
           />
         </div>
 
@@ -281,7 +322,7 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
             fontFamily: FONT,
             fontSize: '13px',
             transition: 'background 0.2s',
-            boxShadow: selectedTests.length > 0 ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none',
+            boxShadow: selectedTests.length > 0 ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none'
           }}
         >
           {loading ? 'Сохранение...' : `Создать направление (${selectedTests.length})`}
@@ -290,8 +331,25 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
 
       {/* MAIN CONTENT - HISTORY LIST */}
       <div style={mainStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '16px'
+          }}
+        >
+          <h2
+            style={{
+              fontSize: '18px',
+              fontWeight: 700,
+              margin: 0,
+              color: '#0f172a',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px'
+            }}
+          >
             <ClipboardList size={20} color="#64748b" /> История направлений
           </h2>
           <span style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 500 }}>
@@ -300,25 +358,39 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
         </div>
 
         {sortedLabs.length === 0 ? (
-          <div style={{
-            background: 'white',
-            border: '1px solid #e5e7eb',
-            borderRadius: '12px',
-            padding: '40px 24px',
-            textAlign: 'center',
-            color: '#94a3b8',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-          }}>
+          <div
+            style={{
+              background: 'white',
+              border: '1px solid #e5e7eb',
+              borderRadius: '12px',
+              padding: '40px 24px',
+              textAlign: 'center',
+              color: '#94a3b8',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+            }}
+          >
             <ClipboardList size={36} color="#cbd5e1" style={{ margin: '0 auto 12px' }} />
-            <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>Направлений не найдено</div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>Используйте панель слева, чтобы назначить лабораторные или инструментальные исследования.</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>
+              Направлений не найдено
+            </div>
+            <div style={{ fontSize: '12px', marginTop: '4px' }}>
+              Используйте панель слева, чтобы назначить лабораторные или инструментальные
+              исследования.
+            </div>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: '14px' }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))',
+              gap: '14px'
+            }}
+          >
             {sortedLabs.map((lab: any, idx: number) => {
               const statusColors = getStatusStyle(lab.statusText)
               const testDate = lab.date ? new Date(lab.date) : null
-              const isInstrumental = DEFAULT_TESTS.find(t => t.name === lab.type)?.category === 'instrumental'
+              const isInstrumental =
+                DEFAULT_TESTS.find((t) => t.name === lab.type)?.category === 'instrumental'
 
               return (
                 <div
@@ -333,59 +405,107 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
                     justifyContent: 'space-between',
                     boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                     transition: 'transform 0.15s, box-shadow 0.15s',
-                    position: 'relative',
+                    position: 'relative'
                   }}
                 >
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        color: isInstrumental ? '#7c3aed' : '#2563eb',
-                        background: isInstrumental ? '#f5f3ff' : '#eff6ff',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                      }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: isInstrumental ? '#7c3aed' : '#2563eb',
+                          background: isInstrumental ? '#f5f3ff' : '#eff6ff',
+                          padding: '2px 8px',
+                          borderRadius: '20px'
+                        }}
+                      >
                         {isInstrumental ? 'Инструм.' : 'Лаборатория'}
                       </span>
-                      <span style={{
-                        fontSize: '11px',
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        background: statusColors.bg,
-                        color: statusColors.text,
-                        border: `1px solid ${statusColors.border}`
-                      }}>
-                        {lab.statusText || 'Новое'}
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '2px 8px',
+                          borderRadius: '20px',
+                          background: statusColors.bg,
+                          color: statusColors.text,
+                          border: `1px solid ${statusColors.border}`
+                        }}
+                      >
+                        {lab.statusText || 'Назначено'}
                       </span>
                     </div>
 
-                    <h4 style={{ fontSize: '15px', fontWeight: 700, margin: '8px 0 4px 0', color: '#1e293b' }}>
+                    <h4
+                      style={{
+                        fontSize: '15px',
+                        fontWeight: 700,
+                        margin: '8px 0 4px 0',
+                        color: '#1e293b'
+                      }}
+                    >
                       {lab.type}
                     </h4>
 
                     {lab.reason && (
-                      <div style={{
-                        fontSize: '12px',
-                        color: '#64748b',
-                        background: '#f8fafc',
-                        padding: '8px 10px',
-                        borderRadius: '6px',
-                        margin: '8px 0',
-                        lineHeight: 1.4,
-                        borderLeft: '2px solid #cbd5e1'
-                      }}>
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          color: '#64748b',
+                          background: '#f8fafc',
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          margin: '8px 0',
+                          lineHeight: 1.4,
+                          borderLeft: '2px solid #cbd5e1'
+                        }}
+                      >
                         <strong>Показания:</strong> {lab.reason}
                       </div>
                     )}
                   </div>
 
-                  <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', marginTop: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#94a3b8', marginBottom: '4px' }}>
-                      <Calendar size={12} /> {testDate ? formatLocalDate(testDate.toISOString().split('T')[0]) + ' ' + testDate.toTimeString().split(' ')[0].slice(0, 5) : '-'}
+                  <div
+                    style={{
+                      borderTop: '1px solid #f1f5f9',
+                      paddingTop: '10px',
+                      marginTop: '10px'
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '11px',
+                        color: '#94a3b8',
+                        marginBottom: '4px'
+                      }}
+                    >
+                      <Calendar size={12} />{' '}
+                      {testDate
+                        ? formatLocalDate(testDate.toISOString().split('T')[0]) +
+                          ' ' +
+                          testDate.toTimeString().split(' ')[0].slice(0, 5)
+                        : '-'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#94a3b8' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        fontSize: '11px',
+                        color: '#94a3b8'
+                      }}
+                    >
                       <FileText size={12} /> Врач: {lab.doctorName || lab.doctor || 'Не указан'}
                     </div>
                   </div>
@@ -398,23 +518,25 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
 
       {/* TOAST NOTIFICATION */}
       {toast && (
-        <div style={{
-          position: 'fixed',
-          bottom: '24px',
-          right: '24px',
-          zIndex: 9999,
-          padding: '12px 20px',
-          borderRadius: '8px',
-          background: toast.type === 'success' ? '#10b981' : '#ef4444',
-          color: 'white',
-          fontSize: '13px',
-          fontWeight: 600,
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          fontFamily: FONT,
-        }}>
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            padding: '12px 20px',
+            borderRadius: '8px',
+            background: toast.type === 'success' ? '#10b981' : '#ef4444',
+            color: 'white',
+            fontSize: '13px',
+            fontWeight: 600,
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            fontFamily: FONT
+          }}
+        >
           {toast.type === 'success' ? <Check size={16} /> : <AlertCircle size={16} />}
           {toast.text}
         </div>

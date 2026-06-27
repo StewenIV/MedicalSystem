@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import { toast } from 'react-toastify'
-import html2canvas from 'html2canvas'
-import { jsPDF } from 'jspdf'
 import { PatternFormat } from 'react-number-format'
 import {
   Activity,
@@ -171,7 +169,9 @@ interface ExamItem {
   date: string
   resultDate: string
   type: 'lab' | 'imaging' | 'functional' | 'other'
-  status: 'ready' | 'processing'
+  status: 'assigned' | 'processing' | 'completed'
+  statusText: string
+  filePath?: string
   details?: string
   doctor?: string
   parameters?: { name: string; value: string; norm: string; unit: string }[]
@@ -400,6 +400,12 @@ const ExamTypeLabel: Record<string, string> = {
   other: 'Прочее'
 }
 
+const ExamStatusLabel: Record<ExamItem['status'], string> = {
+  assigned: 'Назначено',
+  processing: 'В работе',
+  completed: 'Выполнено'
+}
+
 const DocTypeColor: Record<string, { bg: string; color: string }> = {
   выписка: { bg: '#EFF6FF', color: '#2563EB' },
   заключение: { bg: '#F5F3FF', color: '#7C3AED' },
@@ -493,11 +499,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [viewingExam, setViewingExam] = useState<ExamItem | null>(null)
   const [viewingDoc, setViewingDoc] = useState<DocItem | null>(null)
 
-  const printableRef = useRef<HTMLDivElement>(null)
-  const [activePrintExam, setActivePrintExam] = useState<ExamItem | null>(null)
-  const [activePrintDoc, setActivePrintDoc] = useState<DocItem | null>(null)
-  const [pdfGenerating, setPdfGenerating] = useState(false)
-
   const [examsList, setExamsList] = useState<ExamItem[]>([])
   const [docsList, setDocsList] = useState<DocItem[]>([])
 
@@ -555,6 +556,8 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 resultDate: e.resultDate,
                 type: e.type,
                 status: e.status,
+                statusText: e.statusText || ExamStatusLabel[e.status],
+                filePath: e.filePath,
                 doctor: e.doctor || '',
                 details: e.details || '',
                 parameters: e.parameters
@@ -618,7 +621,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
       }
     }
     load()
-  }, [userId])
+  }, [userId, activeSection])
 
   const patientFullName = useMemo(() => {
     if (!patientData) return 'Пациент'
@@ -819,63 +822,8 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
     reader.readAsDataURL(file)
   }
 
-  const generatePdf = async (node: HTMLElement, filename: string) => {
-    try {
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      })
-      const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: 'a4' })
-      const pw = pdf.internal.pageSize.getWidth()
-      const ph = pdf.internal.pageSize.getHeight()
-      const ratio = Math.min(pw / canvas.width, ph / canvas.height)
-      pdf.addImage(
-        canvas.toDataURL('image/png'),
-        'PNG',
-        (pw - canvas.width * ratio) / 2,
-        20,
-        canvas.width * ratio,
-        canvas.height * ratio
-      )
-      pdf.save(filename)
-      toast.success('Файл скачан')
-    } catch {
-      toast.error('Не удалось создать PDF')
-    }
-  }
-
-  const downloadExamPdf = async (exam: ExamItem) => {
-    setActivePrintExam(exam)
-    setPdfGenerating(true)
-    toast.info('Формирование документа…')
-    setTimeout(async () => {
-      if (printableRef.current) {
-        await generatePdf(
-          printableRef.current,
-          `Анализ_${exam.name.replace(/ /g, '_')}_${exam.date}.pdf`
-        )
-      }
-      setPdfGenerating(false)
-      setActivePrintExam(null)
-    }, 300)
-  }
-
-  const downloadDocPdf = async (doc: DocItem) => {
-    setActivePrintDoc(doc)
-    setPdfGenerating(true)
-    toast.info('Формирование документа…')
-    setTimeout(async () => {
-      if (printableRef.current) {
-        await generatePdf(
-          printableRef.current,
-          `Документ_${doc.name.replace(/ /g, '_')}_${doc.date}.pdf`
-        )
-      }
-      setPdfGenerating(false)
-      setActivePrintDoc(null)
-    }, 300)
+  const handleDocumentPrimaryAction = (doc: DocItem) => {
+    setViewingDoc(doc)
   }
 
   if (loading) {
@@ -943,7 +891,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
 
           <StatsGrid>
             <AnimatedPatientStatCard
-              targetValue={examsList.filter((e) => e.status === 'ready').length}
+              targetValue={examsList.filter((e) => e.status === 'completed').length}
               color="#2563EB"
               bg="#EFF6FF"
               icon={<Activity size={17} />}
@@ -1004,9 +952,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                         {exam.date} · {exam.doctor}
                       </ItemDate>
                     </ItemLabel>
-                    <StatusBadge $status={exam.status}>
-                      {exam.status === 'ready' ? 'Готово' : 'В работе'}
-                    </StatusBadge>
+                    <StatusBadge $status={exam.status}>{exam.statusText}</StatusBadge>
                   </SimpleItem>
                 ))}
               </SimpleList>
@@ -1108,21 +1054,16 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                       <TableTd style={{ color: '#475569' }}>{exam.date}</TableTd>
                       <TableTd style={{ color: '#475569' }}>{exam.resultDate}</TableTd>
                       <TableTd>
-                        <StatusBadge $status={exam.status}>
-                          {exam.status === 'ready' ? 'Готово' : 'В работе'}
-                        </StatusBadge>
+                        <StatusBadge $status={exam.status}>{exam.statusText}</StatusBadge>
                       </TableTd>
                       <TableTd>
                         <FlexActions style={{ justifyContent: 'flex-end' }}>
                           <ActionButton $primary onClick={() => setViewingExam(exam)}>
                             <Eye size={13} /> Просмотр
                           </ActionButton>
-                          {exam.status === 'ready' && (
-                            <ActionButton
-                              onClick={() => downloadExamPdf(exam)}
-                              disabled={pdfGenerating}
-                            >
-                              <Download size={13} /> PDF
+                          {exam.status === 'completed' && exam.filePath && (
+                            <ActionButton onClick={() => setViewingExam(exam)}>
+                              <Eye size={13} /> Файл
                             </ActionButton>
                           )}
                         </FlexActions>
@@ -1225,17 +1166,8 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                         <ActionButton $primary onClick={() => setViewingDoc(doc)}>
                           <Eye size={13} /> Открыть
                         </ActionButton>
-                        <ActionButton
-                          onClick={() => {
-                            if (doc.filePath) {
-                              downloadFileFromServer(doc.name, doc.filePath)
-                            } else {
-                              downloadDocPdf(doc)
-                            }
-                          }}
-                          disabled={pdfGenerating}
-                        >
-                          <Download size={13} />
+                        <ActionButton onClick={() => handleDocumentPrimaryAction(doc)}>
+                          {doc.filePath ? <Eye size={13} /> : <Download size={13} />}
                         </ActionButton>
                       </FlexActions>
                     </DocFooter>
@@ -1453,23 +1385,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
               <User size={14} style={{ marginRight: 7 }} />
               Удалить аккаунт
             </SecondaryButton>
-
-            <div
-              style={{ width: '100%', borderTop: '1px solid rgba(15,23,42,0.07)', paddingTop: 14 }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 7,
-                  color: '#DC2626',
-                  fontSize: '12px',
-                  fontWeight: 500
-                }}
-              >
-                <ShieldAlert size={14} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>Служебная медкарта и история обходов скрыты в целях конфиденциальности.</span>
-              </div>
-            </div>
           </ProfileSidebarCard>
 
           <ProfileMainCard>
@@ -1853,9 +1768,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 <span>
                   Врач: <strong style={{ color: '#475569' }}>{viewingExam.doctor}</strong>
                 </span>
-                <StatusBadge $status={viewingExam.status}>
-                  {viewingExam.status === 'ready' ? 'Готово' : 'В работе'}
-                </StatusBadge>
+                <StatusBadge $status={viewingExam.status}>{viewingExam.statusText}</StatusBadge>
               </div>
 
               {viewingExam.parameters && viewingExam.parameters.length > 0 && (
@@ -1920,6 +1833,34 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
                 </div>
               )}
 
+              {viewingExam.filePath && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      color: '#64748B',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.6px',
+                      marginBottom: 8
+                    }}
+                  >
+                    Файл результата
+                  </div>
+                  <iframe
+                    src={`${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(viewingExam.filePath)}`}
+                    title={viewingExam.name}
+                    style={{
+                      width: '100%',
+                      height: 500,
+                      border: 'none',
+                      borderRadius: 8,
+                      marginTop: 10
+                    }}
+                  />
+                </div>
+              )}
+
               {viewingExam.details && (
                 <div>
                   <div
@@ -1952,15 +1893,17 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             </ModalBody>
             <ModalFooter>
               <SecondaryButton onClick={() => setViewingExam(null)}>Закрыть</SecondaryButton>
-              {viewingExam.status === 'ready' && (
+              {viewingExam.filePath && (
                 <SaveButton
                   onClick={() => {
-                    downloadExamPdf(viewingExam)
+                    const filePath = viewingExam.filePath
+                    if (!filePath) return
+                    downloadFileFromServer(viewingExam.name, filePath)
                     setViewingExam(null)
                   }}
                 >
                   <Download size={14} style={{ marginRight: 6 }} />
-                  Скачать PDF
+                  Скачать файл
                 </SaveButton>
               )}
             </ModalFooter>
@@ -2057,19 +2000,19 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             </ModalBody>
             <ModalFooter>
               <SecondaryButton onClick={() => setViewingDoc(null)}>Закрыть</SecondaryButton>
-              <SaveButton
-                onClick={() => {
-                  if (viewingDoc.filePath) {
-                    downloadFileFromServer(viewingDoc.name, viewingDoc.filePath)
-                  } else {
-                    downloadDocPdf(viewingDoc)
-                  }
-                  setViewingDoc(null)
-                }}
-              >
-                <Download size={14} style={{ marginRight: 6 }} />
-                Скачать документ
-              </SaveButton>
+              {viewingDoc.filePath && (
+                <SaveButton
+                  onClick={() => {
+                    const filePath = viewingDoc.filePath
+                    if (!filePath) return
+                    downloadFileFromServer(viewingDoc.name, filePath)
+                    setViewingDoc(null)
+                  }}
+                >
+                  <Download size={14} style={{ marginRight: 6 }} />
+                  Скачать документ
+                </SaveButton>
+              )}
             </ModalFooter>
           </ModalContent>
         </ModalOverlay>
@@ -2189,372 +2132,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
           </ModalContent>
         </ModalOverlay>
       )}
-
-      {/* ── HIDDEN PDF AREA ─────────────────────────────────── */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '-9999px',
-          left: '-9999px',
-          width: 0,
-          height: 0,
-          overflow: 'hidden'
-        }}
-      >
-        {activePrintExam && (
-          <div
-            ref={printableRef}
-            style={{
-              width: 600,
-              padding: 40,
-              fontFamily: "'Inter', system-ui, sans-serif",
-              color: '#0F172A',
-              background: '#fff',
-              boxSizing: 'border-box'
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                borderBottom: '2px solid #2563EB',
-                paddingBottom: 20,
-                marginBottom: 24
-              }}
-            >
-              <div>
-                <h2 style={{ margin: 0, fontSize: 18, color: '#1E3A8A', fontWeight: 800 }}>
-                  ОБЛАСТНАЯ КЛИНИЧЕСКАЯ БОЛЬНИЦА
-                </h2>
-                <div style={{ fontSize: 11, color: '#64748B', marginTop: 3 }}>
-                  Пульмонологическое отделение
-                </div>
-              </div>
-              <div style={{ textAlign: 'right', fontSize: 12, color: '#64748B' }}>
-                <div>Медкарта: {patientData?.medcardNum || '—'}</div>
-                <div>Дата: {activePrintExam.resultDate}</div>
-              </div>
-            </div>
-            <div style={{ textAlign: 'center', marginBottom: 24 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: '#64748B',
-                  textTransform: 'uppercase',
-                  letterSpacing: 1,
-                  marginBottom: 6
-                }}
-              >
-                Результаты исследования
-              </div>
-              <h3 style={{ margin: 0, fontSize: 18, color: '#0F172A', fontWeight: 700 }}>
-                {activePrintExam.name}
-              </h3>
-            </div>
-            <div
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 8,
-                padding: 14,
-                marginBottom: 22,
-                fontSize: 13
-              }}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                <div>
-                  <strong>Пациент:</strong> {patientFullName}
-                </div>
-                <div>
-                  <strong>Дата рождения:</strong>{' '}
-                  {patientData?.dateOfBirth
-                    ? formatLocalDate(patientData.dateOfBirth)
-                    : '15.03.1985'}
-                </div>
-                <div>
-                  <strong>Пол:</strong> {patientData?.gender || 'Мужской'}
-                </div>
-                <div>
-                  <strong>Врач:</strong> {activePrintExam.doctor}
-                </div>
-              </div>
-            </div>
-            {activePrintExam.parameters && activePrintExam.parameters.length > 0 && (
-              <div style={{ marginBottom: 22 }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 700,
-                    color: '#64748B',
-                    textTransform: 'uppercase',
-                    letterSpacing: 0.8,
-                    marginBottom: 8
-                  }}
-                >
-                  Показатели
-                </div>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-                  <thead>
-                    <tr style={{ background: '#F1F5F9' }}>
-                      <th
-                        style={{
-                          border: '1px solid #E2E8F0',
-                          padding: '7px 10px',
-                          textAlign: 'left'
-                        }}
-                      >
-                        Параметр
-                      </th>
-                      <th
-                        style={{
-                          border: '1px solid #E2E8F0',
-                          padding: '7px 10px',
-                          textAlign: 'center'
-                        }}
-                      >
-                        Результат
-                      </th>
-                      <th
-                        style={{
-                          border: '1px solid #E2E8F0',
-                          padding: '7px 10px',
-                          textAlign: 'center'
-                        }}
-                      >
-                        Норма
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activePrintExam.parameters.map((p, i) => (
-                      <tr key={i}>
-                        <td style={{ border: '1px solid #E2E8F0', padding: '7px 10px' }}>
-                          {p.name}
-                        </td>
-                        <td
-                          style={{
-                            border: '1px solid #E2E8F0',
-                            padding: '7px 10px',
-                            textAlign: 'center',
-                            fontWeight: 700
-                          }}
-                        >
-                          {p.value} {p.unit}
-                        </td>
-                        <td
-                          style={{
-                            border: '1px solid #E2E8F0',
-                            padding: '7px 10px',
-                            textAlign: 'center',
-                            color: '#64748B'
-                          }}
-                        >
-                          {p.norm}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            <div style={{ marginBottom: 40 }}>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  color: '#64748B',
-                  textTransform: 'uppercase',
-                  letterSpacing: 0.8,
-                  marginBottom: 8
-                }}
-              >
-                Заключение
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: '#334155',
-                  lineHeight: 1.6,
-                  padding: 14,
-                  background: '#F8FAFC',
-                  borderRadius: 8,
-                  border: '1px solid #E2E8F0'
-                }}
-              >
-                {activePrintExam.details}
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                marginTop: 50,
-                fontSize: 12,
-                color: '#475569'
-              }}
-            >
-              <div>
-                <div>Лечащий врач: ____________________</div>
-                <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 3 }}>
-                  подпись / расшифровка
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    border: '2px dashed #2563EB',
-                    borderRadius: '50%',
-                    width: 80,
-                    height: 80,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#2563EB',
-                    fontWeight: 800,
-                    fontSize: 10,
-                    transform: 'rotate(-10deg)',
-                    margin: '0 auto',
-                    textAlign: 'center',
-                    padding: 4
-                  }}
-                >
-                  М.П. ГУ БЦГБ
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activePrintDoc && (
-          <div
-            ref={printableRef}
-            style={{
-              width: 600,
-              padding: 40,
-              fontFamily: "'Inter', system-ui, sans-serif",
-              color: '#0F172A',
-              background: '#fff',
-              boxSizing: 'border-box'
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                borderBottom: '2px solid #059669',
-                paddingBottom: 20,
-                marginBottom: 24
-              }}
-            >
-              <div>
-                <h2 style={{ margin: 0, fontSize: 18, color: '#064E3B', fontWeight: 800 }}>
-                  ОБЛАСТНАЯ КЛИНИЧЕСКАЯ БОЛЬНИЦА
-                </h2>
-                <div style={{ fontSize: 11, color: '#64748B', marginTop: 3 }}>
-                  Пульмонологическое отделение
-                </div>
-              </div>
-              <div style={{ textAlign: 'right', fontSize: 12, color: '#64748B' }}>
-                <div>Медкарта: {patientData?.medcardNum || '—'}</div>
-                <div>Дата: {activePrintDoc.date}</div>
-              </div>
-            </div>
-            <div style={{ textAlign: 'center', marginBottom: 26 }}>
-              <div
-                style={{
-                  fontSize: 12,
-                  color: '#64748B',
-                  textTransform: 'uppercase',
-                  letterSpacing: 1,
-                  marginBottom: 6
-                }}
-              >
-                {activePrintDoc.type}
-              </div>
-              <h3 style={{ margin: 0, fontSize: 18, color: '#0F172A', fontWeight: 700 }}>
-                {activePrintDoc.name}
-              </h3>
-            </div>
-            <div
-              style={{
-                background: '#F8FAFC',
-                border: '1px solid #E2E8F0',
-                borderRadius: 8,
-                padding: 14,
-                marginBottom: 26,
-                fontSize: 13
-              }}
-            >
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                <div>
-                  <strong>Пациент:</strong> {patientFullName}
-                </div>
-                <div>
-                  <strong>Дата рождения:</strong>{' '}
-                  {patientData?.dateOfBirth
-                    ? formatLocalDate(patientData.dateOfBirth)
-                    : '15.03.1985'}
-                </div>
-                <div>
-                  <strong>Пол:</strong> {patientData?.gender || 'Мужской'}
-                </div>
-                <div>
-                  <strong>Врач:</strong> {activePrintDoc.doctor}
-                </div>
-              </div>
-            </div>
-            <div
-              style={{
-                fontSize: 13.5,
-                color: '#1E293B',
-                lineHeight: 1.7,
-                textAlign: 'justify',
-                whiteSpace: 'pre-wrap',
-                marginBottom: 50
-              }}
-            >
-              {activePrintDoc.content}
-            </div>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                fontSize: 12,
-                color: '#475569'
-              }}
-            >
-              <div>
-                <div>Лечащий врач: ____________________</div>
-                <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 3 }}>
-                  {activePrintDoc.doctor}
-                </div>
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <div
-                  style={{
-                    border: '2px dashed #059669',
-                    borderRadius: '50%',
-                    width: 80,
-                    height: 80,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#059669',
-                    fontWeight: 800,
-                    fontSize: 10,
-                    transform: 'rotate(-5deg)',
-                    margin: '0 auto',
-                    textAlign: 'center',
-                    padding: 4
-                  }}
-                >
-                  М.П. ГУ БЦГБ
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </PageContainer>
   )
 }

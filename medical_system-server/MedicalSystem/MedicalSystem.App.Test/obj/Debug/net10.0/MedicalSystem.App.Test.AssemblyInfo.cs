@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MedicalSystem.App.Test")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+83b3f348e33e63e1b5d433d39fc37f6b1d415899")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+879fbe99e82af452171e6e79a1783a3231d525b9")]
 [assembly: System.Reflection.AssemblyProductAttribute("MedicalSystem.App.Test")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MedicalSystem.App.Test")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

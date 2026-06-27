@@ -144,7 +144,7 @@ export interface BedStatsDto {
 }
 
 export interface RoomsConfigDto {
-  [roomNumber: string]: { gender: 'male' | 'female' | 'free' }
+  [roomNumber: string]: { gender: 'male' | 'female' | 'free'; priority?: number }
 }
 
 export interface FloorsDto {

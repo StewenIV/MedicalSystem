@@ -398,7 +398,7 @@ function PillBtn({
   children: React.ReactNode
 }) {
   return (
-    <button style={s.pill(active, color)} onClick={onClick}>
+    <button type="button" style={s.pill(active, color)} onClick={onClick}>
       {children}
     </button>
   )
@@ -416,6 +416,7 @@ function CheckBtnComp({
   const [hover, setHover] = useState(false)
   return (
     <button
+      type="button"
       style={{ ...s.checkBtn(checked), ...(hover && !checked ? { borderColor: '#bfdbfe' } : {}) }}
       onClick={onClick}
       onMouseEnter={() => setHover(true)}
@@ -1045,6 +1046,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
     const draft = getDraft(`${patientId}-primary`)
     if (draft) {
       setForm(draft)
+      setShowGenText(Boolean(draft.generatedText))
       loadedPatientIdRef.current = patientId
       return
     }
@@ -1057,10 +1059,13 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         try {
           const parsed = JSON.parse(primaryRecord.formData)
           setForm(parsed)
+          setShowGenText(Boolean(parsed.generatedText))
         } catch (err) {
           console.error('Failed to parse primary formData', err)
         }
       }
+    } else {
+      setShowGenText(false)
     }
     loadedPatientIdRef.current = patientId
   }, [patientId, inspections, getDraft])
@@ -1251,8 +1256,9 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           }
         })
 
+      const existingLabs = (patient as any)?.labs ?? []
       const checkedLabs = form.labTests.filter((t) => t.checked)
-      const labs: any[] = checkedLabs.map((t) => ({
+      const newLabs: any[] = checkedLabs.map((t) => ({
         id: '00000000-0000-0000-0000-000000000000',
         date: toBackendDateTimeString(new Date()),
         type: t.name,
@@ -1260,6 +1266,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         doctorName: form.doctor,
         statusText: 'Назначено'
       }))
+      const labs = [...existingLabs, ...newLabs]
 
       await updatePatientRoundData(
         patientId,
@@ -1433,6 +1440,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         setEditingEncounterId(realId)
       }
 
+      await loadPatientEncounters(patientId)
       setShowGenText(true)
       showToast('Осмотр сохранен в карточке пациента', 'success')
       saveDraft(`${patientId}-primary`, null)
@@ -1598,6 +1606,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           >
             {NAV_SECTIONS.map(({ id, label, icon: Icon }) => (
               <button
+                type="button"
                 key={id}
                 style={{
                   width: isMobile ? 'auto' : '100%',
@@ -1668,6 +1677,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             }}
           >
             <button
+              type="button"
               onClick={() => {
                 const next = !sidebarCollapsed
                 setSidebarCollapsed(next)
@@ -1714,6 +1724,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               }}
             >
               <button
+                type="button"
                 onClick={handleSaveDraft}
                 style={{
                   flex: 1,
@@ -1731,6 +1742,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 Черновик
               </button>
               <button
+                type="button"
                 onClick={handleComplete}
                 style={{
                   flex: 1,
@@ -3843,6 +3855,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               </div>
               <div style={s.blockTitle}>План обследования</div>
               <button
+                type="button"
                 onClick={handleCreateReferral}
                 style={{
                   marginLeft: 'auto',
@@ -4018,11 +4031,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 options={medicines.map((m) => ({ value: m.id, label: m.name, unit: m.unit }))}
                 styles={selectStyles}
                 placeholder="Выберите препарат..."
-                value={
-                  newPresc.drug
-                    ? { value: newPresc.medicineId, label: newPresc.drug }
-                    : null
-                }
+                value={newPresc.drug ? { value: newPresc.medicineId, label: newPresc.drug } : null}
                 onChange={(opt: any) => {
                   setNewPresc((p) => ({
                     ...p,
@@ -4045,12 +4054,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             >
               <div>
                 <label style={s.label}>Форма</label>
-                <input
-                  style={s.input}
-                  disabled
-                  placeholder="Авто..."
-                  value={newPresc.form ?? ''}
-                />
+                <input style={s.input} disabled placeholder="Авто..." value={newPresc.form ?? ''} />
               </div>
               <div>
                 <label style={s.label}>Доза</label>
@@ -4066,12 +4070,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
               </div>
               <div>
                 <label style={s.label}>Единицы</label>
-                <input
-                  style={s.input}
-                  disabled
-                  placeholder="Авто..."
-                  value={newPresc.unit ?? ''}
-                />
+                <input style={s.input} disabled placeholder="Авто..." value={newPresc.unit ?? ''} />
               </div>
             </div>
 
@@ -4246,6 +4245,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
               <button
+                type="button"
                 onClick={() => setShowReferralModal(false)}
                 style={{
                   padding: '8px 18px',
@@ -4260,6 +4260,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                 Отмена
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setShowReferralModal(false)
                   showToast(

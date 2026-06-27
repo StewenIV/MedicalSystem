@@ -108,7 +108,7 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
   onLogout = () => {},
   userRole = 'nurse'
 }) => {
-  const { patients } = usePatientData()
+  const { patients, refreshPatients } = usePatientData()
   const displayName = useSelector(selectDisplayName)
   const reduxRole = useSelector(selectUserRole)
   const patientNotifCtx = usePatientNotifications()
@@ -164,6 +164,7 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
     }
   }, [reduxRole])
   const [selectedPatientId, setSelectedPatientId] = useState<string | undefined>()
+  const [dischargeReturnSection, setDischargeReturnSection] = useState<'patients' | 'beds-admin'>('patients')
   const [selectedPatientInitialTab, setSelectedPatientInitialTab] = useState<string | undefined>()
   const [selectedLabResultId, setSelectedLabResultId] = useState<string | undefined>()
   const [wardRoundPatientId, setWardRoundPatientId] = useState<string | undefined>()
@@ -177,6 +178,15 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
         .catch(console.error)
     }
   }, [reduxRole])
+
+  React.useEffect(() => {
+    if (reduxRole && reduxRole !== 'Patient') {
+      refreshPatients().catch(console.error)
+    }
+    if (patientNotifCtx && typeof patientNotifCtx.reload === 'function') {
+      patientNotifCtx.reload()
+    }
+  }, [activeSection, refreshPatients, reduxRole])
 
   const markRead = (id: string) => patientNotifCtx.markRead(id)
 
@@ -521,7 +531,15 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                 />
               )}
 
-              {activeSection === 'beds-admin' && <WardAdmin />}
+              {activeSection === 'beds-admin' && (
+                <WardAdmin
+                  onNavigateToDischarge={(patientId) => {
+                    setActiveSection('discharge')
+                    setSelectedPatientId(patientId)
+                    setDischargeReturnSection('beds-admin')
+                  }}
+                />
+              )}
 
               {activeSection === 'staff-admin' && <StaffAdminPage />}
 
@@ -542,6 +560,7 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                   onNavigateToDischarge={(id) => {
                     setActiveSection('discharge')
                     setSelectedPatientId(id)
+                    setDischargeReturnSection('patients')
                   }}
                 />
               )}
@@ -586,7 +605,7 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                 <DischargePage
                   patientId={selectedPatientId}
                   onClose={() => {
-                    setActiveSection('patients')
+                    setActiveSection(dischargeReturnSection)
                     setSelectedPatientId(undefined)
                   }}
                 />

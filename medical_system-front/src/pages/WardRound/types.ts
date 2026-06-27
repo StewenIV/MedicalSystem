@@ -1,5 +1,5 @@
 
-export type InspectionType = 'primary' | 'repeated' | 'daily'
+export type InspectionType = 'primary' | 'repeated' | 'daily' | 'discharge'
 
 
 export type ComplaintKey =

@@ -27,14 +27,14 @@ const softCard = css`
 const controlBase = css`
   width: 100%;
   min-width: 0;
-  height: 40px;
-  padding: 0 14px;
-  border-radius: 10px;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
   border: 1px solid rgba(191, 219, 254, 0.8);
   background: #ffffff;
   color: #0f172a;
   font-family: ${FONT_STACK};
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 500;
   outline: none;
   transition:
@@ -62,7 +62,7 @@ const controlBase = css`
 export const DischargeContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   font-family: ${FONT_STACK};
   color: #0f172a;
   animation: ${fadeIn} 0.4s ease-out;
@@ -75,10 +75,10 @@ export const DischargeContainer = styled.div`
 
 export const DischargeHeader = styled.div`
   max-height: 300px;
-  padding: 20px 24px 18px;
+  padding: 18px 24px 16px;
   border: 1px solid rgba(191, 219, 254, 0.7);
   background: linear-gradient(135deg, #f8faff 0%, #ffffff 60%, #f0f4ff 100%);
-  border-radius: 16px;
+  border-radius: 18px;
   box-shadow:
     0 1px 2px rgba(15, 23, 42, 0.04),
     0 4px 12px rgba(15, 23, 42, 0.06),
@@ -129,7 +129,7 @@ export const DischargeHeader = styled.div`
 
 export const DischargeTitle = styled.h1`
   margin: 0;
-  font-size: 28px;
+  font-size: 30px;
   font-weight: 800;
   letter-spacing: -0.035em;
   line-height: 1.2;
@@ -144,7 +144,7 @@ export const DischargeSubtitle = styled.p`
    font-family: ${FONT_STACK};
     margin: 4px 0 0;
     padding-left: 10px;
-    font-size: 13px;
+  font-size: 14px;
     font-weight: 400;
     color: #94a3b8;
     letter-spacing: 0.015em;
@@ -183,13 +183,14 @@ export const DischargeSubtitle = styled.p`
 export const FormCard = styled.div`
   ${softCard};
   overflow: hidden;
-  border-radius: 16px;
-  padding: 24px;
+  border-radius: 20px;
+  padding: 28px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
   width: 100%;
   box-sizing: border-box;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
   transition:
     box-shadow 0.25s ease,
     transform 0.2s ease;
@@ -203,14 +204,14 @@ export const FormCard = styled.div`
   }
 
   @media (max-width: 768px) {
-    padding: 18px;
+    padding: 20px;
   }
 `
 
 export const FormGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 24px;
+  gap: 20px;
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -220,7 +221,7 @@ export const FormGrid = styled.div`
 export const FormGroup = styled.div<{ $fullWidth?: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   grid-column: span ${({ $fullWidth }) => ($fullWidth ? 2 : 1)};
 
   @media (max-width: 768px) {
@@ -229,7 +230,7 @@ export const FormGroup = styled.div<{ $fullWidth?: boolean }>`
 `
 
 export const Label = styled.label`
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -243,15 +244,15 @@ export const Input = styled.input`
 export const TextArea = styled.textarea`
   ${controlBase};
   height: auto;
-  min-height: 120px;
-  padding: 12px 14px;
+  min-height: 128px;
+  padding: 13px 16px;
   resize: vertical;
 `
 
 export const PatientSummaryPanel = styled.div`
-  background: #eff6ff;
+  background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
   border: 1px solid rgba(191, 219, 254, 0.8);
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 20px;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -273,7 +274,7 @@ export const SummaryItem = styled.div`
   gap: 4px;
 
   .label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 700;
     color: #1e40af;
     text-transform: uppercase;
@@ -281,10 +282,98 @@ export const SummaryItem = styled.div`
   }
 
   .value {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     color: #1e3a8a;
   }
+`
+
+export const GeneratedCard = styled.div`
+  ${softCard};
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-sizing: border-box;
+`
+
+export const GeneratedCardHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+`
+
+export const GeneratedCardTitle = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+
+  p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: #64748b;
+  }
+`
+
+export const GenerateTextButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(191, 219, 254, 0.85);
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  color: #1d4ed8;
+  font-family: ${FONT_STACK};
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: #93c5fd;
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.14);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+    transform: none;
+  }
+`
+
+export const GeneratedPreview = styled.textarea`
+  ${controlBase};
+  min-height: 360px;
+  height: 360px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  line-height: 1.65;
+  font-size: 15px;
+  white-space: pre-wrap;
+  color: #0f172a;
 `
 
 export const ButtonGroup = styled.div`
@@ -301,9 +390,9 @@ export const SubmitButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 40px;
+  height: 44px;
   padding: 0 20px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: none;
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
@@ -340,9 +429,9 @@ export const CancelButton = styled.button`
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 40px;
+  height: 44px;
   padding: 0 18px;
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px solid rgba(191, 219, 254, 0.8);
   background: #ffffff;
   color: #374151;
@@ -371,7 +460,7 @@ export const AutoGenerateBtn = styled.button`
   border: none;
   color: #2563eb;
   font-family: ${FONT_STACK};
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   display: inline-flex;
@@ -387,4 +476,125 @@ export const AutoGenerateBtn = styled.button`
     color: #cbd5e1;
     cursor: not-allowed;
   }
+`
+
+// Print / PDF styled components
+export const PrintWrapper = styled.div`
+  position: absolute;
+  left: -9999px;
+  top: -9999px;
+`
+
+export const PrintContainer = styled.div`
+  width: 700px;
+  padding: 45px 55px;
+  background-color: #ffffff;
+  color: #1e293b;
+  font-family: ${FONT_STACK};
+  line-height: 1.5;
+  font-size: 13px;
+`
+
+export const PrintHeaderFlex = styled.div`
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 2px solid #0f172a;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+`
+
+export const PrintHospitalName = styled.div`
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e40af;
+`
+
+export const PrintDepartmentName = styled.div`
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 2px;
+`
+
+export const PrintAddress = styled.div`
+  font-size: 10px;
+  color: #94a3b8;
+  margin-top: 2px;
+`
+
+export const PrintDateInfo = styled.div`
+  text-align: right;
+  font-size: 11px;
+  color: #64748b;
+`
+
+export const PrintTitleContainer = styled.div`
+  text-align: center;
+  margin-bottom: 24px;
+`
+
+export const PrintTitle = styled.h2`
+  font-size: 18px;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin: 0;
+  color: #0f172a;
+  letter-spacing: 0.5px;
+`
+
+export const PrintSubtitle = styled.div`
+  font-size: 14px;
+  font-weight: 700;
+  color: #2563eb;
+  margin-top: 4px;
+`
+
+export const PrintPatientCard = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  background: #f8fafc;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 24px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+`
+
+export const PrintSection = styled.div`
+  margin-bottom: 16px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+`
+
+export const PrintSectionTitle = styled.h4`
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 4px;
+`
+
+export const PrintSectionContent = styled.div`
+  font-size: 13px;
+  white-space: pre-wrap;
+  color: #334155;
+`
+
+export const PrintSignaturesFlex = styled.div`
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 20px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+`
+
+export const PrintSignatureLine = styled.div`
+  margin-top: 10px;
+  font-size: 11px;
+  color: #94a3b8;
 `
