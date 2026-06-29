@@ -27,6 +27,7 @@ import {
   Check
 } from 'lucide-react'
 import Select, { components, DropdownIndicatorProps, StylesConfig } from 'react-select'
+import { useAppSelector } from 'store'
 
 import colors from 'consts/colors'
 import { toast } from 'react-toastify'
@@ -118,6 +119,7 @@ import {
   BedsList,
   EmptyBedsState,
   BedItem,
+  BedActionsWrap,
   BedTag,
   BedInfo,
   BedName,
@@ -486,6 +488,7 @@ interface WardAdminProps {
 }
 
 export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
+  const { userRole, userId, displayName } = useAppSelector((state) => state.app)
   const [rooms, setRooms] = useState<Room[]>([])
   const [loading, setLoading] = useState(true)
   const [floors, setFloors] = useState<number[]>([])
@@ -745,11 +748,6 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
 
     const query = patientSearchQuery.trim()
 
-    if (query.length > 0 && query.length < 2) {
-      setPatientSearchResults([])
-      return
-    }
-
     if (query.length === 0) {
       setPatientSearchResults([])
       return
@@ -771,7 +769,7 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
         .finally(() => {
           if (!abortController.signal.aborted) setPatientSearchLoading(false)
         })
-    }, 400)
+    }, 100)
 
     return () => {
       abortController.abort()
@@ -791,12 +789,23 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
       searchDoctors(query, abortController.signal)
         .then((docs) => {
           if (!abortController.signal.aborted) {
-            setDoctorOptions(
-              docs.map((d) => ({
-                value: d.id,
-                label: [d.fullName, d.position, d.department].filter(Boolean).join(' - ')
-              }))
-            )
+            const mapped = docs.map((d) => ({
+              value: d.id,
+              label: [d.fullName, d.position, d.department].filter(Boolean).join(' - ')
+            }))
+
+            // Keep current selected doctor in options list so it doesn't disappear
+            if (assignDoctor) {
+              const hasSelected = mapped.some((o) => o.value === assignDoctor)
+              if (!hasSelected && userId && displayName) {
+                mapped.push({
+                  value: userId,
+                  label: displayName
+                })
+              }
+            }
+
+            setDoctorOptions(mapped)
           }
         })
         .catch((err) => {
@@ -807,13 +816,13 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
         .finally(() => {
           if (!abortController.signal.aborted) setDoctorSearchLoading(false)
         })
-    }, 400)
+    }, 100)
 
     return () => {
       abortController.abort()
       window.clearTimeout(timeoutId)
     }
-  }, [doctorSearchQuery, assignBedData])
+  }, [doctorSearchQuery, assignBedData, assignDoctor, userId, displayName])
 
   const addBed = () => {
     const nextId = `new-${Date.now()}`
@@ -994,8 +1003,24 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
       priority: parsePriority(room.priority)
     })
     setAssignDate(toLocalDateTimeLocalString(new Date()))
-    setAssignDoctor('')
-    setDoctorOptions([])
+
+    // Automatically set logged in user as the doctor if they are Doctor or ChiefDoctor
+    const isDoctorUser = userRole === 'Doctor' || userRole === 'ChiefDoctor'
+    const defaultDoctorId = isDoctorUser && userId ? userId : ''
+    setAssignDoctor(defaultDoctorId)
+
+    // Seed option list with current doctor instantly so react-select displays it immediately
+    if (isDoctorUser && userId && displayName) {
+      setDoctorOptions([
+        {
+          value: userId,
+          label: displayName
+        }
+      ])
+    } else {
+      setDoctorOptions([])
+    }
+
     setDoctorSearchQuery('')
     setAssignNotes('')
     setAssignNotify(true)
@@ -1003,7 +1028,21 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
     setPatientSearchResults([])
     setSelectedPatientForAssign(null)
 
-    loadDoctorOptions()
+    loadDoctorOptions().then(() => {
+      // Ensure current doctor remains in the options list if loadDoctorOptions resolved
+      if (isDoctorUser && userId && displayName) {
+        setDoctorOptions((prev) => {
+          if (prev.some((o) => o.value === userId)) return prev
+          return [
+            ...prev,
+            {
+              value: userId,
+              label: displayName
+            }
+          ]
+        })
+      }
+    })
   }
 
   const handleCloseAssignModal = () => {
@@ -1419,7 +1458,7 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
                   )
                 })
                 .map((bed) => (
-                  <BedItem key={bed.id} $extra={bed.status === 'Свободно'}>
+                  <BedItem key={bed.id}>
                     <BedTag>{formatBedShortLabel(bed.bedNumber)}</BedTag>
                     <BedInfo>
                       <BedName>
@@ -1443,49 +1482,52 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
                       )}
                     </BedInfo>
                     <BedStatus>{bed.status}</BedStatus>
-                    {bed.status === 'Занято' && (
-                      <>
+                    <BedActionsWrap>
+                      {bed.status === 'Занято' && (
+                        <>
+                          <ActionIconBtn
+                            title="Выписать пациента"
+                            onClick={() => {
+                              if (onNavigateToDischarge && bed.patientId) {
+                                onNavigateToDischarge(bed.patientId)
+                              } else {
+                                toast.warning('Выписка недоступна')
+                              }
+                            }}
+                          >
+                            <FileText size={13} />
+                          </ActionIconBtn>
+                          <ActionIconBtn
+                            $danger
+                            title="Освободить койку (убрать пациента с койки)"
+                            onClick={() => handleFreeBed(bed)}
+                          >
+                            <UserMinus size={13} />
+                          </ActionIconBtn>
+                        </>
+                      )}
+                      {bed.status === 'Свободно' && (
                         <ActionIconBtn
-                          title="Выписать пациента"
+                          $userplus={true}
+                          title="Назначить пациента"
                           onClick={() => {
-                            if (onNavigateToDischarge && bed.patientId) {
-                              onNavigateToDischarge(bed.patientId)
-                            } else {
-                              toast.warning('Выписка недоступна')
-                            }
+                            handleOpenAssignModal(bed, selectedRoom!)
                           }}
                         >
-                          <FileText size={13} />
+                          <UserPlus size={13} />
                         </ActionIconBtn>
-                        <ActionIconBtn
-                          $danger
-                          title="Освободить койку (убрать пациента с койки)"
-                          onClick={() => handleFreeBed(bed)}
-                        >
-                          <UserMinus size={13} />
-                        </ActionIconBtn>
-                      </>
-                    )}
-                    {bed.status === 'Свободно' && (
+                      )}
                       <ActionIconBtn
-                        $userplus={true}
-                        title="Назначить пациента"
-                        onClick={() => {
-                          handleOpenAssignModal(bed, selectedRoom!)
-                        }}
+                        title="Переместить пациента"
+                        onClick={() => handleOpenTransferFromBed(bed)}
                       >
-                        <UserPlus size={13} />
+                        <ArrowRight size={13} />
                       </ActionIconBtn>
-                    )}
-                    <ActionIconBtn
-                      title="Переместить пациента"
-                      onClick={() => handleOpenTransferFromBed(bed)}
-                    >
-                      <ArrowRight size={13} />
-                    </ActionIconBtn>
-                    <BedDeleteBtn onClick={() => removeBed(bed.id)}>
-                      <Trash2 size={13} />
-                    </BedDeleteBtn>
+
+                      <BedDeleteBtn onClick={() => removeBed(bed.id)}>
+                        <Trash2 size={13} />
+                      </BedDeleteBtn>
+                    </BedActionsWrap>
                   </BedItem>
                 ))
             )}

@@ -871,7 +871,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
             <WelcomeText>
               <WelcomeTitle>Добро пожаловать, {patientShortName}</WelcomeTitle>
               <WelcomeSubtitle>
-                Ваш лечащий врач — <strong>{patientData?.doctorName || 'Смирнов А.А.'}</strong>
+                Ваш лечащий врач — <strong>{patientData ? (patientData.doctorName || 'еще не назначен') : 'Загрузка...'}</strong>
                 ,&nbsp;
                 {patientData?.departmentName || 'Пульмонологическое отделение'}
               </WelcomeSubtitle>

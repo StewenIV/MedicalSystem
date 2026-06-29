@@ -57,8 +57,11 @@ namespace MedicalSystem.Infrastructure.Storages
             var patient = await GetAsync(patientId, token);
             if (patient != null)
             {
-                patient.DoctorId = doctorId;
-                await UpdateAsync(patient, token);
+                if (patient.DoctorId == null)
+                {
+                    patient.DoctorId = doctorId;
+                    await UpdateAsync(patient, token);
+                }
             }
         }
 
@@ -280,6 +283,39 @@ namespace MedicalSystem.Infrastructure.Storages
 
         public async Task<Patient> AddPatientAsync(MedicalSystem.App.Contracts.Dtos.PatientCardDto dto, CancellationToken token)
         {
+            // 1. Проверяем, существует ли уже пациент с таким же именем и датой рождения
+            var existingPatient = await _context.Patients
+                .FirstOrDefaultAsync(p => 
+                    p.FirstName.ToLower() == dto.FirstName.ToLower() &&
+                    p.LastName.ToLower() == dto.LastName.ToLower() &&
+                    (p.MiddleName ?? "").ToLower() == (dto.MiddleName ?? "").ToLower() &&
+                    p.DateOfBirth.Date == dto.DateOfBirth.Date, token);
+
+            if (existingPatient != null)
+            {
+                throw new InvalidOperationException("Пациент с такими ФИО и датой рождения уже зарегистрирован в системе.");
+            }
+
+            // 2. Генерируем или проверяем уникальность номера медкарты
+            string medcard = dto.MedcardNum;
+            if (string.IsNullOrWhiteSpace(medcard))
+            {
+                var rnd = new Random();
+                do
+                {
+                    medcard = rnd.Next(10000000, 99999999).ToString();
+                } while (await _context.Patients.AnyAsync(p => p.MedcardNum == medcard, token) || 
+                         await _context.Users.AnyAsync(u => u.Login == medcard, token));
+            }
+            else
+            {
+                if (await _context.Patients.AnyAsync(p => p.MedcardNum == medcard, token) || 
+                    await _context.Users.AnyAsync(u => u.Login == medcard, token))
+                {
+                    throw new InvalidOperationException($"Номер медкарты '{medcard}' уже используется в системе.");
+                }
+            }
+
             var patient = new Patient
             {
                 Id = Guid.NewGuid(),
@@ -288,15 +324,38 @@ namespace MedicalSystem.Infrastructure.Storages
                 MiddleName = dto.MiddleName,
                 DateOfBirth = dto.DateOfBirth,
                 Gender = dto.Gender == "Мужской" ? Domain.Enums.Gender.Male : Domain.Enums.Gender.Female,
-                MedcardNum = string.IsNullOrWhiteSpace(dto.MedcardNum) ? new Random().Next(10000000, 99999999).ToString() : dto.MedcardNum,
+                MedcardNum = medcard,
                 HistoryNum = dto.HistoryNum,
                 Status = Domain.Enums.PatientStatus.Outpatient,
                 LastUpdated = DateTime.UtcNow,
                 CreatedAt = DateTime.UtcNow
             };
 
-            await _context.Patients.AddAsync(patient, token);
-            await _context.SaveChangesAsync(token);
+            var user = new User
+            {
+                Id = patient.Id,
+                Login = patient.MedcardNum,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Password123!"),
+                Role = "Patient",
+                DisplayName = $"{patient.LastName} {patient.FirstName} {patient.MiddleName}".Trim(),
+                PatientId = patient.Id,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            using var transaction = await _context.Database.BeginTransactionAsync(token);
+            try
+            {
+                await _context.Patients.AddAsync(patient, token);
+                await _context.Users.AddAsync(user, token);
+                await _context.SaveChangesAsync(token);
+                await transaction.CommitAsync(token);
+            }
+            catch
+            {
+                await transaction.RollbackAsync(token);
+                throw;
+            }
+
             return patient;
         }
 

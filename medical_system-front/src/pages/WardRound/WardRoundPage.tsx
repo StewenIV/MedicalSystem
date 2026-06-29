@@ -754,7 +754,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
         complaints: complaintsText,
         objective: objectiveParts.join('. ') + '.',
         recommendations: getPrescriptionsDiff(
-          patient.currentMeds || [],
+          (patient as any).prescriptions || [],
           form.prescriptions,
           form.treatmentDecision || 'keep'
         ),
@@ -2524,7 +2524,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
             </div>
 
             {showResult && form.generatedText ? (
-              <div style={{ ...block, border: '2px solid #22c55e' }}>
+              <div style={{ ...block, border: '2px solid #22c55e', marginTop: 15, marginBottom: 20 }}>
                 <div style={{ ...blockHeader, background: '#f0fdf4', color: '#059669' }}>
                   <FileText size={15} color="#059669" /> Запись осмотра сформирована и сохранена
                   <button
@@ -2565,68 +2565,72 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
               </div>
             ) : null}
 
-            <div
-              style={{
-                background: '#eff6ff',
-                border: '1px solid #bfdbfe',
-                borderRadius: 12,
-                padding: '16px 20px',
-                marginBottom: 24,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12
-              }}
-            >
-              <div
-                style={{
-                  background: '#3b82f6',
-                  color: 'white',
-                  width: 32,
-                  height: 32,
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                <Info size={18} />
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>
-                  Новый осмотр
+            {!showResult && selectedHistoryId === null && (
+              <>
+                <div
+                  style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: 12,
+                    padding: '16px 20px',
+                    marginBottom: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12
+                  }}
+                >
+                  <div
+                    style={{
+                      background: '#3b82f6',
+                      color: 'white',
+                      width: 32,
+                      height: 32,
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}
+                  >
+                    <Info size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#1e3a8a', marginBottom: 2 }}>
+                      Новый осмотр
+                    </div>
+                    <div style={{ fontSize: 13, color: '#1e40af' }}>
+                      Заполните данные выше, чтобы сформировать медицинскую запись в истории болезни.
+                    </div>
+                  </div>
                 </div>
-                <div style={{ fontSize: 13, color: '#1e40af' }}>
-                  Заполните данные выше, чтобы сформировать медицинскую запись в истории болезни.
-                </div>
-              </div>
-            </div>
 
-            <div style={{ textAlign: 'center', marginBottom: 32 }}>
-              <button
-                onClick={handleGenerateAndSave}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '14px 32px',
-                  borderRadius: 12,
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #059669, #10b981)',
-                  color: 'white',
-                  fontSize: 15,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: FONT,
-                  boxShadow: '0 4px 18px rgba(5,150,105,0.35)'
-                }}
-              >
-                <Sparkles size={18} /> Сформировать запись осмотра
-              </button>
-              <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
-                Текст будет сохранен в истории пациента
-              </div>
-            </div>
+                <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                  <button
+                    onClick={handleGenerateAndSave}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '14px 32px',
+                      borderRadius: 12,
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #059669, #10b981)',
+                      color: 'white',
+                      fontSize: 15,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: FONT,
+                      boxShadow: '0 4px 18px rgba(5,150,105,0.35)'
+                    }}
+                  >
+                    Сформировать запись осмотра
+                  </button>
+                  <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
+                    Текст будет сохранен в истории пациента
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

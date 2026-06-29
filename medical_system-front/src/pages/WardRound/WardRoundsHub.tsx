@@ -229,9 +229,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
   const waitingCount = inpatients.length - inspectedToday
 
   return (
-    <SearchPageWrapper
-      style={{ padding: 24, height: '100%', overflow: 'auto', background: '#f3f4f6' }}
-    >
+    <SearchPageWrapper style={{ height: '100%', overflow: 'auto' }}>
       <SearchCard style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         <SearchCardHeader>
           <SearchCardTitle>Обходы пациентов</SearchCardTitle>

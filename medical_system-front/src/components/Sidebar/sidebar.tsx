@@ -139,7 +139,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
     key: 'discharge',
     label: 'Выписка',
     icon: FileUser,
-    roles: ['Doctor', 'Nurse', 'HeadNurse', 'ChiefDoctor']
+    roles: ['Doctor', 'ChiefDoctor']
   }
 ]
 

@@ -1382,7 +1382,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         complaints: complaintsText,
         objective: objectiveParts.join('\n\n'),
         recommendations: getPrescriptionsDiffPrimary(
-          patient?.currentMeds || [],
+          (patient as any)?.prescriptions || [],
           form.prescriptions
         ),
         formData: formJson
@@ -3993,7 +3993,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
                   boxShadow: '0 4px 18px rgba(29,78,216,0.35)'
                 }}
               >
-                <Sparkles size={18} /> Завершить осмотр и сформировать запись
+                Завершить осмотр и сформировать запись
               </button>
               <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 8 }}>
                 Данные будут сохранены в карточке пациента

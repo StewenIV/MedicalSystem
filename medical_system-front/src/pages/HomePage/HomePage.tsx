@@ -303,6 +303,9 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
           <AppSidebar
             activeSection={activeSection}
             onSectionChange={(s) => {
+              if (s === 'discharge' && reduxRole !== 'Doctor' && reduxRole !== 'ChiefDoctor') {
+                return
+              }
               if (s === 'ward-round') {
                 openWardRoundHub()
               } else {
@@ -318,10 +321,11 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                   <SidebarTrigger className="rounded-lg" />
                   {reduxRole === 'Patient' && (
                     <PatientInfoWrapper>
+
                       <PatientInfoItem>
                         <PatientInfoDot $color="#3b82f6" />
                         <PatientInfoLabel>Лечащий врач:</PatientInfoLabel>{' '}
-                        <span>{patientProfile?.doctorName || 'Загрузка...'}</span>
+                        <span>{patientProfile ? (patientProfile.doctorName || 'еще не назначен') : 'Загрузка...'}</span>
                       </PatientInfoItem>
                       <PatientInfoItem>
                         <PatientInfoDot $color="#8b5cf6" />
@@ -557,11 +561,15 @@ const HomePageContent: React.FC<DoctorDashboardProps> = ({
                     setSelectedPatientId(id || undefined)
                   }}
                   onNavigateToWardRound={(id) => openWardRound(id || undefined)}
-                  onNavigateToDischarge={(id) => {
-                    setActiveSection('discharge')
-                    setSelectedPatientId(id)
-                    setDischargeReturnSection('patients')
-                  }}
+                  onNavigateToDischarge={
+                    (reduxRole === 'Doctor' || reduxRole === 'ChiefDoctor')
+                      ? (id) => {
+                          setActiveSection('discharge')
+                          setSelectedPatientId(id)
+                          setDischargeReturnSection('patients')
+                        }
+                      : undefined
+                  }
                 />
               )}
 

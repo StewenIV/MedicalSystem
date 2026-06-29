@@ -1209,99 +1209,109 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                 <X size={18} />
               </S.CloseButton>
             </S.ModalHeader>
-            <S.ModalBody>
-              {/* Patient details */}
-              <S.PatientInfoBlock>
-                <S.InfoItem>
-                  <span className="label">Пациент</span>
-                  <span className="value">{activeResult.patientName}</span>
-                </S.InfoItem>
-                <S.InfoItem>
-                  <span className="label">Палата</span>
-                  <span className="value">
-                    {activeResult.roomNumber === '—' ? '—' : `Пал. ${activeResult.roomNumber}`}
-                  </span>
-                </S.InfoItem>
-                <S.InfoItem>
-                  <span className="label">Лечащий врач</span>
-                  <span className="value">{activeResult.doctorName}</span>
-                </S.InfoItem>
-                <S.InfoItem>
-                  <span className="label">Выполнил лаборант</span>
-                  <span className="value">{activeResult.laboratoryEmployeeName}</span>
-                </S.InfoItem>
-              </S.PatientInfoBlock>
+            <S.ModalBody style={activeResult.pdfDocumentPath ? { padding: 0 } : undefined}>
+              {activeResult.pdfDocumentPath ? (
+                <iframe
+                  src={`${process.env.REACT_APP_API_URL ?? ''}/api/files/download/${encodeURIComponent(activeResult.pdfDocumentPath)}`}
+                  title="Результат анализа PDF"
+                  style={{ width: '100%', height: '70vh', minHeight: '600px', border: 'none', display: 'block' }}
+                />
+              ) : (
+                <>
+                  {/* Patient details */}
+                  <S.PatientInfoBlock>
+                    <S.InfoItem>
+                      <span className="label">Пациент</span>
+                      <span className="value">{activeResult.patientName}</span>
+                    </S.InfoItem>
+                    <S.InfoItem>
+                      <span className="label">Палата</span>
+                      <span className="value">
+                        {activeResult.roomNumber === '—' ? '—' : `Пал. ${activeResult.roomNumber}`}
+                      </span>
+                    </S.InfoItem>
+                    <S.InfoItem>
+                      <span className="label">Лечащий врач</span>
+                      <span className="value">{activeResult.doctorName}</span>
+                    </S.InfoItem>
+                    <S.InfoItem>
+                      <span className="label">Выполнил лаборант</span>
+                      <span className="value">{activeResult.laboratoryEmployeeName}</span>
+                    </S.InfoItem>
+                  </S.PatientInfoBlock>
 
-              <S.ResultSummaryGrid>
-                <S.SummaryItem>
-                  <strong>Исследование:</strong> {activeResult.type}
-                </S.SummaryItem>
-                <S.SummaryItem>
-                  <strong>Дата выполнения:</strong>{' '}
-                  {formatLocalDateTime(activeResult.dateUpdated)}
-                </S.SummaryItem>
-                <S.SummaryItemFull>
-                  <strong>Диагноз:</strong> {activeResult.diagnosis}
-                </S.SummaryItemFull>
-              </S.ResultSummaryGrid>
+                  <S.ResultSummaryGrid>
+                    <S.SummaryItem>
+                      <strong>Исследование:</strong> {activeResult.type}
+                    </S.SummaryItem>
+                    <S.SummaryItem>
+                      <strong>Дата выполнения:</strong>{' '}
+                      {formatLocalDateTime(activeResult.dateUpdated)}
+                    </S.SummaryItem>
+                    <S.SummaryItemFull>
+                      <strong>Диагноз:</strong> {activeResult.diagnosis}
+                    </S.SummaryItemFull>
+                  </S.ResultSummaryGrid>
 
-              {/* Table of results */}
-              <S.SectionTitle>Результаты показателей</S.SectionTitle>
-              <S.TableWrapper>
-                <S.Table>
-                  <thead>
-                    <tr>
-                      <S.TableTh>Показатель</S.TableTh>
-                      <S.TableTh>Результат</S.TableTh>
-                      <S.TableTh>Нормальные значения</S.TableTh>
-                      <S.TableTh>Интерпретация</S.TableTh>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      let parsedResults: Record<string, string> = {}
-                      if (activeResult.resultData) {
-                        try {
-                          parsedResults = JSON.parse(activeResult.resultData)
-                        } catch {}
-                      }
+                  {/* Table of results */}
+                  <S.SectionTitle>Результаты показателей</S.SectionTitle>
+                  <S.TableWrapper>
+                    <S.Table>
+                      <thead>
+                        <tr>
+                          <S.TableTh>Показатель</S.TableTh>
+                          <S.TableTh>Результат</S.TableTh>
+                          <S.TableTh>Нормальные значения</S.TableTh>
+                          <S.TableTh>Интерпретация</S.TableTh>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          let parsedResults: Record<string, string> = {}
+                          if (activeResult.resultData) {
+                            try {
+                              parsedResults = JSON.parse(activeResult.resultData)
+                            } catch {}
+                          }
 
-                      return activeParamDefs.map((p) => {
-                        const val = parsedResults[p.key] || '—'
-                        const interpretation = p.interpret(val, activeResult.patientGender)
-                        const norm = p.getNorm(activeResult.patientGender)
+                          return activeParamDefs.map((p) => {
+                            const val = parsedResults[p.key] || '—'
+                            const interpretation = p.interpret(val, activeResult.patientGender)
+                            const norm = p.getNorm(activeResult.patientGender)
 
-                        return (
-                          <S.TableRow key={p.key}>
-                            <S.TableTd style={{ fontWeight: 600 }}>{p.name}</S.TableTd>
-                            <S.TableTd style={{ fontWeight: 700 }}>
-                              {val} {p.unit}
-                            </S.TableTd>
-                            <S.TableTd>
-                              {norm.text} {p.unit}
-                            </S.TableTd>
-                            <S.TableTd>
-                              {val !== '—' ? (
-                                <S.InterpretationLabel $severity={interpretation.severity}>
-                                  {interpretation.text}
-                                </S.InterpretationLabel>
-                              ) : (
-                                '—'
-                              )}
-                            </S.TableTd>
-                          </S.TableRow>
-                        )
-                      })
-                    })()}
-                  </tbody>
-                </S.Table>
-              </S.TableWrapper>
+                            return (
+                              <S.TableRow key={p.key}>
+                                <S.TableTd style={{ fontWeight: 600 }}>{p.name}</S.TableTd>
+                                <S.TableTd style={{ fontWeight: 700 }}>
+                                  {val} {p.unit}
+                                </S.TableTd>
+                                <S.TableTd>
+                                  {norm.text} {p.unit}
+                                </S.TableTd>
+                                <S.TableTd>
+                                  {val !== '—' ? (
+                                    <S.InterpretationLabel $severity={interpretation.severity}>
+                                      {interpretation.text}
+                                    </S.InterpretationLabel>
+                                  ) : (
+                                    '—'
+                                  )}
+                                </S.TableTd>
+                              </S.TableRow>
+                            )
+                          })
+                        })()}
+                      </tbody>
+                    </S.Table>
+                  </S.TableWrapper>
 
-              {activeResult.comments && (
-                <S.ConclusionBlock>
-                  <S.ConclusionTitle>Заключение лаборатории:</S.ConclusionTitle>
-                  <S.ConclusionText>{activeResult.comments}</S.ConclusionText>
-                </S.ConclusionBlock>
+                  {activeResult.comments && (
+                    <S.ConclusionBlock>
+                      <S.ConclusionTitle>Заключение лаборатории:</S.ConclusionTitle>
+                      <S.ConclusionText>{activeResult.comments}</S.ConclusionText>
+                    </S.ConclusionBlock>
+                  )}
+                </>
               )}
             </S.ModalBody>
             <S.ModalFooter>

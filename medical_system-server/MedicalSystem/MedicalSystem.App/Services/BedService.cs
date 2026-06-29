@@ -90,7 +90,10 @@ namespace MedicalSystem.App.Services
                 var patient = await _patientStorage.GetAsync(request.PatientId, token);
                 if (patient != null)
                 {
-                    patient.DoctorId = request.DoctorId;
+                    if (patient.DoctorId == null)
+                    {
+                        patient.DoctorId = request.DoctorId;
+                    }
                     patient.Status = PatientStatus.Hospitalized;
                     await _patientStorage.UpdateAsync(patient, token);
                 }
@@ -230,7 +233,10 @@ namespace MedicalSystem.App.Services
                 var patient = await _patientStorage.GetAsync(request.PatientId, token);
                 if (patient != null)
                 {
-                    patient.DoctorId = request.DoctorId;
+                    if (patient.DoctorId == null)
+                    {
+                        patient.DoctorId = request.DoctorId;
+                    }
                     patient.Status = PatientStatus.Hospitalized;
                     await _patientStorage.UpdateAsync(patient, token);
                 }

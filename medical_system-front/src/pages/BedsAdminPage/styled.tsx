@@ -578,7 +578,8 @@ export const ActionIconBtn = styled.button<{
   $danger?: boolean
   $userplus?: boolean
 }>`
-  padding: ${(p) => (p.$userplus ? '6px 6px 6px 8px' : '6px')};
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
   border: 1px solid ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.3)' : 'rgba(191, 219, 254, 0.8)')};
   background: ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.06)' : '#ffffff')};
@@ -597,11 +598,6 @@ export const ActionIconBtn = styled.button<{
     transform: translateY(-1px);
     border-color: ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.5)' : '#2563eb')};
     background: ${(p) => (p.$danger ? 'rgba(239, 68, 68, 0.1)' : '#eff6ff')};
-  }
-
-  @media (max-width: 640px) {
-    width: 30px;
-    height: 30px;
   }
 `
 
@@ -966,11 +962,24 @@ export const EmptyBedsState = styled.div`
   color: #94a3b8;
 `
 
-export const BedItem = styled.div<{ $extra?: boolean }>`
+export const BedActionsWrap = styled.div`
   display: grid;
-  grid-template-columns: ${({ $extra }) =>
-    $extra ? 'auto minmax(0, 1fr) auto auto auto auto' : 'auto minmax(0, 1fr) auto auto auto'};
-  gap: 10px;
+  grid-template-columns: repeat(2, 30px);
+  grid-auto-rows: 30px;
+  gap: 4px;
+  justify-content: center;
+  align-content: center;
+
+  @media (max-width: 640px) {
+    grid-template-columns: repeat(4, 30px);
+    grid-auto-rows: auto;
+  }
+`
+
+export const BedItem = styled.div`
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  gap: 12px;
   align-items: center;
   padding: 12px;
   border-radius: 12px;
@@ -1039,7 +1048,8 @@ export const BedStatus = styled.div`
 `
 
 export const BedDeleteBtn = styled.button`
-  padding: 6px;
+  width: 30px;
+  height: 30px;
   border-radius: 8px;
   border: 1px solid rgba(239, 68, 68, 0.28);
   background: rgba(239, 68, 68, 0.05);
@@ -1052,6 +1062,7 @@ export const BedDeleteBtn = styled.button`
     border-color 0.2s ease,
     background-color 0.2s ease,
     transform 0.2s ease;
+  flex-shrink: 0;
 
   &:hover {
     border-color: rgba(239, 68, 68, 0.5);
