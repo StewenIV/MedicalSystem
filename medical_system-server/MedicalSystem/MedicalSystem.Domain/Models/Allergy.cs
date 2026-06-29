@@ -22,7 +22,7 @@ namespace MedicalSystem.Domain.Models
         [StringLength(500, ErrorMessage = "Длина комментария не должна превышать 500 символов")]
         public string? Comment { get; set; }
 
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }

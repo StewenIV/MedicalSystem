@@ -28,7 +28,7 @@ namespace MedicalSystem.Data.EntityConfigurations
                 .HasForeignKey(hb => hb.RoomId);
 
             builder.HasOne(hb => hb.Patient)
-                .WithOne() // Assuming one patient can only be in one bed
+                .WithOne() 
                 .HasForeignKey<HospitalBed>(hb => hb.PatientId);
         }
     }

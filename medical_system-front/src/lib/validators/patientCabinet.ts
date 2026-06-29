@@ -39,7 +39,7 @@ export const relativeSchema = z.object({
   phone: z.string().regex(PHONE_REGEX, 'Введите номер в международном формате').optional().or(z.literal('')),
 })
 
-// Keep for backward compatibility if needed in some places
+
 export const trustedPersonSchema = z.object({
   name: z.string().min(2, 'Имя должно содержать не менее 2 символов').max(200, 'Имя не должно превышать 200 символов'),
   phone: z.string().regex(PHONE_REGEX, 'Введите номер в международном формате').optional().or(z.literal('')),

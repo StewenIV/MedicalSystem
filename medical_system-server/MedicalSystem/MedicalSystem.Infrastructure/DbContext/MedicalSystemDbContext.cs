@@ -35,7 +35,7 @@ namespace MedicalSystem.Infrastructure.DbContext
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-            // Мы будем применять конфигурации из отдельных файлов
+            
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(MedicalSystemDbContext).Assembly);
         }
     }

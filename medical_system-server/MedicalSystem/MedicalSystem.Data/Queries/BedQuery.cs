@@ -50,7 +50,7 @@ namespace MedicalSystem.Data.Queries
                         b.Patient.MiddleName,
                         b.Patient.DateOfBirth,
                         b.Patient.Gender,
-                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
+                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).OrderByDescending(mp => mp.Description == "Основной").Select(mp => mp.Name).FirstOrDefault(),
                         DoctorName = b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,
                         Doctor = b.Patient.Doctor == null ? null : new { b.Patient.Doctor.Name, b.Patient.Doctor.Position }
                     },
@@ -188,7 +188,7 @@ namespace MedicalSystem.Data.Queries
                     b.Id,
                     b.Status,
                     RoomNumber = b.Room.RoomNumber,
-                    PatientId = b.PatientId.Value, // Гарантированно не null благодаря фильтру
+                    PatientId = b.PatientId.Value, 
                     PatientName = b.Patient.FirstName,
                     PatientLastName = b.Patient.LastName
                 })
@@ -219,7 +219,7 @@ namespace MedicalSystem.Data.Queries
                         b.Patient.MiddleName,
                         b.Patient.DateOfBirth,
                         b.Patient.Gender,
-                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
+                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).OrderByDescending(mp => mp.Description == "Основной").Select(mp => mp.Name).FirstOrDefault(),
                         DoctorName = b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,
                         Doctor = b.Patient.Doctor == null ? null : new { b.Patient.Doctor.Name, b.Patient.Doctor.Position }
                     },
@@ -273,7 +273,7 @@ namespace MedicalSystem.Data.Queries
                         b.Patient.MiddleName,
                         b.Patient.DateOfBirth,
                         b.Patient.Gender,
-                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).Select(mp => mp.Name).FirstOrDefault(),
+                        Diagnosis = b.Patient.MedicalProblems.Where(mp => mp.IsActive).OrderByDescending(mp => mp.Description == "Основной").Select(mp => mp.Name).FirstOrDefault(),
                         DoctorName = b.Patient.Doctor != null ? b.Patient.Doctor.Name : null,
                         Doctor = b.Patient.Doctor == null ? null : new { b.Patient.Doctor.Name, b.Patient.Doctor.Position }
                     },
@@ -312,7 +312,7 @@ namespace MedicalSystem.Data.Queries
             var dbPrescriptions = await _context.BedPrescriptions.AsNoTracking()
                 .Include(p => p.PatientMedication)
                 .ThenInclude(pm => pm.Medicine)
-                .Where(p => p.PatientId == patientId)
+                .Where(p => p.PatientId == patientId && p.PatientMedication != null && p.PatientMedication.Status == MedicalSystem.Domain.Enums.MedicationStatus.Active)
                 .OrderBy(p => p.ScheduledTime)
                 .ToListAsync(token);
             

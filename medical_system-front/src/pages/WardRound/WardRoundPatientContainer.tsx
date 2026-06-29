@@ -31,8 +31,9 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
   onClose,
   onNavigateToTemperatureSheet
 }) => {
-  const { getPatient } = usePatientData()
+  const { getPatient, loadPatientEncounters } = usePatientData()
   const patient = getPatient(patientId)
+  const [loading, setLoading] = useState(true)
 
   const [activeTab, setActiveTab] = useState<'primary' | 'daily' | 'laboratory'>(() => {
     if (initialType === 'primary') return 'primary'
@@ -55,9 +56,52 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
   }, [])
 
   useEffect(() => {
-    // Reset actions on tab change
     setHeaderActions(null)
   }, [activeTab])
+
+  useEffect(() => {
+    setLoading(true)
+    loadPatientEncounters(patientId)
+      .then(() => setLoading(false))
+      .catch((err) => {
+        console.error('Failed to load patient encounters:', err)
+        setLoading(false)
+      })
+  }, [patientId, loadPatientEncounters])
+
+  const isMobile = windowWidth < 992
+
+  if (loading) {
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: isMobile ? '100vh' : 'calc(100vh - 84px)',
+        background: '#f8fafc',
+        fontFamily: FONT,
+        color: '#64748b',
+        gap: '12px'
+      }}>
+        <div style={{
+          width: '36px',
+          height: '36px',
+          border: '3px solid #e2e8f0',
+          borderTop: '3px solid #1d4ed8',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+        <style dangerouslySetInnerHTML={{__html: `
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}} />
+        <span style={{ fontSize: '14px', fontWeight: 500 }}>Загрузка медицинской карты...</span>
+      </div>
+    )
+  }
 
   if (!patient) {
     return (
@@ -67,9 +111,8 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
     )
   }
 
-  const isMobile = windowWidth < 992
 
-  // STYLES FOR TABS
+  
   const tabStyle = (active: boolean): React.CSSProperties => ({
     padding: '8px 16px',
     borderRadius: '6px',
@@ -107,7 +150,6 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: isMobile ? '100vh' : 'calc(100vh - 84px)', background: '#f3f4f6', minHeight: 0 }}>
-      {/* DESKTOP HEADER */}
       {!isMobile ? (
         <PatientHeader style={{ background: 'white', color: '#0f172a', borderBottom: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)' }}>
           <HeaderBtn variant="ghost" onClick={onClose} style={{ color: '#475569', background: '#f1f5f9' }}>
@@ -129,7 +171,6 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
             </PatientMeta>
           </PatientInfo>
 
-          {/* Desktop Central Tabs */}
           <div style={{ display: 'flex', gap: '4px', background: '#f1f5f9', padding: '4px', borderRadius: '8px', margin: '0 auto', flexShrink: 0 }}>
             <button onClick={() => setActiveTab('primary')} style={tabStyle(activeTab === 'primary')}>
               <Stethoscope size={14} /> Первичный
@@ -159,9 +200,8 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
           </HeaderRight>
         </PatientHeader>
       ) : (
-        /* MOBILE HEADER */
+        
         <div style={{ background: 'white', display: 'flex', flexDirection: 'column', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
-          {/* Top Bar */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px' }}>
             <button onClick={onClose} style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', color: '#1d4ed8', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}>
               <ChevronLeft size={16} /> Назад
@@ -171,7 +211,6 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
             </button>
           </div>
 
-          {/* Patient Details */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 16px 12px 16px' }}>
             <PatientAvatar style={{ width: '40px', height: '40px', fontSize: '14px', boxShadow: 'none' }}>
               {patient.lastName?.[0] || ''}
@@ -188,7 +227,6 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
             </div>
           </div>
 
-          {/* Tab Selection */}
           <div style={{ display: 'flex', borderTop: '1px solid #f1f5f9' }}>
             <button onClick={() => setActiveTab('primary')} style={mobileTabStyle(activeTab === 'primary')}>
               <Stethoscope size={13} /> Первичный
@@ -203,7 +241,6 @@ export const WardRoundPatientContainer: React.FC<WardRoundPatientContainerProps>
         </div>
       )}
 
-      {/* CONTENT AREA */}
       <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflowY: isMobile ? 'auto' : 'hidden', minHeight: 0 }}>
         {activeTab === 'primary' && (
           <PrimaryInspectionPage

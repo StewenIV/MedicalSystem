@@ -16,7 +16,7 @@ namespace MedicalSystem.Domain.Models
         [StringLength(100, ErrorMessage = "Длина должности не должна превышать 100 символов")]
         public string Position { get; set; }
 
-        // Navigation properties
+        
         public virtual ICollection<Patient> Patients { get; set; }
         public virtual ICollection<Encounter> Encounters { get; set; }
         public virtual ICollection<PatientMedication> PatientMedications { get; set; }

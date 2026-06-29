@@ -378,7 +378,7 @@ function LoadingSpinner() {
   )
 }
 
-// Иконка типа исследования
+
 const ExamTypeIcon: React.FC<{ type: string }> = ({ type }) => {
   const props = { size: 14 }
   switch (type) {
@@ -442,7 +442,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [loading, setLoading] = useState(false)
   const [patientData, setPatientData] = useState<Partial<PatientCardDto> | null>(null)
 
-  // General Info
+  
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [middleName, setMiddleName] = useState('')
@@ -450,7 +450,7 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [gender, setGender] = useState('0')
   const [maritalStatus, setMaritalStatus] = useState('')
 
-  // Contacts
+  
   const [phoneMobile, setPhoneMobile] = useState('')
   const [phoneHome, setPhoneHome] = useState('')
   const [email, setEmail] = useState('')
@@ -460,16 +460,16 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
   const [zip, setZip] = useState('')
   const [country, setCountry] = useState('')
 
-  // Other
+  
   const [language, setLanguage] = useState('')
   const [nationality, setNationality] = useState('')
 
-  // Work
+  
   const [profession, setProfession] = useState('')
   const [organization, setOrganization] = useState('')
   const [workAddress, setWorkAddress] = useState('')
 
-  // Relative
+  
   const [relativeId, setRelativeId] = useState<string | null>(null)
   const [trustedName, setTrustedName] = useState('')
   const [trustedPhone, setTrustedPhone] = useState('')
@@ -1184,7 +1184,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         </>
       )}
 
-      {/* ── NOTIFICATIONS ─────────────────────────────────── */}
       {activeTab === 'notifications' && (
         <NotificationsContainer>
           <NotificationHeaderRow>
@@ -1286,7 +1285,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         </NotificationsContainer>
       )}
 
-      {/* ── PROFILE ───────────────────────────────────────── */}
       {activeTab === 'profile' && (
         <ProfileLayout>
           <ProfileSidebarCard>
@@ -1726,7 +1724,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         </ProfileLayout>
       )}
 
-      {/* ── MODAL: EXAM ────────────────────────────────────── */}
       {viewingExam && (
         <ModalOverlay onClick={() => setViewingExam(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -1911,7 +1908,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         </ModalOverlay>
       )}
 
-      {/* ── MODAL: DOC ─────────────────────────────────────── */}
       {viewingDoc && (
         <ModalOverlay onClick={() => setViewingDoc(null)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>
@@ -2018,7 +2014,6 @@ const PatientCabinetPage: React.FC<PatientCabinetPageProps> = ({
         </ModalOverlay>
       )}
 
-      {/* ── MODAL: PASSWORD ─────────────────────────────────── */}
       {isPasswordModalOpen && (
         <ModalOverlay onClick={() => setIsPasswordModalOpen(false)}>
           <ModalContent onClick={(e) => e.stopPropagation()}>

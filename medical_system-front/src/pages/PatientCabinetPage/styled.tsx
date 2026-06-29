@@ -18,7 +18,7 @@ const gradientText = (gradient: string) => css`
   background-clip: text;
 `
 
-// Design tokens
+
 const C = {
   bg: '#F8FAFB',
   surface: '#FFFFFF',
@@ -74,7 +74,7 @@ const pulse = keyframes`
   50%       { opacity: 0.5; }
 `
 
-// ─── LAYOUT ──────────────────────────────────────────────────────────────────
+
 
 export const PageContainer = styled.div`
   display: flex;
@@ -90,7 +90,7 @@ export const PageContainer = styled.div`
   min-height: 100vh;
 `
 
-// ─── HEADER ──────────────────────────────────────────────────────────────────
+
 
 export const Header = styled.header`
   display: flex;
@@ -175,7 +175,7 @@ export const WelcomeMeta = styled.div`
   }
 `
 
-// ─── NAV TABS ────────────────────────────────────────────────────────────────
+
 
 export const SubNavContainer = styled.nav`
   display: flex;
@@ -229,7 +229,7 @@ export const TabBadge = styled.span`
   line-height: 1.6;
 `
 
-// ─── WELCOME BANNER ──────────────────────────────────────────────────────────
+
 
 export const WelcomeBanner = styled.div`
   position: relative;
@@ -501,7 +501,7 @@ export const StatSub = styled.div`
   margin-top: -4px;
 `
 
-// ─── DASHBOARD CARDS ─────────────────────────────────────────────────────────
+
 
 export const DashboardRow = styled.div`
   display: grid;
@@ -988,7 +988,7 @@ export const SecondaryButton = styled.button`
   }
 `
 
-// ─── FILTER BAR ──────────────────────────────────────────────────────────────
+
 
 export const FilterBar = styled.div`
   position: relative;
@@ -1074,7 +1074,7 @@ export const DropdownSelect = styled.select`
   }
 `
 
-// ─── TABLE ───────────────────────────────────────────────────────────────────
+
 
 export const TableWrapper = styled.div`
   position: relative;
@@ -1274,7 +1274,7 @@ export const NoDataState = styled.div`
   }
 `
 
-// ─── DOCUMENTS ───────────────────────────────────────────────────────────────
+
 
 export const DocGrid = styled.div`
   display: grid;
@@ -1626,7 +1626,7 @@ export const MarkReadBtn = styled.button`
   }
 `
 
-// ─── MODAL ───────────────────────────────────────────────────────────────────
+
 
 export const ModalOverlay = styled.div`
   position: fixed;

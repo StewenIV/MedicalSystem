@@ -383,7 +383,7 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                     const inspToday = getInspections(p.id).filter((i) => i.date === todayISO)
                     const isInspected = inspToday.length > 0
                     const lastInsp = inspToday[inspToday.length - 1]
-                    const rawDate = p.history?.[0]?.dateTime || p.lastUpdated
+                    const rawDate = p.admissionDate || p.history?.[0]?.dateTime || p.lastUpdated
                     const admDate = rawDate ? formatLocalDate(rawDate) : '-'
 
                     return (
@@ -434,7 +434,9 @@ const WardRoundsHub: React.FC<WardRoundsHubProps> = ({
                         </SearchTd>
 
                         <SearchTd>
-                           <div style={{ fontWeight: 600 }}>302 / 3</div>
+                          <div style={{ fontWeight: 600 }}>
+                            {p.roomNumber ? `${p.roomNumber} / ${p.bedNumber ?? '-'}` : '-'}
+                          </div>
                           <div style={{ color: '#94a3b8', fontSize: 12 }}>{p.department}</div>
                         </SearchTd>
 

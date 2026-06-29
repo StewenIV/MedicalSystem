@@ -100,7 +100,7 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
         reason: reason.trim()
       }))
 
-      // Convert existing patient labs to LabDto format
+      
       const existingLabs = (patient.labs || []).map((l: any) => ({
         id: l.id || '00000000-0000-0000-0000-000000000000',
         type: l.type || '',
@@ -142,10 +142,10 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
   const sortedLabs = [...(patient.labs || [])].sort((a, b) => {
     const dateA = a.date ? new Date(a.date).getTime() : 0
     const dateB = b.date ? new Date(b.date).getTime() : 0
-    return dateB - dateA // Latest first
+    return dateB - dateA 
   })
 
-  // LAYOUTS
+  
   const containerStyle: React.CSSProperties = {
     display: 'flex',
     flexDirection: isMobile ? 'column' : 'row',
@@ -205,7 +205,6 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
 
   return (
     <div style={containerStyle}>
-      {/* SIDEBAR - NEW REFERRAL FORM */}
       <div style={sidebarStyle}>
         <h3
           style={{
@@ -329,7 +328,6 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
         </button>
       </div>
 
-      {/* MAIN CONTENT - HISTORY LIST */}
       <div style={mainStyle}>
         <div
           style={{
@@ -516,7 +514,6 @@ export const LaboratoryTab: React.FC<LaboratoryTabProps> = ({ patientId }) => {
         )}
       </div>
 
-      {/* TOAST NOTIFICATION */}
       {toast && (
         <div
           style={{

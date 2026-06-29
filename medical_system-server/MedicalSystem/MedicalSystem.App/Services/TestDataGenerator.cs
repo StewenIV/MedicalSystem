@@ -12,9 +12,9 @@ namespace MedicalSystem.App.Services
     {
         private static string Truncate(string value, int maxLength) => value == null ? null : (value.Length <= maxLength ? value : value.Substring(0, maxLength));
 
-        // ──────────────────────────────────────────────────────
-        //  ФИО — ручные пулы для корректных русскоязычных имён
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         private static readonly string[] MaleFirstNames = {
             "Александр", "Дмитрий", "Сергей", "Андрей", "Николай",
             "Владимир", "Михаил", "Иван", "Алексей", "Игорь",
@@ -69,9 +69,9 @@ namespace MedicalSystem.App.Services
             "Петровна", "Геннадьевна", "Анатольевна", "Олеговна"
         };
 
-        // ──────────────────────────────────────────────────────
-        //  Населённые пункты ПМР с кодами городов
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         private static readonly (string City, string Code)[] CitiesWithCodes = {
             ("Тирасполь", "533"),
             ("Бендеры", "552"),
@@ -97,9 +97,9 @@ namespace MedicalSystem.App.Services
             "ул. Школьная", "ул. Победы", "ул. Рабочая", "пр. Свободы"
         };
 
-        // ──────────────────────────────────────────────────────
-        //  Организации ПМР
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         private static readonly string[] Organizations = {
             "ООО «ТирЭнерго»",
             "ЗАО «Рыбницкий металлургический завод»",
@@ -139,9 +139,9 @@ namespace MedicalSystem.App.Services
             "Администратор", "Кассир", "Охранник", "Программист"
         };
 
-        // ──────────────────────────────────────────────────────
-        //  Национальности ПМР
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         private static readonly string[] NationalitiesMale = {
             "русский", "молдаванин", "украинец", "болгарин",
             "гагауз", "белорус", "еврей", "армянин",
@@ -154,9 +154,9 @@ namespace MedicalSystem.App.Services
             "немка", "полька"
         };
 
-        // ──────────────────────────────────────────────────────
-        //  Медицинские шаблоны для указаний врача медсестре
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         private static readonly string[] NurseInstructions = {
             "Контроль температуры тела каждые 4 часа. Результаты заносить в температурный лист.",
             "Контроль артериального давления утром и вечером. При АД выше 160/100 — сообщить врачу.",
@@ -180,9 +180,9 @@ namespace MedicalSystem.App.Services
             "Обеспечить соблюдение диеты стол №10. При отказе от пищи — информировать врача."
         };
 
-        // ──────────────────────────────────────────────────────
-        //  Вспомогательные методы
-        // ──────────────────────────────────────────────────────
+        
+        
+        
 
         private static string GetMaleName(Random rnd) => MaleFirstNames[rnd.Next(MaleFirstNames.Length)];
         private static string GetFemaleName(Random rnd) => FemaleFirstNames[rnd.Next(FemaleFirstNames.Length)];
@@ -193,7 +193,7 @@ namespace MedicalSystem.App.Services
 
         private static string GenerateMobilePhone(Random rnd)
         {
-            // Молдавские/ПМР мобильные: +373 6X XXX XXX или +373 7X XXX XXX
+            
             int prefix = rnd.Next(0, 2) == 0 ? 6 : 7;
             int d1 = rnd.Next(0, 10);
             int d2 = rnd.Next(100, 1000);
@@ -212,7 +212,7 @@ namespace MedicalSystem.App.Services
         {
             string street = Streets[rnd.Next(Streets.Length)];
             int house = rnd.Next(1, 120);
-            bool hasApt = rnd.Next(0, 3) != 0; // ~67% квартира
+            bool hasApt = rnd.Next(0, 3) != 0; 
             if (hasApt)
             {
                 int apt = rnd.Next(1, 150);
@@ -221,7 +221,7 @@ namespace MedicalSystem.App.Services
             return $"{city}, {street}, д. {house}";
         }
 
-        /// <summary>Правильное склонение числительных для лекарств</summary>
+        
         private static string FormatDose(decimal amount, MedicineUnit unit)
         {
             switch (unit)
@@ -301,9 +301,9 @@ namespace MedicalSystem.App.Services
             return "ампул";
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Генерация учреждений — только ГУ БЦГБ
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Institution> GenerateInstitutions()
         {
             return new List<Institution>
@@ -316,12 +316,12 @@ namespace MedicalSystem.App.Services
             };
         }
 
-        // Перегрузка для обратной совместимости (DataSeeder вызывает с параметром)
+        
         public static List<Institution> GenerateInstitutions(int count) => GenerateInstitutions();
 
-        // ──────────────────────────────────────────────────────
-        //  Генерация персонала
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<MedicalStaff> GenerateMedicalStaff(int count)
         {
             var medicalPositions = new[] {
@@ -337,7 +337,7 @@ namespace MedicalSystem.App.Services
             {
                 var position = medicalPositions[rnd.Next(medicalPositions.Length)];
 
-                // Врачи — преимущественно мужчины, медсёстры — преимущественно женщины
+                
                 bool isFemale = position.Contains("сестра") || (rnd.Next(0, 4) == 0);
 
                 string name;
@@ -357,16 +357,16 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Генерация пациентов
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Patient> GeneratePatients(int count, List<MedicalStaff> staff, List<Institution> institutions)
         {
             if (!staff.Any() || !institutions.Any()) return new List<Patient>();
 
             var rnd = new Random(0);
             var result = new List<Patient>(count);
-            var institution = institutions[0]; // Всегда одно учреждение
+            var institution = institutions[0]; 
 
             for (int i = 0; i < count; i++)
             {
@@ -390,8 +390,8 @@ namespace MedicalSystem.App.Services
                     nationality = NationalitiesFemale[rnd.Next(NationalitiesFemale.Length)];
                 }
 
-                // Адрес
-                bool isCity = rnd.Next(0, 3) != 0; // 67% города, 33% посёлки
+                
+                bool isCity = rnd.Next(0, 3) != 0; 
                 string cityName;
                 string cityCode;
                 if (isCity)
@@ -412,12 +412,12 @@ namespace MedicalSystem.App.Services
                     ? GenerateHomePhone(cityCode, rnd)
                     : null;
 
-                // Место работы
+                
                 string organization = Organizations[rnd.Next(Organizations.Length)];
                 string profession = Professions[rnd.Next(Professions.Length)];
                 string workAddress = GenerateAddress(cityName, rnd);
 
-                // Паспорт
+                
                 int passportNumber = rnd.Next(1000000, 9999999);
                 string passportSeries = $"I-ПР №{passportNumber:D7}";
                 var issuedDate = DateTime.Now.AddYears(-rnd.Next(1, 15)).AddDays(-rnd.Next(0, 365));
@@ -480,7 +480,7 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        /// <summary>Простая транслитерация имени для email</summary>
+        
         private static string TranslitName(string name)
         {
             if (string.IsNullOrEmpty(name)) return "user";
@@ -501,9 +501,9 @@ namespace MedicalSystem.App.Services
             return sb.Length > 0 ? sb.ToString() : "user";
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Лекарства
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Medicine> GenerateMedicines(int count, List<MedicalStaff> staff)
         {
             if (!staff.Any()) return new List<Medicine>();
@@ -602,9 +602,9 @@ namespace MedicalSystem.App.Services
             return medicines;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Родственники — вероятностная генерация (≤3 на пациента)
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<PatientRelative> GeneratePatientRelatives(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<PatientRelative>();
@@ -618,25 +618,25 @@ namespace MedicalSystem.App.Services
 
             foreach (var patient in patients)
             {
-                // 60% вероятность наличия родственников
+                
                 if (rnd.Next(0, 10) < 6)
                 {
-                    int relCount = rnd.Next(1, 4); // 1-3 родственника
+                    int relCount = rnd.Next(1, 4); 
                     for (int i = 0; i < relCount; i++)
                     {
-                        // Определяем пол родственника случайно
+                        
                         bool relIsFemale = rnd.Next(0, 2) == 0;
                         string relation;
 
                         if (relIsFemale)
-                            relation = maleRelations[rnd.Next(maleRelations.Length)]; // родственница-женщина
+                            relation = maleRelations[rnd.Next(maleRelations.Length)]; 
                         else
-                            relation = femaleRelations[rnd.Next(femaleRelations.Length)]; // родственник-мужчина
+                            relation = femaleRelations[rnd.Next(femaleRelations.Length)]; 
 
                         string relName;
                         if (relIsFemale)
                         {
-                            // Берём фамилию пациента (женский вариант) или новую
+                            
                             string lastName = rnd.Next(0, 2) == 0
                                 ? (patient.Gender == Gender.Female ? patient.LastName : GetFemaleLastName(rnd))
                                 : GetFemaleLastName(rnd);
@@ -667,9 +667,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Аллергии (с реальными аллергенами)
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Allergy> GenerateAllergies(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<Allergy>();
@@ -715,9 +715,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Медицинские проблемы (диагнозы)
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<MedicalProblem> GenerateMedicalProblems(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<MedicalProblem>();
@@ -771,7 +771,7 @@ namespace MedicalSystem.App.Services
                     Id = Guid.NewGuid(),
                     PatientId = patient.Id,
                     Name = Truncate(diagnosis, 300),
-                    IsActive = rnd.Next(0, 3) != 0, // 67% активные
+                    IsActive = rnd.Next(0, 3) != 0, 
                     Description = Truncate(description, 1000)
                 });
             }
@@ -779,14 +779,14 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Осмотры (ЭМК)
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Encounter> GenerateEncounters(int count, List<Patient> patients, List<MedicalStaff> staff)
         {
             if (!patients.Any() || !staff.Any()) return new List<Encounter>();
 
-            // Только врачи (не лаборанты и не медсёстры)
+            
             var doctors = staff.Where(s => s.Position != null &&
                 (s.Position.Contains("Врач") || s.Position.Contains("врач"))).ToList();
             if (!doctors.Any()) doctors = staff;
@@ -865,9 +865,9 @@ namespace MedicalSystem.App.Services
             return list;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Назначения пациентам (вероятностная генерация)
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<PatientMedication> GeneratePatientMedications(int count, List<Patient> patients, List<Medicine> medicines, List<MedicalStaff> staff)
         {
             if (!patients.Any() || !medicines.Any() || !staff.Any()) return new List<PatientMedication>();
@@ -876,7 +876,7 @@ namespace MedicalSystem.App.Services
                 (s.Position.Contains("Врач") || s.Position.Contains("врач"))).ToList();
             if (!doctors.Any()) doctors = staff;
 
-            // Используем только лекарства с ненулевым остатком
+            
             var availableMedicines = medicines.Where(m => m.CurrentBalance > 0).ToList();
             if (!availableMedicines.Any()) availableMedicines = medicines.ToList();
 
@@ -892,18 +892,18 @@ namespace MedicalSystem.App.Services
 
             var statuses = Enum.GetValues(typeof(MedicationStatus)).Cast<MedicationStatus>().ToArray();
 
-            // Не всегда у пациента есть назначения (50% вероятность)
+            
             foreach (var patient in patients)
             {
-                if (rnd.Next(0, 2) == 0) continue; // Пропускаем пациентов без назначений
+                if (rnd.Next(0, 2) == 0) continue; 
 
-                int prescCount = rnd.Next(1, 5); // 1-4 назначения на пациента
+                int prescCount = rnd.Next(1, 5); 
                 for (int j = 0; j < prescCount && result.Count < count; j++)
                 {
                     var medicine = availableMedicines[rnd.Next(availableMedicines.Count)];
                     var doctor = doctors[rnd.Next(doctors.Count)];
 
-                    // Генерируем дозу в зависимости от типа лекарства
+                    
                     decimal amount = medicine.Unit switch
                     {
                         MedicineUnit.Tablet => rnd.Next(1, 4),
@@ -934,9 +934,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Лабораторные результаты
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<LabResult> GenerateLabResults(int count, List<Patient> patients, List<MedicalStaff> staff)
         {
             if (!patients.Any() || !staff.Any()) return new List<LabResult>();
@@ -962,9 +962,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Операции
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Operation> GenerateOperations(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<Operation>();
@@ -1004,9 +1004,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Вакцинации
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Vaccine> GenerateVaccines(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<Vaccine>();
@@ -1037,9 +1037,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Документы пациентов
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<PatientDocument> GeneratePatientDocuments(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<PatientDocument>();
@@ -1075,9 +1075,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Жизненные показатели
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<VitalSign> GenerateVitalSigns(int count, List<Patient> patients)
         {
             if (!patients.Any()) return new List<VitalSign>();
@@ -1104,9 +1104,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Приёмы (appointments)
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Appointment> GenerateAppointments(int count, List<Patient> patients, List<MedicalStaff> staff)
         {
             if (!patients.Any() || !staff.Any()) return new List<Appointment>();
@@ -1146,9 +1146,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Палаты и койки
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Room> GenerateRooms(int count)
         {
             var rooms = new List<Room>();
@@ -1188,7 +1188,7 @@ namespace MedicalSystem.App.Services
                 int bedsInRoom = rnd.Next(2, 5);
                 for (int bedNum = 1; bedNum <= bedsInRoom; bedNum++)
                 {
-                    bool shouldBeOccupied = rnd.Next(0, 10) < 7; // 70%
+                    bool shouldBeOccupied = rnd.Next(0, 10) < 7; 
                     Patient patientToAdmit = null;
 
                     if (shouldBeOccupied && availablePatients.Any())
@@ -1231,9 +1231,9 @@ namespace MedicalSystem.App.Services
             return beds;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Графики работы — 5 месяцев
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Shift> GenerateShifts(int count, List<MedicalStaff> staff)
         {
             if (!staff.Any()) return new List<Shift>();
@@ -1241,10 +1241,10 @@ namespace MedicalSystem.App.Services
             var rnd = new Random(0);
             var result = new List<Shift>();
 
-            // Определяем диапазон: -2 месяца до +2 месяца (включая текущий)
+            
             var now = DateTime.Now;
             var startMonth = new DateTime(now.Year, now.Month, 1).AddMonths(-2);
-            var endMonth = new DateTime(now.Year, now.Month, 1).AddMonths(3); // следующий после +2
+            var endMonth = new DateTime(now.Year, now.Month, 1).AddMonths(3); 
 
             foreach (var staffMember in staff)
             {
@@ -1261,7 +1261,7 @@ namespace MedicalSystem.App.Services
                     for (int day = 1; day <= daysInMonth; day++)
                     {
                         var date = new DateTime(currentMonth.Year, currentMonth.Month, day);
-                        if (date > now.AddDays(62)) break; // Не генерируем слишком далеко в будущее
+                        if (date > now.AddDays(62)) break; 
 
                         DayOfWeek dow = date.DayOfWeek;
                         bool isWeekend = dow == DayOfWeek.Saturday || dow == DayOfWeek.Sunday;
@@ -1271,15 +1271,15 @@ namespace MedicalSystem.App.Services
 
                         if (isNurse)
                         {
-                            // Медсёстры: сменный график (12ч), выходные чередуются
-                            // Упрощённо: дни чередуются рабочий/выходной
+                            
+                            
                             int dayIndex = (int)(date - startMonth).TotalDays;
                             int staffIndex = staff.IndexOf(staffMember);
                             bool isWorkDay = ((dayIndex + staffIndex) % 2) == 0;
 
                             if (isWorkDay)
                             {
-                                // 30% ночная смена
+                                
                                 shiftType = rnd.Next(0, 10) < 3 ? ShiftType.Night : ShiftType.Day;
                                 hours = shiftType == ShiftType.Night ? (short)12 : (short)12;
                             }
@@ -1291,16 +1291,16 @@ namespace MedicalSystem.App.Services
                         }
                         else if (isDoctor)
                         {
-                            // Врачи: пятидневка (пн-пт), выходные — суббота, воскресенье
+                            
                             if (!isWeekend)
                             {
-                                // 10% дежурство (ночная)
+                                
                                 shiftType = rnd.Next(0, 10) < 1 ? ShiftType.Night : ShiftType.Day;
                                 hours = shiftType == ShiftType.Night ? (short)24 : (short)8;
                             }
                             else
                             {
-                                // Иногда дежурства в выходные (15%)
+                                
                                 if (rnd.Next(0, 100) < 15)
                                 {
                                     shiftType = ShiftType.Night;
@@ -1315,7 +1315,7 @@ namespace MedicalSystem.App.Services
                         }
                         else
                         {
-                            // Прочий персонал: стандартная пятидневка
+                            
                             shiftType = isWeekend ? ShiftType.DayOff : ShiftType.Day;
                             hours = isWeekend ? (short)0 : (short)8;
                         }
@@ -1340,9 +1340,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Уведомления
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<Notification> GenerateNotifications(int count, List<MedicalStaff> staff, List<Patient> patients)
         {
             if (!staff.Any() || !patients.Any()) return new List<Notification>();
@@ -1389,9 +1389,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Лист назначений (BedPrescriptions) — вероятностная генерация
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<BedPrescription> GenerateBedPrescriptions(int count, List<Patient> patients, List<PatientMedication> patientMedications)
         {
             if (!patients.Any() || !patientMedications.Any()) return new List<BedPrescription>();
@@ -1399,11 +1399,11 @@ namespace MedicalSystem.App.Services
             var rnd = new Random(0);
             var result = new List<BedPrescription>();
 
-            // Группируем назначения по пациентам
+            
             var medsByPatient = patientMedications.GroupBy(pm => pm.PatientId)
                 .ToDictionary(g => g.Key, g => g.ToList());
 
-            // Стандартные времена приёма лекарств
+            
             var scheduledTimes = new[] {
                 new TimeSpan(8, 0, 0),
                 new TimeSpan(12, 0, 0),
@@ -1412,21 +1412,21 @@ namespace MedicalSystem.App.Services
                 new TimeSpan(22, 0, 0)
             };
 
-            // Генерируем только для пациентов с назначениями, не более count всего
+            
             foreach (var patient in patients)
             {
                 if (result.Count >= count) break;
 
                 if (!medsByPatient.TryGetValue(patient.Id, out var patMeds)) continue;
 
-                // 50% вероятность, что у пациента есть лист назначений
+                
                 if (rnd.Next(0, 2) == 0) continue;
 
                 foreach (var med in patMeds)
                 {
                     if (result.Count >= count) break;
 
-                    // Для каждого назначения — 1-3 записи в листе (на разное время)
+                    
                     int entries = rnd.Next(1, 4);
                     var usedTimes = new HashSet<int>();
 
@@ -1451,7 +1451,7 @@ namespace MedicalSystem.App.Services
                             Date = DateTime.Now.Date,
                             IsDone = isDone,
                             DoneAt = isDone ? DateTime.Now.AddHours(-rnd.Next(0, 8)) : (DateTime?)null,
-                            DoneBy = isDone ? null : null // Заполняется при выполнении медсестрой
+                            DoneBy = isDone ? null : null 
                         });
                     }
                 }
@@ -1460,9 +1460,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Журнал действий по коткам
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<BedActionLog> GenerateBedActionLogs(int count, List<Patient> patients, List<MedicalStaff> staff)
         {
             if (!patients.Any() || !staff.Any()) return new List<BedActionLog>();
@@ -1503,9 +1503,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  Журнал операций с медикаментами
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<MedicineOperationLog> GenerateMedicineOperationLogs(int count, List<Medicine> medicines, List<MedicalStaff> staff, List<Patient> patients, List<PatientMedication> patientMedications)
         {
             if (!medicines.Any() || !staff.Any()) return new List<MedicineOperationLog>();
@@ -1539,9 +1539,9 @@ namespace MedicalSystem.App.Services
             return result;
         }
 
-        // ──────────────────────────────────────────────────────
-        //  История занятости коек
-        // ──────────────────────────────────────────────────────
+        
+        
+        
         public static List<BedOccupancyHistory> GenerateBedOccupancyHistories(List<HospitalBed> beds, List<Patient> patients)
         {
             var histories = new List<BedOccupancyHistory>();
@@ -1550,7 +1550,7 @@ namespace MedicalSystem.App.Services
             var activePatientIds = beds.Where(b => b.PatientId.HasValue).Select(b => b.PatientId.Value).ToHashSet();
             var dischargedPatients = patients.Where(p => !activePatientIds.Contains(p.Id)).ToList();
 
-            // Активные записи
+            
             foreach (var bed in beds.Where(b => b.Status != BedStatus.Free && b.PatientId.HasValue))
             {
                 histories.Add(new BedOccupancyHistory
@@ -1563,7 +1563,7 @@ namespace MedicalSystem.App.Services
                 });
             }
 
-            // Исторические записи
+            
             foreach (var bed in beds)
             {
                 int pastRecords = rnd.Next(1, 3);

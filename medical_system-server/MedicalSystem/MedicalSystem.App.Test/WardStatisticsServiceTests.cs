@@ -23,7 +23,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetWardStatisticsAsync_CallsQueryAndReturnsDto()
         {
-            // Arrange
+            
             var expectedDto = new WardStatisticsDto
             {
                 TotalRooms = 10,
@@ -37,10 +37,10 @@ namespace MedicalSystem.App.Test
             _mockQuery.Setup(q => q.GetWardStatisticsAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedDto);
 
-            // Act
+            
             var result = await _service.GetWardStatisticsAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(10, result.TotalRooms);
             Assert.Equal(100, result.TotalBeds);

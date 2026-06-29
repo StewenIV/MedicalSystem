@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace MedicalSystem.Data.Migrations
 {
-    /// <inheritdoc />
+    
     public partial class RemoveDepartmentTable : Migration
     {
-        /// <inheritdoc />
+        
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
@@ -51,7 +51,7 @@ namespace MedicalSystem.Data.Migrations
                 table: "MedicalStaff");
         }
 
-        /// <inheritdoc />
+        
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<Guid>(

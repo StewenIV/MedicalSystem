@@ -53,7 +53,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? Country { get; set; }
     }
 
-    // Keep this for backward compatibility if needed by the frontend currently
+    
     public class UpdateTrustedPersonDto
     {
         public string Name { get; set; } = string.Empty;

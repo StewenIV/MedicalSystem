@@ -794,7 +794,7 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
               label: [d.fullName, d.position, d.department].filter(Boolean).join(' - ')
             }))
 
-            // Keep current selected doctor in options list so it doesn't disappear
+            
             if (assignDoctor) {
               const hasSelected = mapped.some((o) => o.value === assignDoctor)
               if (!hasSelected && userId && displayName) {
@@ -1004,12 +1004,12 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
     })
     setAssignDate(toLocalDateTimeLocalString(new Date()))
 
-    // Automatically set logged in user as the doctor if they are Doctor or ChiefDoctor
+    
     const isDoctorUser = userRole === 'Doctor' || userRole === 'ChiefDoctor'
     const defaultDoctorId = isDoctorUser && userId ? userId : ''
     setAssignDoctor(defaultDoctorId)
 
-    // Seed option list with current doctor instantly so react-select displays it immediately
+    
     if (isDoctorUser && userId && displayName) {
       setDoctorOptions([
         {
@@ -1029,7 +1029,7 @@ export function WardAdmin({ onNavigateToDischarge }: WardAdminProps) {
     setSelectedPatientForAssign(null)
 
     loadDoctorOptions().then(() => {
-      // Ensure current doctor remains in the options list if loadDoctorOptions resolved
+      
       if (isDoctorUser && userId && displayName) {
         setDoctorOptions((prev) => {
           if (prev.some((o) => o.value === userId)) return prev

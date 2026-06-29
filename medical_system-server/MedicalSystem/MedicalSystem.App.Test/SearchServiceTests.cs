@@ -24,7 +24,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task SearchPatientsAsync_CallsQueryAndReturnsPagedResult()
         {
-            // Arrange
+            
             var queryText = "John";
             var page = 1;
             var pageSize = 10;
@@ -37,10 +37,10 @@ namespace MedicalSystem.App.Test
             _mockSearchQuery.Setup(q => q.SearchPatientsAsync(queryText, page, pageSize, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            // Act
+            
             var result = await _searchService.SearchPatientsAsync(queryText, page, pageSize, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Single(result.Items);
             Assert.Equal("John", result.Items[0].FirstName);
@@ -51,7 +51,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task SearchDoctorsAsync_CallsQueryAndReturnsDoctorsList()
         {
-            // Arrange
+            
             var queryText = "House";
             var departmentId = Guid.NewGuid();
             var institutionId = Guid.NewGuid();
@@ -63,10 +63,10 @@ namespace MedicalSystem.App.Test
             _mockSearchQuery.Setup(q => q.SearchDoctorsAsync(queryText, departmentId, institutionId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedResult);
 
-            // Act
+            
             var result = await _searchService.SearchDoctorsAsync(queryText, departmentId, institutionId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Single(result);
             Assert.Equal("Gregory House", result[0].FullName);

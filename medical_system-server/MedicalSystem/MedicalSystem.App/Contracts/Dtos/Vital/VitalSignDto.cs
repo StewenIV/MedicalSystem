@@ -13,13 +13,13 @@ namespace MedicalSystem.App.Contracts.Dtos
         public short? SpO2 { get; set; }
         public short? RespiratoryRate { get; set; }
         
-        // Formatted versions for display
+        
         public string? BloodPressure => 
             BloodPressureSystolic.HasValue && BloodPressureDiastolic.HasValue
                 ? $"{BloodPressureSystolic}/{BloodPressureDiastolic}"
                 : null;
         
-        // Date string for graph (e.g., "12.05")
+        
         public string DateLabel => RecordedAt.ToString("dd.MM");
     }
 }

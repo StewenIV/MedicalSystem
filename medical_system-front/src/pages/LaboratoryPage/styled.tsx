@@ -909,7 +909,7 @@ export const ConclusionText = styled.div`
   font-size: 13.5px;
 `
 
-// Print / PDF styled components
+
 export const PrintWrapper = styled.div`
   position: absolute;
   left: -9999px;

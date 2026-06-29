@@ -592,7 +592,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
   const handleGenerateAndSave = async () => {
     if (!patient) return
 
-    // Validation
+    
     if (!form.inspectionDate) return showToast('Укажите дату осмотра', 'error')
     if (!form.inspectionTime) return showToast('Укажите время осмотра', 'error')
     if (!form.doctor) return showToast('Укажите врача', 'error')
@@ -602,7 +602,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
     try {
       const text = generateDailyText(form, `${patient.lastName} ${patient.firstName}`)
 
-      // Always store doctorDisplayName in formData for history restoration
+      
       const finalForm = {
         ...form,
         generatedText: text,
@@ -654,7 +654,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
           resp: form.rr || undefined
         },
         undefined,
-        undefined, // meds shouldn't be overwritten by prescriptions
+        undefined, 
         additionalData
       )
 
@@ -915,7 +915,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
           flexDirection: isMobile ? 'column' : 'row'
         }}
       >
-        {/* ===== LEFT SIDEBAR ===== */}
         <nav
           style={{
             width: isMobile ? '100%' : sidebarCollapsed ? 64 : 232,
@@ -930,7 +929,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
             maxHeight: isMobile && showHistory ? '350px' : 'none'
           }}
         >
-          {/* Tab toggle */}
           <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9', flexShrink: 0 }}>
             <button
               onClick={() => {
@@ -988,7 +986,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
           </div>
 
           {!showHistory ? (
-            /* Form section navigation */
+            
             <div
               style={{
                 padding: isMobile ? '8px 16px' : '8px 0',
@@ -1070,7 +1068,7 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
               ))}
             </div>
           ) : (
-            /* History list */
+            
             <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
               {dailyInspections.length === 0 ? (
                 <div
@@ -1223,7 +1221,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
           </div>
         </nav>
 
-        {/* ===== MAIN CONTENT AREA ===== */}
         <div
           style={{
             flex: 1,
@@ -1319,7 +1316,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
             </div>
           )}
 
-          {/* ===== NEW INSPECTION FORM ===== */}
           <div
             style={{
               maxWidth: 900,
@@ -2344,7 +2340,6 @@ const DailyRoundPage: React.FC<DailyRoundPageProps> = ({
               </div>
             </div>
 
-            {/* Medical history info sections */}
             {form.allergies.length > 0 && (
               <div style={block}>
                 <div style={blockHeader}>Аллергический анамнез</div>

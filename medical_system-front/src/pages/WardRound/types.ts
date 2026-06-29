@@ -268,7 +268,7 @@ export interface DailyRoundFormState {
   treatmentDecision: 'keep' | 'modify'
   prescriptions: RoundPrescription[]
 
-  // Medical history sections (for display and sync)
+  
   allergyStatus: 'none' | 'has'
   allergies: { id: string; name: string; reaction: string; date?: string; comment?: string }[]
   operationsStatus: 'none' | 'has'

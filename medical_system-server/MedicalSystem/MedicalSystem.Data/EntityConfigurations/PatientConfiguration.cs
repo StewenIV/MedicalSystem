@@ -53,7 +53,7 @@ namespace MedicalSystem.Data.EntityConfigurations
                     v => (PatientStatus)Enum.Parse(typeof(PatientStatus), v))
                 .HasMaxLength(50);
 
-            // Конфигурация Owned Entities
+            
             builder.OwnsOne(p => p.Contacts, contacts =>
             {
                 contacts.Property(c => c.PhoneMobile).HasMaxLength(20);

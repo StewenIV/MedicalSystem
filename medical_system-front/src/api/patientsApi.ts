@@ -20,6 +20,7 @@ export interface PatientCardDto {
   departmentName?: string;
   roomNumber?: string;
   bedNumber?: number;
+  admissionDate?: string;
 
   passport?: PassportInfoDto;
   contacts?: ContactsInfoDto;

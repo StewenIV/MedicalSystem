@@ -180,6 +180,7 @@ namespace MedicalSystem.API.Controllers
 
                 var activeDiagnosis = lr.Patient.MedicalProblems
                     .Where(mp => mp.IsActive)
+                    .OrderByDescending(mp => mp.Description == "Основной")
                     .Select(mp => mp.Name)
                     .FirstOrDefault();
 

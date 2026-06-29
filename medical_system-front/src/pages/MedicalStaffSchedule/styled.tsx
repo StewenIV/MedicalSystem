@@ -544,7 +544,7 @@ export const Table = styled.table`
   td { padding: 0; }
 `
 
-// ─── Glassmorphism sticky header ───────────────────────────────────────────────
+
 export const NameColumnHeader = styled.th`
   position: sticky !important;
   left: 0;
@@ -589,7 +589,7 @@ export const EmployeeCardRow = styled.tr`
   }
 `
 
-// Gap between rows — a spacer "ghost" row
+
 export const RowSpacer = styled.tr`
   height: 5px;
   & td {
@@ -640,7 +640,7 @@ export const Position = styled.span`
   letter-spacing: 0.1px;
 `
 
-// ─── Day header ────────────────────────────────────────────────────────────────
+
 export const DayHeader = styled.div<{ $isWeekend?: boolean; $isToday?: boolean }>`
   display: flex;
   flex-direction: column;
@@ -678,7 +678,7 @@ export const DayHeader = styled.div<{ $isWeekend?: boolean; $isToday?: boolean }
   }
 `
 
-// ─── Glassmorphism thead th wrapper ───────────────────────────────────────────
+
 export const TheadGlass = styled.thead`
   & th {
     background: rgba(248, 250, 252, 0.97) !important;
@@ -687,7 +687,7 @@ export const TheadGlass = styled.thead`
   }
 `
 
-// ─── Day column header (non-name) ──────────────────────────────────────────────
+
 export const DayTh = styled.th<{ $isWeekend?: boolean }>`
   background: ${({ $isWeekend }) =>
     $isWeekend
@@ -697,7 +697,7 @@ export const DayTh = styled.th<{ $isWeekend?: boolean }>`
   -webkit-backdrop-filter: blur(20px);
 `
 
-// ─── Shift cells ──────────────────────────────────────────────────────────────
+
 export const ShiftCell = styled.td<{
   $type: 'day' | 'night' | 'day-off' | 'empty'
   $isWeekend?: boolean
@@ -855,7 +855,7 @@ export const LegendItem = styled.div<{ $type: 'day' | 'night' | 'day-off' }>`
   }
 `
 
-// ─── No data ────────────────────────────────────────────────────────────────────
+
 export const NoDataState = styled.div`
   padding: 60px;
   text-align: center;
@@ -873,7 +873,7 @@ export const NoDataState = styled.div`
   }
 `
 
-// ─── Modal ────────────────────────────────────────────────────────────────────
+
 
 export const ModalOverlay = styled.div`
   position: fixed;
@@ -1105,7 +1105,7 @@ export const ModalSaveBtn = styled.button`
   }
 `
 
-// ─── Mobile cards ──────────────────────────────────────────────────────────────
+
 
 export const MobileEmployeeCard = styled.div`
   background: #ffffff;

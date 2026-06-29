@@ -31,7 +31,7 @@ namespace MedicalSystem.Domain.Models
         [Required]
         public bool IsActive { get; set; }
 
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }

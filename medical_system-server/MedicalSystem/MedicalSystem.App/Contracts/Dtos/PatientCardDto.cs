@@ -26,16 +26,16 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? RoomNumber { get; set; }
         public int? BedNumber { get; set; }
 
-        // Owned entities
+        
         public PassportInfoDto? Passport { get; set; }
         public ContactsInfoDto? Contacts { get; set; }
         public WorkInfoDto? Work { get; set; }
         public OtherInfoDto? Other { get; set; }
 
-        // Vitals
+        
         public VitalsDto? Vitals { get; set; }
 
-        // Lists
+        
         public List<RelativeDto>? Relatives { get; set; }
         public List<AllergyDto>? Allergies { get; set; }
         public List<MedicationDto>? CurrentMeds { get; set; }
@@ -47,7 +47,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public List<DocumentDto>? Documents { get; set; }
         public List<HistoryEntryDto>? History { get; set; }
         
-        // For backward compatibility
+        
         public List<EncounterDto>? Encounters { get; set; }
         public List<PatientMedicationDto>? Medications { get; set; }
     }
@@ -208,7 +208,7 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? FormData { get; set; }
     }
 
-    // Backward compatible classes
+    
     public class EncounterDto
     {
         public Guid Id { get; set; }

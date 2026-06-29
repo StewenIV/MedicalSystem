@@ -39,7 +39,7 @@ import * as S from './styled'
 
 const FONT = `'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif`
 
-// ─── PARAMETER DEFINITIONS & RANGE COMPARISONS ──────────────────────────────
+
 
 interface ParamDef {
   key: string
@@ -465,10 +465,10 @@ const getTestTypeKey = (type: string): string => {
     return 'Биохимия крови'
   if (t.includes('коагул')) return 'Коагулограмма'
   if (t.includes('мокрот')) return 'Мокрота'
-  return 'ОАК' // default fallback
+  return 'ОАК' 
 }
 
-// ─── LABORATORY PAGE COMPONENT ──────────────────────────────────────────────
+
 
 interface LaboratoryPageProps {
   initialLabResultId?: string
@@ -482,41 +482,41 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
   const displayName = useSelector(selectDisplayName)
   const notifCtx = usePatientNotifications()
 
-  // Table parameters & state
+  
   const [items, setItems] = useState<LabResultListItemDto[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(false)
 
-  // Filters
+  
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
   const [typeFilter, setTypeFilter] = useState('all')
 
-  // Pagination & Sorting
+  
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [sortBy, setSortBy] = useState('date')
   const [sortDesc, setSortDesc] = useState(true)
 
-  // Stats
+  
   const [stats, setStats] = useState({ total: 0, pending: 0, inProgress: 0, completed: 0 })
 
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize))
 
-  // Modal forms
+  
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [isViewOpen, setIsViewOpen] = useState(false)
   const [activeResult, setActiveResult] = useState<LabResultDetailsDto | null>(null)
 
-  // Results inputs
+  
   const [formResults, setFormResults] = useState<Record<string, string>>({})
   const [formComments, setFormComments] = useState('')
   const [saving, setSaving] = useState(false)
 
-  // References for PDF generation
+  
   const printContainerRef = useRef<HTMLDivElement>(null)
 
-  // Load stats
+  
   const fetchStats = useCallback(async () => {
     try {
       const data = await fetchLabResults({ pageSize: 1000 })
@@ -532,7 +532,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }, [])
 
-  // Load paginated list
+  
   const fetchTableData = useCallback(async () => {
     setLoading(true)
     try {
@@ -555,7 +555,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }, [search, statusFilter, typeFilter, page, pageSize, sortBy, sortDesc])
 
-  // Sync load trigger
+  
   useEffect(() => {
     fetchTableData()
   }, [fetchTableData])
@@ -564,13 +564,13 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     fetchStats()
   }, [items, fetchStats])
 
-  // Sync on new referral notification (real-time sync)
+  
   useEffect(() => {
     fetchTableData()
     fetchStats()
   }, [notifCtx.notifications, fetchTableData, fetchStats])
 
-  // Handle incoming initial ID from notification clicks
+  
   useEffect(() => {
     if (initialLabResultId) {
       handleOpenResultById(initialLabResultId)
@@ -578,7 +578,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }, [initialLabResultId])
 
-  // Add custom listener for notifications clicked when page is already active
+  
   useEffect(() => {
     const handleOpenResultEvent = (e: any) => {
       const id = e.detail
@@ -597,7 +597,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
       const details = await fetchLabResultById(id)
       setActiveResult(details)
 
-      // Auto-assign to "В работе" if still "Назначено"
+      
       if (details.statusText === 'Назначено') {
         await updateLabStatus(details.id, 'В работе')
         details.statusText = 'В работе'
@@ -608,7 +608,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
       if (details.statusText === 'Завершено') {
         setIsViewOpen(true)
       } else {
-        // Init results mapping
+        
         const initVals: Record<string, string> = {}
         const testKey = getTestTypeKey(details.type)
         const defs = PARAM_DEFS[testKey] || []
@@ -633,7 +633,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }
 
-  // Handle Status Update ("В работу")
+  
   const handleStartWork = async (id: string) => {
     try {
       await updateLabStatus(id, 'В работе')
@@ -644,12 +644,12 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }
 
-  // Handle results entry open
+  
   const handleOpenFillForm = async (item: LabResultListItemDto) => {
     await handleOpenResultById(item.id)
   }
 
-  // Handle viewing completed results
+  
   const handleOpenView = async (item: LabResultListItemDto) => {
     try {
       const details = await fetchLabResultById(item.id)
@@ -660,12 +660,12 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }
 
-  // Handle parameter value change in form
+  
   const handleResultChange = (key: string, value: string) => {
     setFormResults((prev) => ({ ...prev, [key]: value }))
   }
 
-  // Reset Filters
+  
   const handleResetFilters = () => {
     setSearch('')
     setStatusFilter('all')
@@ -673,7 +673,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     setPage(1)
   }
 
-  // Column Sort helper
+  
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortDesc(!sortDesc)
@@ -684,18 +684,18 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     setPage(1)
   }
 
-  // Dynamic values representation inside results modal
+  
   const activeParamDefs = useMemo(() => {
     if (!activeResult) return []
     const key = getTestTypeKey(activeResult.type)
     return PARAM_DEFS[key] || []
   }, [activeResult])
 
-  // Process submission
+  
   const handleSubmitResults = async () => {
     if (!activeResult) return
 
-    // Simple validation
+    
     let hasEmpty = false
     activeParamDefs.forEach((p) => {
       if (!formResults[p.key]) hasEmpty = true
@@ -710,8 +710,8 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     toast.info('Формирование бланка и сохранение результатов...')
 
     try {
-      // 1. Generate PDF on client side
-      // Wait for React to render the printable blank in hidden DOM
+      
+      
       await new Promise((resolve) => setTimeout(resolve, 300))
 
       const printNode = printContainerRef.current
@@ -745,14 +745,14 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
         type: 'application/pdf'
       })
 
-      // 2. Upload file to MinIO
+      
       const uploadRes = await uploadFile(pdfFile)
 
-      // 3. Submit results payload to backend
+      
       await submitLabResults(activeResult.id, {
         resultData: JSON.stringify(formResults),
         comments: formComments,
-        pdfDocumentPath: uploadRes.objectName // Save objectName/filePath
+        pdfDocumentPath: uploadRes.objectName 
       })
 
       toast.success('Результаты успешно внесены и отправлены лечащему врачу!')
@@ -766,7 +766,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
     }
   }
 
-  // Download PDF
+  
   const handleDownloadPdf = (item: LabResultListItemDto) => {
     if (item.pdfDocumentPath) {
       downloadFileFromServer(`Анализ_${item.type}_${item.patientName}.pdf`, item.pdfDocumentPath)
@@ -782,7 +782,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
       </Helmet>
 
       <S.PageContainer>
-        {/* Page Inner Header */}
         <S.CardHeader>
           <S.HeaderFlex>
             <div>
@@ -798,7 +797,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
           </S.HeaderFlex>
         </S.CardHeader>
 
-        {/* Dashboard Stats */}
         <S.StatsGrid>
           <S.StatCard $color="#2563eb" $bg="#eff6ff">
             <S.StatHeader>
@@ -845,7 +843,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
           </S.StatCard>
         </S.StatsGrid>
 
-        {/* Filters and List */}
         <S.SectionCard>
           <S.FilterBar>
             <S.SearchInputWrapper>
@@ -896,7 +893,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
             )}
           </S.FilterBar>
 
-          {/* Table */}
           <S.TableWrapper>
             {loading ? (
               <S.EmptyState>
@@ -1010,7 +1006,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
             )}
           </S.TableWrapper>
 
-          {/* Pagination */}
           {totalCount > 0 && (
             <S.PaginationRow>
               <S.PaginationControls>
@@ -1068,7 +1063,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
         </S.SectionCard>
       </S.PageContainer>
 
-      {/* ─── DYNAMIC FORM MODAL (FILL RESULTS) ─────────────────────────────── */}
       {isFormOpen && activeResult && (
         <S.ModalOverlay onClick={() => setIsFormOpen(false)}>
           <S.ModalContent onClick={(e) => e.stopPropagation()}>
@@ -1079,7 +1073,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
               </S.CloseButton>
             </S.ModalHeader>
             <S.ModalBody>
-              {/* Patient Brief */}
               <S.PatientInfoBlock>
                 <S.InfoItem>
                   <span className="label">Пациент</span>
@@ -1121,7 +1114,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                 )}
               </S.ResultSummaryGrid>
 
-              {/* Dynamic Input Fields */}
               <S.SectionTitle>Результаты исследования</S.SectionTitle>
               <S.ResultsGrid>
                 {activeParamDefs.map((p) => {
@@ -1172,7 +1164,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                 })}
               </S.ResultsGrid>
 
-              {/* Comments */}
               <S.CommentsGroup>
                 <S.CommentsLabel>Заключение лаборатории / Комментарии</S.CommentsLabel>
                 <S.CommentsTextarea
@@ -1199,7 +1190,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
         </S.ModalOverlay>
       )}
 
-      {/* ─── DYNAMIC VIEW RESULTS MODAL (COMPLETED RESULTS) ──────────────── */}
       {isViewOpen && activeResult && (
         <S.ModalOverlay onClick={() => setIsViewOpen(false)}>
           <S.ModalContent onClick={(e) => e.stopPropagation()}>
@@ -1218,7 +1208,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                 />
               ) : (
                 <>
-                  {/* Patient details */}
                   <S.PatientInfoBlock>
                     <S.InfoItem>
                       <span className="label">Пациент</span>
@@ -1253,7 +1242,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                     </S.SummaryItemFull>
                   </S.ResultSummaryGrid>
 
-                  {/* Table of results */}
                   <S.SectionTitle>Результаты показателей</S.SectionTitle>
                   <S.TableWrapper>
                     <S.Table>
@@ -1328,11 +1316,9 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
         </S.ModalOverlay>
       )}
 
-      {/* ─── HIDDEN OFFICIAL MEDICAL BLANK FOR PDF GENERATION ─── */}
       <S.PrintWrapper>
         {activeResult && (
           <S.PrintContainer ref={printContainerRef}>
-            {/* Header info */}
             <S.PrintHeaderFlex>
               <div>
                 <S.PrintHospitalName>
@@ -1352,13 +1338,11 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
               </S.PrintDateInfo>
             </S.PrintHeaderFlex>
 
-            {/* Document Title */}
             <S.PrintTitleContainer>
               <S.PrintTitle>Результаты лабораторных исследований</S.PrintTitle>
               <S.PrintSubtitle>{activeResult.type}</S.PrintSubtitle>
             </S.PrintTitleContainer>
 
-            {/* Patient card info */}
             <S.PrintPatientCard>
               <div>
                 <strong>Пациент (ФИО):</strong> {activeResult.patientName}
@@ -1391,7 +1375,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
               )}
             </S.PrintPatientCard>
 
-            {/* Parameters table */}
             <S.PrintTable>
               <thead>
                 <tr>
@@ -1413,7 +1396,7 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
                     const norm = p.getNorm(activeResult.patientGender)
                     const interp = p.interpret(val, activeResult.patientGender)
 
-                    let color = '#16a34a' // normal
+                    let color = '#16a34a' 
                     if (interp.severity === 'warning') color = '#d97706'
                     else if (interp.severity === 'critical') color = '#dc2626'
 
@@ -1436,7 +1419,6 @@ const LaboratoryPage: React.FC<LaboratoryPageProps> = ({
               </tbody>
             </S.PrintTable>
 
-            {/* Conclusion & signatures */}
             <S.PrintConclusionBlock>
               <strong>Заключение клинико-диагностической лаборатории:</strong>
               <S.PrintConclusionText>

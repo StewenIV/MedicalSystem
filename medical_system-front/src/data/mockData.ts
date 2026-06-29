@@ -23,6 +23,9 @@ export interface Patient {
   age: number
   allergies: any[]
   documents: any[]
+  roomNumber?: string
+  bedNumber?: number
+  admissionDate?: string
 
   medcardNum: string
   historyNum?: string

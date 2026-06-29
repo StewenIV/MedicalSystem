@@ -34,16 +34,16 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetPatientCardAsync_ReturnsPatientCardDto_WhenPatientExists()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var expectedPatientCard = new PatientCardDto { Id = patientId, FirstName = "John", LastName = "Doe" };
             _mockPatientQuery.Setup(q => q.GetCardByIdAsync(patientId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(expectedPatientCard);
 
-            // Act
+            
             var result = await _patientService.GetPatientCardAsync(patientId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(patientId, result.Id);
             Assert.Equal("John", result.FirstName);
@@ -54,7 +54,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task AddPatientAsync_AddsPatientAndReturnsPatientListDto()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var patientCardDto = new PatientCardDto
             {
@@ -99,16 +99,16 @@ namespace MedicalSystem.App.Test
             _mockPatientStorage.Setup(s => s.AddPatientAsync(It.IsAny<PatientCardDto>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(patient);
 
-            // Act
+            
             var result = await _patientService.AddPatientAsync(patientCardDto, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(patientId, result.Id);
             Assert.Equal("Jane", result.FirstName);
             Assert.Equal("Smith", result.LastName);
             Assert.Equal("A.", result.MiddleName);
-            Assert.True(result.Age >= 30); // Age can be 30 or 31 depending on the current date
+            Assert.True(result.Age >= 30); 
             Assert.Equal(patientCardDto.DateOfBirth, result.DateOfBirth);
             Assert.Equal("Женский", result.Gender);
             Assert.Equal("Outpatient", result.Status);
@@ -123,7 +123,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetHospitalizedPatientsAsync_ReturnsListOfHospitalizedPatients()
         {
-            // Arrange
+            
             var hospitalizedPatients = new List<PatientLookupDto>
             {
                 new PatientLookupDto { Id = Guid.NewGuid(), FullName = "Alice Brown" },
@@ -134,10 +134,10 @@ namespace MedicalSystem.App.Test
                     q.GetPatientsByStatusAsync(PatientStatus.Hospitalized, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(hospitalizedPatients);
 
-            // Act
+            
             var result = await _patientService.GetHospitalizedPatientsAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
             Assert.Contains(result, p => p.FullName == "Alice Brown");
@@ -149,7 +149,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetActivePatientsAsync_ReturnsListOfActivePatients()
         {
-            // Arrange
+            
             var activePatients = new List<PatientLookupDto>
             {
                 new PatientLookupDto { Id = Guid.NewGuid(), FullName = "Alice Brown" },
@@ -160,10 +160,10 @@ namespace MedicalSystem.App.Test
                     q.GetActivePatientsAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(activePatients);
 
-            // Act
+            
             var result = await _patientService.GetActivePatientsAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
             Assert.Contains(result, p => p.FullName == "Alice Brown");
@@ -175,7 +175,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetAllPatientsAsync_ReturnsListOfAllPatients()
         {
-            // Arrange
+            
             var allPatients = new List<PatientListDto>
             {
                 new PatientListDto { Id = Guid.NewGuid(), FirstName = "Charlie", LastName = "White" },
@@ -185,10 +185,10 @@ namespace MedicalSystem.App.Test
             _mockPatientQuery.Setup(q => q.GetAllPatientsAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(allPatients);
 
-            // Act
+            
             var result = await _patientService.GetAllPatientsAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(2, result.Count());
             Assert.Contains(result, p => p.FirstName == "Charlie");
@@ -199,7 +199,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task UpdatePatientCardAsync_CallsStorageUpdatePatientCard()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var patientCardDto = new PatientCardDto
             {
@@ -212,10 +212,10 @@ namespace MedicalSystem.App.Test
                     s.UpdatePatientCardAsync(patientId, It.IsAny<PatientCardDto>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            // Act
+            
             await _patientService.UpdatePatientCardAsync(patientId, patientCardDto, null, CancellationToken.None);
 
-            // Assert
+            
             _mockPatientStorage.Verify(
                 s => s.UpdatePatientCardAsync(patientId, It.Is<PatientCardDto>(p => p.FirstName == "Updated"), It.IsAny<Guid?>(), It.IsAny<CancellationToken>()), Times.Once);
         }
@@ -223,16 +223,16 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task DeletePatientAsync_CallsStorageDeletePatient()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
 
             _mockPatientStorage.Setup(s => s.DeletePatientAsync(patientId, It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            // Act
+            
             await _patientService.DeletePatientAsync(patientId, CancellationToken.None);
 
-            // Assert
+            
             _mockPatientStorage.Verify(s => s.DeletePatientAsync(patientId, It.IsAny<CancellationToken>()), Times.Once);
         }
     }

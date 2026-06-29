@@ -512,7 +512,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
     if (form.complaintsNote) parts.push(form.complaintsNote)
   }
 
-  // Anamnesis morbi
+  
   const morbiParts: string[] = []
   const isFemale = patient?.gender === 'Женский'
   const bSuffix = isFemale ? 'больной' : 'больным'
@@ -562,7 +562,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
     parts.push(`Анамнез заболевания:\n${morbiParts.join(' ')}`)
   }
 
-  // Anamnesis vitae
+  
   const vitaeParts: string[] = []
 
   const tbMap: Record<string, string> = { denies: 'отрицает', confirms: 'подтверждает' }
@@ -619,7 +619,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
     parts.push(`Анамнез жизни:\n${vitaeParts.join('.\n')}.`)
   }
 
-  // Objective status
+  
   parts.push('Объективный статус:')
   const objParts: string[] = []
 
@@ -658,7 +658,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
     objParts.push(condStr)
   }
 
-  // Skin and lymph nodes
+  
   const skinColorText: Record<SkinColor, string> = {
     pale_pink: 'бледно-розовые',
     pale: 'бледные',
@@ -715,7 +715,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   }
   objParts.push(skinStr)
 
-  // Respiratory system
+  
   let respStr = 'Органы дыхания:'
   if (form.breathingNose) {
     respStr += ` Дыхание через нос: ${form.breathingNose === 'free' ? 'свободное' : 'затруднено'}.`
@@ -776,7 +776,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   }
   objParts.push(respStr)
 
-  // Cardiovascular system
+  
   let cvStr = 'Органы кровообращения:'
   if (form.heartRhythm || form.heartTones) {
     cvStr += ` Сердечная деятельность: ${form.heartRhythm === 'regular' ? 'ритмичная' : 'аритмичная'}.`
@@ -813,7 +813,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   }
   objParts.push(cvStr)
 
-  // Gastrointestinal system
+  
   let gktStr = 'Органы пищеварения:'
   if (form.tongueState) {
     const ts: Record<TongueState, string> = {
@@ -865,7 +865,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
   }
   objParts.push(gktStr)
 
-  // Urinary and bowel systems
+  
   let urStoolStr = 'Мочевыделительная система и стул:'
   if (form.kidneyPercussion) {
     const kidneyMap: Record<KidneyPercussion, string> = {
@@ -901,14 +901,14 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
 
   parts.push(objParts.join('\n'))
 
-  // Diagnosis
+  
   if (form.primaryDiagnosis) {
     parts.push(`Клинический диагноз:\nОсновной: ${form.primaryDiagnosis}`)
     if (form.complicationsDiagnosis) parts.push(`Осложнения: ${form.complicationsDiagnosis}`)
     if (form.concomitantDiagnosis) parts.push(`Сопутствующий: ${form.concomitantDiagnosis}`)
   }
 
-  // Prescriptions
+  
   const activeMeds = form.prescriptions.filter((p) => p.action !== 'cancel')
   if (activeMeds.length > 0) {
     parts.push('Назначенное лечение:')
@@ -919,7 +919,7 @@ function generatePrimaryText(form: PrimaryFormState, patient?: Patient): string 
     })
   }
 
-  // Examination plan
+  
   const checked = form.labTests.filter((t) => t.checked)
   if (checked.length > 0) {
     const labs = checked.filter((t) => t.category === 'lab').map((t) => t.name)
@@ -1151,7 +1151,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
   }
 
   const handleComplete = async () => {
-    // Validation
+    
     if (!form.inspectionDate) return showToast('Укажите дату осмотра', 'error')
     if (!form.inspectionTime) return showToast('Укажите время осмотра', 'error')
     if (!form.doctor) return showToast('Укажите врача', 'error')
@@ -1187,6 +1187,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           name: form.primaryDiagnosis,
           isActive: true,
           diseaseStatus: 'Активное',
+          description: 'Основной',
           diagnosisDate: toBackendDateTimeString(new Date())
         })
       }
@@ -1278,7 +1279,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
           temp: form.complaintParams.fever?.maxTemp || undefined
         },
         form.primaryDiagnosis,
-        undefined, // meds shouldn't be overwritten by prescriptions
+        undefined, 
         {
           doctorName: form.doctor,
           departmentName: form.department,
@@ -1473,7 +1474,7 @@ const PrimaryInspectionPage: React.FC<PrimaryInspectionPageProps> = ({
         inspectionTime: form.inspectionTime
       })
     }
-    // Cleanup on unmount or when handlers change
+    
     return () => {
       if (onRegisterActions) onRegisterActions(null)
     }

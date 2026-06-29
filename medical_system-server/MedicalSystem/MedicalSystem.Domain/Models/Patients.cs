@@ -49,13 +49,13 @@ namespace MedicalSystem.Domain.Models
         [Required]
         public DateTime CreatedAt { get; set; }
 
-        // Owned Entities
+        
         public PatientContacts Contacts { get; set; } = new PatientContacts();
         public PatientPassport Passport { get; set; } = new PatientPassport();
         public PatientWork Work { get; set; } = new PatientWork();
         public PatientOther Other { get; set; } = new PatientOther();
 
-        // Navigation properties
+        
         public virtual MedicalStaff Doctor { get; set; }
         public virtual Institution Institution { get; set; }
         public virtual ICollection<PatientRelative> PatientRelatives { get; set; }

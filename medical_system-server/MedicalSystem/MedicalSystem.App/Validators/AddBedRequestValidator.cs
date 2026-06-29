@@ -11,7 +11,7 @@ namespace MedicalSystem.App.Validators
                 .NotEmpty()
                 .WithMessage("Идентификатор палаты обязателен.");
 
-            // Номер койки — порядковый номер в рамках палаты, нижняя граница — 1
+            
             RuleFor(x => x.BedNumber)
                 .GreaterThan(0)
                 .WithMessage("Номер койки должен быть больше 0.");

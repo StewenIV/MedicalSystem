@@ -20,27 +20,27 @@ namespace MedicalSystem.Data.DataGeneration
             {
                 logger.LogInformation("Проверка и заполнение базы данных...");
 
-                // ──────────────────────────────────────────────────────
-                // Учреждение
-                // ──────────────────────────────────────────────────────
+                
+                
+                
                 var institutions = await GetOrCreateAsync(context, context.Institutions,
                     () => TestDataGenerator.GenerateInstitutions());
 
-                // ──────────────────────────────────────────────────────
-                // Персонал
-                // ──────────────────────────────────────────────────────
+                
+                
+                
                 var medicalStaff = await GetOrCreateAsync(context, context.MedicalStaff,
                     () => TestDataGenerator.GenerateMedicalStaff(50));
 
-                // ──────────────────────────────────────────────────────
-                // Пациенты
-                // ──────────────────────────────────────────────────────
+                
+                
+                
                 var patients = await GetOrCreateAsync(context, context.Patients,
                     () => TestDataGenerator.GeneratePatients(200, medicalStaff, institutions));
 
-                // ──────────────────────────────────────────────────────
-                // Медикаменты
-                // ──────────────────────────────────────────────────────
+                
+                
+                
                 var medicines = await GetOrCreateAsync(context, context.Medicines,
                     () => TestDataGenerator.GenerateMedicines(100, medicalStaff));
 
@@ -78,13 +78,13 @@ namespace MedicalSystem.Data.DataGeneration
                     () => TestDataGenerator.GenerateVitalSigns(2000, patients));
 
                 var shifts = await GetOrCreateAsync(context, context.Shifts,
-                    () => TestDataGenerator.GenerateShifts(0, medicalStaff)); // count игнорируется, генерирует по датам
+                    () => TestDataGenerator.GenerateShifts(0, medicalStaff)); 
 
                 var notifications = await GetOrCreateAsync(context, context.Notifications,
                     () => TestDataGenerator.GenerateNotifications(50, medicalStaff, patients));
 
                 var patientRelatives = await GetOrCreateAsync(context, context.PatientRelatives,
-                    () => TestDataGenerator.GeneratePatientRelatives(0, patients)); // генерирует по вероятности
+                    () => TestDataGenerator.GeneratePatientRelatives(0, patients)); 
 
                 var bedPrescriptions = await GetOrCreateAsync(context, context.BedPrescriptions,
                     () => TestDataGenerator.GenerateBedPrescriptions(1000, patients, patientMedications));
@@ -307,7 +307,7 @@ namespace MedicalSystem.Data.DataGeneration
 
         public static async Task DistributeBedsAndMedicinesAsync(MedicalSystemDbContext context, ILogger logger)
         {
-            // 0. Проверяем, есть ли уже распределенные койки или назначения. Если есть, ничего не меняем!
+            
             bool hasOccupiedBeds = await context.HospitalBeds.AnyAsync(b => b.PatientId != null);
             bool hasMedications = await context.PatientMedications.AnyAsync();
             bool hasBedPrescriptions = await context.BedPrescriptions.AnyAsync();
@@ -322,7 +322,7 @@ namespace MedicalSystem.Data.DataGeneration
 
             var rnd = new Random(42);
 
-            // 1. Получаем все существующие записи
+            
             var patients = await context.Patients.ToListAsync();
             var beds = await context.HospitalBeds.Include(b => b.Room).ToListAsync();
             var medicines = await context.Medicines.ToListAsync();
@@ -334,7 +334,7 @@ namespace MedicalSystem.Data.DataGeneration
                 return;
             }
 
-            // 2. Сбросим статусы и койки всех пациентов, чтобы начать с чистого листа
+            
             foreach (var p in patients)
             {
                 p.Status = PatientStatus.Discharged;
@@ -348,7 +348,7 @@ namespace MedicalSystem.Data.DataGeneration
                 bed.BedNote = null;
             }
 
-            // 3. Распределим пациентов по палатам с учетом пола
+            
             var malePatients = patients.Where(p => p.Gender == Gender.Male).ToList();
             var femalePatients = patients.Where(p => p.Gender == Gender.Female).ToList();
 
@@ -371,7 +371,7 @@ namespace MedicalSystem.Data.DataGeneration
 
             foreach (var bed in beds)
             {
-                // Заполняем койку с вероятностью 50%, чтобы заполнить лишь часть
+                
                 if (rnd.Next(0, 100) < 50)
                 {
                     Patient patientToAdmit = null;
@@ -390,7 +390,7 @@ namespace MedicalSystem.Data.DataGeneration
                         patientToAdmit.Status = PatientStatus.Hospitalized;
                         hospitalizedPatients.Add(patientToAdmit);
 
-                        // Распределяем статусы койки (80% Stable, 15% Attention, 5% Urgent)
+                        
                         int randStatusVal = rnd.Next(100);
                         BedStatus status = BedStatus.Stable;
                         if (randStatusVal >= 80 && randStatusVal < 95)
@@ -410,15 +410,16 @@ namespace MedicalSystem.Data.DataGeneration
 
             logger.LogInformation("Распределено {Count} пациентов по койкам.", hospitalizedPatients.Count);
 
-            // 4. Очистим старые назначения и логи списания для чистоты генерации
+            
             context.BedPrescriptions.RemoveRange(context.BedPrescriptions);
             context.MedicineOperationLogs.RemoveRange(context.MedicineOperationLogs);
             await context.SaveChangesAsync();
 
             context.PatientMedications.RemoveRange(context.PatientMedications);
+            context.Set<Prescription>().RemoveRange(context.Set<Prescription>());
             await context.SaveChangesAsync();
 
-            // Восстановим баланс медикаментов до исходного уровня
+            
             foreach (var med in medicines)
             {
                 med.CurrentBalance = 150m;
@@ -426,7 +427,7 @@ namespace MedicalSystem.Data.DataGeneration
                 med.Status = MedicineStatus.Norm;
             }
 
-            // Нагенерируем "проблемные участки" для медикаментов (2-3 препарата с низким балансом)
+            
             if (medicines.Count >= 2)
             {
                 medicines[0].CurrentBalance = 4m;
@@ -464,9 +465,19 @@ namespace MedicalSystem.Data.DataGeneration
             foreach (var patient in hospitalizedPatients)
             {
                 int prescCount = rnd.Next(2, 4);
+                var assignedMedicines = new HashSet<Guid>();
                 for (int j = 0; j < prescCount; j++)
                 {
-                    var medicine = medicines[rnd.Next(medicines.Count)];
+                    Medicine medicine;
+                    int attempts = 0;
+                    do
+                    {
+                        medicine = medicines[rnd.Next(medicines.Count)];
+                        attempts++;
+                    } while (assignedMedicines.Contains(medicine.Id) && attempts < 10);
+
+                    assignedMedicines.Add(medicine.Id);
+
                     var doctor = doctors[rnd.Next(doctors.Count)];
 
                     string doseStr = medicine.Unit switch
@@ -495,10 +506,26 @@ namespace MedicalSystem.Data.DataGeneration
 
                     context.PatientMedications.Add(pm);
 
-                    // Создаем Scheduled BedPrescriptions на сегодня
-                    for (int t = 0; t < scheduledTimes.Length; t++)
+                    var pr = new Prescription
                     {
-                        var schedTime = scheduledTimes[t];
+                        Id = pm.Id,
+                        PatientId = patient.Id,
+                        MedicineId = medicine.Id,
+                        Drug = medicine.Name,
+                        Dose = doseStr,
+                        Form = medicine.Unit.ToString(),
+                        Route = "Внутрь",
+                        Regimen = pm.Regimen,
+                        DateStart = pm.DateStart,
+                        DateEnd = pm.DateEnd,
+                        DoctorId = doctor.Id,
+                        Comment = "Автоматическое назначение при госпитализации."
+                    };
+                    context.Set<Prescription>().Add(pr);
+
+                    var timesToSchedule = GetTimesForRegimen(pm.Regimen);
+                    foreach (var schedTime in timesToSchedule)
+                    {
                         bool isDone = schedTime < DateTime.Now.TimeOfDay;
 
                         var nurse = nurses[rnd.Next(nurses.Count)];
@@ -542,12 +569,12 @@ namespace MedicalSystem.Data.DataGeneration
                             if (medicine.CurrentBalance < 0)
                                 medicine.CurrentBalance = 0;
 
-                            // Обновляем статус после списания
+                            
                             medicine.Status = medicine.CurrentBalance == 0
                                 ? MedicineStatus.Empty
                                 : (medicine.CurrentBalance < medicine.MinBalance ? MedicineStatus.Low : MedicineStatus.Norm);
 
-                            // Обновляем информацию о последнем изменении
+                            
                             medicine.LastChangedById = nurse.Id;
                             medicine.LastUpdated = bp.DoneAt ?? DateTime.UtcNow;
                             medicine.LastOperation = OperationType.Writeoff;
@@ -558,7 +585,7 @@ namespace MedicalSystem.Data.DataGeneration
                 }
             }
 
-            // Добавим несколько логов поступления для разнообразия
+            
             if (medicines.Any())
             {
                 for (int i = 0; i < 15; i++)
@@ -584,6 +611,55 @@ namespace MedicalSystem.Data.DataGeneration
 
             await context.SaveChangesAsync();
             logger.LogInformation("Распределение коек и списание медикаментов успешно выполнены.");
+        }
+
+        private static List<TimeSpan> GetTimesForRegimen(string? regimen)
+        {
+            var times = new List<TimeSpan>();
+            var text = (regimen ?? "").ToLower();
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                return times;
+            }
+
+            if (text.Contains("4 раза") || text.Contains("4 раз"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                times.Add(new TimeSpan(12, 0, 0));
+                times.Add(new TimeSpan(17, 0, 0));
+                times.Add(new TimeSpan(21, 0, 0));
+            }
+            else if (text.Contains("3 раза") || text.Contains("3 раз") || text.Contains("три раз"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                times.Add(new TimeSpan(14, 0, 0));
+                times.Add(new TimeSpan(20, 0, 0));
+            }
+            else if (text.Contains("2 раза") || text.Contains("2 раз") || text.Contains("два раз") || text.Contains("12 час"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                times.Add(new TimeSpan(20, 0, 0));
+            }
+            else if (text.Contains("утром") || text.Contains("натощак") || text.Contains("1 раз"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+            }
+            else if (text.Contains("вечером") || text.Contains("перед сном"))
+            {
+                times.Add(new TimeSpan(20, 0, 0));
+            }
+            else if (text.Contains("после еды") || text.Contains("после обеда"))
+            {
+                times.Add(new TimeSpan(14, 0, 0));
+            }
+            else
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+            }
+
+            return times;
         }
     }
 }

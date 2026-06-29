@@ -7,8 +7,8 @@ namespace MedicalSystem.App.Validators
     {
         public CreateRoomDtoValidator()
         {
-            // RoomNumber: макс 10 символов — соответствует HasMaxLength(10) в RoomConfiguration
-            // Номер может быть вида "ထထထ": первая цифра — этаж, остальные — порядковый номер палаты
+            
+            
             RuleFor(x => x.Number)
                 .NotNull()
                 .NotEmpty()
@@ -18,7 +18,7 @@ namespace MedicalSystem.App.Validators
                 .Matches(@"^[A-Za-zА-Яа-яееÖÄÜöäü0-9\-/\s]+$")
                 .WithMessage("Номер палаты содержит недопустимые символы.");
 
-            // Этаж: в БД нет ограничения, но практическое здание больницы имеет не больше 50 этажей
+            
             RuleFor(x => x.Floor)
                 .GreaterThan(0)
                 .WithMessage("Этаж должен быть больше 0.")

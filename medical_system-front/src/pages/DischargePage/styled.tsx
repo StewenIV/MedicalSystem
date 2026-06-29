@@ -478,7 +478,7 @@ export const AutoGenerateBtn = styled.button`
   }
 `
 
-// Print / PDF styled components
+
 export const PrintWrapper = styled.div`
   position: absolute;
   left: -9999px;

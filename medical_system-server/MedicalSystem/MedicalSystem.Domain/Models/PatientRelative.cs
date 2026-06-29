@@ -21,7 +21,7 @@ namespace MedicalSystem.Domain.Models
         [Phone(ErrorMessage = "Некорректный формат номера телефона")]
         public string? Phone { get; set; }
 
-        // Navigation property
+        
         public virtual Patient Patient { get; set; }
     }
 }

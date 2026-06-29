@@ -6,7 +6,7 @@ namespace MedicalSystem.App.Validators
 {
     public class UpdateBedStatusRequestValidator : AbstractValidator<UpdateBedStatusRequest>
     {
-        // Допустимые статусы соответствуют значениям enum BedStatus: Stable, Attention, Urgent, Free
+        
         private static readonly string[] ValidStatuses =
             Enum.GetNames(typeof(BedStatus));
 

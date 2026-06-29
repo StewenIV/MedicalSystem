@@ -31,7 +31,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetVitalSignsAsync_ReturnsFilteredAndSortedVitalSigns()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var otherPatientId = Guid.NewGuid();
             var now = DateTime.UtcNow;
@@ -40,26 +40,26 @@ namespace MedicalSystem.App.Test
             {
                 new VitalSign { Id = Guid.NewGuid(), PatientId = patientId, RecordedAt = now.AddMinutes(-10), Temperature = 36.6m },
                 new VitalSign { Id = Guid.NewGuid(), PatientId = patientId, RecordedAt = now, Temperature = 37.0m },
-                new VitalSign { Id = Guid.NewGuid(), PatientId = otherPatientId, RecordedAt = now, Temperature = 38.0m } // Other patient
+                new VitalSign { Id = Guid.NewGuid(), PatientId = otherPatientId, RecordedAt = now, Temperature = 38.0m } 
             };
 
             _mockStorage.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(vitals);
 
-            // Act
+            
             var result = (await _service.GetVitalSignsAsync(patientId, CancellationToken.None)).ToList();
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(2, result.Count);
-            Assert.Equal(37.0m, result[0].Temperature); // Sorted descending by RecordedAt
+            Assert.Equal(37.0m, result[0].Temperature); 
             Assert.Equal(36.6m, result[1].Temperature);
         }
 
         [Fact]
         public async Task AddVitalSignAsync_AddsNewVitalSign()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var request = new CreateVitalSignRequest
             {
@@ -74,10 +74,10 @@ namespace MedicalSystem.App.Test
             _mockStorage.Setup(s => s.AddAsync(It.IsAny<VitalSign>(), It.IsAny<CancellationToken>()))
                 .Returns(Task.CompletedTask);
 
-            // Act
+            
             await _service.AddVitalSignAsync(patientId, request, CancellationToken.None);
 
-            // Assert
+            
             _mockStorage.Verify(s => s.AddAsync(It.Is<VitalSign>(vs =>
                 vs.PatientId == patientId &&
                 vs.Temperature == 36.8m &&
@@ -92,7 +92,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetWarningsAsync_ReturnsWarnings_WhenVitalsAreOutsideNormalRanges()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var vitals = new List<VitalSign>
             {
@@ -100,22 +100,22 @@ namespace MedicalSystem.App.Test
                 {
                     PatientId = patientId,
                     RecordedAt = DateTime.UtcNow,
-                    Temperature = 38.5m, // Normal: 36.0m - 37.2m (high)
-                    BloodPressureSystolic = 90, // Normal: 100 - 130 (low)
-                    BloodPressureDiastolic = 50, // Normal: 60 - 90 (low)
-                    Pulse = 110, // Normal: 60 - 100 (high)
-                    SpO2 = 92, // Normal: 95 - 100 (low)
-                    RespiratoryRate = 22 // Normal: 12 - 20 (high)
+                    Temperature = 38.5m, 
+                    BloodPressureSystolic = 90, 
+                    BloodPressureDiastolic = 50, 
+                    Pulse = 110, 
+                    SpO2 = 92, 
+                    RespiratoryRate = 22 
                 }
             };
 
             _mockStorage.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(vitals);
 
-            // Act
+            
             var warnings = await _service.GetWarningsAsync(patientId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(warnings);
             Assert.Equal(6, warnings.Count);
 
@@ -147,7 +147,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetWarningsAsync_ReturnsEmpty_WhenVitalsAreWithinNormalRanges()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var vitals = new List<VitalSign>
             {
@@ -167,10 +167,10 @@ namespace MedicalSystem.App.Test
             _mockStorage.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(vitals);
 
-            // Act
+            
             var warnings = await _service.GetWarningsAsync(patientId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(warnings);
             Assert.Empty(warnings);
         }
@@ -178,7 +178,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetTrendsAsync_ReturnsCorrectTrends_BasedOnLastTwoMeasurements()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var now = DateTime.UtcNow;
             var vitals = new List<VitalSign>
@@ -186,18 +186,18 @@ namespace MedicalSystem.App.Test
                 new VitalSign
                 {
                     PatientId = patientId,
-                    RecordedAt = now, // Latest
-                    Temperature = 37.0m, // Up
-                    BloodPressureSystolic = 110, // Down
-                    BloodPressureDiastolic = 80, // Stable
-                    Pulse = 80, // Up
-                    SpO2 = 97, // Down
-                    RespiratoryRate = 16 // Stable
+                    RecordedAt = now, 
+                    Temperature = 37.0m, 
+                    BloodPressureSystolic = 110, 
+                    BloodPressureDiastolic = 80, 
+                    Pulse = 80, 
+                    SpO2 = 97, 
+                    RespiratoryRate = 16 
                 },
                 new VitalSign
                 {
                     PatientId = patientId,
-                    RecordedAt = now.AddHours(-1), // Previous
+                    RecordedAt = now.AddHours(-1), 
                     Temperature = 36.5m,
                     BloodPressureSystolic = 120,
                     BloodPressureDiastolic = 80,
@@ -210,10 +210,10 @@ namespace MedicalSystem.App.Test
             _mockStorage.Setup(s => s.GetAllAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(vitals);
 
-            // Act
+            
             var trends = await _service.GetTrendsAsync(patientId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(trends);
             Assert.Equal(6, trends.Count);
 

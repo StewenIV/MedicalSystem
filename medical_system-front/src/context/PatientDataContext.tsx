@@ -70,6 +70,18 @@ const cleanEmptyDates = (obj: any): any => {
   return newObj
 }
 
+export const formatActiveProblems = (medicalProblems: any[] | undefined): string[] => {
+  if (!medicalProblems) return []
+  return [...medicalProblems]
+    .filter((m: any) => m.isActive)
+    .sort((a: any, b: any) => {
+      if (a.description === 'Основной' && b.description !== 'Основной') return -1
+      if (a.description !== 'Основной' && b.description === 'Основной') return 1
+      return 0
+    })
+    .map((m: any) => m.description === 'Основной' ? `${m.name} (Основной)` : m.name)
+}
+
 export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [patients, setPatients] = useState<any[]>([])
   const [inspections, setInspections] = useState<Record<string, SavedInspection[]>>({})
@@ -86,7 +98,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         doctor: dto.doctorName,
         department: dto.departmentName,
         statusText: dto.statusText || 'Госпитализирован',
-        activeProblems: dto.medicalProblems?.map((m: any) => m.name) || []
+        activeProblems: dto.medicalProblems ? formatActiveProblems(dto.medicalProblems) : (dto.activeProblems || [])
       }))
       setPatients(mapped)
 
@@ -114,7 +126,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       if (!claims) return;
       
       const role = claims['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] ?? claims.role;
-      if (role === 'Patient') return; // Patients don't have access to all patients or encounters
+      if (role === 'Patient') return; 
 
       refreshPatients()
 
@@ -179,15 +191,15 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         const updatedProblems = [...(patient.medicalProblems ?? [])]
         const primaryProbIndex = updatedProblems.findIndex((p: any) => p.isActive)
         if (primaryProbIndex >= 0) {
-          updatedProblems[primaryProbIndex] = { ...updatedProblems[primaryProbIndex], name: diagnosis }
+          updatedProblems[primaryProbIndex] = { ...updatedProblems[primaryProbIndex], name: diagnosis, description: 'Основной' }
         } else {
-          updatedProblems.push({ id: '00000000-0000-0000-0000-000000000000', name: diagnosis, isActive: true })
+          updatedProblems.push({ id: '00000000-0000-0000-0000-000000000000', name: diagnosis, isActive: true, description: 'Основной' })
         }
         
         const updatedPatient = {
           ...patient,
           medicalProblems: updatedProblems,
-          activeProblems: [diagnosis, ...(patient.activeProblems?.slice(1) ?? [])]
+          activeProblems: formatActiveProblems(updatedProblems)
         }
         
         import('../api/patientsApi').then(({ updatePatientCard }) => {
@@ -388,12 +400,12 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         const updatedProblems = [...(updatedPatient.medicalProblems ?? [])]
         const primaryProbIndex = updatedProblems.findIndex((p: any) => p.isActive)
         if (primaryProbIndex >= 0) {
-          updatedProblems[primaryProbIndex] = { ...updatedProblems[primaryProbIndex], name: diagnosis }
+          updatedProblems[primaryProbIndex] = { ...updatedProblems[primaryProbIndex], name: diagnosis, description: 'Основной' }
         } else {
-          updatedProblems.push({ id: '00000000-0000-0000-0000-000000000000', name: diagnosis, isActive: true })
+          updatedProblems.push({ id: '00000000-0000-0000-0000-000000000000', name: diagnosis, isActive: true, description: 'Основной' })
         }
         updatedPatient.medicalProblems = updatedProblems
-        updatedPatient.activeProblems = [diagnosis, ...(updatedPatient.activeProblems?.slice(1) ?? [])]
+        updatedPatient.activeProblems = formatActiveProblems(updatedProblems)
       }
 
       if (meds) {
@@ -423,7 +435,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         }
         if (additional.medicalProblems) {
           updatedPatient.medicalProblems = additional.medicalProblems
-          updatedPatient.activeProblems = additional.medicalProblems.filter(p => p.isActive).map(p => p.name)
+          updatedPatient.activeProblems = formatActiveProblems(additional.medicalProblems)
         }
         if (additional.prescriptions) {
           updatedPatient.prescriptions = additional.prescriptions
@@ -444,7 +456,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
         doctor: updatedDto?.doctorName || patient.doctor,
         department: updatedDto?.departmentName || patient.department,
         statusText: updatedDto?.statusText || patient.statusText || 'Госпитализирован',
-        activeProblems: updatedDto?.medicalProblems?.map(m => m.name) || patient.activeProblems || []
+        activeProblems: updatedDto?.medicalProblems ? formatActiveProblems(updatedDto.medicalProblems) : (patient.activeProblems || [])
       }
 
       if (vitals) {
@@ -498,7 +510,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
                 doctor: dto.doctorName || p.doctor,
                 department: dto.departmentName || p.department,
                 statusText: dto.statusText || p.statusText || 'Госпитализирован',
-                activeProblems: dto.medicalProblems?.map((m: any) => m.name) || p.activeProblems || [],
+                activeProblems: dto.medicalProblems ? formatActiveProblems(dto.medicalProblems) : (p.activeProblems || []),
                 contacts: dto.contacts || p.contacts || {},
                 passport: dto.passport || p.passport || {},
                 work: dto.work || p.work || {},
@@ -530,7 +542,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
       doctor: newPatient.doctorName,
       department: newPatient.departmentName,
       statusText: newPatient.statusText || 'Амбулаторный',
-      activeProblems: newPatient.medicalProblems?.map(m => m.name) || []
+      activeProblems: formatActiveProblems(newPatient.medicalProblems)
     }
     setPatients(prev => [...prev, mapped])
     return newPatient
@@ -550,7 +562,7 @@ export const PatientDataProvider: React.FC<{ children: ReactNode }> = ({ childre
               doctor: updatedDto?.doctorName || p.doctor,
               department: updatedDto?.departmentName || p.department,
               statusText: updatedDto?.statusText || p.statusText || 'Госпитализирован',
-              activeProblems: updatedDto?.medicalProblems?.map(m => m.name) || p.activeProblems || []
+              activeProblems: updatedDto?.medicalProblems ? formatActiveProblems(updatedDto.medicalProblems) : (p.activeProblems || [])
             }
           : p
       )

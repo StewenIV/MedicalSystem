@@ -43,7 +43,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetBedsSummaryAsync_ReturnsBedsSummaryDto()
         {
-            // Arrange
+            
             int? floor = 1;
             string status = "Free";
             var expectedSummary = new BedsSummaryDto
@@ -60,10 +60,10 @@ namespace MedicalSystem.App.Test
             _mockBedQuery.Setup(q => q.GetBedsSummaryAsync(floor, status, It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedSummary);
 
-            // Act
+            
             var result = await _bedService.GetBedsSummaryAsync(floor, status, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(expectedSummary.Stats.Total, result.Stats.Total);
             Assert.Equal(expectedSummary.Stats.Occupied, result.Stats.Occupied);
@@ -74,7 +74,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetRoomsWithBedsAsync_ReturnsRoomsWithBedsDto()
         {
-            // Arrange
+            
             int? floor = 1;
             var expectedRoomsWithBeds = new RoomsWithBedsDto
             {
@@ -99,10 +99,10 @@ namespace MedicalSystem.App.Test
             _mockBedQuery.Setup(q => q.GetRoomsWithBedsAsync(floor, It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedRoomsWithBeds);
 
-            // Act
+            
             var result = await _bedService.GetRoomsWithBedsAsync(floor, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Single(result.Rooms);
             Assert.Equal("101", result.Rooms[0].Name);
@@ -113,7 +113,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetRoomConfigAsync_ReturnsRoomConfigDto()
         {
-            // Arrange
+            
             var expectedRoomConfig = new RoomConfigDto
             {
                 Rooms = new Dictionary<string, GenderConfig>
@@ -126,10 +126,10 @@ namespace MedicalSystem.App.Test
             _mockBedQuery.Setup(q => q.GetRoomConfigAsync(It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedRoomConfig);
 
-            // Act
+            
             var result = await _bedService.GetRoomConfigAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(2, result.Rooms.Count);
             Assert.True(result.Rooms.ContainsKey("201"));
@@ -139,7 +139,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetFloorsAsync_ReturnsFloorsDto()
         {
-            // Arrange
+            
             var expectedFloors = new FloorsDto
             {
                 Floors = new List<int> { 1, 2, 3 }
@@ -148,10 +148,10 @@ namespace MedicalSystem.App.Test
             _mockBedQuery.Setup(q => q.GetFloorsAsync(It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedFloors);
 
-            // Act
+            
             var result = await _bedService.GetFloorsAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(3, result.Floors.Count);
             Assert.Contains(1, result.Floors);
@@ -163,7 +163,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetAlertsAsync_ReturnsAlertsDto()
         {
-            // Arrange
+            
             var expectedAlerts = new AlertsDto
             {
                 Urgent = new List<AlertBedDto>
@@ -179,10 +179,10 @@ namespace MedicalSystem.App.Test
             _mockBedQuery.Setup(q => q.GetAlertsAsync(It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedAlerts);
 
-            // Act
+            
             var result = await _bedService.GetAlertsAsync(CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Single(result.Urgent);
             Assert.Single(result.Attention);
@@ -194,16 +194,16 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetBedByIdAsync_ReturnsBedDto_WhenBedExists()
         {
-            // Arrange
+            
             var bedId = Guid.NewGuid();
             var expectedBed = new BedDto { Id = bedId, BedNumber = 1, Status = "Occupied", RoomNumber = "301" };
             _mockBedQuery.Setup(q => q.GetBedByIdAsync(bedId, It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedBed);
 
-            // Act
+            
             var result = await _bedService.GetBedByIdAsync(bedId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal(bedId, result.Id);
             Assert.Equal(1, result.BedNumber);
@@ -215,7 +215,7 @@ namespace MedicalSystem.App.Test
         [Fact]
         public async Task GetPatientDetailsAsync_ReturnsPatientDetailsDto_WhenPatientExists()
         {
-            // Arrange
+            
             var patientId = Guid.NewGuid();
             var expectedPatientDetails = new PatientDetailsDto
             {
@@ -236,10 +236,10 @@ namespace MedicalSystem.App.Test
             _mockBedQuery.Setup(q => q.GetPatientDetailsAsync(patientId, It.IsAny<CancellationToken>()))
                          .ReturnsAsync(expectedPatientDetails);
 
-            // Act
+            
             var result = await _bedService.GetPatientDetailsAsync(patientId, CancellationToken.None);
 
-            // Assert
+            
             Assert.NotNull(result);
             Assert.Equal("Requires rest", result.DoctorNote);
             Assert.Single(result.Prescriptions);

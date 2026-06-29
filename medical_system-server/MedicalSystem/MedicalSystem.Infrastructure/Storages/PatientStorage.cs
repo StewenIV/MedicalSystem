@@ -174,27 +174,28 @@ namespace MedicalSystem.Infrastructure.Storages
                     foreach (var d in dto.Allergies)
                         _context.Allergies.Add(new Allergy { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Reaction = d.Reaction, Date = d.Date, Comment = d.Comment });
 
-                // For PatientMedications, do a differential update instead of ExecuteDeleteAsync to avoid violating foreign key constraints for active prescriptions.
+                
                 var existingMeds = await _context.PatientMedications
                     .Where(m => m.PatientId == patientId)
                     .ToListAsync(token);
 
                 var incomingMeds = dto.CurrentMeds ?? new List<MedicalSystem.App.Contracts.Dtos.MedicationDto>();
 
-                // 1. Identify items to delete
+                
                 var incomingIds = incomingMeds.Select(m => m.Id).Where(id => id != Guid.Empty).ToHashSet();
-                var medsToDelete = existingMeds.Where(m => !incomingIds.Contains(m.Id)).ToList();
+                var existingHomeMeds = existingMeds.Where(m => m.Status != MedicalSystem.Domain.Enums.MedicationStatus.Active).ToList();
+                var medsToDelete = existingHomeMeds.Where(m => !incomingIds.Contains(m.Id)).ToList();
                 
                 if (medsToDelete.Any())
                 {
                     var deleteIds = medsToDelete.Select(m => m.Id).ToList();
                     
-                    // Null out the references in BedPrescriptions
+                    
                     await _context.BedPrescriptions
                         .Where(bp => bp.PatientMedicationId != null && deleteIds.Contains(bp.PatientMedicationId.Value))
                         .ExecuteUpdateAsync(s => s.SetProperty(bp => bp.PatientMedicationId, (Guid?)null), token);
                         
-                    // Null out the references in MedicineOperationLogs
+                    
                     await _context.MedicineOperationLogs
                         .Where(l => l.PrescriptionId != null && deleteIds.Contains(l.PrescriptionId.Value))
                         .ExecuteUpdateAsync(s => s.SetProperty(l => l.PrescriptionId, (Guid?)null), token);
@@ -202,7 +203,7 @@ namespace MedicalSystem.Infrastructure.Storages
                     _context.PatientMedications.RemoveRange(medsToDelete);
                 }
 
-                // 2. Add or Update
+                
                 foreach (var d in incomingMeds)
                 {
                     if (d.Id != Guid.Empty)
@@ -271,6 +272,95 @@ namespace MedicalSystem.Infrastructure.Storages
                         _context.PatientDocuments.Add(new PatientDocument { Id = d.Id == Guid.Empty ? Guid.NewGuid() : d.Id, PatientId = patientId, Name = d.Name, Date = d.Date, FilePath = d.FilePath });
 
                 await _context.SaveChangesAsync(token);
+
+                var medicines = await _context.Medicines.ToListAsync(token);
+                var savedPrescriptions = await _context.Set<Prescription>()
+                    .Where(p => p.PatientId == patientId)
+                    .ToListAsync(token);
+
+                var activeHospitalMeds = await _context.PatientMedications
+                    .Where(pm => pm.PatientId == patientId && pm.Status == MedicalSystem.Domain.Enums.MedicationStatus.Active)
+                    .ToListAsync(token);
+
+                var prescriptionDrugs = savedPrescriptions.Select(p => p.Drug.ToLower()).ToHashSet();
+                var pmToDelete = activeHospitalMeds.Where(pm => !prescriptionDrugs.Contains(pm.Name.ToLower())).ToList();
+                if (pmToDelete.Any())
+                {
+                    var deleteIds = pmToDelete.Select(pm => pm.Id).ToList();
+                    await _context.BedPrescriptions
+                        .Where(bp => bp.PatientMedicationId != null && deleteIds.Contains(bp.PatientMedicationId.Value))
+                        .ExecuteDeleteAsync(token);
+                    _context.PatientMedications.RemoveRange(pmToDelete);
+                }
+
+                var today = DateTime.UtcNow.Date;
+
+                foreach (var pr in savedPrescriptions)
+                {
+                    var matchedMed = medicines.FirstOrDefault(m => 
+                        m.Name.Equals(pr.Drug, StringComparison.OrdinalIgnoreCase) ||
+                        m.Name.ToLower().Contains(pr.Drug.ToLower()) ||
+                        pr.Drug.ToLower().Contains(m.Name.ToLower())
+                    );
+
+                    var pm = activeHospitalMeds.FirstOrDefault(p => p.Name.Equals(pr.Drug, StringComparison.OrdinalIgnoreCase));
+                    bool isNewPm = false;
+                    if (pm == null)
+                    {
+                        pm = new PatientMedication
+                        {
+                            Id = Guid.NewGuid(),
+                            PatientId = patientId,
+                            Name = pr.Drug,
+                            Status = MedicalSystem.Domain.Enums.MedicationStatus.Active
+                        };
+                        isNewPm = true;
+                    }
+
+                    pm.MedicineId = matchedMed?.Id;
+                    pm.Dose = pr.Dose;
+                    pm.Form = pr.Form;
+                    pm.Regimen = pr.Regimen;
+                    pm.DoctorId = pr.DoctorId ?? patient.DoctorId;
+                    pm.DateStart = pr.DateStart;
+                    pm.DateEnd = pr.DateEnd;
+
+                    if (isNewPm)
+                    {
+                        _context.PatientMedications.Add(pm);
+                    }
+                    else
+                    {
+                        _context.PatientMedications.Update(pm);
+                    }
+
+                    var timesToSchedule = GetTimesForRegimen(pr.Regimen);
+
+                    var existingBps = await _context.BedPrescriptions
+                        .Where(bp => bp.PatientId == patientId && bp.Name == pr.Drug && bp.Date == today)
+                        .ToListAsync(token);
+
+                    foreach (var time in timesToSchedule)
+                    {
+                        if (!existingBps.Any(bp => bp.ScheduledTime == time))
+                        {
+                            var bp = new BedPrescription
+                            {
+                                Id = Guid.NewGuid(),
+                                PatientId = patientId,
+                                PatientMedication = pm,
+                                Name = pr.Drug,
+                                Dose = pr.Dose,
+                                ScheduledTime = time,
+                                Date = today,
+                                IsDone = false
+                            };
+                            _context.BedPrescriptions.Add(bp);
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync(token);
                 await transaction.CommitAsync(token);
             }
             catch
@@ -283,7 +373,7 @@ namespace MedicalSystem.Infrastructure.Storages
 
         public async Task<Patient> AddPatientAsync(MedicalSystem.App.Contracts.Dtos.PatientCardDto dto, CancellationToken token)
         {
-            // 1. Проверяем, существует ли уже пациент с таким же именем и датой рождения
+            
             var existingPatient = await _context.Patients
                 .FirstOrDefaultAsync(p => 
                     p.FirstName.ToLower() == dto.FirstName.ToLower() &&
@@ -296,7 +386,7 @@ namespace MedicalSystem.Infrastructure.Storages
                 throw new InvalidOperationException("Пациент с такими ФИО и датой рождения уже зарегистрирован в системе.");
             }
 
-            // 2. Генерируем или проверяем уникальность номера медкарты
+            
             string medcard = dto.MedcardNum;
             if (string.IsNullOrWhiteSpace(medcard))
             {
@@ -367,6 +457,55 @@ namespace MedicalSystem.Infrastructure.Storages
                 _context.Patients.Remove(patient);
                 await _context.SaveChangesAsync(token);
             }
+        }
+
+        private static List<TimeSpan> GetTimesForRegimen(string? regimen)
+        {
+            var times = new List<TimeSpan>();
+            var text = (regimen ?? "").ToLower();
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                return times;
+            }
+
+            if (text.Contains("4 раза") || text.Contains("4 раз"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                times.Add(new TimeSpan(12, 0, 0));
+                times.Add(new TimeSpan(17, 0, 0));
+                times.Add(new TimeSpan(21, 0, 0));
+            }
+            else if (text.Contains("3 раза") || text.Contains("3 раз") || text.Contains("три раз"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                times.Add(new TimeSpan(14, 0, 0));
+                times.Add(new TimeSpan(20, 0, 0));
+            }
+            else if (text.Contains("2 раза") || text.Contains("2 раз") || text.Contains("два раз") || text.Contains("12 час"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+                times.Add(new TimeSpan(20, 0, 0));
+            }
+            else if (text.Contains("утром") || text.Contains("натощак") || text.Contains("1 раз"))
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+            }
+            else if (text.Contains("вечером") || text.Contains("перед сном"))
+            {
+                times.Add(new TimeSpan(20, 0, 0));
+            }
+            else if (text.Contains("после еды") || text.Contains("после обеда"))
+            {
+                times.Add(new TimeSpan(14, 0, 0));
+            }
+            else
+            {
+                times.Add(new TimeSpan(7, 0, 0));
+            }
+
+            return times;
         }
     }
 }

@@ -79,7 +79,7 @@ import colors from 'consts/colors'
 import { toast } from 'react-toastify'
 import { showApiError } from 'utils/showApiError'
 
-import { usePatientData } from 'context/PatientDataContext'
+import { usePatientData, formatActiveProblems } from 'context/PatientDataContext'
 import { extractDoctorFromFormData } from 'api/encountersApi'
 import { uploadFile, downloadFileFromServer } from 'api/filesApi'
 import {
@@ -1064,7 +1064,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
               ...dto,
               doctor: dto.doctorName,
               department: dto.departmentName,
-              activeProblems: dto.medicalProblems?.map((m: any) => m.name) || [],
+              activeProblems: formatActiveProblems(dto.medicalProblems),
               contacts: dto.contacts || {},
               passport: dto.passport || {},
               work: dto.work || {},
@@ -1103,6 +1103,11 @@ const PatientCard: React.FC<PatientCardProps> = ({
   const openModal = (type: string, data: any = null) => {
     setModalConfig({ isOpen: true, type, data })
     let initialData = data ? { ...data } : {}
+    if (type === 'EDIT_LIST_medicalProblems' && initialData) {
+      if (initialData.description === 'Основной') {
+        initialData.isPrimary = true
+      }
+    }
     if (type === 'EDIT_NESTED_contacts') {
       if (!initialData.country) {
         initialData.country = 'Приднестровская Молдавская Республика'
@@ -1209,11 +1214,40 @@ const PatientCard: React.FC<PatientCardProps> = ({
       updatedData[section] = { ...(updatedData[section] || {}), ...formData }
     } else if (type.startsWith('ADD_LIST_')) {
       const listName = type.replace('ADD_LIST_', '')
-      updatedData[listName] = [...(updatedData[listName] || []), formData]
+      if (listName === 'medicalProblems') {
+        let finalFormData = { ...formData }
+        if (finalFormData.isPrimary) {
+          finalFormData.description = 'Основной'
+          updatedData.medicalProblems = (updatedData.medicalProblems || []).map((p: any) => 
+            p.description === 'Основной' ? { ...p, description: '' } : p
+          )
+        } else if (finalFormData.description === 'Основной') {
+          finalFormData.description = ''
+        }
+        delete finalFormData.isPrimary
+        updatedData.medicalProblems = [...(updatedData.medicalProblems || []), finalFormData]
+      } else {
+        updatedData[listName] = [...(updatedData[listName] || []), formData]
+      }
     } else if (type.startsWith('EDIT_LIST_')) {
       const listName = type.replace('EDIT_LIST_', '')
-      updatedData[listName] = [...updatedData[listName]]
-      updatedData[listName][data.index] = formData
+      if (listName === 'medicalProblems') {
+        let finalFormData = { ...formData }
+        if (finalFormData.isPrimary) {
+          finalFormData.description = 'Основной'
+          updatedData.medicalProblems = (updatedData.medicalProblems || []).map((p: any, idx: number) => 
+            idx === data.index ? p : (p.description === 'Основной' ? { ...p, description: '' } : p)
+          )
+        } else if (finalFormData.description === 'Основной') {
+          finalFormData.description = ''
+        }
+        delete finalFormData.isPrimary
+        updatedData.medicalProblems = [...updatedData.medicalProblems]
+        updatedData.medicalProblems[data.index] = finalFormData
+      } else {
+        updatedData[listName] = [...updatedData[listName]]
+        updatedData[listName][data.index] = formData
+      }
     } else if (type.startsWith('DELETE_LIST_')) {
       const listName = type.replace('DELETE_LIST_', '')
       updatedData[listName] = updatedData[listName].filter((_: any, i: number) => i !== data.index)
@@ -1639,6 +1673,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
       title: 'Добавить заболевание',
       fields: [
         { name: 'name', label: 'Название заболевания' },
+        { name: 'isPrimary', label: 'Основной диагноз в отделении', type: 'checkbox' },
         { name: 'diagnosisDate', label: 'Дата постановки диагноза', type: 'date' },
         { name: 'diseaseStatus', label: 'Статус заболевания' },
         { name: 'severity', label: 'Степень тяжести' },
@@ -1650,6 +1685,7 @@ const PatientCard: React.FC<PatientCardProps> = ({
       title: 'Редактировать заболевание',
       fields: [
         { name: 'name', label: 'Название заболевания' },
+        { name: 'isPrimary', label: 'Основной диагноз в отделении', type: 'checkbox' },
         { name: 'diagnosisDate', label: 'Дата постановки диагноза', type: 'date' },
         { name: 'diseaseStatus', label: 'Статус заболевания' },
         { name: 'severity', label: 'Степень тяжести' },
@@ -1919,6 +1955,23 @@ const PatientCard: React.FC<PatientCardProps> = ({
       )
     }
 
+    if (f.type === 'checkbox') {
+      return (
+        <FormGroup key={f.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, cursor: 'pointer', marginTop: 10, marginBottom: 10 }}>
+          <input
+            type="checkbox"
+            id={`chk-${f.name}`}
+            checked={!!formData[f.name]}
+            onChange={(e) => setFormData((p: any) => ({ ...p, [f.name]: e.target.checked }))}
+            style={{ width: 18, height: 18, cursor: 'pointer' }}
+          />
+          <label htmlFor={`chk-${f.name}`} style={{ fontSize: 14, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>
+            {labelText}
+          </label>
+        </FormGroup>
+      )
+    }
+    
     if (TEXTAREA_FIELDS.has(f.name) || f.type === 'textarea') {
       return (
         <FormGroup key={f.name}>

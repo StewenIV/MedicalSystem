@@ -78,7 +78,7 @@ namespace MedicalSystem.App.Services
                 var patient = await _patientStorage.GetAsync(patientId, token);
                 var patientName = patient != null ? $"{patient.LastName} {patient.FirstName}" : "Неизвестный пациент";
                 
-                // Уведомление медперсоналу
+                
                 await _notificationService.BroadcastToMedicalStaffAsync(new Notification
                 {
                     Type = NotificationType.VitalsAlert,
@@ -89,7 +89,7 @@ namespace MedicalSystem.App.Services
                     PatientId = patientId
                 }, token);
                 
-                // Уведомление самому пациенту
+                
                 await _notificationService.SendNotificationAsync(new Notification
                 {
                     PatientRecipientId = patientId,
@@ -125,7 +125,7 @@ namespace MedicalSystem.App.Services
             return warnings;
         }
 
-        // GET api/patients/{patientId}/vitals/trends
+        
         public async Task<List<VitalSignTrendDto>> GetTrendsAsync(Guid patientId, CancellationToken token)
         {
             var vitals = await _vitalSignStorage.GetAllAsync(token);

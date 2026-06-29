@@ -38,7 +38,7 @@ namespace MedicalSystem.Domain.Models
         public DateTime? DateEnd { get; set; }
         public MedicationStatus? Status { get; set; }
 
-        // Navigation properties
+        
         public virtual Patient Patient { get; set; }
         public virtual Medicine Medicine { get; set; }
         public virtual MedicalStaff Doctor { get; set; }

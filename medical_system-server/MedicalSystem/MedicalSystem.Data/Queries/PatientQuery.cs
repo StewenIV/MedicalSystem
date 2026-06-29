@@ -81,8 +81,17 @@ namespace MedicalSystem.Data.Queries
                         .Where(b => b.PatientId == p.Id)
                         .Select(b => b.Room.RoomNumber.ToString())
                         .FirstOrDefault(),
+                    BedNumber = _context.HospitalBeds
+                        .Where(b => b.PatientId == p.Id)
+                        .Select(b => (int?)b.BedNumber)
+                        .FirstOrDefault(),
+                    AdmissionDate = _context.HospitalBeds
+                        .Where(b => b.PatientId == p.Id)
+                        .Select(b => b.AdmissionDate)
+                        .FirstOrDefault(),
                     ActiveProblems = p.MedicalProblems
                         .Where(mp => mp.IsActive)
+                        .OrderByDescending(mp => mp.Description == "Основной")
                         .Select(mp => mp.Name)
                         .ToArray()
                 })

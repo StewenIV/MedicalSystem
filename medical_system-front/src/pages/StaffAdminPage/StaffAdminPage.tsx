@@ -90,10 +90,10 @@ export default function StaffAdminPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('All')
 
-  // Pagination state
+  
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Editor state
+  
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -120,7 +120,7 @@ export default function StaffAdminPage() {
     loadStaff()
   }, [])
 
-  // Filtered staff list
+  
   const filteredStaff = useMemo(() => {
     let list = [...staff]
 
@@ -141,7 +141,7 @@ export default function StaffAdminPage() {
     return list
   }, [staff, roleFilter, searchQuery])
 
-  // Paginated staff list
+  
   const paginatedStaff = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
     return filteredStaff.slice(start, start + PAGE_SIZE)
@@ -153,7 +153,7 @@ export default function StaffAdminPage() {
     setCurrentPage(1)
   }, [searchQuery, roleFilter])
 
-  // Select an employee to edit
+  
   const handleSelectStaff = (member: StaffMemberDto) => {
     setSelectedStaffId(member.id)
     setIsEditing(true)
@@ -164,7 +164,7 @@ export default function StaffAdminPage() {
     setFormRole(member.role || 'Doctor')
   }
 
-  // Switch to "Add New Employee" mode
+  
   const handleAddNew = () => {
     setSelectedStaffId(null)
     setIsEditing(true)
@@ -175,7 +175,7 @@ export default function StaffAdminPage() {
     setFormRole('Doctor')
   }
 
-  // Reset editor / cancel editing
+  
   const handleCancelEdit = () => {
     setSelectedStaffId(null)
     setIsEditing(false)
@@ -224,7 +224,7 @@ export default function StaffAdminPage() {
     setSubmitting(true)
     try {
       if (selectedStaffId) {
-        // Update existing
+        
         await updateStaffMember(selectedStaffId, {
           name: formName.trim(),
           position: formPosition.trim(),
@@ -234,7 +234,7 @@ export default function StaffAdminPage() {
         })
         toast.success('Информация о сотруднике успешно обновлена')
       } else {
-        // Create new
+        
         await createStaffMember({
           name: formName.trim(),
           position: formPosition.trim(),
@@ -253,9 +253,9 @@ export default function StaffAdminPage() {
     }
   }
 
-  // Delete employee
+  
   const handleDelete = async (member: StaffMemberDto, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent selecting the row
+    e.stopPropagation() 
 
     const confirmMsg = `Вы действительно хотите удалить сотрудника ${member.name}? Это также удалит его учетную запись в системе.`
     if (!window.confirm(confirmMsg)) {
@@ -301,7 +301,6 @@ export default function StaffAdminPage() {
       </StyledCard>
 
       <TwoColLayout>
-        {/* Left Column - Filter & Table */}
         <div>
           <FilterBar>
             <FilterIcon>
@@ -389,7 +388,6 @@ export default function StaffAdminPage() {
               </Table>
             </TableContainer>
 
-            {/* Pagination */}
             {totalPages > 1 && (
               <PaginationRow>
                 <PaginationInfo>
@@ -424,7 +422,6 @@ export default function StaffAdminPage() {
           </TableWrap>
         </div>
 
-        {/* Right Column - Editor Panel */}
         <div>
           {isEditing ? (
             <EditorPanel>

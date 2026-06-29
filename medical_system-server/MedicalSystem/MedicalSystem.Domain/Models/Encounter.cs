@@ -28,7 +28,7 @@ namespace MedicalSystem.Domain.Models
 
         public string? FormData { get; set; }
 
-        // Navigation properties
+        
         public virtual Patient Patient { get; set; }
         public virtual MedicalStaff Doctor { get; set; }
     }

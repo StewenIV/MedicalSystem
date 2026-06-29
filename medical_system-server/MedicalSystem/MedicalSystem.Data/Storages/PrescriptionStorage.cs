@@ -73,12 +73,12 @@ namespace MedicalSystem.Data.Storages
                     medicine.CurrentBalance += amountToDeduct;
                 }
 
-                // Update medicine status based on new balance
+                
                 medicine.Status = medicine.CurrentBalance <= 0m
                     ? MedicineStatus.Empty
                     : (medicine.CurrentBalance < medicine.MinBalance ? MedicineStatus.Low : MedicineStatus.Norm);
 
-                // Update last changes fields on medicine entity
+                
                 medicine.LastChangedById = performedStaffId;
                 medicine.LastUpdated = System.DateTime.UtcNow;
                 medicine.LastOperation = deduct ? OperationType.Writeoff : OperationType.Adjustment;
@@ -95,7 +95,7 @@ namespace MedicalSystem.Data.Storages
                 };
                 _context.BedActionLogs.Add(log);
 
-                // Add MedicineOperationLog to synchronize with medicinespage
+                
                 var opLog = new MedicineOperationLog
                 {
                     Id = System.Guid.NewGuid(),

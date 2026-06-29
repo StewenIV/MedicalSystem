@@ -55,7 +55,7 @@ export const PatientNotificationsProvider: React.FC<{ children: React.ReactNode 
       const data = await fetchMyNotifications()
       setNotifications(data)
     } catch {
-      // ignore
+      
     } finally {
       setLoading(false)
     }

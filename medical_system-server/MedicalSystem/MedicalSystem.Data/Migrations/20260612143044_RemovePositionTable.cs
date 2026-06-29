@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace MedicalSystem.Data.Migrations
 {
-    /// <inheritdoc />
+    
     public partial class RemovePositionTable : Migration
     {
-        /// <inheritdoc />
+        
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<string>(
@@ -48,7 +48,7 @@ namespace MedicalSystem.Data.Migrations
                 table: "MedicalStaff");
         }
 
-        /// <inheritdoc />
+        
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(

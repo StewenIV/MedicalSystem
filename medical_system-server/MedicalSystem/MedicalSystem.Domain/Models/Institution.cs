@@ -12,7 +12,7 @@ namespace MedicalSystem.Domain.Models
         [StringLength(200, ErrorMessage = "Длина названия не должна превышать 200 символов")]
         public string Name { get; set; }
 
-        // Navigation properties
+        
         public virtual ICollection<Patient> Patients { get; set; }
     }
 }

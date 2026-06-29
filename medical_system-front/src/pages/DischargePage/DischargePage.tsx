@@ -109,13 +109,13 @@ const DISCHARGE_VARIANTS = [
 ]
 
 export default function DischargePage({ patientId, onClose }: DischargePageProps) {
-  const { patients, updatePatient, refreshPatients, loadPatientEncounters, getInspections } =
+  const { patients, updatePatient, refreshPatients, loadPatientEncounters, getInspections, getDraft } =
     usePatientData()
 
   const [selectedPatientId, setSelectedPatientId] = useState<string>('')
   const [dischargeVariant, setDischargeVariant] = useState<SelectOption | null>(
     DISCHARGE_VARIANTS[1]
-  ) // Improvement by default
+  ) 
   const [dischargeDateTime, setDischargeDateTime] = useState<string>(() => {
     const now = new Date()
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset())
@@ -132,7 +132,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
   const printContainerRef = useRef<HTMLDivElement>(null)
 
   const [dischargeState, setDischargeState] = useState('')
-  // Load hospitalized and outpatient patients for selection list
+  
   const hospitalizedPatients = useMemo(() => {
     return patients.filter((p) => {
       const s = p.status?.toLowerCase() || ''
@@ -176,7 +176,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
     return beds.find((b) => b.patientId === selectedPatientId) || null
   }, [beds, selectedPatientId])
 
-  // Use proper SavedInspection[] from context (contains formData, correct type='primary'/'daily' mapping)
+  
   const patientInspections = useMemo((): SavedInspection[] => {
     if (!selectedPatientId) return []
     return getInspections(selectedPatientId)
@@ -187,7 +187,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
     loadPatientEncounters(selectedPatientId).catch(console.error)
   }, [loadPatientEncounters, selectedPatientId])
 
-  // Fetch beds on mount to search for patient bed assignment later
+  
   useEffect(() => {
     fetchBeds()
       .then((resp) => {
@@ -201,7 +201,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
   const [initializedPatientId, setInitializedPatientId] = useState<string | null>(null)
   const [loadedForPatientId, setLoadedForPatientId] = useState<string | null>(null)
 
-  // Hook when patientId is passed from patient card or when selectedPatient changes
+  
   useEffect(() => {
     if (patientId) {
       setSelectedPatientId(patientId)
@@ -210,8 +210,8 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
 
   useEffect(() => {
     if (selectedPatient) {
-      // Prefill diagnosis
-      const primaryProblem = selectedPatient.medicalProblems?.find((p: any) => p.isActive)
+      const primaryProblem = selectedPatient.medicalProblems?.find((p: any) => p.description === 'Основной') ||
+                             selectedPatient.medicalProblems?.find((p: any) => p.isActive)
       setFinalDiagnosis(primaryProblem?.name || selectedPatient.activeProblems?.[0] || '')
     } else {
       setFinalDiagnosis('')
@@ -240,6 +240,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
 
       const selectedProblems = selectedPatient.medicalProblems ?? []
       const autoDiagnosis =
+        selectedProblems.find((problem: any) => problem.description === 'Основной')?.name ||
         selectedProblems.find((problem: any) => problem.isActive)?.name ||
         selectedPatient.activeProblems?.[0] ||
         (selectedPatient as any).diagnosis ||
@@ -248,10 +249,12 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       setInitializedPatientId(selectedPatient.id)
     }
 
-    if (patientInspections.length > 0 && loadedForPatientId !== selectedPatient.id) {
+    if (selectedPatient && loadedForPatientId !== selectedPatient.id) {
       setEpicrisis(buildAdmissionComplaintText())
       setDischargeState(buildDischargeStateLines())
-      setLoadedForPatientId(selectedPatient.id)
+      if (patientInspections.length > 0) {
+        setLoadedForPatientId(selectedPatient.id)
+      }
     }
   }, [selectedPatient, initializedPatientId, patientInspections, loadedForPatientId])
 
@@ -270,6 +273,176 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
   const normalizeText = (value?: string | null): string => {
     const text = value?.trim()
     return text ? text : 'Не указано'
+  }
+
+  const getLoggedInDoctorName = (): string => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) return ''
+      const payload = token.split('.')[1]
+      const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+      const binString = atob(base64)
+      const bytes = Uint8Array.from(binString, (m) => m.charCodeAt(0))
+      const decoded = new TextDecoder().decode(bytes)
+      const claims = JSON.parse(decoded)
+      return claims?.displayName || ''
+    } catch {
+      return ''
+    }
+  }
+
+  const cleanDailyRoundText = (text: string): string => {
+    if (!text) return 'Не указано'
+    const segments = text.split(/(?<=\.)\s+/)
+    const filtered = segments.filter((seg) => {
+      const trimmed = seg.trim().toLowerCase()
+      if (!trimmed) return false
+      if (trimmed.startsWith('осмотр лечащего врача')) return false
+      if (trimmed.startsWith('первичный осмотр')) return false
+      if (trimmed.startsWith('повторный осмотр')) return false
+      if (trimmed.startsWith('время:')) return false
+      if (trimmed.startsWith('физиологические показатели:')) return false
+      if (trimmed.startsWith('лечение продолжить')) return false
+      if (trimmed.startsWith('повторный осмотр:')) return false
+      
+      if (trimmed.includes('чдд')) return false
+      if (trimmed.includes('spo₂')) return false
+      if (trimmed.includes('чсс')) return false
+      if (trimmed.includes('температура -')) return false
+      if (trimmed.includes('мм рт. ст.')) return false
+      return true
+    })
+    return filtered.join(' ').trim()
+  }
+
+  const getTypicalComplaintsForDiagnosis = (problems: any[] | undefined): string => {
+    if (!problems) return 'Жалобы на общую слабость, быструю утомляемость.'
+    const primaryProb = problems.find((p: any) => p.isActive && p.description === 'Основной') 
+      || problems.find((p: any) => p.isActive)
+    
+    if (!primaryProb) return 'Жалобы на общую слабость, быструю утомляемость.'
+    
+    const nameLower = primaryProb.name.toLowerCase()
+    if (nameLower.includes('пневмон')) {
+      return 'Жалобы на повышение температуры тела, кашель с выделением мокроты, общую слабость, одышку при физической нагрузке.'
+    }
+    if (nameLower.includes('ишемич') || nameLower.includes('стенокард') || nameLower.includes('серд')) {
+      return 'Жалобы на давящие боли за грудиной при умеренной физической нагрузке, одышку, общую слабость, колебания артериального давления.'
+    }
+    if (nameLower.includes('язв') || nameLower.includes('желуд') || nameLower.includes('гастр')) {
+      return 'Жалобы на боли в эпигастральной области, возникающие после приема пищи или натощак, изжогу, тошноту.'
+    }
+    return `Жалобы на общую слабость, недомогание, обусловленные основным заболеванием (${primaryProb.name}).`
+  }
+
+  const buildPrimaryInspectionSummary = (enc: SavedInspection | null, draft: any | null = null): string => {
+    const data = enc ? parseFormData(enc) : draft
+    if (!data) {
+      return enc?.complaints || 'Не указано'
+    }
+
+    const parts: string[] = []
+
+    const COMPLAINT_ACCUSATIVE_RU: Record<string, string> = {
+      none: 'жалоб нет',
+      weakness: 'общую слабость',
+      cough_dry: 'малопродуктивный кашель',
+      cough_productive: 'продуктивный кашель',
+      dyspnea_exertion: 'одышку при физической нагрузке',
+      dyspnea_rest: 'одышку в покое',
+      fever: 'повышение температуры',
+      chest_pain: 'боль в грудной клетке',
+      sweating: 'повышенную потливость',
+      dizziness: 'головокружение',
+      nausea: 'тошноту',
+      other: 'другие симптомы'
+    }
+
+    const activeComplaints = Array.isArray(data.complaints)
+      ? data.complaints.filter((c: string) => c !== 'none')
+      : []
+
+    if (data.complaints?.includes('none') || activeComplaints.length === 0) {
+      if (data.complaintsNote?.trim()) {
+        parts.push(`Жалобы при поступлении: ${data.complaintsNote.trim()}`)
+      } else {
+        parts.push(getTypicalComplaintsForDiagnosis(selectedPatient?.medicalProblems))
+      }
+    } else {
+      const labels = activeComplaints.map((c: string) => {
+        let t = COMPLAINT_ACCUSATIVE_RU[c] || c
+        if (c === 'fever' && data.complaintParams?.fever?.maxTemp) {
+          t += ` до ${data.complaintParams.fever.maxTemp}°C`
+        }
+        if (c === 'dyspnea_exertion' && data.complaintParams?.dyspnea_exertion?.severity) {
+          const sev = data.complaintParams.dyspnea_exertion.severity
+          const sevRu = sev === 'mild' ? 'легкой степени' : sev === 'moderate' ? 'средней степени' : 'выраженная'
+          t += ` (${sevRu})`
+        }
+        if (c === 'dyspnea_rest' && data.complaintParams?.dyspnea_rest?.severity) {
+          const sev = data.complaintParams.dyspnea_rest.severity
+          const sevRu = sev === 'mild' ? 'легкой степени' : sev === 'moderate' ? 'средней степени' : 'выраженная'
+          t += ` (${sevRu})`
+        }
+        if (c === 'cough_productive' && data.complaintParams?.cough_productive) {
+          const cp = data.complaintParams.cough_productive
+          const cpParts = []
+          if (cp.sputumColor) cpParts.push(`цвет мокроты - ${cp.sputumColor.toLowerCase()}`)
+          if (cp.sputumAmount) cpParts.push(`количество - ${cp.sputumAmount.toLowerCase()}`)
+          if (cpParts.length > 0) t += ` (${cpParts.join(', ')})`
+        }
+        return t
+      })
+      parts.push(`Жалобы при поступлении: ${labels.join(', ')}.`)
+      if (data.complaintsNote?.trim()) {
+        parts.push(`Дополнение: ${data.complaintsNote.trim()}`)
+      }
+    }
+
+    const morbi: string[] = []
+    if (data.illnessStartDate) {
+      morbi.push(`Заболел(а) с ${formatLocalDate(data.illnessStartDate)}.`)
+    }
+    if (data.illnessCauses && data.illnessCauses.length > 0) {
+      const causesMap: Record<string, string> = {
+        cold: 'переохлаждением',
+        infection: 'инфекцией',
+        contact: 'контактом',
+        unknown: 'неизвестной причиной'
+      }
+      const causesRu = data.illnessCauses.map((c: string) => causesMap[c] || c).join(', ')
+      morbi.push(`Начало заболевания связывает с: ${causesRu}.`)
+    }
+    if (data.preTreatment && data.preTreatment.length > 0) {
+      const treatMap: Record<string, string> = {
+        outpatient: 'амбулаторно',
+        inpatient: 'в стационаре'
+      }
+      const treatRu = data.preTreatment.map((t: string) => treatMap[t] || t).join(', ')
+      let treatStr = `До госпитализации лечился ${treatRu}`
+      if (data.preTreatmentDetails?.trim()) {
+        treatStr += ` (${data.preTreatmentDetails.trim()})`
+      }
+      const effectMap: Record<string, string> = {
+        improvement: 'с улучшением',
+        no_change: 'без изменений',
+        deterioration: 'с ухудшением'
+      }
+      if (data.preTreatmentEffect) {
+        treatStr += `, эффект - ${effectMap[data.preTreatmentEffect] || data.preTreatmentEffect}`
+      }
+      morbi.push(treatStr + '.')
+    }
+
+    if (morbi.length > 0) {
+      parts.push(`Анамнез заболевания (Anamnesis morbi): ${morbi.join(' ')}`)
+    }
+
+    if (data.hospitalizationReason?.trim()) {
+      parts.push(`Причина госпитализации: ${data.hospitalizationReason.trim()}`)
+    }
+
+    return parts.join('\n')
   }
 
   const renderLines = (text: string) => {
@@ -306,10 +479,9 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
     return [...patientInspections].sort(sortInspByDateDesc)[0] ?? null
   }, [patientInspections])
 
-  // Primary encounter: type='primary' (mapped in encountersApi from 'Primary Inspection'/'Первичный осмотр')
-  const primaryEncounter = useMemo(() => {
-    const sorted = [...patientInspections].sort(sortInspByDateAsc)
-    return sorted.find((enc) => enc.type === 'primary') ?? sorted[0] ?? null
+  
+  const primaryEncounterOnly = useMemo(() => {
+    return patientInspections.find((enc) => enc.type === 'primary') ?? null
   }, [patientInspections])
 
   const firstInspectionWithData = useMemo(() => {
@@ -317,9 +489,37 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
   }, [patientInspections])
 
   const buildComorbidityLines = () => {
-    const items = (selectedPatient?.medicalProblems ?? [])
-      .filter((problem: any) => !problem.isActive && normalizeText(problem.name) !== 'Не указано')
-      .map((problem: any) => normalizeText(problem.name))
+    if (!selectedPatient) return 'Не указано'
+    const selectedProblems = selectedPatient.medicalProblems ?? []
+    const primaryProblem = selectedProblems.find((p: any) => p.description === 'Основной') ||
+                           selectedProblems.find((p: any) => p.isActive)
+    const primaryName = finalDiagnosis || primaryProblem?.name || selectedPatient.activeProblems?.[0] || ''
+
+    const items = selectedProblems
+      .filter((problem: any) => problem.name !== primaryName && normalizeText(problem.name) !== 'Не указано')
+      .map((problem: any) => {
+        const parts = [normalizeText(problem.name)]
+        const details: string[] = []
+        if (problem.diseaseStatus && problem.diseaseStatus !== 'Не указано') {
+          details.push(problem.diseaseStatus.toLowerCase())
+        }
+        if (problem.severity && problem.severity !== 'Не указано') {
+          details.push(problem.severity.toLowerCase())
+        }
+        if (problem.diagnosisDate) {
+          const dateStr = formatLocalDate(problem.diagnosisDate)
+          if (dateStr && dateStr !== 'Не указано') {
+            details.push(dateStr)
+          }
+        }
+        if (details.length > 0) {
+          parts.push(`(${details.join(', ')})`)
+        }
+        if (problem.complications && problem.complications.trim()) {
+          parts.push(`\n  Осложнения: ${problem.complications.trim()}`)
+        }
+        return parts.join(' ')
+      })
 
     return items.length > 0 ? items.join('\n') : 'Не указано'
   }
@@ -403,45 +603,46 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
     return items.length > 0 ? items.join('\n') : 'Не указано'
   }
 
-  const buildAdmissionComplaintText = () => {
-    // Primary encounter from SavedInspection context: has complaints field and formData with complaintsNote
-    const enc = primaryEncounter ?? firstInspectionWithData
-    const data = parseFormData(enc)
-
-    // First try the free-text complaints field from the encounter
-    const directComplaints = enc?.complaints?.trim()
-    if (directComplaints) return directComplaints
-
-    // Then try complaintsNote from formData (PrimaryFormState.complaintsNote)
-    const fromNote = data?.complaintsNote?.trim()
-    if (fromNote) return fromNote
-
-    // Then build from selected complaint keys + params stored in formData
-    if (data?.complaints && Array.isArray(data.complaints) && data.complaints.length > 0) {
-      const labels: Record<string, string> = {
-        none: 'Нет жалоб',
-        weakness: 'Общая слабость',
-        cough_dry: 'Малопродуктивный кашель',
-        cough_productive: 'Продуктивный кашель',
-        dyspnea_exertion: 'Одышка при физической нагрузке',
-        dyspnea_rest: 'Одышка в покое',
-        fever: 'Повышение температуры',
-        chest_pain: 'Боль в грудной клетке',
-        sweating: 'Потливость',
-        dizziness: 'Головокружение',
-        nausea: 'Тошнота',
-        other: 'Другое'
-      }
-      const parts = (data.complaints as string[]).map((k) => labels[k] || k).filter(Boolean)
-      if (parts.length > 0) return parts.join(', ')
+  const buildAdmissionComplaintText = (): string => {
+    const enc = primaryEncounterOnly
+    if (enc) {
+      return buildPrimaryInspectionSummary(enc)
     }
 
-    return 'Не указано'
+    if (selectedPatientId) {
+      const draft = getDraft(`${selectedPatientId}-primary`)
+      if (draft) {
+        return buildPrimaryInspectionSummary(null, draft)
+      }
+    }
+
+    const sorted = [...patientInspections].sort(sortInspByDateAsc)
+    const fallbackEnc = sorted.find((e) => 
+      e.complaints && 
+      e.complaints.trim() && 
+      e.complaints.trim() !== 'Жалоб не предъявляет.' && 
+      e.complaints.trim() !== 'Не указано'
+    )
+
+    if (fallbackEnc) {
+      if (fallbackEnc.type === 'primary') {
+        return buildPrimaryInspectionSummary(fallbackEnc)
+      }
+      return fallbackEnc.complaints || 'Не указано'
+    }
+
+    return getTypicalComplaintsForDiagnosis(selectedPatient?.medicalProblems)
   }
 
   const buildDischargeStateLines = () => {
     const dailyRounds = [...patientInspections].filter(i => i.type === 'daily').sort(sortInspByDateDesc)
     const enc = dailyRounds[0] || latestEncounter
+    if (!enc) return 'Не указано'
+
+    if (enc.generatedText && enc.generatedText.trim()) {
+      return cleanDailyRoundText(enc.generatedText.trim())
+    }
+
     const data = parseFormData(enc) ?? {}
 
     const generalConditionMap: Record<string, string> = {
@@ -456,10 +657,6 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       no_change: 'Без динамики',
       deterioration: 'Отрицательная динамика'
     }
-
-    // For DailyRoundFormState: temperature is a top-level field
-    // For PrimaryFormState: generalCondition, breathingType, etc.
-    const tempValue = data.temperature || data.temp
 
     const btMap: Record<string, string> = {
       vesicular: 'Везикулярное',
@@ -507,7 +704,6 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       data.generalCondition
         ? `Общее состояние: ${generalConditionMap[data.generalCondition] ?? data.generalCondition}`
         : null,
-      tempValue ? `Температура: ${tempValue}` : null,
       respiratoryParts.length > 0
         ? `Состояние дыхательной системы: ${respiratoryParts.join(', ')}`
         : null,
@@ -556,7 +752,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       .filter((part) => part && part.trim())
       .join(' ')
 
-    // Build address: city + address
+    
     const addressParts = [selectedPatient.contacts?.city, selectedPatient.contacts?.address].filter(
       (part) => part && part.trim()
     )
@@ -572,7 +768,8 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
 
     const selectedProblems = selectedPatient.medicalProblems ?? []
     const mainDiagnosis = finalDiagnosis || normalizeText(
-      selectedProblems.find((problem: any) => problem.isActive)?.name ||
+      selectedProblems.find((problem: any) => problem.description === 'Основной')?.name ||
+        selectedProblems.find((problem: any) => problem.isActive)?.name ||
         selectedPatient.activeProblems?.[0]
     )
 
@@ -586,7 +783,8 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
     const treatment = buildTreatmentLines()
     const state = dischargeState || buildDischargeStateLines()
     const recommendationsText = recommendations || buildRecommendationsLines()
-    const doctor = normalizeText(selectedPatient.doctor || (selectedPatient as any).doctorName)
+    const currentDocName = getLoggedInDoctorName()
+    const doctor = normalizeText(currentDocName || selectedPatient.doctor || (selectedPatient as any).doctorName || 'Врач отделения')
 
     return [
       `ФИО: ${fio || 'Не указано'}`,
@@ -667,7 +865,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
 
     setLoading(true)
     try {
-      // 1. Generate PDF and Upload to MinIO
+      
       if (!printContainerRef.current) {
         toast.error('Ошибка при генерации документа')
         setLoading(false)
@@ -697,7 +895,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
         url: `${process.env.REACT_APP_API_URL ?? ''}${uploadResult.url}`
       }
 
-      // 3. Update the patient record with new status and document
+      
       const updatedDto = {
         ...selectedPatient,
         status: 'Discharged',
@@ -706,13 +904,13 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
       } as any
       await updatePatient(selectedPatientId, updatedDto)
 
-      // 4. Identify and release the bed
+      
       const assignedBed = beds.find((b) => b.patientId === selectedPatientId)
       if (assignedBed) {
         await dischargePatient(assignedBed.id, dischargeText)
       }
 
-      // 5. Refresh context state
+      
       await refreshPatients()
 
       toast.success('Пациент успешно выписан из отделения')
@@ -999,7 +1197,7 @@ export default function DischargePage({ patientId, onClose }: DischargePageProps
 
             <PrintSignaturesFlex>
               <div>
-                <strong>Лечащий врач:</strong> {selectedPatient.doctor || 'Врач отделения'}
+                <strong>Лечащий врач:</strong> {getLoggedInDoctorName() || selectedPatient.doctor || 'Врач отделения'}
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div>

@@ -1,24 +1,24 @@
 export const getPhoneFormat = (phone: string | undefined): string => {
-  if (!phone) return '+### (###) ##-###' // default to moldova or generic
+  if (!phone) return '+### (###) ##-###' 
 
   const digits = phone.replace(/\D/g, '')
   
   if (digits.startsWith('373')) {
-    return '+### (###) ##-###' // Moldova
+    return '+### (###) ##-###' 
   }
   if (digits.startsWith('7') || digits.startsWith('1')) {
-    return '+# (###) ###-##-##' // Russia, Kazakhstan, USA
+    return '+# (###) ###-##-##' 
   }
   if (digits.startsWith('375')) {
-    return '+### (##) ###-##-##' // Belarus
+    return '+### (##) ###-##-##' 
   }
   if (digits.startsWith('380')) {
-    return '+### (##) ###-##-##' // Ukraine
+    return '+### (##) ###-##-##' 
   }
   if (digits.startsWith('44') || digits.startsWith('49')) {
-    return '+## (####) ######' // UK, Germany (generic)
+    return '+## (####) ######' 
   }
 
-  // Fallback to max 15 digits without strict brackets
+  
   return '+###############'
 }

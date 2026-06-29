@@ -52,7 +52,7 @@ namespace MedicalSystem.Domain.Models
         [Required]
         public bool IsArchived { get; set; }
 
-        // Navigation properties
+        
         public virtual MedicalStaff LastChangedBy { get; set; }
         public virtual ICollection<PatientMedication> PatientMedications { get; set; }
         public virtual ICollection<MedicineOperationLog> MedicineOperationLogs { get; set; }

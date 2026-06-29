@@ -4,6 +4,6 @@ namespace MedicalSystem.App.Contracts.Dtos
     {
         public string? Name { get; set; }
         public string? Status { get; set; }
-        // ... другие поля для фильтрации
+        
     }
 }

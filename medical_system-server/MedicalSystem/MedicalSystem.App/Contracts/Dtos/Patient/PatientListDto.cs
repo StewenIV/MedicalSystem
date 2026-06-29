@@ -18,6 +18,8 @@ namespace MedicalSystem.App.Contracts.Dtos
         public string? DoctorName { get; set; }
         public string? DepartmentName { get; set; }
         public string? RoomNumber { get; set; }
+        public int? BedNumber { get; set; }
+        public DateTime? AdmissionDate { get; set; }
         public string[]? ActiveProblems { get; set; }
     }
 }

@@ -5,10 +5,10 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 namespace MedicalSystem.Data.Migrations
 {
-    /// <inheritdoc />
+    
     public partial class AddRoomPriority : Migration
     {
-        /// <inheritdoc />
+        
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
@@ -54,7 +54,7 @@ namespace MedicalSystem.Data.Migrations
                 column: "PatientId");
         }
 
-        /// <inheritdoc />
+        
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(

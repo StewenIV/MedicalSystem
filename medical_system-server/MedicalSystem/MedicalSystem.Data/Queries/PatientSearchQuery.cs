@@ -73,7 +73,7 @@ namespace MedicalSystem.Data.Queries
 
             if (departmentId.HasValue)
             {
-                // dbQuery = dbQuery.Where(d => d.DepartmentId == departmentId.Value);
+                
             }
 
             return await dbQuery
